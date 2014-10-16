@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services>
+	<service>
+		<id>com.sonicle.webtop.calendar</id>
+		<version>2.0.0</version>
+		<buildDate>03/11/2014</buildDate>
+		<company>Sonicle S.r.l.</company>
+		<companyEmail>sonicle@sonicle.com</companyEmail>
+		<companyWebSite>http://www.sonicle.com</companyWebSite>
+		<supportEmail>sonicle@sonicle.com</supportEmail>
+		<className>com.sonicle.webtop.calendar.CalendarService</className>
+		<jsClassName>Sonicle.webtop.calendar.CalendarService</jsClassName>
+		<publicClassName></publicClassName>
+		<deamonClassName></deamonClassName>
+	</service>
+</services>

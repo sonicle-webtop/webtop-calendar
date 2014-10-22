@@ -47,7 +47,7 @@ public class CalendarService extends Service {
 	public static final Logger logger = Service.getLogger(CalendarService.class);
 	
 	@Override
-	public void initialize(Environment api) {
+	public void initialize() {
 		logger.debug("Mi sono inizializzato: mi chiamo {}", getName(new Locale("it_IT")));
 		//logger.debug("Ora provo ad accedere all'env avanzato");
 		//getAdvancedEnv().getSession().test();

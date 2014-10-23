@@ -2,6 +2,7 @@
 <services>
 	<service>
 		<id>com.sonicle.webtop.calendar</id>
+		<xid>wtcal</xid>
 		<version>2.0.0</version>
 		<buildDate>03/11/2014</buildDate>
 		<company>Sonicle S.r.l.</company>

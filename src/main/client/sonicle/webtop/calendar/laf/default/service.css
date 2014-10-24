@@ -1,3 +1,4 @@
-.wtcal-ico-s { background-image: url('calendar_16.png') !important; }
-.wtcal-ico-m { background-image: url('calendar_24.png') !important; }
-.wtcal-ico-l { background-image: url('calendar_32.png') !important; }
+.wtcal-icon-service-xs { background-image: url('calendar_16.png') !important; }
+.wtcal-icon-service-s { background-image: url('calendar_24.png') !important; }
+.wtcal-icon-service-m { background-image: url('calendar_32.png') !important; }
+.wtcal-icon-service-l { background-image: url('calendar_48.png') !important; }

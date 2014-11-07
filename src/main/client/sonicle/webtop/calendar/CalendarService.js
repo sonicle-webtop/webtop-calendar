@@ -37,6 +37,18 @@ Ext.define('Sonicle.webtop.calendar.CalendarService', {
 	init: function() {
 		console.log('Sonicle.webtop.calendar.CalendarService initialized!');
 		
+		this.on('activate', function() {
+			console.log('activeeeeeeeeeeeeeeeeeeeee');
+		});
+		
+		this.addAction('new', 'testaction', {
+			tooltip: null,
+			handler: function() {
+				alert('Calendar testaction clicked');
+			},
+			scope: this
+		});
+		
 		var tb = Ext.create({
 			xtype: 'toolbar',
 			items: [{

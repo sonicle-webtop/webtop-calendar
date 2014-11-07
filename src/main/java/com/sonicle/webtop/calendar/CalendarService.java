@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.webtop.core.sdk.Environment;
 import com.sonicle.webtop.core.sdk.Service;
+import java.util.HashMap;
 import java.util.Locale;
 import org.slf4j.Logger;
 

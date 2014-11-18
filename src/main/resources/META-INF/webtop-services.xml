@@ -1,17 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services>
+	<!--
+		<package> -> Java package name.
+			Also used as service identifier/name (ID).
+		<jsPackage> -> Javascript package name.
+			This package will be used to determine classes files path.
+		<shortName> -> Short service name
+			Value must be unique in webtop platform. This name is used as 
+			short service idenfitier (XID) and as prefix for css classes.
+		<serviceClassName> -> Service class name (do not specify package name)
+		<optionsClassName> -> Service options class name (do not specify package name)
+		<publicServiceClassName> -> Public service class name (do not specify package name)
+		<deamonServiceClassName> -> Deamon service class name (do not specify package name)
+	-->
 	<service>
-		<id>com.sonicle.webtop.calendar</id>
-		<xid>wtcal</xid>
+		<package>com.sonicle.webtop.calendar</package>
+		<jsPackage>Sonicle.webtop.calendar</jsPackage>
+		<name>Calendar</name>
+		<shortName>wtcal</shortName>
 		<version>2.0.0</version>
 		<buildDate>03/11/2014</buildDate>
+		<serviceClassName>CalendarService</serviceClassName>
+		<publicServiceClassName></publicServiceClassName>
+		<deamonServiceClassName></deamonServiceClassName>
+		<optionsClassName>CalendarOptions</optionsClassName>
 		<company>Sonicle S.r.l.</company>
 		<companyEmail>sonicle@sonicle.com</companyEmail>
 		<companyWebSite>http://www.sonicle.com</companyWebSite>
 		<supportEmail>sonicle@sonicle.com</supportEmail>
-		<className>com.sonicle.webtop.calendar.CalendarService</className>
-		<jsClassName>Sonicle.webtop.calendar.CalendarService</jsClassName>
-		<publicClassName></publicClassName>
-		<deamonClassName></deamonClassName>
 	</service>
 </services>

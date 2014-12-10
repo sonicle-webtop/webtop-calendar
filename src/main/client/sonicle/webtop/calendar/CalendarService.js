@@ -33,15 +33,14 @@
  */
 Ext.define('Sonicle.webtop.calendar.CalendarService', {
 	extend: 'WT.sdk.Service',
-	/*
 	requires: [
-		'Sonicle.webtop.calendar.model.ServiceOptions'
+		'Sonicle.webtop.calendar.CalendarTools',
+                'Sonicle.webtop.calendar.view.PersonalCalendar'
 	],
-	*/
-	
-	init: function() {
+        
+        init: function() {
+            
 		console.log('Sonicle.webtop.calendar.CalendarService initialized!');
-		
 		this.on('activate', function() {
 			console.log('activeeeeeeeeeeeeeeeeeeeee');
 		});
@@ -58,7 +57,19 @@ Ext.define('Sonicle.webtop.calendar.CalendarService', {
 			xtype: 'toolbar',
 			items: [{
 					xtype: 'button',
-					text: 'Button 1'
+					text: 'Button 1',
+                                        handler:function(){
+                                            var wnd = Ext.create({
+                                                    xtype: 'window',
+                                                    layout: 'fit',
+                                                    height: 320,
+                                                    width: 590,
+                                                    items: [
+                                                            Ext.create('Sonicle.webtop.calendar.view.PersonalCalendar')
+                                                    ]
+                                            });
+                                            if(wnd) wnd.show();
+                                        }
 				}, {
 					xtype: 'button',
 					text: 'Button 2'
@@ -70,10 +81,14 @@ Ext.define('Sonicle.webtop.calendar.CalendarService', {
 		});
 		this.setToolbar(tb);
 		
+		var calendarTools=Ext.create('Sonicle.webtop.calendar.CalendarTools',{
+                    startDay:this.getOption("startDay")
+                });
 		var tool = Ext.create({
 			xtype: 'panel',
 			title: 'Calendar Toolbox',
-			width: 150
+			width: 150,
+			items:[calendarTools]
 		});
 		this.setToolComponent(tool);
 		
@@ -86,5 +101,7 @@ Ext.define('Sonicle.webtop.calendar.CalendarService', {
 			}
 		});
 		this.setMainComponent(main);
+                
+                
 	}
 });

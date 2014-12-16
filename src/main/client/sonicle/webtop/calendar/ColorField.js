@@ -32,23 +32,62 @@
  * the words "Powered by Sonicle WebTop".
  */
 
-Ext.define('Sonicle.webtop.calendar.model.PersonalCalendar', {
-	alternateClassName: 'Sonicle.webtop.calendar.model.PersonalCalendar',
-	extend: 'WT.model.Base',
-	proxy: WT.proxy('com.sonicle.webtop.calendar', 'SavePersonalCalendar'),
-	fields: [
-		'calendarId',
-                'userId',
-		'name',
-		'description',
-                'color',
-                'showEvents',
-                'private_',
-                'busy',
-                'sync',
-                'default_',
-                'defaultReminder',
-                'defaultSendInvite'
-                
-	]
+Ext.define('Sonicle.webtop.calendar.ColorField', {
+  extend: 'Ext.form.field.Picker',
+  alias: 'widget.colorcbo',
+  triggerTip: 'Please select a color.',
+  picker:null,
+  onTriggerClick: function() {
+    var me = this;
+    if(!me.picker) {
+        me.create();
+        me.picker.show();
+       
+    }else {
+            if(me.picker.hidden) {
+                    me.picker.show();
+            }
+            else {
+                    me.picker.hide();
+            }
+        }
+    },
+    create:function(){
+        var me=this;
+        if(!me.picker) {
+            me.picker = Ext.create('Ext.picker.Color', {    
+            pickerField: this,    
+            ownerCt: this,   
+            floating: true,   
+            hidden: true,   
+            focusOnShow: true, 
+            scope:me,
+            style: {
+                      backgroundColor: "#fff"
+                  } ,
+            listeners: {
+
+                        select: function(field, value, opts){
+                            me.setValue('#' + value);
+                            me.inputEl.setStyle('background','#' + value);
+                            me.inputEl.setStyle('color','#' + value);
+                            me.picker.hide();
+                        },
+                        show: function(field,opts){
+                          field.getEl().monitorMouseLeave(500, field.hide, field);
+                        },scope:this
+                    }
+            }); 
+        }
+    },
+    setColor:function(value){
+        var me=this;
+        me.on("render",function(c){
+            c.setValue(value);
+            c.inputEl.setStyle('background',value);
+            c.inputEl.setStyle('color',value);
+        },me);
+        
+        
+    }
 });

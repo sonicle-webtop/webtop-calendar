@@ -44,6 +44,7 @@ Ext.define('Sonicle.webtop.calendar.CalendarTools', {
 		align: 'stretch'
 	},
         border: false,
+        mys:null,
 	startDay:null,
         
 	initComponent: function() {
@@ -54,20 +55,22 @@ Ext.define('Sonicle.webtop.calendar.CalendarTools', {
                     startDay:me.startDay
                 });
 		me.add(ca);
-		me.add(Ext.create('Ext.tab.Panel', {
+                me.add(Ext.create('Ext.tab.Panel', {
 				items: [
 					{
                                             xtype:'panel',
-                                            title:"Calendari"
+                                            title:me.mys.res('title.calendars'),
+                                            height:200
 					},
+                                        
 					{
                                             xtype:'panel',
-                                            title:"Personali",
+                                            title:me.mys.res('title.personals'),
                                             id:'panel-personalcalendarwt',
                                             bodyStyle:'border:0px;padding:5px',
                                             border:false,
                                             name:'personal',
-                                            height:'100%',
+                                            height:200,
                                             autoScroll:true
 					}
 				]
@@ -155,7 +158,7 @@ Ext.define('Sonicle.webtop.calendar.CalendarTools', {
             var me=this;
             
             var btmenu = Ext.create('Ext.Component',{
-                        idc:calendar.id,
+                        calendarId:calendar.calendarId,
                         name:calendar.calendar,
                         color:calendar.color,
                         description:calendar.description,
@@ -175,32 +178,39 @@ Ext.define('Sonicle.webtop.calendar.CalendarTools', {
                         }
                     });
             var boxlabel=calendar.name;
-            if (calendar.default=="true")
-                boxlabel="<b>"+boxlabel+"</b>";                            
+            if (calendar.default_==true){
+                boxlabel="<b>"+boxlabel+"</b>";
+            }
             var checkbox = Ext.create("Ext.form.Checkbox",{
                     boxLabel:boxlabel,
                     tooltip:calendar.name,
-                    idc:calendar.id,
+                    userId:calendar.userId,
+                    calendarId:calendar.calendarId,
+                    userId:calendar.userId,
                     name:calendar.name,
                     color:calendar.color,
                     description:calendar.description,
-                    checked:calendar.checked,
-                    privatevalue:calendar.private,
+                    checked:calendar.showEvents,
+                    showEvents:calendar.showEvents,
+                    private_:calendar.private_,
                     sync:calendar.sync,
-                    defaultvalue:calendar.default,
-                    default_reminder:calendar.default_reminder,
-                    default_send_invite:calendar.default_send_invite,
+                    busy:calendar.busy,
+                    default_:calendar.default_,
+                    defaultReminder:calendar.defaultReminder,
+                    defaultSendInvite:calendar.defaultSendInvite,
                     ctCls: "gs-form-field",
                     labelStyle:'font-weight:bold;',
                     listeners:{
-                        check:function(c,checked){
-                            //refresh del calendario
+                        change:function(c,newValue,oldValue){
+                            me.checkPersonalCalendar(c.calendarId,newValue);
                         },
                     
                         scope:me
                         
                     }
                 });
+                
+                me.mys.test=checkbox; ///DA CANCELLARE!!!!!
                 
                 var field_container=Ext.create("Ext.form.FieldContainer",{
                     layout:'hbox',
@@ -228,6 +238,8 @@ Ext.define('Sonicle.webtop.calendar.CalendarTools', {
         },
         
         setPersonalCalendars:function(items){
+            var p=Ext.getCmp('personalcalendars');
+            if (p) p.destroy(); 
             var cp=Ext.getCmp("panel-personalcalendarwt");
             var personalCalendars=Ext.create("Ext.form.CheckboxGroup",{
                     id:'personalcalendars',
@@ -235,10 +247,106 @@ Ext.define('Sonicle.webtop.calendar.CalendarTools', {
                     itemCls: 'x-check-group-alt',    
                     columns: 1,
                     region:'center',
-                    items: items
+                    items: items,
+                    height:'200'
             });
             cp.add(personalCalendars);
             cp.doLayout();
-        }
+        },
+        
+        checkPersonalCalendar:function(calendarId,showEvents){
+            var me=this;
+            WT.ajaxReq('com.sonicle.webtop.calendar', 'CheckPersonalCalendar', {
+                    params: {calendarId:calendarId,showEvents:showEvents},
+                    callback: function(success, o) {
+                            if(success) {
+                                me.getPersonalCalendars();
+                                //refresh calendario
+                            }
+                    },scope:me
+            });
+        },
+        
+        
+        addPersonalCalendar:function(){
+            var me=this;
+            var view=Ext.create('Sonicle.webtop.calendar.view.PersonalCalendar',{mys:me.mys});
+            var wnd = Ext.create({
+                    xtype: 'window',
+                    layout: 'fit',
+                    height: 400,
+                    width: 350,
+                    title:me.mys.res('title.addPersonalCalendar'),
+                    items: [view]
+            });
+            if(wnd) wnd.show();
+        },
+        
+        editPersonalCalendar:function(){
+            var me=this;
+            var view=Ext.create('Sonicle.webtop.calendar.view.PersonalCalendar',{mys:me.mys});
+            var wnd = Ext.create({
+                    xtype: 'window',
+                    layout: 'fit',
+                    height: 400,
+                    width: 350,
+                    title:me.mys.res('title.editPersonalCalendar'),
+                    items: [view]
+            });
+            if(wnd) {
+                view.getForm().findField('calendarId').setValue(me.mys.test.calendarId);
+                view.getForm().findField('userId').setValue(me.mys.test.userId);
+                view.getForm().findField('name').setValue(me.mys.test.name);
+                view.getForm().findField('description').setValue(me.mys.test.description);
+                view.getForm().findField('color').setColor(me.mys.test.color);
+                view.getForm().findField('private_').setValue(me.mys.test.private_);
+                view.getForm().findField('busy').setValue(me.mys.test.busy);
+                view.getForm().findField('sync').setValue(me.mys.test.sync);
+                view.getForm().findField('default_').setValue(me.mys.test.default_);
+                view.getForm().findField('defaultReminder').setValue(me.mys.test.defaultReminder);
+                view.getForm().findField('defaultSendInvite').setValue(me.mys.test.defaultSendInvite);
+                view.getForm().findField('defaultSendInvite').setValue(me.mys.test.defaultSendInvite);
+                view.getForm().findField('showEvents').setValue(me.mys.test.showEvents);
+                wnd.show();
+            }        
+        },
+        
+        deletePersonalCalendar:function(calendarId,default_,userId){
+            var me=this;
+            calendarId=me.mys.test.calendarId; //DA CANCELLARE!!!!
+            default_=me.mys.test.default_;//DA CANCELLARE!!!!
+            userId=me.mys.test.userId;//DA CANCELLARE!!!!
+            WT.confirm(me.mys.res("dlg-deletingMessage"),function(r){
+                if (r == 'yes'){
+                   WT.ajaxReq('com.sonicle.webtop.calendar', 'DeletePersonalCalendar', {
+                        params: {calendarId:calendarId,default_:default_,userId:userId},
+                        callback: function(success, o) {
+                                if(success) {
+                                    me.getPersonalCalendars();
+                                    //refresh calendario
+                                }
+                        },scope:me
+                    });
+                }
+            },me);
+            
+        },
+        
+        viewOnlyPersonalCalendar:function(calendarId,userId){
+            var me=this;
+            calendarId=me.mys.test.calendarId; //DA CANCELLARE!!!!
+            userId=me.mys.test.userId; //DA CANCELLARE!!!!
+            WT.ajaxReq('com.sonicle.webtop.calendar', 'ViewOnlyPersonalCalendar', {
+                 params: {calendarId:calendarId,userId:userId},
+                 callback: function(success, o) {
+                         if(success) {
+                             me.getPersonalCalendars();
+                             //refresh calendario
+                         }
+                 },scope:me
+             });
+            }
+            
+        
         
 });

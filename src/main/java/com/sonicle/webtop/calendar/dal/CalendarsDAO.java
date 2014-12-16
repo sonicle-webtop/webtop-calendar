@@ -85,7 +85,7 @@ public class CalendarsDAO extends BaseDAO{
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
 				.and(CALENDARS.USER_ID.equal(userId)
-                                .and(CALENDARS.NAME.equal("WebTop")))
+                                .and(CALENDARS.NAME.equal(DEFAULT_CALENDAR_NAME)))
 			)
 			.fetchOneInto(OCalendars.class);
 	}
@@ -111,7 +111,7 @@ public class CalendarsDAO extends BaseDAO{
         public int resetPersonalDefaultCalendar(Connection con,String domainId,String userId){
                 DSLContext dsl = getDSL(con);
                 return dsl.update(CALENDARS)
-			.set(CALENDARS.DEFAULT, true)
+			.set(CALENDARS.DEFAULT, false)
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
 				.and(CALENDARS.USER_ID.equal(userId))
@@ -129,5 +129,51 @@ public class CalendarsDAO extends BaseDAO{
                         .where(CALENDARS.CALENDAR_ID.equal(calendarId))
 			.execute();
 	}
+        
+        public int checkPersonalCalendar(Connection con,int calendarId,boolean showEvents){
+                DSLContext dsl = getDSL(con);
+                return dsl.update(CALENDARS)
+			.set(CALENDARS.SHOW_EVENTS, showEvents)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+				
+			)
+			.execute();
+        }
+        
+        public int resetPersonalDefaultCalendarToWebTop(Connection con,String domainId,String userId){
+                DSLContext dsl = getDSL(con);
+                return dsl.update(CALENDARS)
+			.set(CALENDARS.DEFAULT, true)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+                                .and(CALENDARS.NAME.equal(DEFAULT_CALENDAR_NAME))
+			)
+			.execute();
+        }
+        
+        public int viewOnlyPersonalCalendar(Connection con,int calendarId){
+                DSLContext dsl = getDSL(con);
+                return dsl.update(CALENDARS)
+			.set(CALENDARS.SHOW_EVENTS, true)
+			.where(
+                                CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
+			.execute();
+        }
+        
+        public int viewNothingPersonalCalendar(Connection con,String domainId,String userId){
+                DSLContext dsl = getDSL(con);
+                return dsl.update(CALENDARS)
+			.set(CALENDARS.SHOW_EVENTS, false)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+                                .and(CALENDARS.SHOW_EVENTS.equal(true))
+			)
+			.execute();
+        }
+        
         
 }

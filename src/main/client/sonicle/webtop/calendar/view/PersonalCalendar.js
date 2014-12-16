@@ -36,10 +36,12 @@ Ext.define('Sonicle.webtop.calendar.view.PersonalCalendar', {
 	extend: 'WT.sdk.FormView',
 	requires: [
 		'Sonicle.webtop.calendar.view.PersonalCalendarC',
-		'Sonicle.webtop.calendar.model.PersonalCalendar'
+		'Sonicle.webtop.calendar.model.PersonalCalendar',
+                'Sonicle.webtop.calendar.model.Combo'
 	],
 	controller: Ext.create('Sonicle.webtop.calendar.view.PersonalCalendarC'),
-
+        mys:null,
+        
 	initComponent: function() {
 		var me = this;
 		Ext.apply(me, {
@@ -52,30 +54,94 @@ Ext.define('Sonicle.webtop.calendar.view.PersonalCalendar', {
 				items: [
                                     {
                                         xtype: 'hiddenfield',
-                                        name: 'calendarId'
+                                        name: 'calendarId',
+                                        value:0
+                                    },
+                                    {
+                                        xtype: 'hiddenfield',
+                                        name: 'showEvents',
+                                        value:false
+                                    },
+                                    {
+                                        xtype: 'hiddenfield',
+                                        name: 'userId'
                                     },
                                     {
 					xtype: 'textfield',
 					name: 'name',
 					allowBlank: false,
 					anchor: '100%',
-					fieldLabel: me.res('fld-calendarName.lbl')
+					fieldLabel: me.mys.res('fld-calendarName.lbl')
                                     }, 
                                     {
 					xtype: 'textareafield',
 					name: 'description',
 					anchor: '100%',
-					fieldLabel: me.res('fld-description.lbl')
-                                    } 
+					fieldLabel: me.mys.res('fld-description.lbl')
+                                    },
+                                    Ext.create('Sonicle.webtop.calendar.ColorField',{
+                                        anchor:'100%',
+                                        name:'color',
+                                        fieldLabel:me.mys.res('fld-color.lbl'),
+                                        mys:me
+                                    }),
+                                    {
+					xtype: 'checkboxfield',
+					name: 'default_',
+					anchor: '100%',
+                                        checked:false,
+					fieldLabel: me.mys.res('fld-default.lbl')
+                                    },
+                                    {
+					xtype: 'checkboxfield',
+					name: 'private_',
+					anchor: '100%',
+                                        checked:false,
+					fieldLabel: me.mys.res('fld-private.lbl')
+                                    },
+                                    {
+					xtype: 'checkboxfield',
+					name: 'busy',
+					anchor: '100%',
+                                        checked:true,
+					fieldLabel: me.mys.res('fld-busy.lbl')
+                                    },
+                                    {
+					xtype: 'checkboxfield',
+					name: 'sync',
+					anchor: '100%',
+                                        checked:true,
+					fieldLabel: me.mys.res('fld-sync.lbl')
+                                    },
+                                    {
+					xtype: 'combo',
+					name: 'defaultReminder',
+					editable: false,
+					store: {
+                                                autoLoad:true,
+						model: 'Sonicle.webtop.calendar.model.Combo',
+						proxy: WT.proxy('com.sonicle.webtop.calendar', 'GetViewReminder', 'data')
+					},
+					valueField: 'id',
+					displayField: 'description',
+					anchor:'100%',
+					fieldLabel: me.mys.res('fld-reminder.lbl')
+                                    }, 
+                                    {
+					xtype: 'checkboxfield',
+					name: 'defaultSendInvite',
+					anchor: '100%',
+					fieldLabel: me.mys.res('fld-invite.lbl')
+                                    }
                                 ]
                                 
 			}],
 
 			buttons: [{
-				text: WT.res('btn-send.lbl'),
-				handler: 'onSendClick'
+				text: me.mys.res('btn-save.lbl'),
+				handler: 'onConfirmClick'
 			}, {
-				text: WT.res('btn-cancel.lbl'),
+				text: me.mys.res('btn-cancel.lbl'),
 				handler: 'onCancelClick'
 			}]
 		});

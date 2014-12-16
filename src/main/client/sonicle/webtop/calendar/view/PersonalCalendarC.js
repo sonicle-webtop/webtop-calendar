@@ -39,14 +39,21 @@ Ext.define('Sonicle.webtop.calendar.view.PersonalCalendarC', {
 	
 	onSubmit: function(s,op,success) {
 		if(success) {
-			WT.info(WT.res('sent'));
+                        s.mys.calendarTools.getPersonalCalendars();
 			s.close();
+                        
 		}
 	},
 	
 	onCancelClick: function() {
-		this.clearScreenshot();
 		this.getView().close();
+	},
+        
+	
+	onConfirmClick: function() {
+		var me = this;
+		var v = this.getView();
+		v.submitForm();
 	}
 });
 

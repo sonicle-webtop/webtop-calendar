@@ -39,6 +39,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	],
 	
 	init: function() {
+		var me = this;
 		console.log('Sonicle.webtop.calendar.CalendarService initialized!');
 		this.on('activate', function () {
 			console.log('activeeeeeeeeeeeeeeeeeeeee');
@@ -56,34 +57,40 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			xtype: 'toolbar',
 			items: [{
 					xtype: 'button',
-					text: 'Button 1',
+					text: 'Aggiungi cal.',
 					handler: function () {
-						var wnd = Ext.create({
-							xtype: 'window',
-							layout: 'fit',
-							height: 320,
-							width: 590,
-							items: [
-								Ext.create('Sonicle.webtop.calendar.view.PersonalCalendar')
-							]
-						});
-						if (wnd)
-							wnd.show();
+						calendarTools.addPersonalCalendar();
+
 					}
 				}, {
 					xtype: 'button',
-					text: 'Button 2'
+					text: 'Aggiorna cal.',
+					handler: function () {
+						calendarTools.editPersonalCalendar();
+					}
 				}, {
 					xtype: 'button',
-					text: 'Button 3'
+					text: 'Cancella cal.',
+					handler: function () {
+						calendarTools.deletePersonalCalendar();
+					}
+				}, {
+					xtype: 'button',
+					text: 'Visualizza',
+					handler: function () {
+						calendarTools.viewOnlyPersonalCalendar();
+					}
 				}
 			]
 		});
 		this.setToolbar(tb);
 
 		var calendarTools = Ext.create('Sonicle.webtop.calendar.CalendarTools', {
+			mys: me,
 			startDay: this.getOption("startDay")
+
 		});
+		me.calendarTools = calendarTools;
 		var tool = Ext.create({
 			xtype: 'panel',
 			title: 'Calendar Toolbox',
@@ -95,10 +102,41 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var main = Ext.create({
 			xtype: 'tabpanel',
 			activeTab: 0,
-			items: {
-				title: 'Calendat Default Tab',
-				html: 'The first tab\'s content. Others may be added dynamically'
-			}
+			items: [
+				/*Ext.create('Sonicle.webtop.calendar.Scheduler',{
+				 startHour:this.startwork,
+				 endHour:this.endwork,
+				 cs: me,
+				 proxy: null,
+				 proxyEdit: null,
+				 monthNames : [
+				 this.res("monthNames1"),
+				 this.res("monthNames2"),
+				 this.res("monthNames3"),
+				 this.res("monthNames4"),
+				 this.res("monthNames5"),
+				 this.res("monthNames6"),
+				 this.res("monthNames7"),
+				 this.res("monthNames8"),
+				 this.res("monthNames9"),
+				 this.res("monthNames10"),
+				 this.res("monthNames11"),
+				 this.res("monthNames12")
+				 ],
+				 dayNames : [
+				 this.res("dayNames1"),
+				 this.res("dayNames2"),
+				 this.res("dayNames3"),
+				 this.res("dayNames4"),
+				 this.res("dayNames5"),
+				 this.res("dayNames6"),
+				 this.res("dayNames7")
+				 ],
+				 value: new Date()
+				 
+				 })*/
+
+			]
 		});
 		this.setMainComponent(main);
 	}

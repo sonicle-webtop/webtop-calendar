@@ -31,24 +31,12 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+package com.sonicle.webtop.calendar;
 
-Ext.define('Sonicle.webtop.calendar.model.PersonalCalendar', {
-	alternateClassName: 'Sonicle.webtop.calendar.model.PersonalCalendar',
-	extend: 'WT.model.Base',
-	proxy: WT.proxy('com.sonicle.webtop.calendar', 'SavePersonalCalendar'),
-	fields: [
-		'calendarId',
-                'userId',
-		'name',
-		'description',
-                'color',
-                'showEvents',
-                'private_',
-                'busy',
-                'sync',
-                'default_',
-                'defaultReminder',
-                'defaultSendInvite'
-                
-	]
-});
+/**
+ *
+ * @author sergio
+ */
+public class PersonalCalendar {
+    
+}

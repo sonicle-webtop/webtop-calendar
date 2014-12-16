@@ -1,3 +1,8 @@
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
+
+
 /*
  * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
@@ -31,24 +36,13 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+/**
+ *
+ * @author sergio
+ */
 
-Ext.define('Sonicle.webtop.calendar.model.PersonalCalendar', {
-	alternateClassName: 'Sonicle.webtop.calendar.model.PersonalCalendar',
-	extend: 'WT.model.Base',
-	proxy: WT.proxy('com.sonicle.webtop.calendar', 'SavePersonalCalendar'),
-	fields: [
-		'calendarId',
-                'userId',
-		'name',
-		'description',
-                'color',
-                'showEvents',
-                'private_',
-                'busy',
-                'sync',
-                'default_',
-                'defaultReminder',
-                'defaultSendInvite'
-                
-	]
-});
+
+
+public class ORecurrences extends Recurrences {
+    
+}

@@ -32,23 +32,12 @@
  * the words "Powered by Sonicle WebTop".
  */
 
-Ext.define('Sonicle.webtop.calendar.model.PersonalCalendar', {
-	alternateClassName: 'Sonicle.webtop.calendar.model.PersonalCalendar',
+Ext.define('Sonicle.webtop.calendar.model.Combo', {
+	alternateClassName: 'Sonicle.webtop.calendar.model.Combo',
 	extend: 'WT.model.Base',
-	proxy: WT.proxy('com.sonicle.webtop.calendar', 'SavePersonalCalendar'),
+	
 	fields: [
-		'calendarId',
-                'userId',
-		'name',
-		'description',
-                'color',
-                'showEvents',
-                'private_',
-                'busy',
-                'sync',
-                'default_',
-                'defaultReminder',
-                'defaultSendInvite'
-                
+		'id',
+		'description'
 	]
 });

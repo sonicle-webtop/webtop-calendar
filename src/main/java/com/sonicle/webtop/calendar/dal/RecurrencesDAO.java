@@ -31,24 +31,36 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+package com.sonicle.webtop.calendar.dal;
 
-Ext.define('Sonicle.webtop.calendar.model.PersonalCalendar', {
-	alternateClassName: 'Sonicle.webtop.calendar.model.PersonalCalendar',
-	extend: 'WT.model.Base',
-	proxy: WT.proxy('com.sonicle.webtop.calendar', 'SavePersonalCalendar'),
-	fields: [
-		'calendarId',
-                'userId',
-		'name',
-		'description',
-                'color',
-                'showEvents',
-                'private_',
-                'busy',
-                'sync',
-                'default_',
-                'defaultReminder',
-                'defaultSendInvite'
-                
-	]
-});
+import com.sonicle.webtop.calendar.jooq.Sequences;
+import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
+import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
+import com.sonicle.webtop.core.dal.BaseDAO;
+import com.sonicle.webtop.core.dal.DAOException;
+import static com.sonicle.webtop.core.jooq.Tables.USERS;
+import java.sql.Connection;
+import java.util.List;
+import org.jooq.DSLContext;
+
+
+/**
+ *
+ * @author sergio
+ */
+public class RecurrencesDAO extends BaseDAO{
+    
+    private final static RecurrencesDAO INSTANCE = new RecurrencesDAO();
+	public static RecurrencesDAO getInstance() {
+		return INSTANCE;
+	}
+	
+        public Long getSequence(Connection con) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		Long nextID =  dsl.nextval(Sequences.SEQ_RECURRENCES);
+                return nextID;
+	}
+        
+        
+        
+}

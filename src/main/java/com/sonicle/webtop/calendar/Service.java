@@ -1,5 +1,5 @@
 /*
- * webtop-mail is a WebTop Service developed by Sonicle S.r.l.
+ * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -31,60 +31,33 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.CalendarService', {
-	extend: 'WT.sdk.Service',
-	/*
-	requires: [
-		'Sonicle.webtop.calendar.model.ServiceOptions'
-	],
-	*/
+package com.sonicle.webtop.calendar;
+
+import com.sonicle.webtop.core.sdk.BaseService;
+import java.io.PrintWriter;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+
+/**
+ *
+ * @author malbinola
+ */
+public class Service extends BaseService {
 	
-	init: function() {
-		console.log('Sonicle.webtop.calendar.CalendarService initialized!');
-		
-		this.on('activate', function() {
-			console.log('activeeeeeeeeeeeeeeeeeeeee');
-		});
-		
-		this.addAction('new', 'testaction', {
-			tooltip: null,
-			handler: function() {
-				alert('Calendar testaction clicked');
-			},
-			scope: this
-		});
-		
-		var tb = Ext.create({
-			xtype: 'toolbar',
-			items: [{
-					xtype: 'button',
-					text: 'Button 1'
-				}, {
-					xtype: 'button',
-					text: 'Button 2'
-				}, {
-					xtype: 'button',
-					text: 'Button 3'
-				}
-			]
-		});
-		this.setToolbar(tb);
-		
-		var tool = Ext.create({
-			xtype: 'panel',
-			title: 'Calendar Toolbox',
-			width: 150
-		});
-		this.setToolComponent(tool);
-		
-		var main = Ext.create({
-			xtype: 'tabpanel',
-			activeTab: 0,
-			items: {
-				title: 'Calendat Default Tab',
-				html: 'The first tab\'s content. Others may be added dynamically'
-			}
-		});
-		this.setMainComponent(main);
+	public static final Logger logger = BaseService.getLogger(Service.class);
+	
+	@Override
+	public void initialize() {
+		logger.debug("CalendarService.ID={}",getId());
 	}
-});
+
+	public void processDelPiffero(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		logger.debug("DELPIFFERO: CalendarService.ID={}",getId());
+	}
+	
+	@Override
+	public void cleanup() {
+		
+	}
+}

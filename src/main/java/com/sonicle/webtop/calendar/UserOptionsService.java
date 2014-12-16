@@ -33,12 +33,54 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.core.sdk.BaseOptionManager;
+import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.web.ServletUtils;
+import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.webtop.core.sdk.BaseService;
+import com.sonicle.webtop.core.sdk.BaseUserOptionsService;
+import com.sonicle.webtop.core.sdk.JsOptions;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarOptions extends BaseOptionManager {
+public class UserOptionsService extends BaseUserOptionsService {
 	
+	public static final Logger logger = BaseService.getLogger(UserOptionsService.class);
+	
+	public void processUserOptions(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		Connection con = null;
+		
+		try {
+			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			
+			if(crud.equals("read")) {
+				String id = ServletUtils.getStringParameter(request, "id", true);
+				
+				JsOptions opts = new JsOptions();
+				opts.put("id", id);
+				opts.put("option1", "123456789");
+				opts.put("option2", "987654321");
+				new JsonResult(opts).printTo(out);
+				
+			} else if(crud.equals("update")) {
+				JsOptions opts = ServletUtils.getPayload(request, JsOptions.class);
+				if(opts.containsKey("option1")) logger.debug("option1 = {}", opts.getString("option1"));
+				if(opts.containsKey("option2")) logger.debug("option2 = {}", opts.getString("option2"));
+				logger.debug("TODO db save!");
+				new JsonResult().printTo(out);
+			}
+			
+		} catch (Exception ex) {
+			logger.error("Error executing action UserOptions", ex);
+			new JsonResult(false).printTo(out);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
 }

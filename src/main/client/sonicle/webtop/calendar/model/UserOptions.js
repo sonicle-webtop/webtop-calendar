@@ -31,36 +31,12 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar;
-
-import com.sonicle.webtop.core.sdk.Environment;
-import com.sonicle.webtop.core.sdk.Service;
-import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Locale;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-
-/**
- *
- * @author malbinola
- */
-public class CalendarService extends Service {
+Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
+	extend: 'WT.sdk.model.UserOptions',
 	
-	public static final Logger logger = Service.getLogger(CalendarService.class);
-	
-	@Override
-	public void initialize() {
-		logger.debug("CalendarService.ID={}",getId());
-	}
-
-	public void processDelPiffero(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		logger.debug("DELPIFFERO: CalendarService.ID={}",getId());
-	}
-	
-	@Override
-	public void cleanup() {
-		
-	}
-}
+	proxy: WT.optionsProxy('com.sonicle.webtop.calendar'),
+	fields: [
+		'option1',
+		'option2'
+	]
+});

@@ -31,6 +31,44 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.ServiceOptions', {
-	extend: 'WT.sdk.model.ServiceOptions'
+Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
+	extend: 'WT.sdk.UserOptionsView',
+	controller: Ext.create('Sonicle.webtop.calendar.view.UserOptionsC'),
+	idField: 'id',
+	
+	listeners: {
+		save: 'onFormSave'
+	},
+	
+	initComponent: function() {
+		var me = this;
+		me.callParent(arguments);
+		
+		me.add({
+			xtype: 'hiddenfield',
+			name: 'id'
+		}, {
+			xtype: 'wtopttabsection',
+			title: 'Section 1',
+			items: [{
+				xtype: 'textfield',
+				name: 'option1',
+				fieldLabel: 'Option 1',
+				listeners: {
+					blur: 'onBlurAutoSave'
+				}
+			}]
+		}, {
+			xtype: 'wtopttabsection',
+			title: 'Section 2',
+			items: [{
+				xtype: 'textfield',
+				name: 'option2',
+				fieldLabel: 'Option 2',
+				listeners: {
+					blur: 'onBlurAutoSave'
+				}
+			}]
+		});
+	}
 });

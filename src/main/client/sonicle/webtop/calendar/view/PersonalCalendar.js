@@ -1,5 +1,5 @@
 /*
- * webtop-mail is a WebTop Service developed by Sonicle S.r.l.
+ * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -31,75 +31,58 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.Service', {
-	extend: 'WT.sdk.Service',
+Ext.define('Sonicle.webtop.calendar.view.PersonalCalendar', {
+	alternateClassName: 'Sonicle.webtop.calendar.view.PersonalCalendar',
+	extend: 'WT.sdk.FormView',
 	requires: [
-		'Sonicle.webtop.calendar.CalendarTools',
-		'Sonicle.webtop.calendar.view.PersonalCalendar'
+		'Sonicle.webtop.calendar.view.PersonalCalendarC',
+		'Sonicle.webtop.calendar.model.PersonalCalendar'
 	],
-	
-	init: function() {
-		console.log('Sonicle.webtop.calendar.CalendarService initialized!');
-		this.on('activate', function () {
-			console.log('activeeeeeeeeeeeeeeeeeeeee');
-		});
+	controller: Ext.create('Sonicle.webtop.calendar.view.PersonalCalendarC'),
 
-		this.addAction('new', 'testaction', {
-			tooltip: null,
-			handler: function () {
-				alert('Calendar testaction clicked');
-			},
-			scope: this
-		});
-
-		var tb = Ext.create({
-			xtype: 'toolbar',
+	initComponent: function() {
+		var me = this;
+		Ext.apply(me, {
 			items: [{
-					xtype: 'button',
-					text: 'Button 1',
-					handler: function () {
-						var wnd = Ext.create({
-							xtype: 'window',
-							layout: 'fit',
-							height: 320,
-							width: 590,
-							items: [
-								Ext.create('Sonicle.webtop.calendar.view.PersonalCalendar')
-							]
-						});
-						if (wnd)
-							wnd.show();
-					}
-				}, {
-					xtype: 'button',
-					text: 'Button 2'
-				}, {
-					xtype: 'button',
-					text: 'Button 3'
-				}
-			]
-		});
-		this.setToolbar(tb);
+				xtype: 'form',
+				region: 'center',
+				itemId: 'fpnl',
+				model: 'Sonicle.webtop.calendar.model.PersonalCalendar',
+				bodyPadding: 10,
+				items: [
+                                    {
+                                        xtype: 'hiddenfield',
+                                        name: 'calendarId'
+                                    },
+                                    {
+					xtype: 'textfield',
+					name: 'name',
+					allowBlank: false,
+					anchor: '100%',
+					fieldLabel: me.res('fld-calendarName.lbl')
+                                    }, 
+                                    {
+					xtype: 'textareafield',
+					name: 'description',
+					anchor: '100%',
+					fieldLabel: me.res('fld-description.lbl')
+                                    } 
+                                ]
+                                
+			}],
 
-		var calendarTools = Ext.create('Sonicle.webtop.calendar.CalendarTools', {
-			startDay: this.getOption("startDay")
+			buttons: [{
+				text: WT.res('btn-send.lbl'),
+				handler: 'onSendClick'
+			}, {
+				text: WT.res('btn-cancel.lbl'),
+				handler: 'onCancelClick'
+			}]
 		});
-		var tool = Ext.create({
-			xtype: 'panel',
-			title: 'Calendar Toolbox',
-			width: 150,
-			items: [calendarTools]
-		});
-		this.setToolComponent(tool);
-
-		var main = Ext.create({
-			xtype: 'tabpanel',
-			activeTab: 0,
-			items: {
-				title: 'Calendat Default Tab',
-				html: 'The first tab\'s content. Others may be added dynamically'
-			}
-		});
-		this.setMainComponent(main);
+		me.callParent(arguments);
+	},
+	
+	listeners: {
+		submit: 'onSubmit'
 	}
 });

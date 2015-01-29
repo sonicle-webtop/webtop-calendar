@@ -32,5 +32,10 @@
  * the words "Powered by Sonicle WebTop".
  */
 Ext.define('Sonicle.webtop.calendar.model.ServiceOptions', {
-	extend: 'WT.sdk.model.ServiceOptions'
+	extend: 'WT.sdk.model.ServiceOptions',
+	
+	fields: [
+		'view',
+		{name: 'startDay', type: 'int'}
+	]
 });

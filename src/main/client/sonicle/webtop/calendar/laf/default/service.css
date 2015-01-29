@@ -1,6 +1,22 @@
-.wtcal-icon-service-xs { background-image: url('calendar_16.png') !important; }
-.wtcal-icon-service-s { background-image: url('calendar_24.png') !important; }
-.wtcal-icon-service-m { background-image: url('calendar_32.png') !important; }
-.wtcal-icon-service-l { background-image: url('calendar_48.png') !important; }
+.wtcal-icon-service-xs { background-image: url('service_16.png') !important; }
+.wtcal-icon-service-s { background-image: url('service_24.png') !important; }
+.wtcal-icon-service-m { background-image: url('service_32.png') !important; }
+.wtcal-icon-service-l { background-image: url('service_48.png') !important; }
 .wtcal-icon-testaction { background-image: url('testaction.gif') !important; }
 
+.wtcal-icon-today { background-image: url('today_16.png') !important; }
+.wtcal-icon-previousday { background-image: url('previous-day_16.png') !important; }
+.wtcal-icon-nextday { background-image: url('next-day_16.png') !important; }
+.wtcal-icon-dayview { background-image: url('day_16.png') !important; }
+.wtcal-icon-week5view { background-image: url('week5_16.png') !important; }
+.wtcal-icon-weekview { background-image: url('week_16.png') !important; }
+.wtcal-icon-monthview { background-image: url('month_16.png') !important; }
+.wtcal-icon-aweekview { background-image: url('week_16.png') !important; }
+
+.wtcal-icon-cal-color {
+	width: 15px;
+	height: 15px;
+	border: 1px solid;
+	margin: 0;
+	background-image: none;
+}

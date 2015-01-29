@@ -38,6 +38,9 @@ package com.sonicle.webtop.calendar;
  * @author sergio
  */
 public class CalendarLocaleKey {
+	
+	public static final String MY_CALENDARS = "mycalendars";
+	
     public static final String REMINDER_MINUTES = "reminder.minutes";
     public static final String REMINDER_HOURS = "reminder.hours";
 }

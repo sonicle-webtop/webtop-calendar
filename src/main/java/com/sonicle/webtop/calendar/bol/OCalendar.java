@@ -1,3 +1,7 @@
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.calendar.jooq.tables.pojos.Calendars;
+
 /*
  * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
@@ -31,14 +35,13 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
-	extend: 'WT.sdk.model.UserOptions',
-	
-	proxy: WT.optionsProxy('com.sonicle.webtop.calendar'),
-	fields: [
-		'view',
-		{name: 'startDay', type: 'int'},
-		{name: 'workdayStart', type: 'date', dateFormat: 'H:i'},
-		{name: 'workdayEnd', type: 'date', dateFormat: 'H:i'}
-	]
-});
+/**
+ *
+ * @author sergio
+ */
+
+
+
+public class OCalendar extends Calendars {
+    
+}

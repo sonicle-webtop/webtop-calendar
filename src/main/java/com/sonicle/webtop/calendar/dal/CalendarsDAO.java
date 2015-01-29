@@ -33,147 +33,182 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
-import com.sonicle.webtop.calendar.bol.OCalendars;
+import com.sonicle.webtop.calendar.bol.OCalendar;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
-import static com.sonicle.webtop.core.jooq.Tables.USERS;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
 import org.jooq.DSLContext;
-
+import org.jooq.Field;
 
 /**
  *
  * @author sergio
  */
-public class CalendarsDAO extends BaseDAO{
-    
-    private final static String DEFAULT_CALENDAR_NAME="WebTop";
-    private final static CalendarsDAO INSTANCE = new CalendarsDAO();
+public class CalendarsDAO extends BaseDAO {
+
+	private final static String DEFAULT_CALENDAR_NAME = "WebTop";
+	private final static CalendarsDAO INSTANCE = new CalendarsDAO();
+
 	public static CalendarsDAO getInstance() {
 		return INSTANCE;
 	}
-	
-        public Long getSequence(Connection con) throws DAOException {
+
+	public Long getSequence(Connection con) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		Long nextID =  dsl.nextval(SEQ_CALENDARS);
-                return nextID;
+		Long nextID = dsl.nextval(SEQ_CALENDARS);
+		return nextID;
 	}
-        
-	public List<OCalendars> selectPersonalCalendars(Connection con, String domainId, String userId) throws DAOException {
+	
+	public OCalendar selectDefaultByDomainUser(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
 			.from(CALENDARS)
 			.where(
-				CALENDARS.DOMAIN_ID.equal(domainId)
-				.and(CALENDARS.USER_ID.equal(userId))
-                                .and(CALENDARS.NAME.notEqual(DEFAULT_CALENDAR_NAME))
-                                
+					CALENDARS.DOMAIN_ID.equal(domainId)
+					.and(CALENDARS.USER_ID.equal(userId))
+					.and(CALENDARS.NAME.equal(DEFAULT_CALENDAR_NAME))
 			)
-			.fetchInto(OCalendars.class);
+			.fetchOneInto(OCalendar.class);
 	}
-        
-        public OCalendars selectDefaultPersonalCalendar(Connection con, String domainId, String userId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl.
-			select()
-			.from(CALENDARS)
-			.where(
-				CALENDARS.DOMAIN_ID.equal(domainId)
-				.and(CALENDARS.USER_ID.equal(userId)
-                                .and(CALENDARS.NAME.equal(DEFAULT_CALENDAR_NAME)))
-			)
-			.fetchOneInto(OCalendars.class);
-	}
-        
-        public int insertPersonalCalendar(Connection con, OCalendars item) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
-		return dsl
-			.insertInto(CALENDARS)
-			.set(record)
-			.execute();
-	}
-        
-        
-        public int deletePersonalCalendar(Connection con, int calendarId) throws DAOException {
+
+	public List<OCalendar> selectNoDefaultByDomainUser(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.delete(CALENDARS)
-			.where(CALENDARS.CALENDAR_ID.equal(calendarId))
-			.execute();
+				.select()
+				.from(CALENDARS)
+				.where(
+						CALENDARS.DOMAIN_ID.equal(domainId)
+						.and(CALENDARS.USER_ID.equal(userId))
+						.and(CALENDARS.NAME.notEqual(DEFAULT_CALENDAR_NAME))
+				)
+				.orderBy(CALENDARS.NAME)
+				.fetchInto(OCalendar.class);
 	}
-        
-        public int resetPersonalDefaultCalendar(Connection con,String domainId,String userId){
-                DSLContext dsl = getDSL(con);
-                return dsl.update(CALENDARS)
-			.set(CALENDARS.DEFAULT, false)
-			.where(
-				CALENDARS.DOMAIN_ID.equal(domainId)
-				.and(CALENDARS.USER_ID.equal(userId))
-                                .and(CALENDARS.DEFAULT.equal(true))
-			)
-			.execute();
-        }
-        
-        public int updatePersonalCalendar(Connection con, int calendarId,OCalendars item) throws DAOException {
+	
+	public int update(Connection con, Integer calendarId, FieldsMap fieldValues) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
 		return dsl
 			.update(CALENDARS)
-			.set(record)
-                        .where(CALENDARS.CALENDAR_ID.equal(calendarId))
+			.set(fieldValues)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
 			.execute();
 	}
-        
-        public int checkPersonalCalendar(Connection con,int calendarId,boolean showEvents){
-                DSLContext dsl = getDSL(con);
-                return dsl.update(CALENDARS)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	public OCalendar selectDefaultPersonalCalendar(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl.
+				select()
+				.from(CALENDARS)
+				.where(
+						CALENDARS.DOMAIN_ID.equal(domainId)
+						.and(CALENDARS.USER_ID.equal(userId)
+								.and(CALENDARS.NAME.equal(DEFAULT_CALENDAR_NAME)))
+				)
+				.fetchOneInto(OCalendar.class);
+	}
+
+	public int insertPersonalCalendar(Connection con, OCalendar item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
+		return dsl
+				.insertInto(CALENDARS)
+				.set(record)
+				.execute();
+	}
+
+	public int deletePersonalCalendar(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.delete(CALENDARS)
+				.where(CALENDARS.CALENDAR_ID.equal(calendarId))
+				.execute();
+	}
+
+	public int resetPersonalDefaultCalendar(Connection con, String domainId, String userId) {
+		DSLContext dsl = getDSL(con);
+		return dsl.update(CALENDARS)
+				.set(CALENDARS.DEFAULT, false)
+				.where(
+						CALENDARS.DOMAIN_ID.equal(domainId)
+						.and(CALENDARS.USER_ID.equal(userId))
+						.and(CALENDARS.DEFAULT.equal(true))
+				)
+				.execute();
+	}
+
+	public int updatePersonalCalendar(Connection con, int calendarId, OCalendar item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
+		return dsl
+				.update(CALENDARS)
+				.set(record)
+				.where(CALENDARS.CALENDAR_ID.equal(calendarId))
+				.execute();
+	}
+
+	public int checkPersonalCalendar(Connection con, int calendarId, boolean showEvents) {
+		DSLContext dsl = getDSL(con);
+		return dsl.update(CALENDARS)
 			.set(CALENDARS.SHOW_EVENTS, showEvents)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
-				
 			)
 			.execute();
-        }
-        
-        public int resetPersonalDefaultCalendarToWebTop(Connection con,String domainId,String userId){
-                DSLContext dsl = getDSL(con);
-                return dsl.update(CALENDARS)
+	}
+
+	public int resetPersonalDefaultCalendarToWebTop(Connection con, String domainId, String userId) {
+		DSLContext dsl = getDSL(con);
+		return dsl.update(CALENDARS)
 			.set(CALENDARS.DEFAULT, true)
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
 				.and(CALENDARS.USER_ID.equal(userId))
-                                .and(CALENDARS.NAME.equal(DEFAULT_CALENDAR_NAME))
+				.and(CALENDARS.NAME.equal(DEFAULT_CALENDAR_NAME))
 			)
 			.execute();
-        }
-        
-        public int viewOnlyPersonalCalendar(Connection con,int calendarId){
-                DSLContext dsl = getDSL(con);
-                return dsl.update(CALENDARS)
+	}
+
+	public int viewOnlyPersonalCalendar(Connection con, int calendarId) {
+		DSLContext dsl = getDSL(con);
+		return dsl.update(CALENDARS)
 			.set(CALENDARS.SHOW_EVENTS, true)
 			.where(
-                                CALENDARS.CALENDAR_ID.equal(calendarId)
+				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
 			.execute();
-        }
-        
-        public int viewNothingPersonalCalendar(Connection con,String domainId,String userId){
-                DSLContext dsl = getDSL(con);
-                return dsl.update(CALENDARS)
+	}
+
+	public int viewNothingPersonalCalendar(Connection con, String domainId, String userId) {
+		DSLContext dsl = getDSL(con);
+		return dsl.update(CALENDARS)
 			.set(CALENDARS.SHOW_EVENTS, false)
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
 				.and(CALENDARS.USER_ID.equal(userId))
-                                .and(CALENDARS.SHOW_EVENTS.equal(true))
+				.and(CALENDARS.SHOW_EVENTS.equal(true))
 			)
 			.execute();
-        }
-        
-        
+	}
 }

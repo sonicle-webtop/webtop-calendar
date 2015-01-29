@@ -1,5 +1,5 @@
 /*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+ * WebTop Services is a Web Application framework developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -27,18 +27,17 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
-Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
-	extend: 'WT.sdk.model.UserOptions',
+Ext.define('Sonicle.webtop.calendar.store.StartDay', {
+	extend: 'Ext.data.ArrayStore',
 	
-	proxy: WT.optionsProxy('com.sonicle.webtop.calendar'),
-	fields: [
-		'view',
-		{name: 'startDay', type: 'int'},
-		{name: 'workdayStart', type: 'date', dateFormat: 'H:i'},
-		{name: 'workdayEnd', type: 'date', dateFormat: 'H:i'}
+	autoLoad: true,
+	model: 'WT.model.Simple',
+	data: [
+		[0, WT.res('com.sonicle.webtop.calendar', 'store.startDay.0')],
+		[1, WT.decodeHtmlEntities(WT.res('com.sonicle.webtop.calendar', 'store.startDay.1'))]
 	]
 });

@@ -1,0 +1,18 @@
+- SETTINGS
+
+INSERT INTO core.user_settings (
+SELECT iddomain,login,'com.sonicle.webtop.calendar','view',value 
+FROM service_settings WHERE service='calendar' AND idsetting='viewFlag'
+);
+INSERT INTO core.user_settings (
+SELECT iddomain,login,'com.sonicle.webtop.calendar','startDay',value 
+FROM service_settings WHERE service='calendar' AND idsetting='startDay'
+);
+INSERT INTO core.user_settings (
+SELECT iddomain,login,'com.sonicle.webtop.calendar','workdayStart',value 
+FROM service_settings WHERE service='calendar' AND idsetting='hourstartworkday'
+);
+INSERT INTO core.user_settings (
+SELECT iddomain,login,'com.sonicle.webtop.calendar','workdayEnd',value 
+FROM service_settings WHERE service='calendar' AND idsetting='hourendworkday'
+);

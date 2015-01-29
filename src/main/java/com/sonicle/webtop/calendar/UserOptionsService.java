@@ -34,8 +34,10 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.webtop.calendar.bol.js.JsUserOptions;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BaseUserOptionsService;
 import com.sonicle.webtop.core.sdk.JsOptions;
@@ -59,21 +61,34 @@ public class UserOptionsService extends BaseUserOptionsService {
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			CalendarUserSettings cus = new CalendarUserSettings(getDomainId(), getUserId(), getServiceId());
 			
-			if(crud.equals("read")) {
+			if(crud.equals(Crud.READ)) {
 				String id = ServletUtils.getStringParameter(request, "id", true);
+				
+				// Main
+				JsOptions main = new JsOptions();
+				main.put("view", cus.getCalendarView());
+				main.put("startDay", cus.getCalendarStartDay());
+				main.put("workdayStart", cus.getWorkdayStart());
+				main.put("workdayEnd", cus.getWorkdayEnd());
 				
 				JsOptions opts = new JsOptions();
 				opts.put("id", id);
-				opts.put("option1", "123456789");
-				opts.put("option2", "987654321");
-				new JsonResult(opts).printTo(out);
+				opts.putAll(main);
+				new JsonResult(main).printTo(out);
 				
-			} else if(crud.equals("update")) {
-				JsOptions opts = ServletUtils.getPayload(request, JsOptions.class);
-				if(opts.containsKey("option1")) logger.debug("option1 = {}", opts.getString("option1"));
-				if(opts.containsKey("option2")) logger.debug("option2 = {}", opts.getString("option2"));
-				logger.debug("TODO db save!");
+			} else if(crud.equals(Crud.UPDATE)) {
+				String payload = ServletUtils.getPayload(request);
+				JsOptions opts = JsonResult.gson.fromJson(payload, JsOptions.class);
+				JsUserOptions uo = JsonResult.gson.fromJson(payload, JsUserOptions.class);
+				
+				// Main
+				if(opts.containsKey("view")) cus.setCalendarView(uo.view);
+				if(opts.containsKey("startDay")) cus.setCalendarStartDay(uo.startDay);
+				if(opts.containsKey("workdayStart")) cus.setWorkdayStart(uo.workdayStart);
+				if(opts.containsKey("workdayEnd")) cus.setWorkdayEnd(uo.workdayEnd);
+				
 				new JsonResult().printTo(out);
 			}
 			

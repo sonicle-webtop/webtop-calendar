@@ -40,7 +40,7 @@ Ext.define('Sonicle.webtop.calendar.store.View', {
 		['d', WT.res('com.sonicle.webtop.calendar', 'store.view.d')],
 		['w5', WT.res('com.sonicle.webtop.calendar', 'store.view.w5')],
 		['w', WT.res('com.sonicle.webtop.calendar', 'store.view.w')],
-		['aw', WT.res('com.sonicle.webtop.calendar', 'store.view.aw')],
+		['wa', WT.res('com.sonicle.webtop.calendar', 'store.view.wa')],
 		['m', WT.res('com.sonicle.webtop.calendar', 'store.view.m')]
 	]
 });

@@ -1,7 +1,3 @@
-package com.sonicle.webtop.calendar.bol;
-
-import com.sonicle.webtop.calendar.jooq.tables.pojos.Calendars;
-
 /*
  * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
@@ -35,13 +31,19 @@ import com.sonicle.webtop.calendar.jooq.tables.pojos.Calendars;
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.calendar.jooq.tables.pojos.Calendars;
+import org.apache.commons.lang3.StringUtils;
+
 /**
  *
- * @author sergio
+ * @author malbinola
  */
-
-
-
 public class OCalendar extends Calendars {
     
+	public String getHexColor() {
+		String color = getColor();
+		return (StringUtils.indexOf(color, "#") == 0) ? StringUtils.substring(color, 1) : color;
+	}
 }

@@ -31,63 +31,49 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+package com.sonicle.webtop.calendar;
 
-Ext.define('Sonicle.webtop.calendar.ColorField', {
-  extend: 'Ext.form.field.Picker',
-  alias: 'widget.colorcbo',
-  triggerTip: 'Please select a color.',
-  picker:null,
-  onTriggerClick: function() {
-    var me = this;
-    if(!me.picker) {
-        me.create();
-        me.picker.show();
-       
-    }else {
-            if(me.picker.hidden) {
-                    me.picker.show();
-            }
-            else {
-                    me.picker.hide();
-            }
-        }
-    },
-    create:function(){
-        var me=this;
-        if(!me.picker) {
-            me.picker = Ext.create('Ext.picker.Color', {    
-            pickerField: this,    
-            ownerCt: this,   
-            floating: true,   
-            hidden: true,   
-            focusOnShow: true, 
-            scope:me,
-            style: {
-                      backgroundColor: "#fff"
-                  } ,
-            listeners: {
+import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.calendar.dal.CalendarsDAO;
+import com.sonicle.webtop.core.bol.OUser;
+import com.sonicle.webtop.core.sdk.UserProfile;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.List;
 
-                        select: function(field, value, opts){
-                            me.setValue('#' + value);
-                            me.inputEl.setStyle('background','#' + value);
-                            me.inputEl.setStyle('color','#' + value);
-                            me.picker.hide();
-                        },
-                        show: function(field,opts){
-                          field.getEl().monitorMouseLeave(500, field.hide, field);
-                        },scope:this
-                    }
-            }); 
-        }
-    },
-    setColor:function(value){
-        var me=this;
-        me.on("render",function(c){
-            c.setValue(value);
-            c.inputEl.setStyle('background',value);
-            c.inputEl.setStyle('color',value);
-        },me);
-        
-        
-    }
-});
+/**
+ *
+ * @author malbinola
+ */
+public class CalendarManager {
+	
+	private final static CalendarManager INSTANCE = new CalendarManager();
+
+	public static CalendarManager getInstance() {
+		return INSTANCE;
+	}
+	
+	public List<OCalendar> getPersonalCalendars(Connection con, UserProfile.Id user) {
+		ArrayList<OCalendar> cals = new ArrayList();
+		CalendarsDAO cdao = CalendarsDAO.getInstance();
+		
+		OCalendar bical = cdao.selectBuiltInByDomainUser(con, user.getDomainId(), user.getUserId());
+		if(bical == null) {
+			//TODO: aggiungere il calendario built-in se non presente
+		}
+		
+		cals.add(bical);
+		cals.addAll(cdao.selectNoBuiltInByDomainUser(con, user.getDomainId(), user.getUserId()));
+		return cals;
+	}
+	
+	public List<OCalendar> getSharedCalendars(Connection con, UserProfile.Id user) {
+		ArrayList<OCalendar> cals = new ArrayList();
+		
+		return cals;
+	}
+	
+	public void getEvents(Connection con, UserProfile.Id user, String fromDate, String toDate) {
+		
+	}
+}

@@ -35,7 +35,8 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 	extend: 'Ext.panel.Panel',
 	requires: [
 		'Sonicle.MultiCalendar',
-		'Sonicle.webtop.calendar.model.TreeCal'
+		'Sonicle.webtop.calendar.model.TreeCal',
+		'Sonicle.webtop.calendar.model.MultiCalDate'
 	],
 	mixins: [
 		'WT.mixin.RefStorer'
@@ -53,6 +54,11 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 		var me = this;
 		me.callParent(arguments);
 		
+		me.addRef('cxmCalendar', Ext.create({
+			xtype: 'menu',
+			items: []
+		}));
+		
 		me.add(Ext.create({
 			region: 'north',
 			xtype: 'panel',
@@ -64,8 +70,13 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 					xtype: 'somulticalendar',
 					border: true,
 					startDay: me.mys.getOption('startDay'),
-					width: 182,
-					height: 298
+					highlightMode: me.mys.getOption('view'),
+					width: 184,
+					height: 298,
+					store: {
+						model: 'Sonicle.webtop.calendar.model.MultiCalDate',
+						proxy: WT.proxy(me.mys.ID, 'GetEventDates', 'dates')
+					}
 				}))
 			]
 		}));
@@ -79,7 +90,7 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 				autoLoad: true,
 				autoSync: true,
 				model: 'Sonicle.webtop.calendar.model.TreeCal',
-				proxy: WT.apiProxy(me.mys.ID, 'ManageCalendarsTree', 'children'),
+				proxy: WT.apiProxy(me.mys.ID, 'ManageCalendarsTree', 'children', {}, {writeAllFields: false}),
 				root: {
 					id: 'root',
 					expanded: true
@@ -112,20 +123,14 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 		
 		var mc = me.getRef('multical');
 		mc.on('change', function(s,nv,ov) {
-			me.fireDatesChanged(nv, s.getHighlightMode(), s.getStartDay());
+			me.fireEvent('datechanged', me, nv);
 		});
-	},
-	
-	cazzo: function(rec, view) {
-		var node = view.getNode(rec);
-		var el = Ext.fly(node);
 	},
 	
 	changeView: function(view) {
 		var me = this, mc = me.getRef('multical');
 		mc.setHighlightMode(view);
 		me.fireEvent('viewchanged', me, view);
-		me.fireDatesChanged(mc.getValue(), view, mc.getStartDay());
 	},
 	
 	moveDate: function(direction) {
@@ -137,8 +142,9 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 		} else if(direction === 1) {
 			mc.setNextDay();
 		}
-	},
+	}
 	
+	/*
 	fireDatesChanged: function(date, view, startDay) {
 		var me = this, eDate = Ext.Date, soDate = Sonicle.Date, from, to;
 		
@@ -157,4 +163,5 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 		}
 		me.fireEvent('dateschanged', me, date, from, to, view, startDay);
 	}
+	*/
 });

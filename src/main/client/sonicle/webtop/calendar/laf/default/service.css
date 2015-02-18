@@ -10,8 +10,13 @@
 .wtcal-icon-dayview { background-image: url('day_16.png') !important; }
 .wtcal-icon-week5view { background-image: url('week5_16.png') !important; }
 .wtcal-icon-weekview { background-image: url('week_16.png') !important; }
+.wtcal-icon-weekagview { background-image: url('week_16.png') !important; }
 .wtcal-icon-monthview { background-image: url('month_16.png') !important; }
-.wtcal-icon-aweekview { background-image: url('week_16.png') !important; }
+.wtcal-icon-calendar { background-image: url('calendar_16.png') !important; }
+.wtcal-icon-addCalendar { background-image: url('calendar-add_16.png') !important; }
+.wtcal-icon-editCalendar { background-image: url('calendar-edit_16.png') !important; }
+.wtcal-icon-deleteCalendar { background-image: url('calendar-delete_16.png') !important; }
+.wtcal-icon-importEvents { background-image: url('calendar-import_16.png') !important; }
 
 .wtcal-icon-cal-color {
 	width: 15px;

@@ -38,7 +38,7 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 		'Sonicle.webtop.calendar.store.StartDay'
 	],
 	controller: Ext.create('Sonicle.webtop.calendar.view.UserOptionsC'),
-	idField: 'id',
+	//idField: 'id',
 	listeners: {
 		save: 'onFormSave'
 	},

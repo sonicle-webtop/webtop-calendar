@@ -34,57 +34,23 @@
 Ext.define('Sonicle.webtop.calendar.Service', {
 	extend: 'WT.sdk.Service',
 	requires: [
-		'Sonicle.webtop.calendar.Tool',
+		//'Sonicle.webtop.calendar.Tool',
 		'Sonicle.calendar.Panel',
+		'Sonicle.MultiCalendar',
+		'Sonicle.webtop.calendar.model.TreeCal',
+		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.calendar.data.MemoryCalendarStore',
 		'Sonicle.calendar.data.MemoryEventStore',
 		'Sonicle.calendar.data.Events',
-		'Sonicle.calendar.data.Calendars'
-		//'Sonicle.webtop.calendar.view.PersonalCalendar'
+		'Sonicle.calendar.data.Calendars',
+		'Sonicle.webtop.calendar.view.Calendar'
 	],
 	
 	init: function() {
 		var me = this;
 		
-		me.addAction('today', {
-			handler: function() {
-				me.getToolComponent().moveDate(0);
-			}
-		});
-		me.addAction('previousday', {
-			text: null,
-			handler: function() {
-				me.getToolComponent().moveDate(-1);
-			}
-		});
-		me.addAction('nextday', {
-			text: null,
-			handler: function() {
-				me.getToolComponent().moveDate(1);
-			}
-		});
-		
-		var view = me.getOption('view');
-		me.addAction('dayview', {
-			itemId: 'd',
-			pressed: view === 'd'
-		});
-		me.addAction('week5view', {
-			itemId: 'w5',
-			pressed: view === 'w5'
-		});
-		me.addAction('weekview', {
-			itemId: 'w',
-			pressed: view === 'w'
-		});
-		me.addAction('aweekview', {
-			itemId: 'aw',
-			pressed: view === 'aw'
-		});
-		me.addAction('monthview', {
-			itemId: 'm',
-			pressed: view === 'm'
-		});
+		me.initActions();
+		me.initCxm();
 
 		this.addAction('new', 'testaction', {
 			tooltip: null,
@@ -144,92 +110,140 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					me.getAction('dayview'),
 					me.getAction('week5view'),
 					me.getAction('weekview'),
-					me.getAction('aweekview'),
+					me.getAction('weekagview'),
 					me.getAction('monthview')
 				],
 				listeners: {
 					toggle: function(s,btn) {
-						me.getToolComponent().changeView(btn.getItemId());
-						me.getMainComponent().setActiveView(btn.getItemId());
+						me.changeView(btn.getItemId());
+						//me.getToolComponent().changeView(btn.getItemId());
+						//me.getMainComponent().setActiveView(btn.getItemId());
 					}
 				}
 			}]
 		}));
+		/*
 		me.setToolComponent(Ext.create('Sonicle.webtop.calendar.Tool', {
 			mys: me,
 			title: me.getName(),
 			listeners: {
-				dateschanged: function(s,date,from,to) {
-					//console.log('date changed '+from+' -> '+to);
+				datechanged: function(s,date) {
+					me.getMainComponent().setStartDate(date);
 				}
 			}
 		}));
-
-/*
-		var calendarTools = Ext.create('Sonicle.webtop.calendar.CalendarTools', {
-			mys: me,
-			startDay: this.getOption("startDay")
-
-		});
-		me.calendarTools = calendarTools;
-		var tool = Ext.create({
-			xtype: 'panel',
-			title: 'Calendar Toolbox',
-			//width: 150,
-			items: [calendarTools]
-		});
-		this.setToolComponent(tool);
 		*/
-
-		var main = Ext.create({
-			xtype: 'tabpanel',
-			activeTab: 0,
-			items: [
-				/*Ext.create('Sonicle.webtop.calendar.Scheduler',{
-				 startHour:this.startwork,
-				 endHour:this.endwork,
-				 cs: me,
-				 proxy: null,
-				 proxyEdit: null,
-				 monthNames : [
-				 this.res("monthNames1"),
-				 this.res("monthNames2"),
-				 this.res("monthNames3"),
-				 this.res("monthNames4"),
-				 this.res("monthNames5"),
-				 this.res("monthNames6"),
-				 this.res("monthNames7"),
-				 this.res("monthNames8"),
-				 this.res("monthNames9"),
-				 this.res("monthNames10"),
-				 this.res("monthNames11"),
-				 this.res("monthNames12")
-				 ],
-				 dayNames : [
-				 this.res("dayNames1"),
-				 this.res("dayNames2"),
-				 this.res("dayNames3"),
-				 this.res("dayNames4"),
-				 this.res("dayNames5"),
-				 this.res("dayNames6"),
-				 this.res("dayNames7")
-				 ],
-				 value: new Date()
-				 
-				 })*/
-
+		me.setToolComponent(Ext.create({
+			xtype: 'panel',
+			layout: 'border',
+			title: me.getName(),
+			items: [{
+					region: 'north',
+					xtype: 'panel',
+					layout: 'center',
+					header: false,
+					height: 305,
+					items: [
+						me.addRef('multical', Ext.create({
+							xtype: 'somulticalendar',
+							border: true,
+							startDay: me.getOption('startDay'),
+							highlightMode: me.getOption('view'),
+							width: 184,
+							height: 298,
+							store: {
+								model: 'Sonicle.webtop.calendar.model.MultiCalDate',
+								proxy: WT.proxy(me.ID, 'GetEventDates', 'dates')
+							},
+							listeners: {
+								change: function(s, nv) {
+									me.getMainComponent().setStartDate(nv);
+								}
+							}
+						}))
+					]
+				},
+				me.addRef('treecal', Ext.create({
+					region: 'center',
+					xtype: 'treepanel',
+					useArrows: true,
+					rootVisible: false,
+					store: {
+						autoLoad: true,
+						autoSync: true,
+						model: 'Sonicle.webtop.calendar.model.TreeCal',
+						proxy: WT.apiProxy(me.ID, 'ManageCalendarsTree', 'children', {
+							writer: {
+								allowSingle: false // Make update/delete using array payload
+							}
+						}),
+						root: {
+							id: 'root',
+							expanded: true
+						},
+						listeners: {
+							datachanged: function() {
+								console.log('datachanged');
+							},
+							update: function() {
+								console.log('update');
+							}
+						}
+					},
+					hideHeaders: true,
+					/*
+					columns: [{
+						xtype: 'treecolumn',
+						flex: 1,
+						dataIndex: 'text',
+						renderer: function(val, meta, rec, ri, ci, sto, view) {
+							Ext.defer(function() {
+								if(rec.get('leaf')) {
+									var node = view.getNode(rec);
+									if(node) Ext.get(node).down('.x-tree-icon').setStyle('background-color', rec.get('calColor'));
+								}
+							}, 100);
+							return val;
+						}
+					}],
+					*/
+					listeners: {
+						checkchange: function(n, ck) {
+							if(n.get('nodeType') === 'group') {
+								
+							} else {
+								me._showHideCal(n, ck);
+							}
+						},
+						itemcontextmenu: function(vw, rec, itm, i, e) {
+							// TODO: disabilitare azioni se readonly
+							if(rec.get('nodeType') === 'group') {
+								me._showCxm(me.getRef('cxmCalGroup'), e);
+							} else {
+								me.getAction('deleteCalendar').setDisabled(rec.get('builtIn'));
+								me._showCxm(me.getRef('cxmCal'), e);
+							}
+						}
+					}
+				}))
 			]
-		});
-		this.setMainComponent(Ext.create({
-			//xtype: 'panel'
+		}));
+		
+		me.setMainComponent(Ext.create({
 			xtype: 'calendarpanel',
-			showDayView: true,
-			showWeekView: true,
-			showWeek5View: true,
-			showMonthView: true,
 			activeView: me.getOption('view'),
 			startDay: me.getOption('startDay'),
 			use24HourTime: true,
+			viewCfg: {
+				todayText: me.res('socal.today'),
+				moreText: me.res('socal.more'),
+				ddCreateEventText: me.res('socal.ddcreateevent'),
+				ddCopyEventText: me.res('socal.ddcopyevent'),
+				ddMoveEventText: me.res('socal.ddmoveevent'),
+				ddResizeEventText: me.res('socal.ddresizeevent'),
+				ddDateFormat: 'j/m',
+				scrollStartHour: 7
+			},
 			monthViewCfg: {
 				showHeader: true,
 				showWeekLinks: true,
@@ -240,10 +254,241 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}),
 			eventStore: Ext.create('Sonicle.calendar.data.MemoryEventStore', {
 				data: Sonicle.calendar.data.Events.getData()
-			}),
-			listeners: {
-				
-			}
+			})
 		}));
+	},
+	
+	_showCxm: function(menu, evt) {
+		evt.preventDefault();
+		menu.showAt(evt.getXY());
+	},
+	
+	initActions: function() {
+		var me = this,
+				view = me.getOption('view');
+		
+		me.addAction('today', {
+			handler: function() {
+				me.moveDate(0);
+			}
+		});
+		me.addAction('previousday', {
+			text: null,
+			handler: function() {
+				me.moveDate(-1);
+			}
+		});
+		me.addAction('nextday', {
+			text: null,
+			handler: function() {
+				me.moveDate(1);
+			}
+		});
+		me.addAction('dayview', {
+			itemId: 'd',
+			pressed: view === 'd'
+		});
+		me.addAction('week5view', {
+			itemId: 'w5',
+			pressed: view === 'w5'
+		});
+		me.addAction('weekview', {
+			itemId: 'w',
+			pressed: view === 'w'
+		});
+		me.addAction('weekagview', {
+			itemId: 'wa',
+			pressed: view === 'wa'
+		});
+		me.addAction('monthview', {
+			itemId: 'm',
+			pressed: view === 'm'
+		});
+		me.addAction('addCalendar', {
+			handler: function() {
+				var sel = me.getRef('treecal').getSelection()[0],
+						type = sel.get('nodeType'),
+						node = (type === 'group') ? sel : sel.parentNode;
+				me.addCalendar(node);
+			}
+		});
+		me.addAction('editCalendar', {
+			handler: function() {
+				var sel = me.getRef('treecal').getSelection()[0];
+				me.editCalendar(sel);
+			}
+		});
+		me.addAction('deleteCalendar', {
+			handler: function() {
+				var sel = me.getRef('treecal').getSelection()[0];
+				me.deleteCalendar(sel);
+			}
+		});
+		me.addAction('importEvents', {
+			handler: function() {
+				// TODO: implement this function
+				WT.warn('To be implemented!');
+			}
+		});
+		me.addAction('viewAllCalendars', {
+			iconCls: 'wt-icon-select-all-xs',
+			handler: function() {
+				var sel = me.getRef('treecal').getSelection()[0];
+				me._showHideAllCals(sel.parentNode, true);
+			}
+		});
+		me.addAction('viewNoneCalendars', {
+			iconCls: 'wt-icon-select-none-xs',
+			handler: function() {
+				var sel = me.getRef('treecal').getSelection()[0];
+				me._showHideAllCals(sel.parentNode, false);
+			}
+		});
+		me.addAction('viewAllCalGroups', {
+			iconCls: 'wt-icon-select-all-xs',
+			handler: function() {
+				var sel = me.getRef('treecal').getSelection()[0];
+				me._showHideAllCalGroups(sel, true);
+			}
+		});
+		me.addAction('viewNoneCalGroups', {
+			iconCls: 'wt-icon-select-none-xs',
+			handler: function() {
+				var sel = me.getRef('treecal').getSelection()[0];
+				me._showHideAllCalGroups(sel, false);
+			}
+		});
+	},
+	
+	initCxm: function() {
+		var me = this;
+		
+		me.addRef('cxmCalGroup', Ext.create({
+			xtype: 'menu',
+			items: [
+				me.getAction('addCalendar'),
+				'-',
+				me.getAction('viewAllCalGroups'),
+				me.getAction('viewNoneCalGroups')
+			]
+		}));
+		
+		me.addRef('cxmCal', Ext.create({
+			xtype: 'menu',
+			items: [
+				me.getAction('editCalendar'),
+				me.getAction('deleteCalendar'),
+				'-',
+				me.getAction('addCalendar'),
+				me.getAction('importEvents'),
+				'-',
+				me.getAction('viewAllCalendars'),
+				me.getAction('viewNoneCalendars')
+			]
+		}));
+	},
+	
+	changeView: function(view) {
+		var me = this;
+		me.getRef('multical').setHighlightMode(view);
+		me.getMainComponent().setActiveView(view);
+	},
+	
+	moveDate: function(direction) {
+		var mc = this.getRef('multical');
+		if(direction === 0) {
+			mc.setToday();
+		} else if(direction === -1) {
+			mc.setPreviousDay();
+		} else if(direction === 1) {
+			mc.setNextDay();
+		}
+	},
+	
+	_showHideCal: function(node, show) {
+		node.beginEdit();
+		node.set('showEvents', show);
+		node.endEdit();
+	},
+	
+	_showHideAllCalGroups: function(parent, show) {
+		
+	},
+	
+	_showHideAllCals: function(parent, show) {
+		var me = this,
+				store = parent.getTreeStore();
+		
+		store.suspendAutoSync();
+		parent.cascadeBy(function(n) {
+			if(n !== parent) {
+				n.set('checked', show);
+				me._showHideCal(n, show);
+			}
+		});
+		store.resumeAutoSync();
+		store.sync();
+	},
+	
+	addCalendar: function(rec) {
+		var me = this,
+				wnd = this.buildCalendarWnd();
+		
+		wnd.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		wnd.show(false, function() {
+			wnd.getComponent(0).beginNew({
+				domainId: rec.get('domainId'),
+				userId: rec.get('userId')
+			});
+		});
+	},
+	
+	editCalendar: function(rec) {
+		var me = this,
+				wnd = this.buildCalendarWnd();
+		
+		wnd.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		wnd.show(false, function() {
+			wnd.getComponent(0).beginEdit({
+				calendarId: rec.getId()
+			});
+		});
+	},
+	
+	deleteCalendar: function(rec) {
+		WT.confirm(this.res('calendar.confirm.delete', rec.get('text')), function(bid) {
+			if(bid === 'yes') rec.drop();
+		}, this);
+	},
+	
+	onCalendarViewSave: function(s, success, model) {
+		if(!success) return;
+		var me = this,
+				nodeId = me._buildGroupNodeId(model),
+				store = me.getRef('treecal').getStore(),
+				node;
+		
+		// Look for group node and reload it!
+		node = store.getNodeById(nodeId);
+		if(node) store.load({node: node});
+	},
+	
+	buildCalendarWnd: function() {
+		var wnd = Ext.create({
+			xtype: 'window',
+			layout: 'fit',
+			width: 360,
+			height: 400,
+			items: [
+				Ext.create('Sonicle.webtop.calendar.view.Calendar', {
+					mys: this
+				})
+			]
+		});
+		return wnd;
+	},
+	
+	_buildGroupNodeId: function(rec) {
+		return rec.get('userId')+'@'+rec.get('domainId');
 	}
 });

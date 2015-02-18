@@ -35,8 +35,10 @@ Ext.define('Sonicle.webtop.calendar.model.TreeCal', {
 	extend: 'Ext.data.Model',
 	
 	fields: [
-		//{name: 'checked', type: 'auto', defaultValue: null, persist: true, convert: null}, // Override
-		{name: 'calShowEvents', type: 'boolean', persist: true},
-		{name: 'calColor', type: 'string', persist: true}
+		'domainId',
+		'userId',
+		{name: 'builtIn', type: 'boolean', persist: false},
+		{name: 'showEvents', type: 'boolean', persist: true}, // Same as checked
+		{name: 'color', type: 'string', persist: true}
 	]
 });

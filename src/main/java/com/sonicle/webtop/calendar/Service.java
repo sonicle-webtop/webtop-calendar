@@ -35,13 +35,15 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.web.Crud;
-import com.sonicle.commons.web.JsPayload;
-import com.sonicle.commons.web.JsPayloadFields;
+import com.sonicle.commons.web.json.JsListPayload;
+import com.sonicle.commons.web.json.JsPayload;
+import com.sonicle.commons.web.json.JsPayloadRecord;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCal;
+import com.sonicle.webtop.calendar.bol.js.JsTreeCals;
 import com.sonicle.webtop.calendar.dal.CalendarsDAO;
 import static com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS;
 import com.sonicle.webtop.core.bol.js.JsSimple;
@@ -52,11 +54,14 @@ import com.sonicle.webtop.core.sdk.UserProfile;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.StringUtils;
 import org.jooq.Field;
 import org.slf4j.Logger;
 
@@ -108,7 +113,21 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				String node = ServletUtils.getStringParameter(request, "node", true);
 				if(node.equals("root")) {
-					child = new ExtTreeNode(up.getId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), false);
+					// My Calendars
+					child = createCalendarGroupNode(up.getStringId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), false, up.getDomainId(), up.getUserId());
+					children.add(child.setExpanded(true).setChecked(true));
+					
+					// Incoming shared calendars
+					//TODO: aggiungere i calendari condivisi (rimuovere quelli fake)
+					child = createCalendarGroupNode("raffaele.fullone@sonicleldap", "Raffaele Fullone", true, "sonicleldap", "raffaele.fullone");
+					children.add(child.setChecked(false));
+					child = createCalendarGroupNode("gabriele.bulfon@sonicleldap", "Gabriele Bulfon", true, "sonicleldap", "gabriele.bulfon");
+					children.add(child.setChecked(false));
+					child = createCalendarGroupNode("sergio.decillis@sonicleldap", "Sergio De Cillis", true, "sonicleldap", "sergio.decillis");
+					children.add(child.setChecked(false));
+					
+					/*
+					child = new ExtTreeNode(up.getStringId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), false);
 					children.add(child.setExpanded(true).setChecked(true));
 					//TODO: aggiungere i calendari condivisi (rimuovere quelli fake)
 					child = new ExtTreeNode("raffaele.fullone@sonicleldap", "Raffaele Fullone", true);
@@ -117,24 +136,36 @@ public class Service extends BaseService {
 					children.add(child.setChecked(true));
 					child = new ExtTreeNode("sergio.decillis@sonicleldap", "Sergio De Cillis", true);
 					children.add(child.setChecked(true));
+					*/
 
 				} else {
-					CalendarsDAO cdao = CalendarsDAO.getInstance();
-					OCalendar defcal = cdao.selectDefaultByDomainUser(con, up.getDomainId(), up.getUserId());
-					if(defcal == null) {
-						//TODO: aggiungere il calendario di default se non presente
-					}
-					List<OCalendar> cals = cdao.selectNoDefaultByDomainUser(con, up.getDomainId(), up.getUserId());
+					UserProfile.Id upId = new UserProfile.Id(node);
+					CalendarManager calm = CalendarManager.getInstance();
+					List<OCalendar> cals = calm.getPersonalCalendars(con, upId);
 					
-					children.add(createCalendarNode(defcal));
-					for(OCalendar cal : cals) {
-						children.add(createCalendarNode(cal));
-					}
-					
+					for(OCalendar cal : cals) children.add(createCalendarNode(cal));
 				}
 				new JsonResult("children", children).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
+				JsListPayload<JsTreeCals> pl = ServletUtils.getPayloadAsList(request, JsTreeCals.class);
+				CalendarsDAO cdao = CalendarsDAO.getInstance();
+				
+				JsPayloadRecord record = null;
+				JsTreeCal data = null;
+				FieldsMap fmap = null;
+				for(int i=0; i<pl.records.size(); i++) {
+					record = pl.records.get(i);
+					data = pl.data.get(i);
+					fmap = new FieldsMap();
+					if(record.containsKey("calColor")) fmap.put(CALENDARS.COLOR, data.calColor);
+					if(record.containsKey("calShowEvents")) fmap.put(CALENDARS.SHOW_EVENTS, data.calShowEvents);
+					
+					cdao.update(con, data.id, fmap);
+				}
+				new JsonResult().printTo(out);
+				
+				/*
 				JsPayload<JsTreeCal> pl = ServletUtils.getPayload2(request, JsTreeCal.class);
 				
 				FieldsMap fmap = new FieldsMap();
@@ -143,8 +174,24 @@ public class Service extends BaseService {
 				
 				CalendarsDAO cdao = CalendarsDAO.getInstance();
 				cdao.update(con, pl.data.id, fmap);
-				
 				new JsonResult().printTo(out);
+				*/
+				
+			} else if(crud.equals(Crud.DELETE)) {
+				JsListPayload<JsTreeCals> pl = ServletUtils.getPayloadAsList(request, JsTreeCals.class);
+				
+				CalendarsDAO cdao = CalendarsDAO.getInstance();
+				for(JsTreeCal data : pl.data) {
+					cdao.delete(con, data.id);
+				}
+				new JsonResult().printTo(out);
+				
+				/*
+				JsPayload<JsTreeCal> pl = ServletUtils.getPayload2(request, JsTreeCal.class);
+				CalendarsDAO cdao = CalendarsDAO.getInstance();
+				cdao.delete(con, pl.data.id);
+				new JsonResult().printTo(out);
+				*/
 			}
 			
 		} catch(Exception ex) {
@@ -155,11 +202,105 @@ public class Service extends BaseService {
 		}
 	}
 	
+	public void processManageCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		Connection con = null;
+		OCalendar item = null;
+		
+		try {
+			UserProfile up = env.getProfile();
+			con = getConnection();
+			
+			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			if(crud.equals(Crud.READ)) {
+				Integer id = ServletUtils.getIntParameter(request, "id", true);
+				
+				CalendarsDAO cdao = CalendarsDAO.getInstance();
+				item = cdao.select(con, id);
+				new JsonResult(item).printTo(out);
+				
+			} else if(crud.equals(Crud.CREATE)) {
+				JsPayload<OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				
+				CalendarsDAO cdao = CalendarsDAO.getInstance();
+				pl.data.setCalendarId(cdao.getSequence(con).intValue());
+				//pl.data.setDomainId(up.getDomainId());
+				//pl.data.setUserId(up.getUserId());
+				pl.data.setBuiltIn(false);
+				pl.data.setShowEvents(true);
+				cdao.insert(con, pl.data);
+				new JsonResult().printTo(out);
+				
+			} else if(crud.equals(Crud.UPDATE)) {
+				JsPayload<OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				
+				CalendarsDAO cdao = CalendarsDAO.getInstance();
+				cdao.update(con, pl.data);
+				new JsonResult().printTo(out);
+				
+			} else if(crud.equals(Crud.DELETE)) {
+				JsPayload<OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				
+				CalendarsDAO cdao = CalendarsDAO.getInstance();
+				cdao.delete(con, pl.data.getCalendarId());
+				new JsonResult().printTo(out);
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageCalendars", ex);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public void processGetEventDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		ArrayList<HashMap<String, Object>> items = new ArrayList<>();
+		HashMap<String, Object> item = null;
+		
+		Calendar cal = Calendar.getInstance();
+		
+		item = new HashMap<>();
+		cal.set(2015, 1, 3);
+		item.put("date", cal.getTime());
+		items.add(item);
+		item = new HashMap<>();
+		cal.set(2015, 1, 4);
+		item.put("date", cal.getTime());
+		items.add(item);
+		item = new HashMap<>();
+		cal.set(2015, 1, 5);
+		item.put("date", cal.getTime());
+		items.add(item);
+		item = new HashMap<>();
+		cal.set(2015, 1, 6);
+		item.put("date", cal.getTime());
+		items.add(item);
+		item = new HashMap<>();
+		cal.set(2015, 1, 7);
+		item.put("date", cal.getTime());
+		items.add(item);
+		
+		new JsonResult("dates", items).printTo(out);
+	}
+	
+	private ExtTreeNode createCalendarGroupNode(String id, String text, boolean leaf, String domainId, String userId) {
+		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
+		node.put("nodeType", "group");
+		node.put("domainId", domainId);
+		node.put("userId", userId);
+		return node;
+	}
+	
 	private ExtTreeNode createCalendarNode(OCalendar cal) {
-		ExtTreeNode node = new ExtTreeNode(String.valueOf(cal.getCalendarId()), cal.getName(), true, "wtcal-icon-cal-color");
+		ExtTreeNode node = new ExtTreeNode(cal.getCalendarId(), cal.getName(), true);
+		node.put("nodeType", "calendar");
+		node.put("domainId", cal.getDomainId());
+		node.put("userId", cal.getUserId());
+		node.setIconClass("wt-palette-" + cal.getHexColor());
 		node.setChecked(cal.getShowEvents());
-		node.put("calColor", cal.getColor());
-		node.put("calShowEvents", cal.getShowEvents());
+		node.put("builtIn", cal.getBuiltIn());
+		node.put("color", cal.getColor());
+		node.put("showEvents", cal.getShowEvents());
 		return node;
 	}
     
@@ -199,9 +340,9 @@ public class Service extends BaseService {
                     defaultCalendar.setUserId(userId);
                     CalendarsDAO.getInstance().insertPersonalCalendar(con, defaultCalendar);
                 }
-                List<OCalendar> calendars = new ArrayList<OCalendar>();
+                List<OCalendar> calendars = new ArrayList<>();
                 calendars.add(defaultCalendar);
-                calendars.addAll(CalendarsDAO.getInstance().selectNoDefaultByDomainUser(con, domainId, userId));
+                calendars.addAll(CalendarsDAO.getInstance().selectNoBuiltInByDomainUser(con, domainId, userId));
                 //String raw = JsonResult.gson.toJson(calendars);
                 new JsonResult(calendars).printTo(out);
             }catch(Exception ex){
@@ -217,19 +358,20 @@ public class Service extends BaseService {
             String domainId=this.env.getProfile().getDomainId();
             Connection con=null;
             try{
-                OCalendar newCalendar = ServletUtils.getPayload(request,OCalendar.class);
+				JsPayload<OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				
                 con=this.getConnection();
-                if (newCalendar.getCalendarId()==null || newCalendar.getCalendarId()==0){
+                if (pl.data.getCalendarId()==null || pl.data.getCalendarId()==0){
                     int calendar_id=CalendarsDAO.getInstance().getSequence(con).intValue();
-                    newCalendar.setCalendarId(calendar_id);
-                    newCalendar.setDomainId(domainId);
-                    newCalendar.setUserId(this.env.getProfile().getUserId());   //TODO: far passare dal client
-                    if (newCalendar.getDefault()) CalendarsDAO.getInstance().resetPersonalDefaultCalendar(con, domainId, newCalendar.getUserId());
-                    CalendarsDAO.getInstance().insertPersonalCalendar(con, newCalendar);
+                    pl.data.setCalendarId(calendar_id);
+                    pl.data.setDomainId(domainId);
+                    pl.data.setUserId(this.env.getProfile().getUserId());   //TODO: far passare dal client
+                    if (pl.data.getIsDefault()) CalendarsDAO.getInstance().resetPersonalDefaultCalendar(con, domainId, pl.data.getUserId());
+                    CalendarsDAO.getInstance().insertPersonalCalendar(con, pl.data);
                 }else{
-                    newCalendar.setDomainId(domainId);
-                    if (newCalendar.getDefault()) CalendarsDAO.getInstance().resetPersonalDefaultCalendar(con, domainId, newCalendar.getUserId());
-                    CalendarsDAO.getInstance().updatePersonalCalendar(con, newCalendar.getCalendarId(),newCalendar);
+                    pl.data.setDomainId(domainId);
+                    if (pl.data.getIsDefault()) CalendarsDAO.getInstance().resetPersonalDefaultCalendar(con, domainId, pl.data.getUserId());
+                    CalendarsDAO.getInstance().updatePersonalCalendar(con, pl.data.getCalendarId(),pl.data);
                     //TODO: Aggiornare calendari degli eventi
                 }
                 new JsonResult().printTo(out);

@@ -656,7 +656,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			width: 360,
 			height: 400,
 			items: [
-				Ext.create('Sonicle.webtop.calendar.view.Calendar', Ext.apply(cfg || {}, {
+				Ext.create('Sonicle.webtop.calendar.view.NewCalendar', Ext.apply(cfg || {}, {
 					mys: this
 				}))
 			]

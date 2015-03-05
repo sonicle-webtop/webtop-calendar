@@ -13,10 +13,14 @@
 .wtcal-icon-weekagview { background-image: url('week_16.png') !important; }
 .wtcal-icon-monthview { background-image: url('month_16.png') !important; }
 .wtcal-icon-calendar { background-image: url('calendar_16.png') !important; }
+.wtcal-icon-event { background-image: url('calendar_16.png') !important; }
+.wtcal-icon-now { background-image: url('now_16.png') !important; }
+
 .wtcal-icon-addCalendar { background-image: url('calendar-add_16.png') !important; }
 .wtcal-icon-editCalendar { background-image: url('calendar-edit_16.png') !important; }
 .wtcal-icon-deleteCalendar { background-image: url('calendar-delete_16.png') !important; }
 .wtcal-icon-importEvents { background-image: url('calendar-import_16.png') !important; }
+.wtcal-icon-addEvent { background-image: url('event-add_16.png') !important; }
 
 .wtcal-icon-cal-color {
 	width: 15px;

@@ -31,30 +31,54 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.Calendar', {
+Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WT.model.Base',
-	proxy: WT.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
+	proxy: WT.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents'),
 	
-	idProperty: 'calendarId',
+	idProperty: 'eventId',
 	fields: [
+		{name: 'eventId', type: 'int'},
 		{name: 'calendarId', type: 'int'},
-		'domainId',
-		'userId',
-		'name',
-		'description',
+		'title',
+		'location',
+		{name: 'fromDate', type: 'date', dateFormat: 'Y-m-d'},
+		{name: 'fromTime', type: 'date', dateFormat: 'H:i'},
+		{name: 'toDate', type: 'date', dateFormat: 'Y-m-d'},
+		{name: 'toTime', type: 'date', dateFormat: 'H:i'},
+		{name: 'timezone', type: 'string'},
+		{name: 'allDay', type: 'boolean'}
+		/*
 		{name: 'builtIn', type: 'boolean'},
 		{name: 'color', type: 'string', defaultValue: '#FFFFFF'},
-		{name: 'colorCls', type: 'string', persist: false, 
-			depends: 'color', 
-			convert: function(v, rec) {
-				return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
-			}
-		},
 		{name: 'isDefault', type: 'boolean'},
 		{name: 'isPrivate', type: 'boolean'},
 		{name: 'busy', type: 'boolean'},
 		{name: 'reminder', type: 'int', defaultValue: 0},
 		{name: 'invitation', type: 'boolean'},
 		{name: 'sync', type: 'boolean'}
-	]
+		*/
+	],
+	
+	setFrom: function(date) {
+		var me = this,
+				parts = Sonicle.webtop.calendar.model.Event.getDateParts(date);
+		me.set('fromDate', parts.date);
+		me.set('fromTime', parts.time);
+	},
+	
+	setTo: function(date) {
+		var me = this,
+				parts = Sonicle.webtop.calendar.model.Event.getDateParts(date);
+		me.set('toDate', parts.date);
+		me.set('toTime', parts.time);
+	},
+	
+	statics: {
+		getDateParts: function(date) {
+			return {
+				date: Ext.Date.format(date, 'Y-m-d'),
+				time: Ext.Date.format(date, 'H:i')
+			};
+		}
+	}
 });

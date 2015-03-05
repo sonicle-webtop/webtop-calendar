@@ -33,33 +33,65 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
-import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
+import com.sonicle.webtop.calendar.bol.OEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
+import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
-import static com.sonicle.webtop.core.jooq.Tables.USERS;
 import java.sql.Connection;
 import java.util.List;
 import org.jooq.DSLContext;
 
-
 /**
  *
- * @author sergio
+ * @author malbinola
  */
-public class EventsDAO extends BaseDAO{
-    
-    private final static EventsDAO INSTANCE = new EventsDAO();
-	public static EventsDAO getInstance() {
+public class EventDAO extends BaseDAO {
+	
+	private final static EventDAO INSTANCE = new EventDAO();
+
+	public static EventDAO getInstance() {
 		return INSTANCE;
 	}
 	
-        public Long getSequence(Connection con) throws DAOException {
+	public Long getSequence(Connection con) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		Long nextID =  dsl.nextval(SEQ_EVENTS);
-                return nextID;
+		Long nextID = dsl.nextval(SEQ_EVENTS);
+		return nextID;
 	}
-        
-        
-        
+	
+	public OEvent select(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(EVENTS)
+			.where(
+					EVENTS.EVENT_ID.equal(eventId)
+			)
+			.fetchOneInto(OEvent.class);
+	}
+	
+	public List<OEvent> selectByCalendarFromTo(Connection con, Integer calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(EVENTS)
+				.where(
+						EVENTS.CALENDAR_ID.equal(calendarId)
+				)
+				.orderBy(
+						EVENTS.FROM_DATE
+				)
+				.fetchInto(OEvent.class);
+	}
+	
+	public int insert(Connection con, OEvent item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		EventsRecord record = dsl.newRecord(EVENTS, item);
+		return dsl
+			.insertInto(EVENTS)
+			.set(record)
+			.execute();
+	}
 }

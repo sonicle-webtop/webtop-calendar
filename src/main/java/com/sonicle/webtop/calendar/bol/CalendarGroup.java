@@ -1,8 +1,3 @@
-package com.sonicle.webtop.calendar.bol;
-
-import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
-
-
 /*
  * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
@@ -36,13 +31,24 @@ import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+package com.sonicle.webtop.calendar.bol;
+
 /**
  *
- * @author sergio
+ * @author malbinola
  */
-
-
-
-public class OEvents extends Events {
-    
+public abstract class CalendarGroup {
+	
+	protected final String id;
+	
+	public CalendarGroup(String id) {
+		this.id = id;
+	}
+	
+	public String getId() {
+		return id;
+	}
+	
+	abstract public String getDomainId();
+	abstract public String getUserId();
 }

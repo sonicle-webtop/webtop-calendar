@@ -31,19 +31,11 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol.js;
-
-/**
- *
- * @author malbinola
- */
-public class JsTreeCal {
+Ext.define('Sonicle.webtop.calendar.model.ClientOptions', {
+	extend: 'WT.sdk.model.ClientOptions',
 	
-	public Integer id;
-	public String calColor;
-	public Boolean calShowEvents;
-	
-	public JsTreeCal() {
-		
-	}
-}
+	fields: [
+		'view',
+		{name: 'startDay', type: 'int'}
+	]
+});

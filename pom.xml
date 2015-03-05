@@ -24,15 +24,25 @@
 			<version>1.7.6</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jooq</groupId>
+			<artifactId>jooq</artifactId>
+			<version>3.4.2</version>
+		</dependency>
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>2.7</version>
+		</dependency>
 	 <dependency>
-	  <groupId>javax.servlet</groupId>
-	  <artifactId>javax.servlet-api</artifactId>
-	  <version>3.1.0</version>
-	 </dependency>
-	 <dependency>
-	  <groupId>org.jooq</groupId>
-	  <artifactId>jooq</artifactId>
-	  <version>3.4.2</version>
+	  <groupId>com.sonicle.commons</groupId>
+	  <artifactId>sonicle-commons</artifactId>
+	  <version>1.0</version>
 	 </dependency>
 	</dependencies>
 	<build>
@@ -45,7 +55,7 @@
 			</resource>
 		</resources>
                 
-                <plugins>
+		<plugins>
 			<plugin>
 				<!-- Specify the maven code generator plugin -->
 				<groupId>org.jooq</groupId>
@@ -77,6 +87,21 @@
 							<includes>.*</includes>
 							<excludes></excludes>
 							<inputSchema>calendar</inputSchema>
+							
+							<customTypes>
+								<customType>
+									<name>JodaDateTime</name>
+									<type>org.joda.time.DateTime</type>
+									<converter>com.sonicle.webtop.core.jooq.DateTimeConverter</converter>
+								</customType>
+							</customTypes>
+							<forcedTypes>
+								<forcedType>
+									<name>JodaDateTime</name>
+									<expressions>.*</expressions>
+									<types>date.*|timestamp.*</types>
+								</forcedType>
+							</forcedTypes>
 						</database>
 						<target>
 							<packageName>com.sonicle.webtop.calendar.jooq</packageName>

@@ -45,13 +45,13 @@ import org.jooq.DSLContext;
 
 /**
  *
- * @author sergio
+ * @author malbinola
  */
-public class CalendarsDAO extends BaseDAO {
+public class CalendarDAO extends BaseDAO {
 
-	private final static CalendarsDAO INSTANCE = new CalendarsDAO();
+	private final static CalendarDAO INSTANCE = new CalendarDAO();
 
-	public static CalendarsDAO getInstance() {
+	public static CalendarDAO getInstance() {
 		return INSTANCE;
 	}
 
@@ -70,6 +70,39 @@ public class CalendarsDAO extends BaseDAO {
 					CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
 			.fetchOneInto(OCalendar.class);
+	}
+	
+	public List<OCalendar> selectByDomainUser(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(CALENDARS)
+				.where(
+						CALENDARS.DOMAIN_ID.equal(domainId)
+						.and(CALENDARS.USER_ID.equal(userId))
+				)
+				.orderBy(
+						CALENDARS.BUILT_IN.desc(),
+						CALENDARS.NAME.asc()
+				)
+				.fetchInto(OCalendar.class);
+	}
+	
+	public List<OCalendar> selectVisibleByDomainUser(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(CALENDARS)
+				.where(
+						CALENDARS.DOMAIN_ID.equal(domainId)
+						.and(CALENDARS.USER_ID.equal(userId))
+						.and(CALENDARS.VISIBLE.equal(true))
+				)
+				.orderBy(
+						CALENDARS.BUILT_IN.desc(),
+						CALENDARS.NAME.asc()
+				)
+				.fetchInto(OCalendar.class);
 	}
 	
 	public OCalendar selectBuiltInByDomainUser(Connection con, String domainId, String userId) throws DAOException {
@@ -211,10 +244,10 @@ public class CalendarsDAO extends BaseDAO {
 				.execute();
 	}
 
-	public int checkPersonalCalendar(Connection con, Integer calendarId, boolean showEvents) {
+	public int checkPersonalCalendar(Connection con, Integer calendarId, boolean calVisible) {
 		DSLContext dsl = getDSL(con);
 		return dsl.update(CALENDARS)
-			.set(CALENDARS.SHOW_EVENTS, showEvents)
+			.set(CALENDARS.VISIBLE, calVisible)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
@@ -236,7 +269,7 @@ public class CalendarsDAO extends BaseDAO {
 	public int viewOnlyPersonalCalendar(Connection con, Integer calendarId) {
 		DSLContext dsl = getDSL(con);
 		return dsl.update(CALENDARS)
-			.set(CALENDARS.SHOW_EVENTS, true)
+			.set(CALENDARS.VISIBLE, true)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
@@ -246,11 +279,11 @@ public class CalendarsDAO extends BaseDAO {
 	public int viewNothingPersonalCalendar(Connection con, String domainId, String userId) {
 		DSLContext dsl = getDSL(con);
 		return dsl.update(CALENDARS)
-			.set(CALENDARS.SHOW_EVENTS, false)
+			.set(CALENDARS.VISIBLE, false)
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
 				.and(CALENDARS.USER_ID.equal(userId))
-				.and(CALENDARS.SHOW_EVENTS.equal(true))
+				.and(CALENDARS.VISIBLE.equal(true))
 			)
 			.execute();
 	}

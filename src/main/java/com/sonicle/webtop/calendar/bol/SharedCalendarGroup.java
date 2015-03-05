@@ -1,8 +1,3 @@
-package com.sonicle.webtop.calendar.bol;
-
-import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
-
-
 /*
  * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
@@ -36,13 +31,37 @@ import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.core.bol.OUser;
+import com.sonicle.webtop.core.sdk.UserProfile;
+
 /**
  *
- * @author sergio
+ * @author malbinola
  */
+public class SharedCalendarGroup extends CalendarGroup {
+	
+	private final UserProfile.Id profileId;
+	private final String displayName;
+	
+	public SharedCalendarGroup(OUser user) {
+		super(new UserProfile.Id(user.getDomainId(), user.getUserId()).toString());
+		profileId = new UserProfile.Id(user.getDomainId(), user.getUserId());
+		displayName = user.getDisplayName();
+	}
 
+	@Override
+	public String getDomainId() {
+		return profileId.getDomainId();
+	}
 
-
-public class ORecurrences extends Recurrences {
-    
+	@Override
+	public String getUserId() {
+		return profileId.getUserId();
+	}
+	
+	public String getDisplayName() {
+		return displayName;
+	}
 }

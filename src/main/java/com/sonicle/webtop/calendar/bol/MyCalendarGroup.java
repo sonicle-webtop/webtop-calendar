@@ -31,11 +31,30 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.ServiceOptions', {
-	extend: 'WT.sdk.model.ServiceOptions',
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.core.sdk.UserProfile;
+
+/**
+ *
+ * @author malbinola
+ */
+public class MyCalendarGroup extends CalendarGroup {
 	
-	fields: [
-		'view',
-		{name: 'startDay', type: 'int'}
-	]
-});
+	private final UserProfile.Id profileId;
+	
+	public MyCalendarGroup(UserProfile.Id profileId) {
+		super(profileId.toString());
+		this.profileId = profileId;
+	}
+	
+	@Override
+	public String getDomainId() {
+		return profileId.getDomainId();
+	}
+
+	@Override
+	public String getUserId() {
+		return profileId.getUserId();
+	}
+}

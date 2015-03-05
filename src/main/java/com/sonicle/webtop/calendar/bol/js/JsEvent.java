@@ -31,30 +31,47 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.Calendar', {
-	extend: 'WT.model.Base',
-	proxy: WT.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
+package com.sonicle.webtop.calendar.bol.js;
+
+import com.sonicle.webtop.calendar.bol.OEvent;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
+
+/**
+ *
+ * @author malbinola
+ */
+public class JsEvent {
 	
-	idProperty: 'calendarId',
-	fields: [
-		{name: 'calendarId', type: 'int'},
-		'domainId',
-		'userId',
-		'name',
-		'description',
-		{name: 'builtIn', type: 'boolean'},
-		{name: 'color', type: 'string', defaultValue: '#FFFFFF'},
-		{name: 'colorCls', type: 'string', persist: false, 
-			depends: 'color', 
-			convert: function(v, rec) {
-				return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
-			}
-		},
-		{name: 'isDefault', type: 'boolean'},
-		{name: 'isPrivate', type: 'boolean'},
-		{name: 'busy', type: 'boolean'},
-		{name: 'reminder', type: 'int', defaultValue: 0},
-		{name: 'invitation', type: 'boolean'},
-		{name: 'sync', type: 'boolean'}
-	]
-});
+	public Integer eventId;
+	public Integer calendarId;
+	public String title;
+	public String fromDate;
+	public String fromTime;
+	public String toDate;
+	public String toTime;
+	public String timezone;
+	public Boolean allDay;
+	public String location;
+	
+	public JsEvent(OEvent event, TimeZone tz) {
+		eventId = event.getEventId();
+		calendarId = event.getCalendarId();
+		title = event.getTitle();
+		
+		SimpleDateFormat dateSdf = new SimpleDateFormat("yyyy-MM-dd");
+		dateSdf.setTimeZone(tz);
+		
+		fromDate = dateSdf.format(event.getFromDate());
+		toDate = dateSdf.format(event.getToDate());
+		
+		SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm");
+		timeSdf.setTimeZone(tz);
+		fromTime = timeSdf.format(event.getFromDate());
+		toTime = timeSdf.format(event.getToDate());
+		
+		timezone = event.getTimezone();
+		allDay = event.getAllDay();
+		location = event.getLocation();
+	}
+}

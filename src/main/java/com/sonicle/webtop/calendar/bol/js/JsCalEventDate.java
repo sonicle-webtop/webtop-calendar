@@ -31,29 +31,17 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.Calendar', {
-	extend: 'WT.model.Base',
-	proxy: WT.Util.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
+package com.sonicle.webtop.calendar.bol.js;
+
+/**
+ *
+ * @author malbinola
+ */
+public class JsCalEventDate {
 	
-	idProperty: 'calendarId',
-	fields: [
-		WT.Util.field('calendarId', 'int', false),
-		WT.Util.field('domainId', 'string', false),
-		WT.Util.field('userId', 'string', false),
-		WT.Util.field('name', 'string', false),
-		WT.Util.field('description', 'string', true),
-		WT.Util.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
-		{name: 'colorCls', type: 'string', persist: false, 
-			depends: 'color', 
-			convert: function(v, rec) {
-				return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
-			}
-		},
-		WT.Util.field('isDefault', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('busy', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('reminder', 'int', false, {defaultValue: 0}),
-		WT.Util.field('invitation', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('sync', 'boolean', false, {defaultValue: false})
-	]
-});
+	public String date;
+	
+	public JsCalEventDate(String date) {
+		this.date = date;
+	}
+}

@@ -31,65 +31,20 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.view.Event', {
-	extend: 'WT.sdk.ModelView',
+Ext.define('Sonicle.webtop.calendar.view.OldEvent', {
+	extend: 'WT.sdk.FormView',
 	requires: [
 		'Sonicle.form.field.Palette',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.IconComboBox',
 		'WT.store.Timezone',
-		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.Calendar',
+		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.store.Reminder'
 	],
 	
 	title: '@event.tit',
 	iconCls: 'wtcal-icon-event',
-	model: 'Sonicle.webtop.calendar.model.Event',
-	viewModel: {
-		formulas: {
-			fromDate: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('fromDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setDate(this.get('record'), 'fromDate', value);
-				}
-			},
-			fromTime: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('fromDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setTime(this.get('record'), 'fromDate', value);
-				}
-			},
-			toDate: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('toDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setDate(this.get('record'), 'toDate', value);
-				}
-			},
-			toTime: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('toDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setTime(this.get('record'), 'toDate', value);
-				}
-			}
-		}
-	},
 	
 	initComponent: function() {
 		var me = this;
@@ -97,22 +52,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		me.add(me.addRef('form', Ext.create({
 			region: 'center',
-			xtype: 'form',
-			modelValidation: true,
+			xtype: 'soform',
 			bodyPadding: 10,
+			model: 'Sonicle.webtop.calendar.model.Event',
 			defaults: {
 				labelWidth: 60
 			},
 			items: [{
+				xtype: 'hiddenfield',
+				name: 'eventId'
+			}, {
 				xtype: 'textfield',
 				name: 'title',
-				bind: '{record.title}',
+				allowBlank: false,
 				fieldLabel: me.mys.res('event.fld-title.lbl'),
 				anchor: '100%'
 			}, {
 				xtype: 'textfield',
 				name: 'location',
-				bind: '{record.location}',
 				fieldLabel: me.mys.res('event.fld-location.lbl'),
 				anchor: '100%'
 			}, {
@@ -128,13 +85,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				items: [{
 					xtype: 'datefield',
 					name: 'fromDate',
-					bind: '{fromDate}',
+					allowBlank: false,
 					margin: '0 5 0 0',
 					width: 105
 				}, {
 					xtype: 'timefield',
 					name: 'fromTime',
-					bind: '{fromTime}',
+					allowBlank: false,
 					format: WT.getTimeFmt(),
 					margin: '0 5 0 0',
 					width: 80
@@ -143,13 +100,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					iconCls: 'wtcal-icon-now',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					handler: function() {
-						var EM = Sonicle.webtop.calendar.model.Event;
-						EM.setTime(me.getModel(), 'fromDate', new Date());
+						me.getFormCmp().setFieldValue('fromTime', new Date());
 					}
 				}, {
 					xtype: 'checkbox',
 					name: 'allDay',
-					bind: '{record.allDay}',
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
 					boxLabel: me.mys.res('event.fld-allDay.lbl')
@@ -164,13 +119,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				items: [{
 					xtype: 'datefield',
 					name: 'toDate',
-					bind: '{toDate}',
+					allowBlank: false,
 					margin: '0 5 0 0',
 					width: 105
 				}, {
 					xtype: 'timefield',
 					name: 'toTime',
-					bind: '{toTime}',
+					allowBlank: false,
 					format: WT.getTimeFmt(),
 					margin: '0 5 0 0',
 					width: 80
@@ -179,13 +134,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					iconCls: 'wtcal-icon-now',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					handler: function() {
-						var EM = Sonicle.webtop.calendar.model.Event;
-						EM.setTime(me.getModel(), 'toDate', new Date());
+						me.getFormCmp().setFieldValue('toTime', new Date());
 					}
 				}, {
 					xtype: 'combo',
 					name: 'timezone',
-					bind: '{record.timezone}',
+					allowBlank: false,
 					typeAhead: true,
 					queryMode: 'local',
 					forceSelection: true,
@@ -203,7 +157,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			}, {
 				xtype: 'soiconcombo',
 				name: 'calendarId',
-				bind: '{record.calendarId}',
+				allowBlank: false,
 				typeAhead: true,
 				queryMode: 'local',
 				forceSelection: true,
@@ -221,7 +175,84 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				displayField: 'name',
 				iconClsField: 'colorCls',
 				width: 200
-			}]
+			}
+			
+			/*
+			, {
+				xtype: 'textareafield',
+				name: 'location',
+				fieldLabel: me.mys.res('calendar.fld-description.lbl'),
+				anchor: '100%'
+			}, {
+				xtype: 'sopalettefield',
+				name: 'color',
+				allowBlank: false,
+				colors: WT.getColorPalette(),
+				fieldLabel: me.mys.res('calendar.fld-color.lbl'),
+				width: 200
+			}, {
+				xtype: 'checkbox',
+				name: 'isDefault',
+				hideEmptyLabel: false,
+				boxLabel: me.mys.res('calendar.fld-default.lbl')
+			}, {
+				xtype: 'soradiogroup',
+				name: 'isPrivate',
+				layout: 'hbox',
+				defaults: {
+					margin: '0 20 0 0'
+				},
+				fieldLabel: me.mys.res('calendar.fld-visibility.lbl'),
+				items: [{
+					name: 'visibility',
+					submitValue: false,
+					inputValue: false,
+					boxLabel: me.mys.res('calendar.fld-visibility.default')
+				}, {
+					name: 'visibility',
+					submitValue: false,
+					inputValue: true,
+					boxLabel: me.mys.res('calendar.fld-visibility.private')
+				}]
+			}, {
+				xtype: 'soradiogroup',
+				name: 'busy',
+				layout: 'hbox',
+				defaults: {
+					margin: '0 20 0 0'
+				},
+				fieldLabel: me.mys.res('calendar.fld-showme.lbl'),
+				items: [{
+					name: 'showme',
+					submitValue: false,
+					inputValue: false,
+					boxLabel: me.mys.res('calendar.fld-showme.available')
+				}, {
+					name: 'showme',
+					submitValue: false,
+					inputValue: true,
+					boxLabel: me.mys.res('calendar.fld-showme.busy')
+				}]
+			}, {
+				xtype: 'combo',
+				name: 'reminder',
+				allowBlank: false,
+				editable: false,
+				store: Ext.create('Sonicle.webtop.calendar.store.Reminder'),
+				valueField: 'id',
+				displayField: 'desc',
+				fieldLabel: me.mys.res('calendar.fld-reminder.lbl')
+			}, {
+				xtype: 'checkbox',
+				name: 'invitation',
+				hideEmptyLabel: false,
+				boxLabel: me.mys.res('calendar.fld-invitation.lbl')
+			}, {
+				xtype: 'checkbox',
+				name: 'sync',
+				hideEmptyLabel: false,
+				boxLabel: me.mys.res('calendar.fld-sync.lbl')
+			}*/]
 		})));
 		me.on('viewload', me.onViewLoad);
 	},
@@ -231,9 +262,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this,
 				form = me.getRef('form');
 		
-		// Overrides autogenerated string id by extjs...
-		// It avoids type conversion problems server-side!
-		if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
-		WT.Util.focusField(form, 'title');
+		form.getField('title').focus();
 	}
 });

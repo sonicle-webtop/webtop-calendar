@@ -36,6 +36,7 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import java.util.TimeZone;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -44,44 +45,71 @@ import org.joda.time.format.DateTimeFormatter;
  *
  * @author malbinola
  */
-public class JsCalEvent {
+public class JsSchedulerEvent {
 	
-	public Integer id;
-	public Integer cid;
+	public Integer eventId;
+	public Integer calendarId;
 	public String title;
-	public String start;
-	public String end;
-	public String tz;
+	public String startDate;
+	public String endDate;
+	public String timezone;
 	public String color;
-	public String loc;
+	public String location;
 	public String notes;
 	public String url;
-	public Boolean ad;
-	public Boolean pvt;
-	public String rem;
+	public Boolean isAllDay;
+	public Boolean isPrivate;
+	public String reminder;
 	
-	public JsCalEvent(OEvent event, OCalendar calendar, TimeZone userTz) {
-		id = event.getEventId();
-		cid = event.getCalendarId();
+	public JsSchedulerEvent() {
+		
+	}
+	
+	public JsSchedulerEvent(OEvent event, OCalendar calendar, TimeZone userTz) {
+		eventId = event.getEventId();
+		calendarId = event.getCalendarId();
 		
 		// TRANSPOSE DATETIMES IN THE RIGHT TIMEZONE
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
 		// Formatter will be instantiated specifying desired timezone.
-		DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
-		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(utz);
-		start = dtf.print(event.getFromDate());
-		end = dtf.print(event.getToDate());
-		tz = (userTz.getID().equals(event.getTimezone())) ? null : event.getTimezone();
+		startDate = toYmdHmsWithZone(event.getFromDate(), userTz);
+		endDate = toYmdHmsWithZone(event.getToDate(), userTz);
+		timezone = (userTz.getID().equals(event.getTimezone())) ? null : event.getTimezone();
 		
 		title = event.getTitle();
 		color = calendar.getColor();
-		loc = event.getLocation();
+		location = event.getLocation();
 		notes = "";
 		url = "";
-		ad = event.getAllDay();
-		pvt = true;
+		isAllDay = event.getAllDay();
+		isPrivate = true;
 	}
+	
+	public static String toYmdHmsWithZone(DateTime dt, TimeZone tz) {
+		return toYmdHmsWithZone(dt, DateTimeZone.forTimeZone(tz));
+	}
+	
+	public static String toYmdHmsWithZone(DateTime dt, DateTimeZone tz) {
+		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
+		return dtf.print(dt);
+	}
+	
+	public static String toYmdWithZone(DateTime dt, TimeZone tz) {
+		return toYmdWithZone(dt, DateTimeZone.forTimeZone(tz));
+	}
+	
+	public static String toYmdWithZone(DateTime dt, DateTimeZone tz) {
+		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd").withZone(tz);
+		return dtf.print(dt);
+	}
+	
+	
+	
+	
+	
+	
+	
 	
 	/*
 	private void jdkTime(OEvent event, OCalendar calendar, TimeZone userTz) {

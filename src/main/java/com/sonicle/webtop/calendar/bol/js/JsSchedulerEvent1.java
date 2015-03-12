@@ -33,15 +33,26 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
-import java.util.ArrayList;
+import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.calendar.bol.OEvent;
+import java.util.TimeZone;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 /**
  *
  * @author malbinola
  */
-public class JsTreeCalendars extends ArrayList<JsTreeCalendar> {
+public class JsSchedulerEvent1 {
 	
-	public JsTreeCalendars() {
-		super();
+	public Integer eventId;
+	public String startDate;
+	public String endDate;
+	public String timezone;
+	
+	public JsSchedulerEvent1() {
+		
 	}
 }

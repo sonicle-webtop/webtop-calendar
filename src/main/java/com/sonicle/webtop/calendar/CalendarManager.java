@@ -33,22 +33,31 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.db.DbUtils;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
-import com.sonicle.webtop.calendar.bol.js.JsCalEvent;
+import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
+import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
+import com.sonicle.webtop.core.dal.ShareDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
+import com.sonicle.webtop.core.sdk.BaseService;
+import com.sonicle.webtop.core.sdk.ManagerEnvironment;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TimeZone;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
 
 /**
  *
@@ -56,10 +65,13 @@ import java.util.TimeZone;
  */
 public class CalendarManager {
 	
-	private final static CalendarManager INSTANCE = new CalendarManager();
-
-	public static CalendarManager getInstance() {
-		return INSTANCE;
+	public static final Logger logger = BaseService.getLogger(CalendarManager.class);
+	private final static String SERVICE_ID = "com.sonicle.webtop.calendar";
+	private final static String RESOURCE_CALENDARS = "CALENDARS";
+	private final ManagerEnvironment env;
+	
+	public CalendarManager(ManagerEnvironment env) {
+		this.env = env;
 	}
 	
 	public LinkedHashMap<String, CalendarGroup> getCalendarGroups(Connection con, UserProfile.Id profileId) {
@@ -71,56 +83,93 @@ public class CalendarManager {
 		myGroup = new MyCalendarGroup(profileId);
 		groups.put(myGroup.getId(), myGroup);
 		
-		// TODO: recuperare realmente i calendari condivisi
-		String[] ids = new String[]{"gabriele.bulfon@sonicleldap", "raffaele.fullone@sonicleldap", "sergio.decillis@sonicleldap"};
-		
-		UserDAO udao = UserDAO.getInstance();
-		OUser user = null;
-		UserProfile.Id inProfileId = null;
-		for(String id : ids) {
-			inProfileId = new UserProfile.Id(id);
-			user = udao.selectByDomainUser(con, inProfileId.getDomainId(), inProfileId.getUserId());
-			if(user != null) {
-				sharedGroup = new SharedCalendarGroup(user);
-				groups.put(sharedGroup.getId(), sharedGroup);
+		// Reads incoming shares as calendar groups
+		Connection ccon = null;
+		try {
+			ccon = env.getCoreConnection();
+			ShareDAO sdao = ShareDAO.getInstance();
+			List<OShare> shares = sdao.selectIncomingByServiceDomainUserResource(ccon, SERVICE_ID, profileId.getDomainId(), profileId.getUserId(), RESOURCE_CALENDARS);
+			
+			UserDAO udao = UserDAO.getInstance();
+			OUser user = null;
+			UserProfile.Id inProfileId = null;
+			for(OShare share : shares) {
+				inProfileId = new UserProfile.Id(share.getDomainId(), share.getUserId());
+				user = udao.selectByDomainUser(con, inProfileId.getDomainId(), inProfileId.getUserId());
+				if(user != null) {
+					sharedGroup = new SharedCalendarGroup(user);
+					groups.put(sharedGroup.getId(), sharedGroup);
+				}
 			}
+			
+		} catch(SQLException ex) {
+			logger.error("Unable to get incoming shares", ex);
+		} finally {
+			DbUtils.closeQuietly(ccon);
 		}
 		
 		return groups;
 	}
 	
 	public List<OCalendar> getCalendars(Connection con, UserProfile.Id user) {
-		//ArrayList<OCalendar> cals = new ArrayList();
 		CalendarDAO cdao = CalendarDAO.getInstance();
-		
 		return cdao.selectByDomainUser(con, user.getDomainId(), user.getUserId());
-		/*
-		OCalendar bical = cdao.selectBuiltInByDomainUser(con, user.getDomainId(), user.getUserId());
-		if(bical == null) {
-			//TODO: aggiungere il calendario built-in se non presente
-		}
-		
-		cals.add(bical);
-		cals.addAll(cdao.selectNoBuiltInByDomainUser(con, user.getDomainId(), user.getUserId()));
-		return cals;
-		*/
 	}
 	
-	public List<JsCalEvent> getEvents(Connection con, CalendarGroup group, String from, String to, TimeZone userTz) {
-		ArrayList<JsCalEvent> events = new ArrayList<>();
+	
+	
+	public List<OEvent> getEventsDates2(Connection con, CalendarGroup group, DateTime fromDate, DateTime toDate) {
+		ArrayList<OEvent> grpEvts = new ArrayList<>();
 		CalendarDAO cdao = CalendarDAO.getInstance();
 		EventDAO edao = EventDAO.getInstance();
 		
 		List<OCalendar> cals = cdao.selectVisibleByDomainUser(con, group.getDomainId(), group.getUserId());
 		List<OEvent> evts = null;
 		for(OCalendar cal : cals) {
-			evts = edao.selectByCalendarFromTo(con, cal.getCalendarId());
+			evts = edao.selectDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
+			
+			
+			grpEvts.addAll(evts);
+		}
+		return grpEvts;
+	}
+	
+	public List<DateTime> getEventsDates(Connection con, CalendarGroup group, DateTime fromDate, DateTime toDate) {
+		HashSet<DateTime> dates = new HashSet<>();
+		CalendarDAO cdao = CalendarDAO.getInstance();
+		EventDAO edao = EventDAO.getInstance();
+		
+		List<OCalendar> cals = cdao.selectVisibleByDomainUser(con, group.getDomainId(), group.getUserId());
+		List<OEvent> evts = null;
+		DateTime date = null;
+		DateTime to = null;
+		for(OCalendar cal : cals) {
+			evts = edao.selectDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
 			for(OEvent evt : evts) {
-				events.add(new JsCalEvent(evt, cal, userTz));
+				date = evt.getFromDate().withTimeAtStartOfDay();
+				to = evt.getToDate().withTimeAtStartOfDay();
+				while(date.compareTo(to) <= 0) {
+					dates.add(date);
+					date = date.plusDays(1);
+				}
 			}
 		}
 		
-		return events;
+		return new ArrayList<>(dates);
+	}
+	
+	public List<GroupEvents> getEvents(Connection con, CalendarGroup group, DateTime fromDate, DateTime toDate) {
+		ArrayList<GroupEvents> grpEvts = new ArrayList<>();
+		CalendarDAO cdao = CalendarDAO.getInstance();
+		EventDAO edao = EventDAO.getInstance();
+		
+		List<OCalendar> cals = cdao.selectVisibleByDomainUser(con, group.getDomainId(), group.getUserId());
+		List<OEvent> evts = null;
+		for(OCalendar cal : cals) {
+			evts = edao.selectByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
+			grpEvts.add(new GroupEvents(cal, evts));
+		}
+		return grpEvts;
 		
 		/*
 		MyCalendarGroup myGroup = null;
@@ -135,5 +184,15 @@ public class CalendarManager {
 
 		}
 		*/
+	}
+	
+	public static class GroupEvents {
+		public final OCalendar calendar;
+		public final List<OEvent> events;
+		
+		public GroupEvents(OCalendar calendar, List<OEvent> events) {
+			this.calendar = calendar;
+			this.events = events;
+		}
 	}
 }

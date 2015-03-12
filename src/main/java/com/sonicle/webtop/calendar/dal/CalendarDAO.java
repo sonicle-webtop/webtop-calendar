@@ -172,6 +172,17 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
+	public int updateVisible(Connection con, Integer calendarId, boolean value) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(CALENDARS)
+			.set(CALENDARS.VISIBLE, value)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
+			.execute();
+	}
+	
 	public int delete(Connection con, Integer calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl

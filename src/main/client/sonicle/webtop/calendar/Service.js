@@ -170,7 +170,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							height: 298,
 							store: {
 								model: 'Sonicle.webtop.calendar.model.MultiCalDate',
-								proxy: WT.proxy(me.ID, 'GetEventDates', 'dates')
+								proxy: WT.Util.proxy(me.ID, 'GetEventDates', 'dates')
 							},
 							listeners: {
 								change: function(s, nv) {
@@ -190,7 +190,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						autoLoad: true,
 						autoSync: true,
 						model: 'Sonicle.webtop.calendar.model.TreeCal',
-						proxy: WT.apiProxy(me.ID, 'ManageCalendarsTree', 'children', {
+						proxy: WT.Util.apiProxy(me.ID, 'ManageCalendarsTree', 'children', {
 							writer: {
 								allowSingle: false // Make update/delete using array payload
 							}
@@ -200,11 +200,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							expanded: true
 						},
 						listeners: {
-							datachanged: function() {
-								console.log('datachanged');
-							},
-							update: function() {
-								console.log('update');
+							write: function(s,op) {
+								me.refreshEvents();
 							}
 						}
 					},
@@ -274,19 +271,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			calendarStore: Ext.create('Sonicle.calendar.data.MemoryCalendarStore', {
 				data: Sonicle.calendar.data.Calendars.getData()
 			}),
-			
-			
 			store: {
+				autoSync: true,
 				model: 'Sonicle.calendar.data.EventModel',
-				proxy: WT.apiProxy(me.ID, 'ManageEventsScheduler', 'events')
+				proxy: WT.Util.apiProxy(me.ID, 'ManageEventsScheduler', 'events')
 			}
-			
-			/*
-			store: Ext.create('Sonicle.calendar.data.MemoryEventStore', {
-				data: Sonicle.calendar.data.Events.getData()
-			})
-			*/
 		}));
+	},
+	
+	refreshEvents: function() {
+		var me = this;
+		me.getRef('multical').getStore().load();
+		me.getMainComponent().getStore().load();
 	},
 	
 	_showCxm: function(menu, evt) {
@@ -380,32 +376,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		*/
 		me.addAction('addCalendar', {
 			handler: function() {
-				/*
-				var sel = me.getRef('treecal').getSelection()[0],
-						type = sel.get('nodeType'),
-						node = (type === 'group') ? sel : sel.parentNode;
-				me.addCalendar(node);
-				*/
 				var group = me.getSelectedCalGroupNode();
-				me.addCalendar(group.get('domainId'), group.get('userId'));
+				me.addCalendar(group.get('_domainId'), group.get('_userId'));
 			}
 		});
 		me.addAction('editCalendar', {
 			handler: function() {
-				/*
-				var sel = me.getRef('treecal').getSelection()[0];
-				me.editCalendar(sel);
-				*/
 				var cal = me._getSelectedCalNode();
 				me.editCalendar(cal.getId());
 			}
 		});
 		me.addAction('deleteCalendar', {
 			handler: function() {
-				/*
-				var sel = me.getRef('treecal').getSelection()[0];
-				me.deleteCalendar(sel);
-				*/
 				var cal = me._getSelectedCalNode();
 				me.deleteCalendar(cal);
 			}
@@ -419,40 +401,24 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('viewAllCalendars', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				/*
-				var sel = me.getRef('treecal').getSelection()[0];
-				me._showHideAllCals(sel.parentNode, true);
-				*/
 				me._showHideAllCals(me.getSelectedCalGroupNode(), true);
 			}
 		});
 		me.addAction('viewNoneCalendars', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				/*
-				var sel = me.getRef('treecal').getSelection()[0];
-				me._showHideAllCals(sel.parentNode, false);
-				*/
 				me._showHideAllCals(me.getSelectedCalGroupNode(), false);
 			}
 		});
 		me.addAction('viewAllCalGroups', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				/*
-				var sel = me.getRef('treecal').getSelection()[0];
-				me._showHideAllCalGroups(sel, true);
-				*/
 				me._showHideAllCalGroups(me.getSelectedCalGroupNode(), true);
 			}
 		});
 		me.addAction('viewNoneCalGroups', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				/*
-				var sel = me.getRef('treecal').getSelection()[0];
-				me._showHideAllCalGroups(sel, false);
-				*/
 				me._showHideAllCalGroups(me.getSelectedCalGroupNode(), false);
 			}
 		});
@@ -523,7 +489,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	_showHideCal: function(node, show) {
 		node.beginEdit();
-		node.set('showEvents', show);
+		node.set('_visible', show);
 		node.endEdit();
 	},
 	
@@ -602,10 +568,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			wnd.getComponent(0).beginNew({
 				data: {
 					calendarId: calendarId,
-					fromDate: fromp.date,
-					fromTime: fromp.time,
-					toDate: top.date,
-					toTime: top.time,
+					//fromDate: fromp.date,
+					//fromTime: fromp.time,
+					//toDate: top.date,
+					//toTime: top.time,
+					fromDate: from,
+					toDate: to,
 					timezone: WT.getOption('timezone')
 				}
 			});
@@ -650,44 +618,33 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	_buildCalendarWnd: function(cfg) {
-		var wnd = Ext.create({
-			xtype: 'window',
-			layout: 'fit',
-			width: 360,
-			height: 400,
-			items: [
-				Ext.create('Sonicle.webtop.calendar.view.NewCalendar', Ext.apply(cfg || {}, {
-					mys: this
-				}))
-			]
+		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.NewCalendar', {
+			containerCfg: {
+				width: 360,
+				height: 400
+			},
+			viewCfg: cfg
 		});
-		return wnd;
 	},
 	
 	_buildEventWnd: function(cfg) {
-		var wnd = Ext.create({
-			xtype: 'window',
-			layout: 'fit',
-			width: 650,
-			//height: 215,
-			height: 300,
-			items: [
-				Ext.create('Sonicle.webtop.calendar.view.Event', Ext.apply(cfg || {}, {
-					mys: this
-				}))
-			]
+		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.Event', {
+			containerCfg: {
+				width: 650,
+				height: 300
+			},
+			viewCfg: cfg
 		});
-		return wnd;
 	},
 	
 	_buildGroupNodeId: function(rec) {
-		return rec.get('userId')+'@'+rec.get('domainId');
+		return rec.get('_userId')+'@'+rec.get('_domainId');
 	},
 	
 	_getSelectedCalNode: function() {
 		var sel = this.getRef('treecal').getSelection();
 		if(sel.length === 0) return null;
-		return (sel[0].get('nodeType') === 'group') ? null : sel[0];
+		return (sel[0].get('_nodeType') === 'group') ? null : sel[0];
 	},
 	
 	getSelectedCalGroupId: function(def) {
@@ -700,6 +657,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	getSelectedCalGroupNode: function() {
 		var sel = this.getRef('treecal').getSelection();
 		if(sel.length === 0) return null;
-		return (sel[0].get('nodeType') === 'group') ? sel[0] : sel[0].parentNode;
+		return (sel[0].get('_nodeType') === 'group') ? sel[0] : sel[0].parentNode;
 	}
 });

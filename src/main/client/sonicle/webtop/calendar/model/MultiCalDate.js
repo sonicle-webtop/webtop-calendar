@@ -35,6 +35,7 @@ Ext.define('Sonicle.webtop.calendar.model.MultiCalDate', {
 	extend: 'Ext.data.Model',
 	
 	fields: [
-		{name: 'date', type: 'date', dateFormat: 'c'}
+		//{name: 'date', type: 'date', dateFormat: 'c'}
+		'date'
 	]
 });

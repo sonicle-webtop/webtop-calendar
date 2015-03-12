@@ -34,7 +34,9 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
+import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent1;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -42,6 +44,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.jooq.tools.StringUtils;
 
 /**
  *
@@ -53,20 +56,23 @@ public class OEvent extends Events {
 		super();
 	}
 	
-	public OEvent(JsEvent js) {
+	public OEvent(JsEvent js, String workdayStart, String workdayEnd) {
 		super();
 		setEventId(js.eventId);
 		setCalendarId(js.calendarId);
 		
-		// JOIN TIMES AND TRANSPOSE THEM IN THE RIGHT TIMEZONE
+		// Adjust times
+		if(js.allDay) {
+			js.fromTime = MessageFormat.format("{0}:00", workdayStart);
+			js.toTime = MessageFormat.format("{0}:00", workdayEnd);
+		}
+		
 		// Incoming fields are in precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use. Then DateTime
 		// objects are automatically translated to UTC
 		DateTimeZone etz = DateTimeZone.forID(js.timezone);
-		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").withZone(etz);
-		
-		
-		initWithJoda(js);
+		setFromDate(parseYmdHmsWithZone(js.fromDate, etz));
+		setToDate(parseYmdHmsWithZone(js.toDate, etz));
 		
 		setTitle(js.title);
 		setAllDay(js.allDay);
@@ -74,6 +80,43 @@ public class OEvent extends Events {
 		setLocation(js.location);
 	}
 	
+	public void updateDates(String fromDate, String toDate, TimeZone userTz) {
+		DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
+		DateTimeZone etz = DateTimeZone.forID(getTimezone());
+		setFromDate(parseYmdHmsWithZone(fromDate, utz).toDateTime(etz));
+		setToDate(parseYmdHmsWithZone(toDate, utz).toDateTime(etz));
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String date, String time, TimeZone tz) {
+		return parseYmdHmsWithZone(date, time, DateTimeZone.forTimeZone(tz));
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
+		return parseYmdHmsWithZone(date + " " + time, tz);
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String dateTime, DateTimeZone tz) {
+		String dt = StringUtils.replace(dateTime, "T", " ");
+		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
+		return formatter.parseDateTime(dt);
+	}
+	
+	public static DateTime parseYmdHmWithZone(String date, String time, DateTimeZone tz) {
+		return parseYmdHmsWithZone(date, time + ":00", tz);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/*
 	private void initWithJoda(JsEvent js) {
 		DateTimeZone utc = DateTimeZone.UTC;
 		DateTimeZone etz = DateTimeZone.forID(js.timezone);
@@ -107,4 +150,5 @@ public class OEvent extends Events {
 			throw new RuntimeException(ex);
 		}	
 	}
+	*/
 }

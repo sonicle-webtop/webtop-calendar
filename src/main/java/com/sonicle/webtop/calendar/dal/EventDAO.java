@@ -41,6 +41,7 @@ import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import java.util.List;
+import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 
 /**
@@ -72,13 +73,41 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public List<OEvent> selectByCalendarFromTo(Connection con, Integer calendarId) throws DAOException {
+	public List<OEvent> selectDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select(
+						EVENTS.FROM_DATE,
+						EVENTS.TO_DATE,
+						EVENTS.TIMEZONE
+				)
+				.from(EVENTS)
+				.where(
+						EVENTS.CALENDAR_ID.equal(calendarId)
+						.and(
+							EVENTS.FROM_DATE.between(fromDate, toDate) // Events that start in current range
+							.or(EVENTS.TO_DATE.between(fromDate, toDate)) // Events that end in current range
+							.or(EVENTS.FROM_DATE.lessThan(fromDate).and(EVENTS.TO_DATE.greaterThan(toDate))) // Events that start before and end after
+						)
+				)
+				.orderBy(
+						EVENTS.FROM_DATE
+				)
+				.fetchInto(OEvent.class);
+	}
+	
+	public List<OEvent> selectByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.select()
 				.from(EVENTS)
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)
+						.and(
+							EVENTS.FROM_DATE.between(fromDate, toDate) // Events that start in current range
+							.or(EVENTS.TO_DATE.between(fromDate, toDate)) // Events that end in current range
+							.or(EVENTS.FROM_DATE.lessThan(fromDate).and(EVENTS.TO_DATE.greaterThan(toDate))) // Events that start before and end after
+						)
 				)
 				.orderBy(
 						EVENTS.FROM_DATE
@@ -92,6 +121,24 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.insertInto(EVENTS)
 			.set(record)
+			.execute();
+	}
+	
+	public int update(Connection con, OEvent item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
+			.set(EVENTS.FROM_DATE, item.getFromDate())
+			.set(EVENTS.TO_DATE, item.getToDate())
+			.set(EVENTS.TIMEZONE, item.getTimezone())
+			.set(EVENTS.ALL_DAY, item.getAllDay())
+			.set(EVENTS.TITLE, item.getTitle())
+			.set(EVENTS.LOCATION, item.getLocation())
+			.set(EVENTS.DESCRIPTION, item.getDescription())
+			.where(
+				EVENTS.EVENT_ID.equal(item.getEventId())
+			)
 			.execute();
 	}
 }

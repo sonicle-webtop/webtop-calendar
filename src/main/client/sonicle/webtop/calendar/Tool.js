@@ -75,7 +75,7 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 					height: 298,
 					store: {
 						model: 'Sonicle.webtop.calendar.model.MultiCalDate',
-						proxy: WT.proxy(me.mys.ID, 'GetEventDates', 'dates')
+						proxy: WT.Util.proxy(me.mys.ID, 'GetEventDates', 'dates')
 					}
 				}))
 			]
@@ -90,7 +90,7 @@ Ext.define('Sonicle.webtop.calendar.Tool', {
 				autoLoad: true,
 				autoSync: true,
 				model: 'Sonicle.webtop.calendar.model.TreeCal',
-				proxy: WT.apiProxy(me.mys.ID, 'ManageCalendarsTree', 'children', {}, {writeAllFields: false}),
+				proxy: WT.Util.apiProxy(me.mys.ID, 'ManageCalendarsTree', 'children', {}, {writeAllFields: false}),
 				root: {
 					id: 'root',
 					expanded: true

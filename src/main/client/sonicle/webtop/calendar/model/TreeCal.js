@@ -35,10 +35,10 @@ Ext.define('Sonicle.webtop.calendar.model.TreeCal', {
 	extend: 'Ext.data.Model',
 	
 	fields: [
-		'domainId',
-		'userId',
-		{name: 'builtIn', type: 'boolean', persist: false},
-		{name: 'showEvents', type: 'boolean', persist: true}, // Same as checked
-		{name: 'color', type: 'string', persist: true}
+		'_domainId',
+		'_userId',
+		{name: '_builtIn', type: 'boolean', persist: false},
+		{name: '_visible', type: 'boolean', persist: true}, // Same as checked
+		{name: '_color', type: 'string', persist: false}
 	]
 });

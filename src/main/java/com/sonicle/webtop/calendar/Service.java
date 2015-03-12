@@ -46,10 +46,12 @@ import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
-import com.sonicle.webtop.calendar.bol.js.JsCalEvent;
+import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
+import com.sonicle.webtop.calendar.bol.js.JsCalEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
+import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent1;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar;
-import com.sonicle.webtop.calendar.bol.js.JsTreeCalendars;
+import com.sonicle.webtop.calendar.bol.js.JsTreeCalendarList;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import static com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS;
@@ -65,12 +67,16 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.jooq.Field;
 import org.slf4j.Logger;
 
@@ -83,26 +89,36 @@ public class Service extends BaseService {
 	public static final Logger logger = BaseService.getLogger(Service.class);
 
 	private BasicEnvironment env = null;
+	private CalendarManager manager;
 	private CalendarUserSettings cus;
+	
 	
 	public final String DEFAULT_PERSONAL_CALENDAR_COLOR = "#FFFFFF";
 	
-	private LinkedHashMap<String, CalendarGroup> calendarGroups;
+	private final LinkedHashMap<String, CalendarGroup> calendarGroups = new LinkedHashMap<>();
 
 	@Override
 	public void initialize() {
 		env = getEnv();
 		UserProfile profile = env.getProfile();
+		manager = new CalendarManager(getManagerEnv());
 		cus = new CalendarUserSettings(profile.getDomainId(), profile.getUserId(), getId());
 		
+		// Loads available groups
+		initCalendarGroups();
+	}
+	
+	private void initCalendarGroups() {
 		Connection con = null;
+		
 		try {
 			con = getConnection();
-			CalendarManager manager = CalendarManager.getInstance();
-			
-			// Loads available groups
-			calendarGroups = manager.getCalendarGroups(con, profile.getId());
-			
+			UserProfile.Id pid = env.getProfile().getId();
+			synchronized(calendarGroups) {
+				calendarGroups.clear();
+				calendarGroups.putAll(manager.getCalendarGroups(con, pid));
+			}	
+
 		} catch(SQLException ex) {
 			//TODO: gestire errore
 		} finally {
@@ -157,20 +173,25 @@ public class Service extends BaseService {
 
 				} else {
 					UserProfile.Id upId = new UserProfile.Id(node);
-					CalendarManager calm = CalendarManager.getInstance();
-					List<OCalendar> cals = calm.getCalendars(con, upId);
+					List<OCalendar> cals = manager.getCalendars(con, upId);
 					
 					for(OCalendar cal : cals) children.add(createCalendarNode(cal));
 				}
 				new JsonResult("children", children).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				JsListPayload<JsTreeCalendars> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendars.class);
+				JsListPayload<JsTreeCalendarList> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarList.class);
 				CalendarDAO cdao = CalendarDAO.getInstance();
 				
 				JsPayloadRecord record = null;
 				JsTreeCalendar data = null;
 				FieldsMap fmap = null;
+				
+				for(JsTreeCalendar cal : pl.data) {
+					cdao.updateVisible(con, cal.id, cal._visible);
+				}
+				
+				/*
 				for(int i=0; i<pl.records.size(); i++) {
 					record = pl.records.get(i);
 					data = pl.data.get(i);
@@ -180,6 +201,8 @@ public class Service extends BaseService {
 					
 					cdao.update(con, data.id, fmap);
 				}
+				*/
+				
 				new JsonResult().printTo(out);
 				
 				/*
@@ -195,7 +218,7 @@ public class Service extends BaseService {
 				*/
 				
 			} else if(crud.equals(Crud.DELETE)) {
-				JsListPayload<JsTreeCalendars> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendars.class);
+				JsListPayload<JsTreeCalendarList> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarList.class);
 				
 				CalendarDAO cdao = CalendarDAO.getInstance();
 				for(JsTreeCalendar data : pl.data) {
@@ -265,7 +288,6 @@ public class Service extends BaseService {
 				
 				pl.data.setCalendarId(cdao.getSequence(con).intValue());
 				pl.data.setBuiltIn(false);
-				pl.data.setVisible(true);
 				cdao.insert(con, pl.data);
 				new JsonResult().printTo(out);
 				
@@ -293,94 +315,109 @@ public class Service extends BaseService {
 	}
 	
 	public void processGetEventDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		ArrayList<HashMap<String, Object>> items = new ArrayList<>();
-		HashMap<String, Object> item = null;
+		Connection con = null;
+		ArrayList<JsCalEventDate> items = new ArrayList<>();
+		List<OEvent> grpEvts = null;
 		
-		Calendar cal = Calendar.getInstance();
-		
-		item = new HashMap<>();
-		cal.set(2015, 1, 3);
-		item.put("date", cal.getTime());
-		items.add(item);
-		item = new HashMap<>();
-		cal.set(2015, 1, 4);
-		item.put("date", cal.getTime());
-		items.add(item);
-		item = new HashMap<>();
-		cal.set(2015, 1, 5);
-		item.put("date", cal.getTime());
-		items.add(item);
-		item = new HashMap<>();
-		cal.set(2015, 1, 6);
-		item.put("date", cal.getTime());
-		items.add(item);
-		item = new HashMap<>();
-		cal.set(2015, 1, 7);
-		item.put("date", cal.getTime());
-		items.add(item);
-		
-		new JsonResult("dates", items).printTo(out);
+		try {
+			con = getConnection();
+			UserProfile up = env.getProfile();
+			
+			// Defines boundaries
+			String start = ServletUtils.getStringParameter(request, "startDate", true);
+			String end = ServletUtils.getStringParameter(request, "endDate", true);
+			DateTime fromDate = OEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
+			DateTime toDate = OEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
+
+			//TODO: il client passa una lista di gruppi, controllare se si è abilitati alla visualizzazione
+			String[] groups = new String[]{"matteo.albinola@sonicleldap"};
+			
+			/*
+			CalendarGroup group = null;
+			HashSet<String> dates = new HashSet<>();
+			for(String groupKey : groups) {
+				group = calendarGroups.get(groupKey);
+				grpEvts = manager.getEventsDates2(con, group, fromDate, toDate);
+				for(OEvent evt : grpEvts) {
+					dates.add(JsCalEvent.toYmdWithZone(evt.getFromDate(), up.getTimeZone()));
+				}
+			}
+			
+			Iterator it = dates.iterator();
+			while (it.hasNext()) {
+				items.add(new JsCalEventDate((String)it.next()));
+			}
+			
+			new JsonResult("dates", items).printTo(out);
+			*/
+			
+			CalendarGroup group = null;
+			List<DateTime> dates = null;
+			for(String groupKey : groups) {
+				group = calendarGroups.get(groupKey);
+				dates = manager.getEventsDates(con, group, fromDate, toDate);
+				for(DateTime dt : dates) {
+					items.add(new JsCalEventDate(JsSchedulerEvent.toYmdWithZone(dt, up.getTimeZone())));
+				}
+			}
+			new JsonResult("dates", items).printTo(out);
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageEventsView", ex);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
 	}
 	
 	public void processManageEventsScheduler(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
-		ArrayList<JsCalEvent> items = new ArrayList<>();
+		ArrayList<JsSchedulerEvent> items = new ArrayList<>();
 		
 		try {
 			con = getConnection();
-			CalendarManager manager = CalendarManager.getInstance();
 			UserProfile up = env.getProfile();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
-				//TODO: il client passa una lista di gruppi, controllare se si è abilitati alla visualizzazione
+				String start = ServletUtils.getStringParameter(request, "startDate", true);
+				String end = ServletUtils.getStringParameter(request, "endDate", true);
+				DateTime fromDate = OEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
+				DateTime toDate = OEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 				
+				//TODO: il client passa una lista di gruppi, controllare se si è abilitati alla visualizzazione
 				String[] groups = new String[]{"matteo.albinola@sonicleldap"};
+				
 				CalendarGroup group = null;
-				MyCalendarGroup myGroup = null;
-				SharedCalendarGroup sharedGroup = null;
+				List<CalendarManager.GroupEvents> grpEvts = null;
 				for(String groupKey : groups) {
 					group = calendarGroups.get(groupKey);
-					
-					items.addAll(manager.getEvents(con, group, "", "", up.getTimeZone()));
-					
-					
-					/*
-					if(group instanceof MyCalendarGroup) { // Adds group as My
-							myGroup = (MyCalendarGroup)group;
-							
-					} else if(group instanceof SharedCalendarGroup) { // Adds group as Shared
-						sharedGroup = (SharedCalendarGroup)group;
-
+					grpEvts = manager.getEvents(con, group, fromDate, toDate);
+					for(CalendarManager.GroupEvents ge : grpEvts) {
+						for(OEvent evt : ge.events) {
+							items.add(new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone()));
+						}
 					}
-					*/
 				}
-
-				/*
-				items = edao.selectByCalendar(con, 46);
-				JsCalEvent event = null;
-				ArrayList<JsCalEvent> events = new ArrayList<>();
-				for(OEvent item : items) {
-					event = new JsCalEvent();
-					event.id = String.valueOf(item.getEventId());
-					event.cid = String.valueOf(item.getCalendarId());
-					event.title = item.getTitle();
-					event.start = new Date(item.getFromTime().getTime());
-					event.end = new Date(item.getToTime().getTime());
-					event.loc = item.getLocation();
-					event.notes = "";
-					event.url = "";
-					event.ad = item.getAllDay();
-					event.rem = "";
-					events.add(event);
-				}
-				*/
 				
 				new JsonResult("events", items).printTo(out);
+				
+			} else if(crud.equals(Crud.UPDATE)) {
+				JsPayload<JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
+				
+				EventDAO edao = EventDAO.getInstance();
+				OEvent event = edao.select(con, pl.data.eventId);
+				if(event == null) throw new Exception("Unable to get desired event");
+				
+				event.updateDates(pl.data.startDate, pl.data.endDate, up.getTimeZone());
+				edao.update(con, event);
+				
+				new JsonResult().printTo(out);
 			}
 			
 		} catch(Exception ex) {
 			logger.error("Error executing action ManageEventsView", ex);
+			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {
 			DbUtils.closeQuietly(con);
@@ -408,7 +445,7 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				event = new OEvent(pl.data);
+				event = new OEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				event.setEventId(edao.getSequence(con).intValue());
 				edao.insert(con, event);
 				new JsonResult().printTo(out);
@@ -451,22 +488,22 @@ public class Service extends BaseService {
 	
 	private ExtTreeNode createCalendarGroupNode(String id, String text, boolean leaf, String domainId, String userId) {
 		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
-		node.put("nodeType", "group");
-		node.put("domainId", domainId);
-		node.put("userId", userId);
+		node.put("_nodeType", "group");
+		node.put("_domainId", domainId);
+		node.put("_userId", userId);
 		return node;
 	}
 	
 	private ExtTreeNode createCalendarNode(OCalendar cal) {
 		ExtTreeNode node = new ExtTreeNode(cal.getCalendarId(), cal.getName(), true);
-		node.put("nodeType", "calendar");
-		node.put("domainId", cal.getDomainId());
-		node.put("userId", cal.getUserId());
+		node.put("_nodeType", "calendar");
+		node.put("_domainId", cal.getDomainId());
+		node.put("_userId", cal.getUserId());
 		node.setIconClass("wt-palette-" + cal.getHexColor());
 		node.setChecked(cal.getVisible());
-		node.put("builtIn", cal.getBuiltIn());
-		node.put("color", cal.getColor());
-		node.put("calVisible", cal.getVisible());
+		node.put("_builtIn", cal.getBuiltIn());
+		node.put("_color", cal.getColor());
+		node.put("_visible", cal.getVisible());
 		return node;
 	}
     

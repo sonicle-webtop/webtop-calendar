@@ -40,8 +40,7 @@ package com.sonicle.webtop.calendar.bol.js;
 public class JsTreeCalendar {
 	
 	public Integer id;
-	public String calColor;
-	public Boolean calVisible;
+	public Boolean _visible;
 	
 	public JsTreeCalendar() {
 		

@@ -83,6 +83,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	}
 	
 	public String getWorkdayStart() {
+		//TODO: verificare formattazione
 		return getUserSetting(WORKDAY_START, "09:00");
 	}
 	
@@ -91,6 +92,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	}
 	
 	public String getWorkdayEnd() {
+		//TODO: verificare formattazione
 		return getUserSetting(WORKDAY_END, "18:00");
 	}
 	

@@ -33,31 +33,29 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WT.model.Base',
-	proxy: WT.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents'),
+	proxy: WT.Util.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents'),
 	
 	idProperty: 'eventId',
 	fields: [
-		{name: 'eventId', type: 'int'},
-		{name: 'calendarId', type: 'int'},
-		'title',
-		'location',
-		{name: 'fromDate', type: 'date', dateFormat: 'Y-m-d'},
-		{name: 'fromTime', type: 'date', dateFormat: 'H:i'},
-		{name: 'toDate', type: 'date', dateFormat: 'Y-m-d'},
-		{name: 'toTime', type: 'date', dateFormat: 'H:i'},
-		{name: 'timezone', type: 'string'},
-		{name: 'allDay', type: 'boolean'}
+		WT.Util.field('eventId', 'int', false),
+		WT.Util.field('calendarId', 'int', false),
+		WT.Util.field('fromDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WT.Util.field('toDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		/*
-		{name: 'builtIn', type: 'boolean'},
-		{name: 'color', type: 'string', defaultValue: '#FFFFFF'},
-		{name: 'isDefault', type: 'boolean'},
-		{name: 'isPrivate', type: 'boolean'},
-		{name: 'busy', type: 'boolean'},
-		{name: 'reminder', type: 'int', defaultValue: 0},
-		{name: 'invitation', type: 'boolean'},
-		{name: 'sync', type: 'boolean'}
+		{name: 'fromDate', type: 'date', dateFormat: 'Y-m-d', allowBlank: false},
+		{name: 'fromTime', type: 'date', dateFormat: 'H:i', allowBlank: false},
+		{name: 'toDate', type: 'date', dateFormat: 'Y-m-d', allowBlank: false},
+		{name: 'toTime', type: 'date', dateFormat: 'H:i', allowBlank: false},
 		*/
+		WT.Util.field('timezone', 'string', false),
+		WT.Util.field('title', 'string', false),
+		WT.Util.field('location', 'int', true),
+		WT.Util.field('allDay', 'boolean', false, {defaultValue: false})
 	],
+	
+	
+	
+	
 	
 	setFrom: function(date) {
 		var me = this,
@@ -74,6 +72,23 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	},
 	
 	statics: {
+		setDate: function(model, field, date) {
+			var val = model.get(field);
+			if(!Ext.isDate(date) || !Ext.isDate(val)) return;
+			model.set(field, Sonicle.Date.copyDate(date, val));
+		},
+
+		setTime: function(model, field, date) {
+			var val = model.get(field);
+			if(!Ext.isDate(date) || !Ext.isDate(val)) return;
+			model.set(field, Sonicle.Date.copyTime(date, val));
+		},
+		
+		
+		
+		
+		
+		
 		getDateParts: function(date) {
 			return {
 				date: Ext.Date.format(date, 'Y-m-d'),

@@ -175,7 +175,7 @@ public class Service extends BaseService {
 					UserProfile.Id upId = new UserProfile.Id(node);
 					List<OCalendar> cals = manager.getCalendars(con, upId);
 					
-					for(OCalendar cal : cals) children.add(createCalendarNode(cal));
+					for(OCalendar cal : cals) children.add(createCalendarNode(node, cal));
 				}
 				new JsonResult("children", children).printTo(out);
 				
@@ -288,6 +288,7 @@ public class Service extends BaseService {
 				
 				pl.data.setCalendarId(cdao.getSequence(con).intValue());
 				pl.data.setBuiltIn(false);
+				pl.data.setVisible(true);
 				cdao.insert(con, pl.data);
 				new JsonResult().printTo(out);
 				
@@ -494,9 +495,10 @@ public class Service extends BaseService {
 		return node;
 	}
 	
-	private ExtTreeNode createCalendarNode(OCalendar cal) {
+	private ExtTreeNode createCalendarNode(String groupId, OCalendar cal) {
 		ExtTreeNode node = new ExtTreeNode(cal.getCalendarId(), cal.getName(), true);
 		node.put("_nodeType", "calendar");
+		node.put("_groupId", groupId);
 		node.put("_domainId", cal.getDomainId());
 		node.put("_userId", cal.getUserId());
 		node.setIconClass("wt-palette-" + cal.getHexColor());

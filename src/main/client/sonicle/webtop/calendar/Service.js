@@ -275,6 +275,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				autoSync: true,
 				model: 'Sonicle.calendar.data.EventModel',
 				proxy: WT.Util.apiProxy(me.ID, 'ManageEventsScheduler', 'events')
+			},
+			listeners: {
+				rangeselect: function(s,dates,onComplete) {
+					onComplete();
+					var cal = me._getNearestCal();
+					if(cal) me.addEvent(cal.get('_groupId'), cal.getId(), dates.startDate, dates.endDate);
+				}
 			}
 		}));
 	},
@@ -376,7 +383,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		*/
 		me.addAction('addCalendar', {
 			handler: function() {
-				var group = me.getSelectedCalGroupNode();
+				var group = me._getSelectedCalGroupNode();
 				me.addCalendar(group.get('_domainId'), group.get('_userId'));
 			}
 		});
@@ -401,37 +408,42 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('viewAllCalendars', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				me._showHideAllCals(me.getSelectedCalGroupNode(), true);
+				me._showHideAllCals(me._getSelectedCalGroupNode(), true);
 			}
 		});
 		me.addAction('viewNoneCalendars', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				me._showHideAllCals(me.getSelectedCalGroupNode(), false);
+				me._showHideAllCals(me._getSelectedCalGroupNode(), false);
 			}
 		});
 		me.addAction('viewAllCalGroups', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				me._showHideAllCalGroups(me.getSelectedCalGroupNode(), true);
+				me._showHideAllCalGroups(me._getSelectedCalGroupNode(), true);
 			}
 		});
 		me.addAction('viewNoneCalGroups', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				me._showHideAllCalGroups(me.getSelectedCalGroupNode(), false);
+				me._showHideAllCalGroups(me._getSelectedCalGroupNode(), false);
 			}
 		});
 		me.addAction('addEvent', {
 			handler: function() {
-				var group = me.getSelectedCalGroupNode();
-				var cal = me._getSelectedCalNode();
+				/*
+				var group = me._getSelectedCalGroupNode();
+				var cal = me._getSelectedCalNode(group);
 				if(cal) { // Selection on calendar
 					me.addEventAtNow(group.getId(), cal.getId());
 				} else { // Seletion on group
 					cal = group.getChildAt(0);
 					me.addEventAtNow(group.getId(), cal.getId());
 				}
+				*/
+				
+				var cal = me._getNearestCal();
+				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId());
 			}
 		});
 	},
@@ -637,26 +649,60 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	_buildGroupNodeId: function(rec) {
-		return rec.get('_userId')+'@'+rec.get('_domainId');
+	_buildGroupNodeId: function(calendar) {
+		return calendar.get('userId')+'@'+calendar.get('domainId');
 	},
 	
+	/**
+	 * Returns selected calendar node.
+	 * @returns {Ext.data.NodeInterface}
+	 */
 	_getSelectedCalNode: function() {
 		var sel = this.getRef('treecal').getSelection();
+		
 		if(sel.length === 0) return null;
 		return (sel[0].get('_nodeType') === 'group') ? null : sel[0];
 	},
 	
+	/**
+	 * Returns selected calendar group node.
+	 * @param {Boolean} force True to return a default (my group) if selection is not available.
+	 * @returns {Ext.data.NodeInterface}
+	 */
+	_getSelectedCalGroupNode: function(force) {
+		var tree = this.getRef('treecal'),
+				sel = tree.getSelection();
+		
+		if(sel.length === 0) {
+			if(!force) return null;
+			// As default returns my group, which have id equals to principal option
+			return tree.getStore().getNodeById(WT.getOption('principal'));
+		}
+		return (sel[0].get('_nodeType') === 'group') ? sel[0] : sel[0].parentNode;
+	},
+	
+	/**
+	 * Returns always a calendar node.
+	 * @returns {Ext.data.NodeInterface}
+	 */
+	_getNearestCal: function() {
+		var group = this._getSelectedCalGroupNode(true),
+				cal = this._getSelectedCalNode();
+		
+		return (cal) ? cal : group.getChildAt(0);
+	},
+	
+	
+	
+	
+	
+	
+	
+	
 	getSelectedCalGroupId: function(def) {
 		if(def === undefined) def = 'matteo.albinola@sonicleldap';
 		var me = this,
-				node = me.getSelectedCalGroupNode();
+				node = me._getSelectedCalGroupNode();
 		return (node) ? node.get() : def; //TODO: completare
 	},
-	
-	getSelectedCalGroupNode: function() {
-		var sel = this.getRef('treecal').getSelection();
-		if(sel.length === 0) return null;
-		return (sel[0].get('_nodeType') === 'group') ? sel[0] : sel[0].parentNode;
-	}
 });

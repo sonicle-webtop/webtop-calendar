@@ -41,12 +41,6 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WT.Util.field('calendarId', 'int', false),
 		WT.Util.field('fromDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WT.Util.field('toDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
-		/*
-		{name: 'fromDate', type: 'date', dateFormat: 'Y-m-d', allowBlank: false},
-		{name: 'fromTime', type: 'date', dateFormat: 'H:i', allowBlank: false},
-		{name: 'toDate', type: 'date', dateFormat: 'Y-m-d', allowBlank: false},
-		{name: 'toTime', type: 'date', dateFormat: 'H:i', allowBlank: false},
-		*/
 		WT.Util.field('timezone', 'string', false),
 		WT.Util.field('title', 'string', false),
 		WT.Util.field('location', 'int', true),

@@ -134,7 +134,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}, {
 					xtype: 'timefield',
 					name: 'fromTime',
-					bind: '{fromTime}',
+					bind: {
+						value: '{fromTime}',
+						disabled: '{allDay.checked}'
+					},
 					format: WT.getTimeFmt(),
 					margin: '0 5 0 0',
 					width: 80
@@ -145,10 +148,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					handler: function() {
 						var EM = Sonicle.webtop.calendar.model.Event;
 						EM.setTime(me.getModel(), 'fromDate', new Date());
+					},
+					bind: {
+						disabled: '{allDay.checked}'
 					}
 				}, {
 					xtype: 'checkbox',
 					name: 'allDay',
+					reference: 'allDay',
 					bind: '{record.allDay}',
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
@@ -170,7 +177,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}, {
 					xtype: 'timefield',
 					name: 'toTime',
-					bind: '{toTime}',
+					bind: {
+						value: '{toTime}',
+						disabled: '{allDay.checked}'
+					},
 					format: WT.getTimeFmt(),
 					margin: '0 5 0 0',
 					width: 80
@@ -181,6 +191,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					handler: function() {
 						var EM = Sonicle.webtop.calendar.model.Event;
 						EM.setTime(me.getModel(), 'toDate', new Date());
+					},
+					bind: {
+						disabled: '{allDay.checked}'
 					}
 				}, {
 					xtype: 'combo',

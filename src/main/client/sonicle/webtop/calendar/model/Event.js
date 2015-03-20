@@ -39,31 +39,25 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	fields: [
 		WT.Util.field('eventId', 'int', false),
 		WT.Util.field('calendarId', 'int', false),
-		WT.Util.field('fromDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
-		WT.Util.field('toDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WT.Util.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WT.Util.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WT.Util.field('timezone', 'string', false),
 		WT.Util.field('title', 'string', false),
 		WT.Util.field('location', 'int', true),
-		WT.Util.field('allDay', 'boolean', false, {defaultValue: false})
+		WT.Util.field('allDay', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('description', 'string', true),
+		WT.Util.field('reminder', 'int', false, {
+			defaultValue: -1,
+			convert: function(v) {
+				return (v) ? v : -1;
+			},
+			serialize: function(v) {
+				return (v === -1) ? null : v;
+			}
+		}),
+		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('busy', 'boolean', false, {defaultValue: false})
 	],
-	
-	
-	
-	
-	
-	setFrom: function(date) {
-		var me = this,
-				parts = Sonicle.webtop.calendar.model.Event.getDateParts(date);
-		me.set('fromDate', parts.date);
-		me.set('fromTime', parts.time);
-	},
-	
-	setTo: function(date) {
-		var me = this,
-				parts = Sonicle.webtop.calendar.model.Event.getDateParts(date);
-		me.set('toDate', parts.date);
-		me.set('toTime', parts.time);
-	},
 	
 	statics: {
 		setDate: function(model, field, date) {
@@ -76,18 +70,6 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 			var val = model.get(field);
 			if(!Ext.isDate(date) || !Ext.isDate(val)) return;
 			model.set(field, Sonicle.Date.copyTime(date, val));
-		},
-		
-		
-		
-		
-		
-		
-		getDateParts: function(date) {
-			return {
-				date: Ext.Date.format(date, 'Y-m-d'),
-				time: Ext.Date.format(date, 'H:i')
-			};
 		}
 	}
 });

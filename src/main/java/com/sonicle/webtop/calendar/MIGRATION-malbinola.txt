@@ -5,15 +5,15 @@ SELECT iddomain,login,'com.sonicle.webtop.calendar','view',value
 FROM service_settings WHERE service='calendar' AND idsetting='viewFlag'
 );
 INSERT INTO public.user_settings (
-SELECT iddomain,login,'com.sonicle.webtop.calendar','startDay',value 
+SELECT iddomain,login,'com.sonicle.webtop.calendar','startday',value 
 FROM service_settings WHERE service='calendar' AND idsetting='startDay'
 );
 INSERT INTO public.user_settings (
-SELECT iddomain,login,'com.sonicle.webtop.calendar','workdayStart',value 
+SELECT iddomain,login,'com.sonicle.webtop.calendar','workday.start',value 
 FROM service_settings WHERE service='calendar' AND idsetting='hourstartworkday'
 );
 INSERT INTO public.user_settings (
-SELECT iddomain,login,'com.sonicle.webtop.calendar','workdayEnd',value 
+SELECT iddomain,login,'com.sonicle.webtop.calendar','workday.end',value 
 FROM service_settings WHERE service='calendar' AND idsetting='hourendworkday'
 );
 

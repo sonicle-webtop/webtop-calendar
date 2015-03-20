@@ -62,17 +62,21 @@ public class OEvent extends Events {
 		setCalendarId(js.calendarId);
 		
 		// Adjust times
+		/*
 		if(js.allDay) {
-			js.fromTime = MessageFormat.format("{0}:00", workdayStart);
-			js.toTime = MessageFormat.format("{0}:00", workdayEnd);
+			js.startTime = MessageFormat.format("{0}:00", workdayStart);
+			js.endTime = MessageFormat.format("{0}:00", workdayEnd);
 		}
+		*/
 		
 		// Incoming fields are in precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use. Then DateTime
 		// objects are automatically translated to UTC
 		DateTimeZone etz = DateTimeZone.forID(js.timezone);
-		setFromDate(parseYmdHmsWithZone(js.fromDate, etz));
-		setToDate(parseYmdHmsWithZone(js.toDate, etz));
+		DateTime start = parseYmdHmsWithZone(js.startDate, etz);
+		DateTime end = parseYmdHmsWithZone(js.endDate, etz);
+		setStartDate(start);
+		setEndDate(end);
 		
 		setTitle(js.title);
 		setAllDay(js.allDay);
@@ -80,11 +84,11 @@ public class OEvent extends Events {
 		setLocation(js.location);
 	}
 	
-	public void updateDates(String fromDate, String toDate, TimeZone userTz) {
+	public void updateDates(String satrtDate, String endDate, TimeZone userTz) {
 		DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
 		DateTimeZone etz = DateTimeZone.forID(getTimezone());
-		setFromDate(parseYmdHmsWithZone(fromDate, utz).toDateTime(etz));
-		setToDate(parseYmdHmsWithZone(toDate, utz).toDateTime(etz));
+		setStartDate(parseYmdHmsWithZone(satrtDate, utz).toDateTime(etz));
+		setEndDate(parseYmdHmsWithZone(endDate, utz).toDateTime(etz));
 	}
 	
 	public static DateTime parseYmdHmsWithZone(String date, String time, TimeZone tz) {

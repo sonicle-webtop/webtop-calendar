@@ -33,16 +33,25 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author malbinola
  */
 public class JsTreeCalendar {
 	
-	public Integer id;
+	public String id;
+	public String _nodeType;
 	public Boolean _visible;
 	
 	public JsTreeCalendar() {
 		
+	}
+	
+	public static class JsTreeCalendarList extends ArrayList<JsTreeCalendar> {
+		public JsTreeCalendarList() {
+			super();
+		}
 	}
 }

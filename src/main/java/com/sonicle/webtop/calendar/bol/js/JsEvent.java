@@ -46,10 +46,8 @@ public class JsEvent {
 	public Integer eventId;
 	public Integer calendarId;
 	public String title;
-	public String fromDate;
-	public String fromTime;
-	public String toDate;
-	public String toTime;
+	public String startDate;
+	public String endDate;
 	public String timezone;
 	public Boolean allDay;
 	public String location;
@@ -59,16 +57,11 @@ public class JsEvent {
 		calendarId = event.getCalendarId();
 		title = event.getTitle();
 		
-		SimpleDateFormat dateSdf = new SimpleDateFormat("yyyy-MM-dd");
+		SimpleDateFormat dateSdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		dateSdf.setTimeZone(tz);
 		
-		fromDate = dateSdf.format(event.getFromDate());
-		toDate = dateSdf.format(event.getToDate());
-		
-		SimpleDateFormat timeSdf = new SimpleDateFormat("HH:mm");
-		timeSdf.setTimeZone(tz);
-		fromTime = timeSdf.format(event.getFromDate());
-		toTime = timeSdf.format(event.getToDate());
+		startDate = dateSdf.format(event.getStartDate());
+		endDate = dateSdf.format(event.getEndDate());
 		
 		timezone = event.getTimezone();
 		allDay = event.getAllDay();

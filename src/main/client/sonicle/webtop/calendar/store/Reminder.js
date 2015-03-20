@@ -36,33 +36,8 @@ Ext.define('Sonicle.webtop.calendar.store.Reminder', {
 	
 	autoLoad: true,
 	model: 'WT.model.Simple',
-	/*
 	data: [
-		[0, WT.res('com.sonicle.webtop.calendar', 'store.reminder.0')],
-		[5, WT.res('com.sonicle.webtop.calendar', 'store.reminder.5')],
-		[10, WT.res('com.sonicle.webtop.calendar', 'store.reminder.10')],
-		[15, WT.res('com.sonicle.webtop.calendar', 'store.reminder.15')],
-		[30, WT.res('com.sonicle.webtop.calendar', 'store.reminder.30')],
-		[45, WT.res('com.sonicle.webtop.calendar', 'store.reminder.45')],
-		[60, WT.res('com.sonicle.webtop.calendar', 'store.reminder.60')],
-		[120, WT.res('com.sonicle.webtop.calendar', 'store.reminder.120')],
-		[180, WT.res('com.sonicle.webtop.calendar', 'store.reminder.180')],
-		[240, WT.res('com.sonicle.webtop.calendar', 'store.reminder.240')],
-		[300, WT.res('com.sonicle.webtop.calendar', 'store.reminder.300')],
-		[360, WT.res('com.sonicle.webtop.calendar', 'store.reminder.360')],
-		[420, WT.res('com.sonicle.webtop.calendar', 'store.reminder.420')],
-		[480, WT.res('com.sonicle.webtop.calendar', 'store.reminder.480')],
-		[540, WT.res('com.sonicle.webtop.calendar', 'store.reminder.540')],
-		[600, WT.res('com.sonicle.webtop.calendar', 'store.reminder.600')],
-		[660, WT.res('com.sonicle.webtop.calendar', 'store.reminder.660')],
-		[720, WT.res('com.sonicle.webtop.calendar', 'store.reminder.720')],
-		[1080, WT.res('com.sonicle.webtop.calendar', 'store.reminder.1080')],
-		[1440, WT.res('com.sonicle.webtop.calendar', 'store.reminder.1440')],
-		[2880, WT.res('com.sonicle.webtop.calendar', 'store.reminder.2880')],
-		[10080, WT.res('com.sonicle.webtop.calendar', 'store.reminder.10080')]
-	],
-	*/
-	data: [
+		[-1, ''],
 		[0, ''],
 		[5, ''],
 		[10, ''],
@@ -86,7 +61,6 @@ Ext.define('Sonicle.webtop.calendar.store.Reminder', {
 		[2880, ''],
 		[10080, '']
 	],
-	
 	
 	constructor: function(cfg) {
 		var me = this;

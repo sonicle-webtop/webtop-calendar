@@ -87,7 +87,6 @@
 							<includes>.*</includes>
 							<excludes></excludes>
 							<inputSchema>calendar</inputSchema>
-							
 							<customTypes>
 								<customType>
 									<name>JodaDateTime</name>

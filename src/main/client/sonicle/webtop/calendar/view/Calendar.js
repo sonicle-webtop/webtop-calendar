@@ -32,7 +32,7 @@
  * the words "Powered by Sonicle WebTop".
  */
 Ext.define('Sonicle.webtop.calendar.view.Calendar', {
-	extend: 'WT.sdk.FormView',
+	extend: 'WT.sdk.ModelView',
 	requires: [
 		'Sonicle.form.field.Palette',
 		'Sonicle.form.RadioGroup',
@@ -40,91 +40,132 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	],
 	
 	title: '@calendar.tit',
-	iconCls: 'wtcal-icon-calendar',
+	iconCls: 'wtcal-icon-calendar-xs',
+	model: 'Sonicle.webtop.calendar.model.Calendar',
+	viewModel: {
+		formulas: {
+			visibility: {
+				bind: {bindTo: '{record.isPrivate}'},
+				get: function(val) {
+					return {visibility: val};
+				},
+				set: function(val) {
+					this.get('record').set('isPrivate', val.visibility);
+				}
+			},
+			showme: {
+				bind: {bindTo: '{record.busy}'},
+				get: function(val) {
+					return {showme: val};
+				},
+				set: function(val) {
+					this.get('record').set('busy', val.showme);
+				}
+			},
+			isDefault: {
+				bind: {bindTo: '{record.isDefault}'},
+				get: function(val) {
+					return val;
+				},
+				set: function(val) {
+					this.get('record').set('isDefault', val);
+				}
+			},
+			invitation: {
+				bind: {bindTo: '{record.invitation}'},
+				get: function(val) {
+					return val;
+				},
+				set: function(val) {
+					this.get('record').set('invitation', val);
+				}
+			},
+			sync: {
+				bind: {bindTo: '{record.sync}'},
+				get: function(val) {
+					return val;
+				},
+				set: function(val) {
+					this.get('record').set('sync', val);
+				}
+			}
+		}
+	},
 	
 	initComponent: function() {
 		var me = this;
 		me.callParent(arguments);
 		
-		me.add(me.addRef('form', Ext.create({
+		me.add(me.addRef('main', Ext.create({
 			region: 'center',
-			xtype: 'soform',
-			bodyPadding: 10,
-			model: 'Sonicle.webtop.calendar.model.Calendar',
+			xtype: 'form',
+			layout: 'anchor',
+			modelValidation: true,
+			bodyPadding: 5,
+			defaults: {
+				labelWidth: 100
+			},
 			items: [{
-				xtype: 'hiddenfield',
-				name: 'calendarId'
-			}, {
-				xtype: 'hiddenfield',
-				name: 'domainId'
-			}, {
-				xtype: 'hiddenfield',
-				name: 'userId'
-			}, {
 				xtype: 'textfield',
-				name: 'name',
-				allowBlank: false,
+				itemId: 'fldname',
+				bind: '{record.name}',
 				fieldLabel: me.mys.res('calendar.fld-name.lbl'),
 				anchor: '100%'
 			}, {
 				xtype: 'textareafield',
-				name: 'description',
+				bind: '{record.description}',
 				fieldLabel: me.mys.res('calendar.fld-description.lbl'),
 				anchor: '100%'
 			}, {
 				xtype: 'sopalettefield',
-				name: 'color',
-				allowBlank: false,
+				bind: '{record.color}',
 				colors: WT.getColorPalette(),
 				fieldLabel: me.mys.res('calendar.fld-color.lbl'),
 				width: 200
 			}, {
 				xtype: 'checkbox',
-				name: 'isDefault',
+				bind: '{isDefault}',
 				hideEmptyLabel: false,
 				boxLabel: me.mys.res('calendar.fld-default.lbl')
 			}, {
-				xtype: 'soradiogroup',
-				name: 'isPrivate',
+				xtype: 'radiogroup',
+				bind: {
+					value: '{visibility}'
+				},
 				layout: 'hbox',
 				defaults: {
+					name: 'visibility',
 					margin: '0 20 0 0'
 				},
 				fieldLabel: me.mys.res('calendar.fld-visibility.lbl'),
 				items: [{
-					name: 'visibility',
-					submitValue: false,
 					inputValue: false,
 					boxLabel: me.mys.res('calendar.fld-visibility.default')
 				}, {
-					name: 'visibility',
-					submitValue: false,
 					inputValue: true,
 					boxLabel: me.mys.res('calendar.fld-visibility.private')
 				}]
 			}, {
-				xtype: 'soradiogroup',
-				name: 'busy',
+				xtype: 'radiogroup',
+				bind: {
+					value: '{showme}'
+				},
 				layout: 'hbox',
 				defaults: {
+					name: 'showme',
 					margin: '0 20 0 0'
 				},
 				fieldLabel: me.mys.res('calendar.fld-showme.lbl'),
 				items: [{
-					name: 'showme',
-					submitValue: false,
 					inputValue: false,
 					boxLabel: me.mys.res('calendar.fld-showme.available')
 				}, {
-					name: 'showme',
-					submitValue: false,
 					inputValue: true,
 					boxLabel: me.mys.res('calendar.fld-showme.busy')
 				}]
 			}, {
 				xtype: 'combo',
-				name: 'reminder',
-				allowBlank: false,
+				bind: '{record.reminder}',
 				editable: false,
 				store: Ext.create('Sonicle.webtop.calendar.store.Reminder'),
 				valueField: 'id',
@@ -132,12 +173,12 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 				fieldLabel: me.mys.res('calendar.fld-reminder.lbl')
 			}, {
 				xtype: 'checkbox',
-				name: 'invitation',
+				bind: '{invitation}',
 				hideEmptyLabel: false,
 				boxLabel: me.mys.res('calendar.fld-invitation.lbl')
 			}, {
 				xtype: 'checkbox',
-				name: 'sync',
+				bind: '{sync}',
 				hideEmptyLabel: false,
 				boxLabel: me.mys.res('calendar.fld-sync.lbl')
 			}]
@@ -148,8 +189,12 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	onViewLoad: function(s, success) {
 		if(!success) return;
 		var me = this,
-				form = me.getRef('form');
+				main = me.getRef('main');
 		
-		form.getField('name').focus();
+		// Overrides autogenerated string id by extjs...
+		// It avoids type conversion problems server-side!
+		if(me.isMode(me.MODE_NEW)) me.getModel().set('calendarId', -1, {dirty: false});
+		main.getComponent('fldname').focus(true);
 	}
 });
+

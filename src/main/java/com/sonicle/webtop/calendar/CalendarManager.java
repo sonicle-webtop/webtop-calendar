@@ -146,8 +146,8 @@ public class CalendarManager {
 		for(OCalendar cal : cals) {
 			evts = edao.selectDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
 			for(OEvent evt : evts) {
-				date = evt.getFromDate().withTimeAtStartOfDay();
-				to = evt.getToDate().withTimeAtStartOfDay();
+				date = evt.getStartDate().withTimeAtStartOfDay();
+				to = evt.getEndDate().withTimeAtStartOfDay();
 				while(date.compareTo(to) <= 0) {
 					dates.add(date);
 					date = date.plusDays(1);

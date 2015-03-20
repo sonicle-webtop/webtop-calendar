@@ -47,12 +47,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.view.Calendar'
 	],
 	
+	selectedGroup: null,
+	
 	init: function() {
 		var me = this;
 		
+		me._selectMyGroup();
 		me.initActions();
 		me.initCxm();
 
+/*
 		this.addAction('new', 'testaction', {
 			tooltip: null,
 			handler: function () {
@@ -60,6 +64,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			},
 			scope: this
 		});
+		*/
 		
 		/*
 		var tb = Ext.create({
@@ -224,15 +229,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					*/
 					listeners: {
 						checkchange: function(n, ck) {
-							if(n.get('nodeType') === 'group') {
-								
-							} else {
-								me._showHideCal(n, ck);
-							}
+							me._showHideCal(n, ck);
+						},
+						select: function(s, rec, i) {
+							console.log('selectedGroup: '+rec.get('_groupId'));
+							me.selectedGroup = rec.get('_groupId');
 						},
 						itemcontextmenu: function(vw, rec, itm, i, e) {
 							// TODO: disabilitare azioni se readonly
-							if(rec.get('nodeType') === 'group') {
+							if(rec.get('_nodeType') === 'group') {
 								me._showCxm(me.getRef('cxmCalGroup'), e);
 							} else {
 								me.getAction('deleteCalendar').setDisabled(rec.get('builtIn'));
@@ -279,12 +284,23 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				rangeselect: function(s,dates,onComplete) {
 					onComplete();
-					var cal = me._getNearestCal();
+					var cal = me.getSelectedCalendar();
 					if(cal) me.addEvent(cal.get('_groupId'), cal.getId(), dates.startDate, dates.endDate);
 				}
 			}
 		}));
 	},
+	
+	/**
+	 * Resets selected group to my
+	 */
+	_selectMyGroup: function() {
+		this.selectedGroup = WT.getOption('principal');
+	},
+	
+	
+	
+	
 	
 	refreshEvents: function() {
 		var me = this;
@@ -301,6 +317,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				view = me.getOption('view');
 		
+		me.addAction('new', 'addEvent', {
+			handler: function() {
+				var cal = me.getSelectedCalendar();
+				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId());
+			}
+		});
 		me.addAction('today', {
 			handler: function() {
 				me.moveDate(0);
@@ -358,45 +380,22 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.changeView('m');
 			}
 		});
-		
-		/*
-		me.addAction('dayview', {
-			itemId: 'd',
-			pressed: view === 'd'
-		});
-		me.addAction('week5view', {
-			itemId: 'w5',
-			pressed: view === 'w5'
-		});
-		me.addAction('weekview', {
-			itemId: 'w',
-			pressed: view === 'w'
-		});
-		me.addAction('weekagview', {
-			itemId: 'wa',
-			pressed: view === 'wa'
-		});
-		me.addAction('monthview', {
-			itemId: 'm',
-			pressed: view === 'm'
-		});
-		*/
 		me.addAction('addCalendar', {
 			handler: function() {
-				var group = me._getSelectedCalGroupNode();
-				me.addCalendar(group.get('_domainId'), group.get('_userId'));
+				var node = me._getSelectedNode();
+				if(node) me.addCalendar(node.get('_domainId'), node.get('_userId'));
 			}
 		});
 		me.addAction('editCalendar', {
 			handler: function() {
-				var cal = me._getSelectedCalNode();
-				me.editCalendar(cal.getId());
+				var node = me._getSelectedNode();
+				if(node) me.editCalendar(node.getId());
 			}
 		});
 		me.addAction('deleteCalendar', {
 			handler: function() {
-				var cal = me._getSelectedCalNode();
-				me.deleteCalendar(cal);
+				var node = me._getSelectedNode();
+				if(node) me.deleteCalendar(node);
 			}
 		});
 		me.addAction('importEvents', {
@@ -417,32 +416,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me._showHideAllCals(me._getSelectedCalGroupNode(), false);
 			}
 		});
-		me.addAction('viewAllCalGroups', {
-			iconCls: 'wt-icon-select-all-xs',
-			handler: function() {
-				me._showHideAllCalGroups(me._getSelectedCalGroupNode(), true);
-			}
-		});
-		me.addAction('viewNoneCalGroups', {
-			iconCls: 'wt-icon-select-none-xs',
-			handler: function() {
-				me._showHideAllCalGroups(me._getSelectedCalGroupNode(), false);
-			}
-		});
 		me.addAction('addEvent', {
 			handler: function() {
-				/*
-				var group = me._getSelectedCalGroupNode();
-				var cal = me._getSelectedCalNode(group);
-				if(cal) { // Selection on calendar
-					me.addEventAtNow(group.getId(), cal.getId());
-				} else { // Seletion on group
-					cal = group.getChildAt(0);
-					me.addEventAtNow(group.getId(), cal.getId());
-				}
-				*/
-				
-				var cal = me._getNearestCal();
+				var cal = me.getSelectedCalendar();
 				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId());
 			}
 		});
@@ -455,9 +431,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			xtype: 'menu',
 			items: [
 				me.getAction('addCalendar'),
-				'-',
-				me.getAction('viewAllCalGroups'),
-				me.getAction('viewNoneCalGroups'),
 				'-',
 				me.getAction('addEvent')
 				//TODO: azioni altri servizi?
@@ -503,10 +476,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		node.beginEdit();
 		node.set('_visible', show);
 		node.endEdit();
-	},
-	
-	_showHideAllCalGroups: function(parent, show) {
-		//TODO: completare
 	},
 	
 	_showHideAllCals: function(parent, show) {
@@ -564,28 +533,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		this.addEvent(groupId, calendarId, now, now);
 	},
 	
-	addEvent: function(groupId, calendarId, from, to) {
+	addEvent: function(groupId, calendarId, start, end) {
 		var me = this,
 				EM = Sonicle.webtop.calendar.model.Event,
 				wnd = this._buildEventWnd({
 					groupId: groupId
-				}),
-				fromp, top;
-		
-		fromp = EM.getDateParts(from);
-		top = EM.getDateParts(to);
+				});
 		
 		wnd.getComponent(0).on('viewsave', me.onEventViewSave, me);
 		wnd.show(false, function() {
 			wnd.getComponent(0).beginNew({
 				data: {
 					calendarId: calendarId,
-					//fromDate: fromp.date,
-					//fromTime: fromp.time,
-					//toDate: top.date,
-					//toTime: top.time,
-					fromDate: from,
-					toDate: to,
+					startDate: start,
+					endDate: end,
 					timezone: WT.getOption('timezone')
 				}
 			});
@@ -612,6 +573,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, this);
 	},
 	
+	
+	
 	onCalendarViewSave: function(s, success, model) {
 		if(!success) return;
 		var me = this,
@@ -630,7 +593,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	_buildCalendarWnd: function(cfg) {
-		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.NewCalendar', {
+		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.Calendar', {
 			containerCfg: {
 				width: 360,
 				height: 400
@@ -643,7 +606,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.Event', {
 			containerCfg: {
 				width: 650,
-				height: 300
+				height: 480
 			},
 			viewCfg: cfg
 		});
@@ -651,6 +614,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	_buildGroupNodeId: function(calendar) {
 		return calendar.get('userId')+'@'+calendar.get('domainId');
+	},
+	
+	_getSelectedNode: function() {
+		var sel = this.getRef('treecal').getSelection();
+		return (sel.length > 0) ? sel[0] : null;
 	},
 	
 	/**
@@ -681,28 +649,45 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		return (sel[0].get('_nodeType') === 'group') ? sel[0] : sel[0].parentNode;
 	},
 	
-	/**
-	 * Returns always a calendar node.
-	 * @returns {Ext.data.NodeInterface}
-	 */
-	_getNearestCal: function() {
-		var group = this._getSelectedCalGroupNode(true),
-				cal = this._getSelectedCalNode();
-		
-		return (cal) ? cal : group.getChildAt(0);
-	},
 	
 	
 	
 	
 	
 	
-	
-	
-	getSelectedCalGroupId: function(def) {
-		if(def === undefined) def = 'matteo.albinola@sonicleldap';
+	getSelectedCalendar: function() {
 		var me = this,
-				node = me._getSelectedCalGroupNode();
-		return (node) ? node.get() : def; //TODO: completare
+				tree = me.getRef('treecal'),
+				sel = tree.getSelection(),
+				group;
+		
+		if(sel.length > 0) {
+			if(sel[0].get('_nodeType') === 'group') {
+				return me.getCalendarByGroup(sel[0]);
+			} else {
+				return sel[0];
+			}
+		} else {
+			group = tree.getStore().getNodeById(WT.getOption('principal'));
+			if(group) return me.getCalendarByGroup(group);
+		}
+		return null;
 	},
+	
+	getCalendarByGroup: function(groupNode) {
+		var cal = this.getDefaultCalendar(groupNode);
+		return (cal) ? cal : this.getBuiltInCalendar(groupNode);
+	},
+	
+	getDefaultCalendar: function(groupNode) {
+		return groupNode.findChildBy(function(n) {
+			return (n.get('_default') === true);
+		});
+	},
+	
+	getBuiltInCalendar: function(groupNode) {
+		return groupNode.findChildBy(function(n) {
+			return (n.get('_builtIn') === true);
+		});
+	}
 });

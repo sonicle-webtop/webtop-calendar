@@ -143,7 +143,6 @@ public class CalendarDAO extends BaseDAO {
 	
 	public int update(Connection con, OCalendar item) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
 		return dsl
 			.update(CALENDARS)
 			.set(CALENDARS.NAME, item.getName())
@@ -151,10 +150,10 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.COLOR, item.getColor())
 			.set(CALENDARS.IS_PRIVATE, item.getIsPrivate())
 			.set(CALENDARS.BUSY, item.getBusy())
-			.set(CALENDARS.SYNC, item.getSync())
-			.set(CALENDARS.IS_DEFAULT, item.getIsDefault())
 			.set(CALENDARS.REMINDER, item.getReminder())
+			.set(CALENDARS.SYNC, item.getSync())
 			.set(CALENDARS.INVITATION, item.getInvitation())
+			.set(CALENDARS.IS_DEFAULT, item.getIsDefault())
 			.where(
 				CALENDARS.CALENDAR_ID.equal(item.getCalendarId())
 			)

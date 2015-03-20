@@ -33,7 +33,11 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.LangUtils;
+import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  *
@@ -54,17 +58,28 @@ public class CalendarUserSettings extends BaseUserSettings {
 	 * [int]
 	 * Calendar start day (0:sunday, 1:monday)
 	 */
-	public static final String START_DAY = "startDay";
+	public static final String START_DAY = "startday";
 	/**
 	 * [string]
 	 * Workday hours start time
 	 */
-	public static final String WORKDAY_START = "workdayStart";
+	public static final String WORKDAY_START = "workday.start";
 	/**
 	 * [string]
 	 * Workday hours end time
 	 */
-	public static final String WORKDAY_END = "workdayEnd";
+	public static final String WORKDAY_END = "workday.end";
+	/**
+	 * [string]
+	 * Selected calendar group.
+	 */
+	public static final String SELECTED_CALENDAR_GROUP = "calendargroups.selected";
+	/**
+	 * [string[]]
+	 * List of checked (or visible) calendar groups.
+	 */
+	public static final String CHECKED_CALENDAR_GROUP = "calendargroups.checked";
+	
 	
 	public String getCalendarView() {
 		return getUserSetting(VIEW, "w5");
@@ -98,5 +113,41 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	public boolean setWorkdayEnd(String value) {
 		return setUserSetting(WORKDAY_END, value);
+	}
+	
+	public String getSelectedCalendarGroup() {
+		return getUserSetting(SELECTED_CALENDAR_GROUP, null);
+	}
+	
+	public boolean setSelectedCalendarGroup(String value) {
+		return setUserSetting(SELECTED_CALENDAR_GROUP, value);
+	}
+	
+	public CheckedCalendarGroups getCheckedCalendarGroups() {
+		CheckedCalendarGroups value = LangUtils.deserialize(getUserSetting(CHECKED_CALENDAR_GROUP), CheckedCalendarGroups.class);
+		return (value != null) ? value : new CheckedCalendarGroups();
+	}
+	
+	public boolean setCheckedCalendarGroups(CheckedCalendarGroups value) {
+		return setUserSetting(CHECKED_CALENDAR_GROUP, LangUtils.serialize(value, CheckedCalendarGroups.class));
+	}
+	
+	
+	
+	
+	
+	
+	public static class CheckedCalendarGroups extends HashSet<String> {
+		public CheckedCalendarGroups() {
+			super();
+		}
+		
+		public static CheckedCalendarGroups fromJson(String value) {
+			return JsonResult.gson.fromJson(value, CheckedCalendarGroups.class);
+		}
+		
+		public static String toJson(CheckedCalendarGroups value) {
+		return JsonResult.gson.toJson(value, CheckedCalendarGroups.class);
+	}
 	}
 }

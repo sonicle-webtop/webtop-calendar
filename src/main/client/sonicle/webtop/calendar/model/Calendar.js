@@ -52,7 +52,15 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 		WT.Util.field('isDefault', 'boolean', false, {defaultValue: false}),
 		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WT.Util.field('busy', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('reminder', 'int', false, {defaultValue: 0}),
+		WT.Util.field('reminder', 'int', false, {
+			defaultValue: -1,
+			convert: function(v) {
+				return (v) ? v : -1;
+			},
+			serialize: function(v) {
+				return (v === -1) ? null : v;
+			}
+		}),
 		WT.Util.field('invitation', 'boolean', false, {defaultValue: false}),
 		WT.Util.field('sync', 'boolean', false, {defaultValue: false})
 	]

@@ -49,17 +49,17 @@ public class JsSchedulerEvent {
 	
 	public Integer eventId;
 	public Integer calendarId;
-	public String title;
 	public String startDate;
 	public String endDate;
 	public String timezone;
+	public Boolean isAllDay;
+	public String title;
 	public String color;
 	public String location;
-	public String notes;
-	public String url;
-	public Boolean isAllDay;
 	public Boolean isPrivate;
 	public String reminder;
+	public String notes = "";
+	public String url = "";
 	
 	public JsSchedulerEvent() {
 		
@@ -69,20 +69,17 @@ public class JsSchedulerEvent {
 		eventId = event.getEventId();
 		calendarId = event.getCalendarId();
 		
-		// TRANSPOSE DATETIMES IN THE RIGHT TIMEZONE
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
 		// Formatter will be instantiated specifying desired timezone.
-		startDate = toYmdHmsWithZone(event.getFromDate(), userTz);
-		endDate = toYmdHmsWithZone(event.getToDate(), userTz);
+		startDate = toYmdHmsWithZone(event.getStartDate(), userTz);
+		endDate = toYmdHmsWithZone(event.getEndDate(), userTz);
 		timezone = (userTz.getID().equals(event.getTimezone())) ? null : event.getTimezone();
+		isAllDay = event.getAllDay();
 		
 		title = event.getTitle();
 		color = calendar.getColor();
 		location = event.getLocation();
-		notes = "";
-		url = "";
-		isAllDay = event.getAllDay();
 		isPrivate = true;
 	}
 	

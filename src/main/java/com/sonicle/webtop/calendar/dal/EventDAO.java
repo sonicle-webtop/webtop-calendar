@@ -77,21 +77,21 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.select(
-						EVENTS.FROM_DATE,
-						EVENTS.TO_DATE,
+						EVENTS.START_DATE,
+						EVENTS.END_DATE,
 						EVENTS.TIMEZONE
 				)
 				.from(EVENTS)
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)
 						.and(
-							EVENTS.FROM_DATE.between(fromDate, toDate) // Events that start in current range
-							.or(EVENTS.TO_DATE.between(fromDate, toDate)) // Events that end in current range
-							.or(EVENTS.FROM_DATE.lessThan(fromDate).and(EVENTS.TO_DATE.greaterThan(toDate))) // Events that start before and end after
+							EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
+							.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
+							.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
 						)
 				)
 				.orderBy(
-						EVENTS.FROM_DATE
+						EVENTS.START_DATE
 				)
 				.fetchInto(OEvent.class);
 	}
@@ -104,13 +104,13 @@ public class EventDAO extends BaseDAO {
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)
 						.and(
-							EVENTS.FROM_DATE.between(fromDate, toDate) // Events that start in current range
-							.or(EVENTS.TO_DATE.between(fromDate, toDate)) // Events that end in current range
-							.or(EVENTS.FROM_DATE.lessThan(fromDate).and(EVENTS.TO_DATE.greaterThan(toDate))) // Events that start before and end after
+							EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
+							.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
+							.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
 						)
 				)
 				.orderBy(
-						EVENTS.FROM_DATE
+						EVENTS.START_DATE
 				)
 				.fetchInto(OEvent.class);
 	}
@@ -129,8 +129,8 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
-			.set(EVENTS.FROM_DATE, item.getFromDate())
-			.set(EVENTS.TO_DATE, item.getToDate())
+			.set(EVENTS.START_DATE, item.getStartDate())
+			.set(EVENTS.END_DATE, item.getEndDate())
 			.set(EVENTS.TIMEZONE, item.getTimezone())
 			.set(EVENTS.ALL_DAY, item.getAllDay())
 			.set(EVENTS.TITLE, item.getTitle())

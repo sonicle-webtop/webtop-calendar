@@ -165,7 +165,7 @@ Ext.define('Sonicle.webtop.calendar.view.OldEvent', {
 				store: {
 					autoLoad: true,
 					model: 'Sonicle.webtop.calendar.model.Calendar',
-					proxy: WT.Util.proxy(me.mys.ID, 'GetGroupCalendars', 'calendars', {
+					proxy: WT.Util.proxy(me.mys.ID, 'GetCalendars', 'calendars', {
 						extraParams: {
 							groupId: me.groupId
 						}

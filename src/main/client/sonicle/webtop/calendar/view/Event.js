@@ -38,9 +38,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.Separator',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.IconComboBox',
-		'WT.store.Timezone',
-		'WT.ux.SuggestCombo',
 		'WT.model.Value',
+		'WT.store.Timezone',
+		'WT.store.RRDaylyFreq',
+		'WT.store.RRWeeklyFreq',
+		'WT.store.RRMonthlyDay',
+		'WT.store.RRMonthlyFreq',
+		'WT.store.RRYearlyDay',
+		'WT.ux.SuggestCombo',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.Calendar',
 		'Sonicle.webtop.calendar.store.Reminder'
@@ -368,11 +373,248 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			title: me.mys.res('event.planning.tit')
 		}));
 		me.addRef('recurrence', Ext.create({
+			xtype: 'container',
+			itemId: 'recurrence',
+			layout: 'anchor',
+			title: me.mys.res('event.recurrence.tit'),
+			items: [{
+				xtype: 'container',
+				layout: 'column',
+				items: [{
+					xtype: 'form',
+					layout: 'anchor',
+					width: 120,
+					items: [{
+						xtype: 'radiogroup',
+						layout: 'vbox',
+						defaults: {
+							name: 'rrType'
+						},
+						items: [{
+							inputValue: '',
+							boxLabel: WT.res('rr.type.none')
+						}, {
+							inputValue: 'D',
+							boxLabel: WT.res('rr.type.dayly')
+						}, {
+							inputValue: 'W',
+							boxLabel: WT.res('rr.type.weekly')
+						}, {
+							inputValue: 'M',
+							boxLabel: WT.res('rr.type.monthly')
+						}, {
+							inputValue: 'Y',
+							boxLabel: WT.res('rr.type.yearly')
+						}]
+					}]
+				}, {
+					xtype: 'form',
+					layout: 'anchor',
+					columnWidth: 1,
+					items: [{
+						xtype: 'displayfield' // none row
+					}, {
+						xtype: 'fieldcontainer', // dayly row
+						layout: 'hbox',
+						defaults: {
+							margin: '0 10 0 0'
+						},
+						items: [{
+							xtype: 'radiogroup',
+							columns: [80, 60, 80, 150],
+							defaults: {
+								name: 'dayly'
+							},
+							items: [{
+								inputValue: '',
+								boxLabel: WT.res('rr.type.dayly.msg1')
+							}, {
+								xtype: 'combo',
+								typeAhead: true,
+								queryMode: 'local',
+								forceSelection: true,
+								store: Ext.create('WT.store.RRDaylyFreq'),
+								valueField: 'id',
+								displayField: 'id',
+								width: 60
+							}, {
+								xtype: 'label',
+								text: WT.res('rr.type.dayly.freq')
+							}, {
+								inputValue: '',
+								boxLabel: WT.res('rr.type.dayly.msg2')
+							}]
+						}]
+					}, {
+						xtype: 'fieldcontainer', // weekly row
+						layout: 'hbox',
+						defaults: {
+							margin: '0 10 0 0'
+						},
+						items: [{
+							xtype: 'label',
+							text: WT.res('rr.type.weekly.msg1')
+						}, {
+							xtype: 'combo',
+							typeAhead: true,
+							queryMode: 'local',
+							forceSelection: true,
+							store: Ext.create('WT.store.RRWeeklyFreq'),
+							valueField: 'id',
+							displayField: 'id',
+							width: 60
+						}, {
+							xtype: 'label',
+							text: WT.res('rr.type.weekly.freq')
+						}, {
+							xtype: 'label',
+							text: WT.res('rr.type.weekly.msg2')
+						}, {
+							xtype: 'checkboxgroup',
+							items: [{
+								inputValue: '',
+								boxLabel: WT.res('rr.type.weekly.day0')
+							}, {
+								inputValue: '',
+								boxLabel: WT.res('rr.type.weekly.day1')
+							}, {
+								inputValue: '',
+								boxLabel: WT.res('rr.type.weekly.day2')
+							}, {
+								inputValue: '',
+								boxLabel: WT.res('rr.type.weekly.day3')
+							}, {
+								inputValue: '',
+								boxLabel: WT.res('rr.type.weekly.day4')
+							},{
+								inputValue: '',
+								boxLabel: WT.res('rr.type.weekly.day5')
+							}, {
+								inputValue: '',
+								boxLabel: WT.res('rr.type.weekly.day6')
+							}]
+						}]
+					}, {
+						xtype: 'fieldcontainer', // monthly row
+						layout: 'hbox',
+						defaults: {
+							margin: '0 10 0 0'
+						},
+						items: [{
+							xtype: 'label',
+							text: WT.res('rr.type.monthly.msg1')
+						}, {
+							xtype: 'combo',
+							typeAhead: true,
+							queryMode: 'local',
+							forceSelection: true,
+							store: Ext.create('WT.store.RRMonthlyDay'),
+							valueField: 'id',
+							displayField: 'desc',
+							width: 60
+						}, {
+							xtype: 'label',
+							text: WT.res('rr.type.monthly.msg2')
+						}, {
+							xtype: 'combo',
+							typeAhead: true,
+							queryMode: 'local',
+							forceSelection: true,
+							store: Ext.create('WT.store.RRMonthlyFreq'),
+							valueField: 'id',
+							displayField: 'id',
+							width: 60
+						}, {
+							xtype: 'label',
+							text: WT.res('rr.type.monthly.freq')
+						}]
+					}, {
+						xtype: 'fieldcontainer', // yearly row
+						layout: 'hbox',
+						defaults: {
+							margin: '0 10 0 0'
+						},
+						items: [{
+							xtype: 'label',
+							text: WT.res('rr.type.yearly.msg1')
+						}, {
+							xtype: 'combo',
+							typeAhead: true,
+							queryMode: 'local',
+							forceSelection: true,
+							store: Ext.create('WT.store.RRYearlyDay'),
+							valueField: 'id',
+							displayField: 'id',
+							width: 60
+						}, {
+							xtype: 'label',
+							text: WT.res('rr.type.yearly.msg2')
+						}, {
+							xtype: 'combo',
+							typeAhead: true,
+							queryMode: 'local',
+							forceSelection: true,
+							store: Ext.create('WT.store.RRYearlyFreq'),
+							valueField: 'id',
+							displayField: 'desc',
+							width: 60
+						}]
+					}]
+				}]
+			}, {
+				xtype: 'form',
+				layout: 'anchor'
+			}]
+		}));
+		
+		
+		
+		/*
+		me.addRef('recurrence', Ext.create({
 			xtype: 'form',
 			itemId: 'recurrence',
-			layout: 'form',
-			title: me.mys.res('event.recurrence.tit')
+			layout: 'anchor',
+			title: me.mys.res('event.recurrence.tit'),
+			items: [{
+				xtype: 'radiogroup',
+				defaults: {
+					name: 'rrType',
+					margin: '0 10 0 0'
+				},
+				items: [{
+					inputValue: '',
+					boxLabel: WT.res('rr.type.none')
+				}, {
+					inputValue: 'D',
+					boxLabel: WT.res('rr.type.dayly')
+				}, {
+					inputValue: 'W',
+					boxLabel: WT.res('rr.type.weekly')
+				}, {
+					inputValue: 'M',
+					boxLabel: WT.res('rr.type.monthly')
+				}, {
+					inputValue: 'Y',
+					boxLabel: WT.res('rr.type.yearly')
+				}]
+			}, {
+				xtype: 'fieldcontainer',
+				items: [{
+					xtype: 'radiogroup',
+					items: [{
+						inputValue: '',
+						boxLabel: WT.res('rr.type.dayly.msg2')
+					}, {
+						inputValue: '',
+						boxLabel: WT.res('rr.type.type.msg1')
+					}]
+				}]
+			}, {
+				xtype: 'fieldcontainer',
+				items: []
+			}]
 		}));
+		*/
 		me.add(Ext.create({
 			region: 'center',
 			xtype: 'container',

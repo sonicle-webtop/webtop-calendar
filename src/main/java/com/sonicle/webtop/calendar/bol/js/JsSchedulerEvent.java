@@ -77,10 +77,12 @@ public class JsSchedulerEvent {
 		timezone = (userTz.getID().equals(event.getTimezone())) ? null : event.getTimezone();
 		isAllDay = event.getAllDay();
 		
-		title = event.getTitle();
+		title = (!event.getIsPrivate()) ? event.getTitle() : "***";
 		color = calendar.getColor();
 		location = event.getLocation();
-		isPrivate = true;
+		isPrivate = event.getIsPrivate();
+		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
+		//isReadOnly = event.getReadonly();
 	}
 	
 	public static String toYmdHmsWithZone(DateTime dt, TimeZone tz) {

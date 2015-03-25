@@ -33,34 +33,66 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
-import com.sonicle.webtop.calendar.jooq.Sequences;
-import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
-import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
+import com.sonicle.webtop.calendar.bol.ORecurrence;
+import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
+import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_RECURRENCES;
+import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
+import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
+import com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
-import static com.sonicle.webtop.core.jooq.Tables.USERS;
 import java.sql.Connection;
-import java.util.List;
+import org.joda.time.LocalDate;
 import org.jooq.DSLContext;
-
 
 /**
  *
- * @author sergio
+ * @author malbinola
  */
-public class RecurrencesDAO extends BaseDAO{
-    
-    private final static RecurrencesDAO INSTANCE = new RecurrencesDAO();
-	public static RecurrencesDAO getInstance() {
+public class RecurrenceDAO extends BaseDAO {
+	
+	private final static RecurrenceDAO INSTANCE = new RecurrenceDAO();
+
+	public static RecurrenceDAO getInstance() {
 		return INSTANCE;
 	}
 	
-        public Long getSequence(Connection con) throws DAOException {
+	public Long getSequence(Connection con) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		Long nextID =  dsl.nextval(Sequences.SEQ_RECURRENCES);
-                return nextID;
+		Long nextID = dsl.nextval(SEQ_RECURRENCES);
+		return nextID;
 	}
-        
-        
-        
+	
+	public ORecurrence select(Connection con, Integer recurrenceId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(RECURRENCES)
+			.where(
+					RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
+			)
+			.fetchOneInto(ORecurrence.class);
+	}
+	
+	public int insert(Connection con, ORecurrence item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesRecord record = dsl.newRecord(RECURRENCES, item);
+		return dsl
+			.insertInto(RECURRENCES)
+			.set(record)
+			.execute();
+	}
+	
+	public ORecurrenceBroken selectBroken(Connection con, Integer recurrenceId, Integer eventId, LocalDate eventDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(RECURRENCES_BROKEN)
+			.where(
+					RECURRENCES_BROKEN.RECURRENCE_ID.equal(recurrenceId)
+					.and(RECURRENCES_BROKEN.EVENT_ID.equal(eventId))
+					.and(RECURRENCES_BROKEN.EVENT_DATE.equal(eventDate))
+			)
+			.fetchOneInto(ORecurrenceBroken.class);
+	}
 }

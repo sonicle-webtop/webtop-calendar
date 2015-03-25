@@ -31,12 +31,17 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar;
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.calendar.jooq.tables.pojos.RecurrencesBroken;
 
 /**
  *
- * @author sergio
+ * @author malbinola
  */
-public class PersonalCalendar {
-    
+public class ORecurrenceBroken extends RecurrencesBroken {
+	
+	public ORecurrenceBroken() {
+		super();
+	}
 }

@@ -147,7 +147,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 		}
 		
 		public static String toJson(CheckedCalendarGroups value) {
-		return JsonResult.gson.toJson(value, CheckedCalendarGroups.class);
-	}
+			return JsonResult.gson.toJson(value, CheckedCalendarGroups.class);
+		}
 	}
 }

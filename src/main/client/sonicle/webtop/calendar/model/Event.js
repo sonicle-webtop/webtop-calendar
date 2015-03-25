@@ -39,13 +39,16 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	fields: [
 		WT.Util.field('eventId', 'int', false),
 		WT.Util.field('calendarId', 'int', false),
+		WT.Util.field('recurrenceId', 'int', true),
 		WT.Util.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WT.Util.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WT.Util.field('timezone', 'string', false),
-		WT.Util.field('title', 'string', false),
-		WT.Util.field('location', 'int', true),
 		WT.Util.field('allDay', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('title', 'string', false),
 		WT.Util.field('description', 'string', true),
+		WT.Util.field('location', 'int', true),
+		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('busy', 'boolean', false, {defaultValue: false}),
 		WT.Util.field('reminder', 'int', false, {
 			defaultValue: -1,
 			convert: function(v) {
@@ -55,8 +58,24 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 				return (v === -1) ? null : v;
 			}
 		}),
-		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('busy', 'boolean', false, {defaultValue: false})
+		WT.Util.field('rrEndsMode', 'string', false, {defaultValue: 'never'}),
+		WT.Util.field('rrRepeatTimes', 'int', false, {defaultValue: 1}),
+		WT.Util.field('rrUntilDate', 'date', false, {dateFormat: 'Y-m-d H:i:s', defaultValue: new Date()}),
+		WT.Util.field('rrType', 'string', true),
+		WT.Util.field('rrDaylyType', 'string', false, {defaultValue: '1'}),
+		WT.Util.field('rrDaylyFreq', 'int', false, {defaultValue: 1}),
+		WT.Util.field('rrWeeklyFreq', 'int', false, {defaultValue: 1}),
+		WT.Util.field('rrWeeklyDay1', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('rrWeeklyDay2', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('rrWeeklyDay3', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('rrWeeklyDay4', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('rrWeeklyDay5', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('rrWeeklyDay6', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('rrWeeklyDay7', 'boolean', false, {defaultValue: false}),
+		WT.Util.field('rrMonthlyFreq', 'int', false, {defaultValue: 1}),
+		WT.Util.field('rrMonthlyDay', 'int', false, {defaultValue: 1}),
+		WT.Util.field('rrYearlyFreq', 'int', false, {defaultValue: 1}),
+		WT.Util.field('rrYearlyDay', 'int', false, {defaultValue: 1})
 	],
 	
 	statics: {

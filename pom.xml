@@ -44,6 +44,11 @@
 	  <artifactId>sonicle-commons</artifactId>
 	  <version>1.0</version>
 	 </dependency>
+	 <dependency>
+	  <groupId>uk.com.robust-it</groupId>
+	  <artifactId>cloning</artifactId>
+	  <version>1.9.1</version>
+	 </dependency>
 	</dependencies>
 	<build>
 		<resources>
@@ -89,6 +94,11 @@
 							<inputSchema>calendar</inputSchema>
 							<customTypes>
 								<customType>
+									<name>JodaLocalDate</name>
+									<type>org.joda.time.LocalDate</type>
+									<converter>com.sonicle.webtop.core.jooq.LocalDateConverter</converter>
+								</customType>
+								<customType>
 									<name>JodaDateTime</name>
 									<type>org.joda.time.DateTime</type>
 									<converter>com.sonicle.webtop.core.jooq.DateTimeConverter</converter>
@@ -96,9 +106,14 @@
 							</customTypes>
 							<forcedTypes>
 								<forcedType>
+									<name>JodaLocalDate</name>
+									<expressions>.*</expressions>
+									<types>date.*</types>
+								</forcedType>
+								<forcedType>
 									<name>JodaDateTime</name>
 									<expressions>.*</expressions>
-									<types>date.*|timestamp.*</types>
+									<types>timestamp.*</types>
 								</forcedType>
 							</forcedTypes>
 						</database>

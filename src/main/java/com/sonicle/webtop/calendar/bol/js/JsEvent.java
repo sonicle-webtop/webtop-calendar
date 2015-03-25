@@ -45,12 +45,37 @@ public class JsEvent {
 	
 	public Integer eventId;
 	public Integer calendarId;
-	public String title;
+	public Integer recurrenceId;
 	public String startDate;
 	public String endDate;
 	public String timezone;
 	public Boolean allDay;
+	public String title;
+	public String description;
 	public String location;
+	public Boolean isPrivate;
+	public Boolean busy;
+	public Integer reminder;
+	
+	public String rrEndsMode;
+	public Short rrRepeatTimes;
+	public String rrUntilDate;
+	
+	public String rrType;
+	public String rrDaylyType;
+	public Short rrDaylyFreq;
+	public Short rrWeeklyFreq;
+	public Boolean rrWeeklyDay1;
+	public Boolean rrWeeklyDay2;
+	public Boolean rrWeeklyDay3;
+	public Boolean rrWeeklyDay4;
+	public Boolean rrWeeklyDay5;
+	public Boolean rrWeeklyDay6;
+	public Boolean rrWeeklyDay7;
+	public Short rrMonthlyFreq;
+	public Short rrMonthlyDay;
+	public Short rrYearlyFreq;
+	public Short rrYearlyDay;
 	
 	public JsEvent(OEvent event, TimeZone tz) {
 		eventId = event.getEventId();

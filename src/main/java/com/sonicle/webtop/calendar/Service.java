@@ -46,6 +46,7 @@ import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
+import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsCalEventDate;
@@ -55,6 +56,7 @@ import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar.JsTreeCalendarList;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
+import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
 import static com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS;
 import com.sonicle.webtop.core.bol.js.JsSimple;
 import com.sonicle.webtop.core.bol.js.JsValue;
@@ -275,10 +277,10 @@ public class Service extends BaseService {
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
-				String start = ServletUtils.getStringParameter(request, "startDate", true);
-				String end = ServletUtils.getStringParameter(request, "endDate", true);
-				DateTime fromDate = OEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
-				DateTime toDate = OEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
+				String from = ServletUtils.getStringParameter(request, "startDate", true);
+				String to = ServletUtils.getStringParameter(request, "endDate", true);
+				DateTime fromDate = OEvent.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+				DateTime toDate = OEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
 				// Get events for each visible group
 				List<CalendarManager.GroupEvents> grpEvts = null;
@@ -288,7 +290,11 @@ public class Service extends BaseService {
 					grpEvts = manager.getEvents(con, group, fromDate, toDate);
 					for(CalendarManager.GroupEvents ge : grpEvts) {
 						for(OEvent evt : ge.events) {
-							items.add(new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone()));
+							if(evt.getRecurrenceId() == null) {
+								items.add(new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone()));
+							} else {
+								items.addAll(manager.expandRecurringEvent(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone()));
+							}
 						}
 					}
 				}
@@ -393,11 +399,13 @@ public class Service extends BaseService {
 	public void processManageEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		OEvent event = null;
+		ORecurrence rr = null;
 		JsEvent item = null;
 		
 		try {
 			UserProfile up = env.getProfile();
 			EventDAO edao = EventDAO.getInstance();
+			RecurrenceDAO rrdao = RecurrenceDAO.getInstance();
 			con = getConnection();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
@@ -411,9 +419,30 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				event = new OEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
-				event.setEventId(edao.getSequence(con).intValue());
-				edao.insert(con, event);
+				event = new OEvent(edao.getSequence(con).intValue());
+				event.fillFrom(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
+				
+				if(!StringUtils.isEmpty(pl.data.rrType)) {
+					rr = new ORecurrence(rrdao.getSequence(con).intValue());
+					rr.fillFrom(pl.data, event);
+				}
+				
+				try {
+					con.setAutoCommit(false);
+					
+					if(rr != null) {
+						rrdao.insert(con, rr);
+						event.setRecurrenceId(rr.getRecurrenceId());
+					}
+					edao.insert(con, event);
+					
+					con.commit();
+					
+				} catch(Exception ex1) {
+					con.rollback();
+					throw ex1;
+				}
+				
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
@@ -427,6 +456,7 @@ public class Service extends BaseService {
 			
 		} catch(Exception ex) {
 			logger.error("Error executing action ManageEvents", ex);
+			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {
 			DbUtils.closeQuietly(con);

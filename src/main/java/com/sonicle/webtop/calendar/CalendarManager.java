@@ -33,15 +33,20 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.rits.cloning.Cloner;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
+import com.sonicle.webtop.calendar.bol.ORecurrence;
+import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
+import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
+import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
 import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ShareDAO;
@@ -52,11 +57,14 @@ import com.sonicle.webtop.core.sdk.UserProfile;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TimeZone;
+import org.apache.commons.lang3.ObjectUtils;
 import org.joda.time.DateTime;
+import org.joda.time.Days;
 import org.slf4j.Logger;
 
 /**
@@ -160,6 +168,7 @@ public class CalendarManager {
 	
 	public List<GroupEvents> getEvents(Connection con, CalendarGroup group, DateTime fromDate, DateTime toDate) {
 		ArrayList<GroupEvents> grpEvts = new ArrayList<>();
+		
 		CalendarDAO cdao = CalendarDAO.getInstance();
 		EventDAO edao = EventDAO.getInstance();
 		
@@ -167,24 +176,307 @@ public class CalendarManager {
 		List<OEvent> evts = null;
 		for(OCalendar cal : cals) {
 			evts = edao.selectByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
+			evts.addAll(edao.selectRecurringByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate));
 			grpEvts.add(new GroupEvents(cal, evts));
 		}
 		return grpEvts;
+	}
+	
+	public List<JsSchedulerEvent> expandRecurringEvent(Connection con, OCalendar cal, OEvent event, DateTime fromDate, DateTime toDate, TimeZone userTz) {
+		ArrayList<JsSchedulerEvent> events = new ArrayList<>();
+		ORecurrence rr = null;
+		OEvent newEvent = null;
 		
-		/*
-		MyCalendarGroup myGroup = null;
-		SharedCalendarGroup sharedGroup = null;
-		if(group instanceof MyCalendarGroup) {
-			myGroup = (MyCalendarGroup)group;
+		RecurrenceDAO rrdao = RecurrenceDAO.getInstance();
+		
+		if(event.getRecurrenceId() == null) return null;
+		rr = rrdao.select(con, event.getRecurrenceId());
+		if(rr == null) return null;
+		
+		int eventDays = Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays();
+		
+		DateTime date = fromDate, startDt, endDt;
+		while((date.compareTo(toDate) <= 0) && (date.compareTo(rr.getUntilDate()) <= 0)) {
+			if(legacyGetEventsInDate(con, event, rr, fromDate, toDate)) {
+				startDt = event.getStartDate().withDate(date.toLocalDate());
+				endDt = event.getEndDate().withDate(startDt.plusDays(eventDays).toLocalDate());
+				
+				newEvent = new Cloner().deepClone(event);
+				newEvent.setStartDate(startDt);
+				newEvent.setEndDate(endDt);
+				events.add(new JsSchedulerEvent(newEvent, cal, userTz));
+			}
+			date = date.plusDays(1);
+		}
+		return events;
+	}
+	
+	public boolean checkUntilDate(ORecurrence rr) {
+		return rr.getUntilDate().compareTo(rr.getStartDate()) >= 0;
+	}
+	
+	public boolean legacyGetEventsInDate(Connection con, OEvent event, ORecurrence rr, DateTime fromDate, DateTime toDate) {
+		boolean success = false;
+		
+		RecurrenceDAO rrdao = RecurrenceDAO.getInstance();
+		
+		ORecurrenceBroken rrb = rrdao.selectBroken(con, event.getEventId(), rr.getRecurrenceId(), fromDate.toLocalDate());
+		if(rrb != null) return false;
+		
+		int dd = fromDate.getDayOfMonth();
+		int mm = fromDate.getMonthOfYear()+1;
+		int yyyy = fromDate.getYear();
+		String until_day = String.valueOf(toDate.getDayOfMonth());
+		String until_month = String.valueOf(toDate.getMonthOfYear()+1);
+		String until_year = String.valueOf(toDate.getYear());
+		String eldd = null;
+		String elmm = null;
+		String elyyyy = null;
 
+		Calendar day = Calendar.getInstance();
+		day.set(yyyy, mm - 1, dd, 0, 0, 0);
+		day.setFirstDayOfWeek(Calendar.MONDAY);
 
+		int repeat = Integer.parseInt(String.valueOf(rr.getRepeat()));
+		
+		if (checkUntilDate(rr) || repeat != 0) {
+			Calendar untilDate = Calendar.getInstance();
+			untilDate.set(Integer.parseInt(until_year), Integer.parseInt(until_month) - 1, Integer.parseInt(until_day), 0, 0, 0);
+			untilDate.setFirstDayOfWeek(Calendar.MONDAY);
+			untilDate.clear(Calendar.MILLISECOND);
+			Calendar eventDate = Calendar.getInstance();
+			eventDate.set(rr.getStartDate().getYear(), rr.getStartDate().getMonthOfYear()-1, rr.getStartDate().getDayOfMonth(), 0, 0, 0);
+			eventDate.setFirstDayOfWeek(Calendar.MONDAY);
+			eventDate.clear(Calendar.MILLISECOND);
+			int d = eventDate.get(Calendar.DAY_OF_MONTH);
+			int m = eventDate.get(Calendar.MONTH);
+			int y = eventDate.get(Calendar.YEAR);
+			
+			if (rr.getType().equals("D")) {
 
-		} else if(group instanceof SharedCalendarGroup) {
-			sharedGroup = (SharedCalendarGroup)group;
+				// Ogni N GG
+				int step = rr.getDaylyFreq();
+				while (untilDate.after(eventDate) || untilDate.equals(eventDate) || repeat > 0) {
+					d = eventDate.get(Calendar.DAY_OF_MONTH);
+					m = eventDate.get(Calendar.MONTH);
+					y = eventDate.get(Calendar.YEAR);
+					
+					eldd = d + "";
+					elmm = (m + 1) + "";
+					elyyyy = y + "";
+
+					if (d == day.get(Calendar.DAY_OF_MONTH) && m == day.get(Calendar.MONTH) && y == day.get(Calendar.YEAR)) {
+						return true;
+					}
+					d += step;
+					eventDate.set(y, m, d);
+					if ((--repeat) == 0) {
+						break;
+					}
+				}
+			} else if (rr.getType().equals("F")) {
+				// Giorni Feriali
+
+				while (untilDate.after(eventDate) || untilDate.equals(eventDate) || repeat > 0) {
+					d = eventDate.get(Calendar.DAY_OF_MONTH);
+					m = eventDate.get(Calendar.MONTH);
+					y = eventDate.get(Calendar.YEAR);
+					int dow = eventDate.get(Calendar.DAY_OF_WEEK) - 1;
+					if (dow <= 0) {
+						dow = 7;
+					}
+					if (dow >= 1 && dow <= 5) {
+
+						eldd = d + "";
+						elmm = (m + 1) + "";
+						elyyyy = y + "";
+						eventDate.set(y, m, d);
+
+						if (d == day.get(Calendar.DAY_OF_MONTH) && m == day.get(Calendar.MONTH) && y == day.get(Calendar.YEAR)) {
+							return true;
+						}
+					}
+					d++;
+					eventDate.set(y, m, d);
+					if ((--repeat) == 0) {
+						break;
+					}
+				}
+
+			} else if (rr.getType().equals("W")) {
+				int step = rr.getWeeklyFreq() * 7;
+
+				while (untilDate.after(eventDate) || untilDate.equals(eventDate) || repeat > 0) {
+					int dtemp = eventDate.get(Calendar.DAY_OF_MONTH);
+					int mtemp = eventDate.get(Calendar.MONTH);
+					int ytemp = eventDate.get(Calendar.YEAR);
+					for (int i = 1; i <= 7; i++) {
+						d = eventDate.get(Calendar.DAY_OF_MONTH);
+						m = eventDate.get(Calendar.MONTH);
+						y = eventDate.get(Calendar.YEAR);
+						int dow = eventDate.get(Calendar.DAY_OF_WEEK) - 1;
+						if (dow <= 0) {
+							dow = 7;
+						}
+						Boolean dx = null;
+						if (dow == 1) {
+							dx = rr.getWeeklyDay_1();
+						}
+						if (dow == 2) {
+							dx = rr.getWeeklyDay_2();
+						}
+						if (dow == 3) {
+							dx = rr.getWeeklyDay_3();
+						}
+						if (dow == 4) {
+							dx = rr.getWeeklyDay_4();
+						}
+						if (dow == 5) {
+							dx = rr.getWeeklyDay_5();
+						}
+						if (dow == 6) {
+							dx = rr.getWeeklyDay_6();
+						}
+						if (dow == 7) {
+							dx = rr.getWeeklyDay_7();
+						}
+						if (dx != null && dx) {
+
+							eldd = d + "";
+							elmm = (m + 1) + "";
+							elyyyy = y + "";
+							eventDate.set(y, m, d);
+
+							if (d == day.get(Calendar.DAY_OF_MONTH) && m == day.get(Calendar.MONTH) && y == day.get(Calendar.YEAR)) {
+								return true;
+							}
+						}
+						d++;
+						eventDate.set(y, m, d);
+						if (untilDate.before(eventDate)) {
+							break;
+						}
+					}
+					dtemp += step;
+					eventDate.set(ytemp, mtemp, dtemp);
+					if ((--repeat) == 0) {
+						break;
+					}
+				}
+			} else if (rr.getType().equals("M")) {
+				int last = 32;
+				int pday = rr.getMonthlyDay();
+				int step = rr.getMonthlyFreq();
+
+				boolean add = true;
+				while (untilDate.after(eventDate) || untilDate.equals(eventDate) || repeat > 0) {
+					d = eventDate.get(Calendar.DAY_OF_MONTH);
+					m = eventDate.get(Calendar.MONTH);
+					y = eventDate.get(Calendar.YEAR);
+					if (add && pday != last && pday == d) {
+
+						eldd = d + "";
+						elmm = (m + 1) + "";
+						elyyyy = y + "";
+						eventDate.set(y, m, d);
+
+						if (d == day.get(Calendar.DAY_OF_MONTH) && m == day.get(Calendar.MONTH) && y == day.get(Calendar.YEAR)) {
+							return true;
+						}
+					}
+					if (add && pday == last && d == eventDate.getActualMaximum(Calendar.DAY_OF_MONTH)) {
+						d = eventDate.get(Calendar.DAY_OF_MONTH);
+						m = eventDate.get(Calendar.MONTH);
+						y = eventDate.get(Calendar.YEAR);
+						
+						eldd = d + "";
+						elmm = (m + 1) + "";
+						elyyyy = y + "";
+
+						if (d == day.get(Calendar.DAY_OF_MONTH) && m == day.get(Calendar.MONTH) && y == day.get(Calendar.YEAR)) {
+							return true;
+						}
+
+					}
+					if (add) {
+						if (pday != last) {
+							m += step;
+							eventDate.set(y, m, pday);
+						} else if (add && pday == last) {
+							m += step;
+							eventDate.set(y, m, 1);
+							eventDate.set(y, m, eventDate.getActualMaximum(Calendar.DAY_OF_MONTH));
+						}
+					} else {
+						if (pday != last) {
+							eventDate.set(y, m, pday);
+						} else if (add && pday == last) {
+							eventDate.set(y, m, 1);
+							eventDate.set(y, m, eventDate.getActualMaximum(Calendar.DAY_OF_MONTH));
+						}
+					}
+					if (eventDate.get(Calendar.MONTH) != m) {
+						add = false;
+					} else {
+						add = true;
+					}
+
+					if (d == day.get(Calendar.DAY_OF_MONTH) && m == day.get(Calendar.MONTH) && y == day.get(Calendar.YEAR)) {
+						return true;
+					}
+					if ((--repeat) == 0) {
+						break;
+					}
+				}
+			} else if (rr.getType().equals("Y")) {
+				int pday = rr.getYearlyDay();
+				int pmon = rr.getYearlyFreq() - 1;
+				if (pday > 0 && pday < 32 && pmon >= 0) {
+
+					while (untilDate.after(eventDate) || untilDate.equals(eventDate) || repeat > 0) {
+
+						d = eventDate.get(Calendar.DAY_OF_MONTH);
+						m = eventDate.get(Calendar.MONTH);
+						y = eventDate.get(Calendar.YEAR);
+						if (m < pmon || (m == pmon && d < pday)) {
+							d = pday;
+							m = pmon;
+							y++;
+							eventDate.set(y, m, d);
+							continue;
+						}
+						if (d == pday && m == pmon) {
+							d = eventDate.get(Calendar.DAY_OF_MONTH);
+							m = eventDate.get(Calendar.MONTH);
+							y = eventDate.get(Calendar.YEAR);
+							
+							eldd = d + "";
+							elmm = (m + 1) + "";
+							elyyyy = y + "";
+
+							if (d == day.get(Calendar.DAY_OF_MONTH) && m == day.get(Calendar.MONTH) && y == day.get(Calendar.YEAR)) {
+								return true;
+							}
+
+						}
+						y++;
+						d = pday;
+						m = pmon;
+						eventDate.set(y, m, d);
+						if ((--repeat) == 0) {
+							break;
+						}
+					}
+				}
+			}
 
 		}
-		*/
+		return success;
 	}
+	
+	
+	
+	
 	
 	public static class GroupEvents {
 		public final OCalendar calendar;

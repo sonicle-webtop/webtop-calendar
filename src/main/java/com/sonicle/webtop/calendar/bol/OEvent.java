@@ -34,11 +34,7 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
-import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent1;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
-import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.TimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -52,36 +48,55 @@ import org.jooq.tools.StringUtils;
  */
 public class OEvent extends Events {
 	
+	public final static String STATUS_NEW = "N";
+	public final static String STATUS_MODIFIED = "M";
+	public final static String STATUS_DELETED = "D";
+	
 	public OEvent() {
 		super();
 	}
 	
-	public OEvent(JsEvent js, String workdayStart, String workdayEnd) {
+	public OEvent(int eventId) {
 		super();
-		setEventId(js.eventId);
-		setCalendarId(js.calendarId);
+		setEventId(eventId);
+		setReadOnly(false);
+		setStatus(STATUS_NEW);
+	}
+	
+	public void doTimeChecks() {
 		
-		// Adjust times
-		/*
-		if(js.allDay) {
-			js.startTime = MessageFormat.format("{0}:00", workdayStart);
-			js.endTime = MessageFormat.format("{0}:00", workdayEnd);
+		// Checks if end < start
+		if(getEndDate().compareTo(getStartDate()) < 0) {
+			setEndDate(getStartDate().toDateTime());
 		}
-		*/
 		
-		// Incoming fields are in precise timezone, so we need to instantiate
-		// the formatter specifying the right timezone to use. Then DateTime
-		// objects are automatically translated to UTC
-		DateTimeZone etz = DateTimeZone.forID(js.timezone);
-		DateTime start = parseYmdHmsWithZone(js.startDate, etz);
-		DateTime end = parseYmdHmsWithZone(js.endDate, etz);
-		setStartDate(start);
-		setEndDate(end);
+		// Force allDay hours
+		if(getAllDay()) {
+			setStartDate(getStartDate().withTime(0, 0, 0, 0));
+			setEndDate(getEndDate().withTime(23, 59, 59, 0));
+		}
+	}
+	
+	public void fillFrom(JsEvent jse, String workdayStart, String workdayEnd) {
+		setEventId(jse.eventId);
+		setCalendarId(jse.calendarId);
 		
-		setTitle(js.title);
-		setAllDay(js.allDay);
-		setTimezone(js.timezone);
-		setLocation(js.location);
+		// Incoming fields are in a precise timezone, so we need to instantiate
+		// the formatter specifying the right timezone to use.
+		// Then DateTime objects are automatically translated to UTC
+		DateTimeZone etz = DateTimeZone.forID(jse.timezone);
+		setStartDate(parseYmdHmsWithZone(jse.startDate, etz));
+		setEndDate(parseYmdHmsWithZone(jse.endDate, etz));
+		setTimezone(jse.timezone);
+		setAllDay(jse.allDay);
+		doTimeChecks();
+		
+		setTitle(jse.title);
+		setDescription(jse.description);
+		setLocation(jse.location);
+		setIsPrivate(jse.isPrivate);
+		setBusy(jse.busy);
+		setReminder(jse.reminder);
 	}
 	
 	public void updateDates(String satrtDate, String endDate, TimeZone userTz) {

@@ -96,48 +96,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					EM.setTime(this.get('record'), 'endDate', val);
 				}
 			},
+			allDay: WT.Util.checkboxBind('record', 'allDay'),
+			isPrivate: WT.Util.checkboxBind('record', 'isPrivate'),
+			busy: WT.Util.checkboxBind('record', 'busy'),
 			/*
-			startDate: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('startDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setDate(this.get('record'), 'startDate', value);
-				}
-			},
-			startTime: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('startDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setTime(this.get('record'), 'startDate', value);
-				}
-			},
-			endDate: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('endDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setDate(this.get('record'), 'endDate', value);
-				}
-			},
-			endTime: {
-				bind: {bindTo: '{record}', deep: true},
-				get: function(model) {
-					return Ext.Date.clone(model.get('endDate'));
-				},
-				set: function(value) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setTime(this.get('record'), 'endDate', value);
-				}
-			},
-			*/
 			allDay: {
 				bind: {bindTo: '{record.allDay}'},
 				get: function(val) {
@@ -165,6 +127,47 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					this.get('record').set('busy', val);
 				}
 			}
+			*/
+			rrType: WT.Util.checkboxGroupBind('record', 'rrType'),
+			isRRDayly: WT.Util.equalsFormula('record', 'rrType', 'D'),
+			isRRWeekly: WT.Util.equalsFormula('record', 'rrType', 'W'),
+			isRRMonthly: WT.Util.equalsFormula('record', 'rrType', 'M'),
+			isRRYearly: WT.Util.equalsFormula('record', 'rrType', 'Y'),
+			/*
+			isRRDayly: {
+				bind: {bindTo: '{record.rrType}'},
+				get: function(val) {
+					return (val === 'D');
+				}
+			},
+			isRRWeekly: {
+				bind: {bindTo: '{record.rrType}'},
+				get: function(val) {
+					return (val === 'W');
+				}
+			},
+			isRRMonthly: {
+				bind: {bindTo: '{record.rrType}'},
+				get: function(val) {
+					return (val === 'M');
+				}
+			},
+			isRRYearly: {
+				bind: {bindTo: '{record.rrType}'},
+				get: function(val) {
+					return (val === 'Y');
+				}
+			},
+			*/
+			rrDaylyType: WT.Util.checkboxGroupBind('record', 'rrDaylyType'),
+			rrWeeklyDay1: WT.Util.checkboxBind('record', 'rrWeeklyDay1'),
+			rrWeeklyDay2: WT.Util.checkboxBind('record', 'rrWeeklyDay2'),
+			rrWeeklyDay3: WT.Util.checkboxBind('record', 'rrWeeklyDay3'),
+			rrWeeklyDay4: WT.Util.checkboxBind('record', 'rrWeeklyDay4'),
+			rrWeeklyDay5: WT.Util.checkboxBind('record', 'rrWeeklyDay5'),
+			rrWeeklyDay6: WT.Util.checkboxBind('record', 'rrWeeklyDay6'),
+			rrWeeklyDay7: WT.Util.checkboxBind('record', 'rrWeeklyDay7'),
+			rrEndsMode: WT.Util.checkboxGroupBind('record', 'rrEndsMode')
 		}
 	},
 	
@@ -223,7 +226,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					width: 80
 				}, {
 					xtype: 'button',
-					iconCls: 'wtcal-icon-now',
+					iconCls: 'wtcal-icon-now-xs',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					handler: function() {
 						var EM = Sonicle.webtop.calendar.model.Event;
@@ -263,7 +266,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					width: 80
 				}, {
 					xtype: 'button',
-					iconCls: 'wtcal-icon-now',
+					iconCls: 'wtcal-icon-now-xs',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					handler: function() {
 						var EM = Sonicle.webtop.calendar.model.Event;
@@ -370,12 +373,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			xtype: 'panel',
 			itemId: 'planning',
 			layout: 'form',
+			bodyPadding: 5,
 			title: me.mys.res('event.planning.tit')
 		}));
 		me.addRef('recurrence', Ext.create({
-			xtype: 'container',
+			xtype: 'panel',
 			itemId: 'recurrence',
-			layout: 'anchor',
+			//layout: 'anchor',
+			bodyPadding: 5,
 			title: me.mys.res('event.recurrence.tit'),
 			items: [{
 				xtype: 'container',
@@ -386,9 +391,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					width: 120,
 					items: [{
 						xtype: 'radiogroup',
+						bind: {
+							value: '{rrType}'
+						},
 						layout: 'vbox',
 						defaults: {
-							name: 'rrType'
+							name: 'rrType',
+							margin: '0 0 15 0'
 						},
 						items: [{
 							inputValue: '',
@@ -414,7 +423,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					items: [{
 						xtype: 'displayfield' // none row
 					}, {
+						xtype: 'soseparator'
+					}, {
 						xtype: 'fieldcontainer', // dayly row
+						bind: {
+							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
+							//disabled: '{!isRRDayly}'
+						},
 						layout: 'hbox',
 						defaults: {
 							margin: '0 10 0 0'
@@ -422,40 +437,49 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						items: [{
 							xtype: 'radiogroup',
 							columns: [80, 60, 80, 150],
-							defaults: {
-								name: 'dayly'
-							},
 							items: [{
-								inputValue: '',
-								boxLabel: WT.res('rr.type.dayly.msg1')
+								name: 'rrDaylyType',
+								inputValue: '1',
+								boxLabel: WT.res('rr.type.dayly.type.1')
 							}, {
 								xtype: 'combo',
+								bind: '{record.rrDaylyFreq}',
 								typeAhead: true,
 								queryMode: 'local',
 								forceSelection: true,
 								store: Ext.create('WT.store.RRDaylyFreq'),
 								valueField: 'id',
 								displayField: 'id',
-								width: 60
+								width: 60,
+								margin: '0 5 0 0'
 							}, {
 								xtype: 'label',
 								text: WT.res('rr.type.dayly.freq')
 							}, {
-								inputValue: '',
-								boxLabel: WT.res('rr.type.dayly.msg2')
+								name: 'rrDaylyType',
+								inputValue: '2',
+								boxLabel: WT.res('rr.type.dayly.type.2')
 							}]
 						}]
 					}, {
+						xtype: 'soseparator'
+					}, {
 						xtype: 'fieldcontainer', // weekly row
+						bind: {
+							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
+							//disabled: '{!isRRWeekly}'
+						},
 						layout: 'hbox',
 						defaults: {
 							margin: '0 10 0 0'
 						},
 						items: [{
 							xtype: 'label',
-							text: WT.res('rr.type.weekly.msg1')
+							text: WT.res('rr.type.weekly.msg1'),
+							width: 75
 						}, {
 							xtype: 'combo',
+							bind: '{record.rrWeeklyFreq}',
 							typeAhead: true,
 							queryMode: 'local',
 							forceSelection: true,
@@ -472,39 +496,48 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						}, {
 							xtype: 'checkboxgroup',
 							items: [{
-								inputValue: '',
-								boxLabel: WT.res('rr.type.weekly.day0')
+								bind: '{rrWeeklyDay1}',
+								boxLabel: Sonicle.Date.getShortestDayName(1)
 							}, {
-								inputValue: '',
-								boxLabel: WT.res('rr.type.weekly.day1')
+								bind: '{rrWeeklyDay2}',
+								boxLabel: Sonicle.Date.getShortestDayName(2)
 							}, {
-								inputValue: '',
-								boxLabel: WT.res('rr.type.weekly.day2')
+								bind: '{rrWeeklyDay3}',
+								boxLabel: Sonicle.Date.getShortestDayName(3)
 							}, {
-								inputValue: '',
-								boxLabel: WT.res('rr.type.weekly.day3')
+								bind: '{rrWeeklyDay4}',
+								boxLabel: Sonicle.Date.getShortestDayName(4)
 							}, {
-								inputValue: '',
-								boxLabel: WT.res('rr.type.weekly.day4')
-							},{
-								inputValue: '',
-								boxLabel: WT.res('rr.type.weekly.day5')
+								bind: '{rrWeeklyDay5}',
+								boxLabel: Sonicle.Date.getShortestDayName(5)
 							}, {
-								inputValue: '',
-								boxLabel: WT.res('rr.type.weekly.day6')
-							}]
+								bind: '{rrWeeklyDay6}',
+								boxLabel: Sonicle.Date.getShortestDayName(6)
+							}, {
+								bind: '{rrWeeklyDay7}',
+								boxLabel: Sonicle.Date.getShortestDayName(0)
+							}],
+							width: 270
 						}]
 					}, {
+						xtype: 'soseparator'
+					}, {
 						xtype: 'fieldcontainer', // monthly row
+						bind: {
+							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
+							//disabled: '{!isRRMonthly}'
+						},
 						layout: 'hbox',
 						defaults: {
 							margin: '0 10 0 0'
 						},
 						items: [{
 							xtype: 'label',
-							text: WT.res('rr.type.monthly.msg1')
+							text: WT.res('rr.type.monthly.msg1'),
+							width: 75
 						}, {
 							xtype: 'combo',
+							bind: '{record.rrMonthlyDay}',
 							typeAhead: true,
 							queryMode: 'local',
 							forceSelection: true,
@@ -517,6 +550,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							text: WT.res('rr.type.monthly.msg2')
 						}, {
 							xtype: 'combo',
+							bind: '{record.rrMonthlyFreq}',
 							typeAhead: true,
 							queryMode: 'local',
 							forceSelection: true,
@@ -529,16 +563,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							text: WT.res('rr.type.monthly.freq')
 						}]
 					}, {
+						xtype: 'soseparator'
+					}, {
 						xtype: 'fieldcontainer', // yearly row
+						bind: {
+							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
+							//disabled: '{!isRRYearly}'
+						},
 						layout: 'hbox',
 						defaults: {
 							margin: '0 10 0 0'
 						},
 						items: [{
 							xtype: 'label',
-							text: WT.res('rr.type.yearly.msg1')
+							text: WT.res('rr.type.yearly.msg1'),
+							width: 75
 						}, {
 							xtype: 'combo',
+							bind: '{record.rrYearlyDay}',
 							typeAhead: true,
 							queryMode: 'local',
 							forceSelection: true,
@@ -551,70 +593,58 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							text: WT.res('rr.type.yearly.msg2')
 						}, {
 							xtype: 'combo',
+							bind: '{record.rrYearlyFreq}',
 							typeAhead: true,
 							queryMode: 'local',
 							forceSelection: true,
 							store: Ext.create('WT.store.RRYearlyFreq'),
 							valueField: 'id',
 							displayField: 'desc',
-							width: 60
+							width: 120
 						}]
 					}]
 				}]
 			}, {
 				xtype: 'form',
-				layout: 'anchor'
-			}]
-		}));
-		
-		
-		
-		/*
-		me.addRef('recurrence', Ext.create({
-			xtype: 'form',
-			itemId: 'recurrence',
-			layout: 'anchor',
-			title: me.mys.res('event.recurrence.tit'),
-			items: [{
-				xtype: 'radiogroup',
-				defaults: {
-					name: 'rrType',
-					margin: '0 10 0 0'
-				},
-				items: [{
-					inputValue: '',
-					boxLabel: WT.res('rr.type.none')
-				}, {
-					inputValue: 'D',
-					boxLabel: WT.res('rr.type.dayly')
-				}, {
-					inputValue: 'W',
-					boxLabel: WT.res('rr.type.weekly')
-				}, {
-					inputValue: 'M',
-					boxLabel: WT.res('rr.type.monthly')
-				}, {
-					inputValue: 'Y',
-					boxLabel: WT.res('rr.type.yearly')
-				}]
-			}, {
-				xtype: 'fieldcontainer',
+				layout: 'anchor',
 				items: [{
 					xtype: 'radiogroup',
+					bind: {
+						value: '{rrEndsMode}'
+					},
+					columns: [70, 70, 50, 90, 50, 105],
 					items: [{
-						inputValue: '',
-						boxLabel: WT.res('rr.type.dayly.msg2')
+						name: 'rrEndsMode',
+						inputValue: 'never',
+						boxLabel: WT.res('rr.end.never')
 					}, {
-						inputValue: '',
-						boxLabel: WT.res('rr.type.type.msg1')
-					}]
+						name: 'rrEndsMode',
+						inputValue: 'repeat',
+						boxLabel: WT.res('rr.end.repeat')
+					}, {
+						xtype: 'numberfield',
+						bind: '{record.rrRepeatTimes}',
+						minValue: 1,
+						maxValue: 10,
+						width: 50,
+						margin: '0 5 0 0'
+					}, {
+						xtype: 'label',
+						text: WT.res('rr.end.repeat.times')
+					}, {
+						name: 'rrEndsMode',
+						inputValue: 'until',
+						boxLabel: WT.res('rr.end.until')
+					}, {
+						xtype: 'datefield',
+						bind: '{record.rrUntilDate}',
+						width: 105
+					}],
+					fieldLabel: WT.res('rr.end')
 				}]
-			}, {
-				xtype: 'fieldcontainer',
-				items: []
 			}]
 		}));
-		*/
+		
 		me.add(Ext.create({
 			region: 'center',
 			xtype: 'container',

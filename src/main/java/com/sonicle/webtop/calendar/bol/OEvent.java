@@ -54,11 +54,6 @@ public class OEvent extends Events {
 	
 	public OEvent() {
 		super();
-	}
-	
-	public OEvent(int eventId) {
-		super();
-		setEventId(eventId);
 		setReadOnly(false);
 		setStatus(STATUS_NEW);
 	}
@@ -78,7 +73,7 @@ public class OEvent extends Events {
 	}
 	
 	public void fillFrom(JsEvent jse, String workdayStart, String workdayEnd) {
-		setEventId(jse.eventId);
+		if(jse.eventId > 0) setEventId(jse.eventId); // New events come with -1 as id
 		setCalendarId(jse.calendarId);
 		
 		// Incoming fields are in a precise timezone, so we need to instantiate

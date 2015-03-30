@@ -83,6 +83,17 @@ public class RecurrenceDAO extends BaseDAO {
 			.execute();
 	}
 	
+	public int updateRRule(Connection con, Integer recurrenceId, String rr) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(RECURRENCES)
+			.set(RECURRENCES.RULE, rr)
+			.where(
+					RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
+			)
+			.execute();
+	}
+	
 	public ORecurrenceBroken selectBroken(Connection con, Integer recurrenceId, Integer eventId, LocalDate eventDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl

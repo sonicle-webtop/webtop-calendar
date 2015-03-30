@@ -59,12 +59,24 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TimeZone;
+import net.fortuna.ical4j.model.DateList;
+import net.fortuna.ical4j.model.PeriodList;
+import net.fortuna.ical4j.model.Recur;
+import net.fortuna.ical4j.model.TimeZoneRegistryImpl;
+import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.parameter.Value;
+import net.fortuna.ical4j.model.property.RRule;
+import net.fortuna.ical4j.util.CompatibilityHints;
 import org.apache.commons.lang3.ObjectUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
+import org.joda.time.Period;
+import org.jooq.tools.StringUtils;
 import org.slf4j.Logger;
 
 /**
@@ -80,6 +92,15 @@ public class CalendarManager {
 	
 	public CalendarManager(ManagerEnvironment env) {
 		this.env = env;
+	}
+	
+	public void initilizeUser(UserProfile.Id profileId) throws Exception {
+		
+		// Adds built-in calendar
+	}
+	
+	public void cleanupUser(UserProfile.Id profileId, boolean deep) {
+		
 	}
 	
 	public LinkedHashMap<String, CalendarGroup> getCalendarGroups(Connection con, UserProfile.Id profileId) {
@@ -187,17 +208,75 @@ public class CalendarManager {
 		ORecurrence rr = null;
 		OEvent newEvent = null;
 		
-		RecurrenceDAO rrdao = RecurrenceDAO.getInstance();
+		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
 		
 		if(event.getRecurrenceId() == null) return null;
-		rr = rrdao.select(con, event.getRecurrenceId());
+		rr = rdao.select(con, event.getRecurrenceId());
 		if(rr == null) return null;
+		
+		// If not present, updates rrule
+		if(StringUtils.isEmpty(rr.getRule())) {
+			rr.setRule(rr.asRRule(DateTimeZone.UTC).getValue());
+			rdao.updateRRule(con, rr.getRecurrenceId(), rr.getRule());
+		}
+		
+		
+		
+		try {
+			DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
+			
+			
+			CompatibilityHints.setHintEnabled(CompatibilityHints.KEY_RELAXED_UNFOLDING, true);
+			VEvent ve = new VEvent(ICal4jUtils.toICal4jDateTime(event.getStartDate(), utz), ICal4jUtils.toICal4jDateTime(event.getEndDate(), utz), event.getTitle());
+			//ve.getProperties().add(new RRule("FREQ=DAILY;INTERVAL=7;UNTIL=20150501T000000Z"));
+			RRule rrule = new RRule("FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,WE;COUNT=2");
+			ve.getProperties().add(rrule);
+			
+			Recur recur = rrule.getRecur();
+			DateTime rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), recur, utz);
+			System.out.println(rrStart.toString());
+			
+			/*
+			net.fortuna.ical4j.model.Date dd = recur.getNextDate(ICalUtils.toICal4jDateTime(event.getStartDate(), utz), ICalUtils.toICal4jDateTime(event.getStartDate().minusDays(1), utz));
+			System.out.println(dd.toString());
+			*/
+			
+			/*
+			DateList dates = recur.getDates(ICalUtils.toICalDate(event.getStartDate(), dtz), ICalUtils.toICalDate(event.getEndDate(), dtz), Value.DATE_TIME);
+			for (Iterator it = dates.iterator(); it.hasNext();) {
+				net.fortuna.ical4j.model.Date recurrence = (net.fortuna.ical4j.model.Date) it.next();
+				System.out.println(recurrence.toString());
+			}
+			*/
+			
+			/*
+			net.fortuna.ical4j.model.Period per = ICalUtils.toICal4jPeriod(fromDate, toDate, utz);
+			net.fortuna.ical4j.model.Period startPeriod = ICalUtils.toICal4jPeriod(event.getStartDate(), event.getEndDate(), utz);
+			if(per.intersects(startPeriod)) {
+				System.out.println("eliminare il primo");	
+			}
+			*/
+			PeriodList pl = ve.calculateRecurrenceSet(ICal4jUtils.toICal4jPeriod(fromDate, toDate, utz));
+			DateTime start, end;
+			for(net.fortuna.ical4j.model.Period p : (Iterable<net.fortuna.ical4j.model.Period>) pl) {
+				start = ICal4jUtils.toJodaDateTime(p.getStart());
+				end = ICal4jUtils.toJodaDateTime(p.getEnd());
+				if(start.compareTo(rrStart) >= 0) {
+					System.out.println(event.getTitle()+": "+start.toString()+" -> "+end.toString());
+				}
+				//System.out.println(event.getTitle()+": "+p.getStart().toString()+" -> "+p.getEnd().toString());
+			}
+			
+		} catch(Exception exxx) {
+			
+		}
+		
 		
 		int eventDays = Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays();
 		
 		DateTime date = fromDate, startDt, endDt;
 		while((date.compareTo(toDate) <= 0) && (date.compareTo(rr.getUntilDate()) <= 0)) {
-			if(legacyGetEventsInDate(con, event, rr, fromDate, toDate)) {
+			if(legacyGetEventsInDate(con, event, rr, date, toDate)) {
 				startDt = event.getStartDate().withDate(date.toLocalDate());
 				endDt = event.getEndDate().withDate(startDt.plusDays(eventDays).toLocalDate());
 				
@@ -210,6 +289,58 @@ public class CalendarManager {
 		}
 		return events;
 	}
+	
+	public List<JsSchedulerEvent> expandRecurringEvent2(Connection con, OCalendar cal, OEvent event, DateTime fromDate, DateTime toDate, TimeZone userTz) {
+		ArrayList<JsSchedulerEvent> events = new ArrayList<>();
+		ORecurrence rec = null;
+		OEvent newEvent = null;
+		PeriodList periods = null;
+		
+		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
+		
+		if(event.getRecurrenceId() == null) return null;
+		rec = rdao.select(con, event.getRecurrenceId());
+		if(rec == null) return null;
+		
+		// If not present, updates rrule
+		if(StringUtils.isEmpty(rec.getRule())) {
+			rec.setRule(rec.asRRule(DateTimeZone.UTC).getValue());
+			rdao.updateRRule(con, rec.getRecurrenceId(), rec.getRule());
+		}
+		
+		try {
+			DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
+			RRule rr = new RRule(rec.getRule());
+			periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), rec.getStartDate(), rr, fromDate, toDate, utz);
+			
+			DateTime rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), utz);
+			int eventDays = Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays();
+			
+			DateTime perStart, neStart, neEnd;
+			for(net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
+				perStart = ICal4jUtils.toJodaDateTime(per.getStart());
+				if(perStart.compareTo(rrStart) >= 0) {
+					neStart = event.getStartDate().withDate(perStart.toLocalDate());
+					neEnd = event.getEndDate().withDate(neStart.plusDays(eventDays).toLocalDate());
+					
+					newEvent = new Cloner().deepClone(event);
+					newEvent.setStartDate(neStart);
+					newEvent.setEndDate(neEnd);
+					events.add(new JsSchedulerEvent(newEvent, cal, userTz));
+				}
+			}
+			
+		} catch(Exception ex) {
+			
+		}
+		return events;
+	}
+	
+	
+	
+	
+	
+	
 	
 	public boolean checkUntilDate(ORecurrence rr) {
 		return rr.getUntilDate().compareTo(rr.getStartDate()) >= 0;

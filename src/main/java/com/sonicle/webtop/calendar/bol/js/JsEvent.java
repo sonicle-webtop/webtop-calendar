@@ -58,13 +58,13 @@ public class JsEvent {
 	public Integer reminder;
 	
 	public String rrEndsMode;
-	public Short rrRepeatTimes;
+	public Integer rrRepeatTimes;
 	public String rrUntilDate;
 	
 	public String rrType;
 	public String rrDaylyType;
-	public Short rrDaylyFreq;
-	public Short rrWeeklyFreq;
+	public Integer rrDaylyFreq;
+	public Integer rrWeeklyFreq;
 	public Boolean rrWeeklyDay1;
 	public Boolean rrWeeklyDay2;
 	public Boolean rrWeeklyDay3;
@@ -72,10 +72,10 @@ public class JsEvent {
 	public Boolean rrWeeklyDay5;
 	public Boolean rrWeeklyDay6;
 	public Boolean rrWeeklyDay7;
-	public Short rrMonthlyFreq;
-	public Short rrMonthlyDay;
-	public Short rrYearlyFreq;
-	public Short rrYearlyDay;
+	public Integer rrMonthlyFreq;
+	public Integer rrMonthlyDay;
+	public Integer rrYearlyFreq;
+	public Integer rrYearlyDay;
 	
 	public JsEvent(OEvent event, TimeZone tz) {
 		eventId = event.getEventId();

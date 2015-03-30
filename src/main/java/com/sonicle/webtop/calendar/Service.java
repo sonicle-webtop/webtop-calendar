@@ -131,6 +131,7 @@ public class Service extends BaseService {
 			}	
 
 		} catch(SQLException ex) {
+			logger.error("Error initializing calendar groups", ex);
 			//TODO: gestire errore
 		} finally {
 			DbUtils.closeQuietly(con);
@@ -293,7 +294,7 @@ public class Service extends BaseService {
 							if(evt.getRecurrenceId() == null) {
 								items.add(new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone()));
 							} else {
-								items.addAll(manager.expandRecurringEvent(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone()));
+								items.addAll(manager.expandRecurringEvent2(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone()));
 							}
 						}
 					}
@@ -399,7 +400,7 @@ public class Service extends BaseService {
 	public void processManageEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		OEvent event = null;
-		ORecurrence rr = null;
+		ORecurrence rec = null;
 		JsEvent item = null;
 		
 		try {
@@ -419,20 +420,22 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				event = new OEvent(edao.getSequence(con).intValue());
+				event = new OEvent();
 				event.fillFrom(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
+				event.setEventId(edao.getSequence(con).intValue());
 				
 				if(!StringUtils.isEmpty(pl.data.rrType)) {
-					rr = new ORecurrence(rrdao.getSequence(con).intValue());
-					rr.fillFrom(pl.data, event);
+					rec = new ORecurrence();
+					rec.fillFrom(pl.data, event);
+					rec.setRecurrenceId(rrdao.getSequence(con).intValue());
 				}
 				
 				try {
 					con.setAutoCommit(false);
 					
-					if(rr != null) {
-						rrdao.insert(con, rr);
-						event.setRecurrenceId(rr.getRecurrenceId());
+					if(rec != null) {
+						rrdao.insert(con, rec);
+						event.setRecurrenceId(rec.getRecurrenceId());
 					}
 					edao.insert(con, event);
 					

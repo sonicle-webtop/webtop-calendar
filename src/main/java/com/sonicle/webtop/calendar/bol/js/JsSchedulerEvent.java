@@ -33,8 +33,10 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.web.JsonUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
+import com.sonicle.webtop.calendar.bol.ORecurrence;
 import java.util.TimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -47,8 +49,10 @@ import org.joda.time.format.DateTimeFormatter;
  */
 public class JsSchedulerEvent {
 	
+	public String id;
 	public Integer eventId;
 	public Integer calendarId;
+	public Integer recurrenceId;
 	public String startDate;
 	public String endDate;
 	public String timezone;
@@ -58,6 +62,10 @@ public class JsSchedulerEvent {
 	public String location;
 	public Boolean isPrivate;
 	public String reminder;
+	public Boolean isReadOnly;
+	public Boolean isRecurring;
+	
+	
 	public String notes = "";
 	public String url = "";
 	
@@ -65,9 +73,16 @@ public class JsSchedulerEvent {
 		
 	}
 	
+	public JsSchedulerEvent(OEvent event, ORecurrence recurrence, OCalendar calendar, TimeZone userTz) {
+		this(event, calendar, userTz);
+		isRecurring = true;
+	}
+	
 	public JsSchedulerEvent(OEvent event, OCalendar calendar, TimeZone userTz) {
+		id = String.valueOf(event.getEventId());
 		eventId = event.getEventId();
 		calendarId = event.getCalendarId();
+		recurrenceId = event.getRecurrenceId();
 		
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
@@ -82,7 +97,8 @@ public class JsSchedulerEvent {
 		location = event.getLocation();
 		isPrivate = event.getIsPrivate();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		//isReadOnly = event.getReadonly();
+		isReadOnly = event.getReadOnly();
+		isRecurring = false;
 	}
 	
 	public static String toYmdHmsWithZone(DateTime dt, TimeZone tz) {

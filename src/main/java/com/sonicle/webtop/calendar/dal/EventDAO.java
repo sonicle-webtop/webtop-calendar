@@ -37,6 +37,7 @@ import com.sonicle.webtop.calendar.bol.OEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
+import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
@@ -44,6 +45,7 @@ import java.sql.Connection;
 import java.util.List;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 
 /**
  *
@@ -78,29 +80,12 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.select(
+						EVENTS.EVENT_ID,
+						EVENTS.RECURRENCE_ID,
 						EVENTS.START_DATE,
 						EVENTS.END_DATE,
 						EVENTS.TIMEZONE
 				)
-				.from(EVENTS)
-				.where(
-						EVENTS.CALENDAR_ID.equal(calendarId)
-						.and(
-							EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
-							.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
-							.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
-						)
-				)
-				.orderBy(
-						EVENTS.START_DATE
-				)
-				.fetchInto(OEvent.class);
-	}
-	
-	public List<OEvent> selectByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-				.select(EVENTS.fields())
 				.from(EVENTS)
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)
@@ -114,6 +99,72 @@ public class EventDAO extends BaseDAO {
 							.or(EVENTS.STATUS.equal("M"))
 						)
 						.and(EVENTS.RECURRENCE_ID.isNull())
+				)
+				.orderBy(
+						EVENTS.START_DATE
+				)
+				.fetchInto(OEvent.class);
+	}
+	
+	public List<OEvent> selectByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		
+		return dsl
+				.select(
+						EVENTS.fields()
+				)
+				.select(
+						DSL.select(DSL.val(false))
+						.asField("hasBrokenRecurrences")
+				)
+				.from(EVENTS)
+				.where(
+						EVENTS.CALENDAR_ID.equal(calendarId)
+						.and(
+							EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
+							.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
+							.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
+						)
+						.and(
+							EVENTS.STATUS.equal("N")
+							.or(EVENTS.STATUS.equal("M"))
+						)
+						.and(EVENTS.RECURRENCE_ID.isNull())
+				)
+				.orderBy(
+						EVENTS.START_DATE
+				)
+				.fetchInto(OEvent.class);
+	}
+	
+	public List<OEvent> selectRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select(
+						EVENTS.EVENT_ID,
+						EVENTS.RECURRENCE_ID,
+						EVENTS.START_DATE,
+						EVENTS.END_DATE,
+						EVENTS.TIMEZONE
+				)
+				.select(
+						DSL.select(DSL.field("COUNT(*)>0"))
+						.from(RECURRENCES_BROKEN)
+						.where(RECURRENCES_BROKEN.RECURRENCE_ID.equal(EVENTS.RECURRENCE_ID))
+						.asField("hasBrokenRecurrences")
+				)
+				.from(EVENTS.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID)))
+				.where(
+						EVENTS.CALENDAR_ID.equal(calendarId)
+						.and(
+							RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
+							.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
+							.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
+						)
+						.and(
+							EVENTS.STATUS.equal("N")
+							.or(EVENTS.STATUS.equal("M"))
+						)
 				)
 				.orderBy(
 						EVENTS.START_DATE

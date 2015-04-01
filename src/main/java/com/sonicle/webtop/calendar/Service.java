@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.web.Crud;
+import com.sonicle.commons.web.JsonUtils;
 import com.sonicle.commons.web.json.JsListPayload;
 import com.sonicle.commons.web.json.JsPayload;
 import com.sonicle.commons.web.json.JsPayloadRecord;
@@ -58,6 +59,7 @@ import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
 import static com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS;
+import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.js.JsSimple;
 import com.sonicle.webtop.core.bol.js.JsValue;
 import com.sonicle.webtop.core.dal.BaseDAO.FieldsMap;
@@ -91,7 +93,7 @@ import org.slf4j.Logger;
 public class Service extends BaseService {
 	
 	public static final Logger logger = BaseService.getLogger(Service.class);
-
+	
 	private BasicEnvironment env = null;
 	private CalendarManager manager;
 	private CalendarUserSettings cus;
@@ -106,7 +108,7 @@ public class Service extends BaseService {
 	public void initialize() {
 		env = getEnv();
 		UserProfile profile = env.getProfile();
-		manager = new CalendarManager(getManagerEnv());
+		manager = new CalendarManager(getManifest());
 		cus = new CalendarUserSettings(profile.getDomainId(), profile.getUserId(), getId());
 		
 		// Loads available groups
@@ -169,7 +171,6 @@ public class Service extends BaseService {
 		ExtTreeNode child = null;
 		
 		try {
-			UserProfile up = env.getProfile();
 			con = getConnection();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
@@ -194,7 +195,7 @@ public class Service extends BaseService {
 
 				} else { // Node: group -> list group's calendars
 					UserProfile.Id upId = new UserProfile.Id(node);
-					List<OCalendar> cals = manager.getCalendars(con, upId);
+					List<OCalendar> cals = manager.getCalendars(upId);
 					
 					for(OCalendar cal : cals) children.add(createCalendarNode(node, cal));
 				}
@@ -253,7 +254,7 @@ public class Service extends BaseService {
 			for(CalendarGroup group : calendarGroups.values()) {
 				if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
 				
-				dates = manager.getEventsDates(con, group, fromDate, toDate);
+				dates = manager.getEventsDates(group, fromDate, toDate, up.getTimeZone());
 				for(DateTime dt : dates) {
 					items.add(new JsCalEventDate(JsSchedulerEvent.toYmdWithZone(dt, up.getTimeZone())));
 				}
@@ -284,6 +285,8 @@ public class Service extends BaseService {
 				DateTime toDate = OEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
 				// Get events for each visible group
+				JsSchedulerEvent jse = null;
+				List<OEvent> expEvents = null;
 				List<CalendarManager.GroupEvents> grpEvts = null;
 				for(CalendarGroup group : calendarGroups.values()) {
 					if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
@@ -292,9 +295,20 @@ public class Service extends BaseService {
 					for(CalendarManager.GroupEvents ge : grpEvts) {
 						for(OEvent evt : ge.events) {
 							if(evt.getRecurrenceId() == null) {
-								items.add(new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone()));
+								jse = new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone());
+								items.add(jse);
 							} else {
-								items.addAll(manager.expandRecurringEvent2(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone()));
+								expEvents = manager.expandRecurringEvent(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone());
+								int count = 1;
+								for(OEvent expEvent : expEvents) {
+									jse = new JsSchedulerEvent(expEvent, ge.calendar, up.getTimeZone());
+									jse.id = JsonUtils.buildRecId(expEvent.getEventId(), count);
+									jse.isRecurring = true;
+									items.add(jse);
+									count++;
+								}
+								//TODO: valutare se generalizzare la chiamata costruendo qui il JsSchedulerEvent  
+								//items.addAll(manager.expandRecurringEvent2(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone()));
 							}
 						}
 					}

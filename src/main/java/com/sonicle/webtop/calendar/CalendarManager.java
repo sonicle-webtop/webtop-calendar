@@ -42,40 +42,35 @@ import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
-import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
+import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ShareDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseService;
-import com.sonicle.webtop.core.sdk.ManagerEnvironment;
+import com.sonicle.webtop.core.sdk.BaseServiceManager;
+import com.sonicle.webtop.core.sdk.ServiceManifest;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TimeZone;
-import net.fortuna.ical4j.model.DateList;
 import net.fortuna.ical4j.model.PeriodList;
 import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.TimeZoneRegistryImpl;
 import net.fortuna.ical4j.model.component.VEvent;
-import net.fortuna.ical4j.model.parameter.Value;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.util.CompatibilityHints;
-import org.apache.commons.lang3.ObjectUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
-import org.joda.time.Period;
 import org.jooq.tools.StringUtils;
 import org.slf4j.Logger;
 
@@ -83,15 +78,14 @@ import org.slf4j.Logger;
  *
  * @author malbinola
  */
-public class CalendarManager {
+public class CalendarManager extends BaseServiceManager {
 	
 	public static final Logger logger = BaseService.getLogger(CalendarManager.class);
 	private final static String SERVICE_ID = "com.sonicle.webtop.calendar";
 	private final static String RESOURCE_CALENDARS = "CALENDARS";
-	private final ManagerEnvironment env;
-	
-	public CalendarManager(ManagerEnvironment env) {
-		this.env = env;
+
+	public CalendarManager(ServiceManifest manifest) {
+		super(manifest);
 	}
 	
 	public void initilizeUser(UserProfile.Id profileId) throws Exception {
@@ -115,7 +109,7 @@ public class CalendarManager {
 		// Reads incoming shares as calendar groups
 		Connection ccon = null;
 		try {
-			ccon = env.getCoreConnection();
+			ccon = WT.getCoreConnection();
 			ShareDAO sdao = ShareDAO.getInstance();
 			List<OShare> shares = sdao.selectIncomingByServiceDomainUserResource(ccon, SERVICE_ID, profileId.getDomainId(), profileId.getUserId(), RESOURCE_CALENDARS);
 			
@@ -140,51 +134,77 @@ public class CalendarManager {
 		return groups;
 	}
 	
-	public List<OCalendar> getCalendars(Connection con, UserProfile.Id user) {
-		CalendarDAO cdao = CalendarDAO.getInstance();
-		return cdao.selectByDomainUser(con, user.getDomainId(), user.getUserId());
-	}
-	
-	
-	
-	public List<OEvent> getEventsDates2(Connection con, CalendarGroup group, DateTime fromDate, DateTime toDate) {
-		ArrayList<OEvent> grpEvts = new ArrayList<>();
-		CalendarDAO cdao = CalendarDAO.getInstance();
-		EventDAO edao = EventDAO.getInstance();
+	public List<OCalendar> getCalendars(UserProfile.Id user) throws Exception {
+		Connection con = null;
 		
-		List<OCalendar> cals = cdao.selectVisibleByDomainUser(con, group.getDomainId(), group.getUserId());
-		List<OEvent> evts = null;
-		for(OCalendar cal : cals) {
-			evts = edao.selectDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
+		try {
+			con = WT.getConnection(manifest);
+			CalendarDAO cdao = CalendarDAO.getInstance();
+			return cdao.selectByDomainUser(con, user.getDomainId(), user.getUserId());
 			
-			
-			grpEvts.addAll(evts);
+		} catch(Exception ex) {
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
 		}
-		return grpEvts;
 	}
 	
-	public List<DateTime> getEventsDates(Connection con, CalendarGroup group, DateTime fromDate, DateTime toDate) {
+	public List<DateTime> getEventsDates(CalendarGroup group, DateTime fromDate, DateTime toDate, TimeZone userTz) {
+		Connection con = null;
 		HashSet<DateTime> dates = new HashSet<>();
 		CalendarDAO cdao = CalendarDAO.getInstance();
 		EventDAO edao = EventDAO.getInstance();
 		
-		List<OCalendar> cals = cdao.selectVisibleByDomainUser(con, group.getDomainId(), group.getUserId());
-		List<OEvent> evts = null;
-		DateTime date = null;
-		DateTime to = null;
-		for(OCalendar cal : cals) {
-			evts = edao.selectDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
-			for(OEvent evt : evts) {
-				date = evt.getStartDate().withTimeAtStartOfDay();
-				to = evt.getEndDate().withTimeAtStartOfDay();
-				while(date.compareTo(to) <= 0) {
-					dates.add(date);
-					date = date.plusDays(1);
+		try {
+			con = WT.getConnection(manifest);
+			List<OCalendar> cals = cdao.selectVisibleByDomainUser(con, group.getDomainId(), group.getUserId());
+			List<OEvent> events = null;
+			List<OEvent> expEvents = null;
+			for(OCalendar cal : cals) {
+				events = edao.selectDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate);
+				events.addAll(edao.selectRecurringDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate));
+
+				for(OEvent event : events) {
+					if(event.getRecurrenceId() == null) {
+						addExpandedEventDates(dates, event);
+					} else {
+						expEvents = expandRecurringEvent(con, cal, event, fromDate, toDate, userTz);
+						for(OEvent expEvent : expEvents) {
+							addExpandedEventDates(dates, expEvent);
+						}
+					}
 				}
 			}
+			
+		} catch(Exception ex) {
+			//TODO: logging
+		} finally {
+			DbUtils.closeQuietly(con);
 		}
-		
 		return new ArrayList<>(dates);
+	}
+	
+	private int calculateEventLengthInDays(OEvent event) {
+		return Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays() +1;
+	}
+	
+	private void addExpandedEventDates(HashSet<DateTime> dates, OEvent event) {
+		int days = calculateEventLengthInDays(event);
+		DateTime date = event.getStartDate().withTimeAtStartOfDay();
+		for(int count = 1; count <= days; count++) {
+			dates.add(date);
+			date = date.plusDays(1);
+		}
+		/*
+		DateTime date = null, to = null;
+		
+		date = event.getStartDate().withTimeAtStartOfDay();
+		to = event.getEndDate().withTimeAtStartOfDay();
+		while(date.compareTo(to) <= 0) {
+			dates.add(date);
+			date = date.plusDays(1);
+		}
+		*/
 	}
 	
 	public List<GroupEvents> getEvents(Connection con, CalendarGroup group, DateTime fromDate, DateTime toDate) {
@@ -203,7 +223,85 @@ public class CalendarManager {
 		return grpEvts;
 	}
 	
-	public List<JsSchedulerEvent> expandRecurringEvent(Connection con, OCalendar cal, OEvent event, DateTime fromDate, DateTime toDate, TimeZone userTz) {
+	public List<OEvent> expandRecurringEvent(Connection con, OCalendar cal, OEvent event, DateTime fromDate, DateTime toDate, TimeZone userTz) {
+		ArrayList<OEvent> events = new ArrayList<>();
+		ORecurrence rec = null;
+		OEvent newEvent = null;
+		PeriodList periods = null;
+		
+		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
+		
+		if(event.getRecurrenceId() == null) return null;
+		rec = rdao.select(con, event.getRecurrenceId());
+		if(rec == null) return null;
+		
+		// If not present, updates rrule
+		if(StringUtils.isEmpty(rec.getRule())) {
+			rec.setRule(rec.asRRule(DateTimeZone.UTC).getValue());
+			rdao.updateRRule(con, rec.getRecurrenceId(), rec.getRule());
+		}
+		
+		try {
+			DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
+			
+			// Calcutate recurrence set for required dates range
+			RRule rr = new RRule(rec.getRule());
+			periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), rec.getStartDate(), rr, fromDate, toDate, utz);
+			
+			// Recurrence start is useful to skip undesired dates at beginning.
+			// If event does not starts at recurrence real beginning (eg. event
+			// start on MO but first recurrence begin on WE), ical4j lib includes 
+			// those dates in calculated recurrence set, as stated in RFC 
+			// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
+			DateTime rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), utz);
+			
+			// Calculate event length on order to generate events like original one
+			int eventDays = Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays();
+			
+			// Iterates returned recurring periods and builds cloned events...
+			DateTime perStart, neStart, neEnd;
+			//JsSchedulerEvent jse = null;
+			//int count = 1;
+			for(net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
+				perStart = ICal4jUtils.toJodaDateTime(per.getStart());
+				//System.out.println(perStart.toString()+" -> ");
+				if(perStart.compareTo(rrStart) >= 0) { // Skip unwanted dates at beginning
+					neStart = event.getStartDate().withDate(perStart.toLocalDate());
+					neEnd = event.getEndDate().withDate(neStart.plusDays(eventDays).toLocalDate());
+					
+					// Generate cloned event like original one
+					newEvent = new Cloner().deepClone(event);
+					newEvent.setStartDate(neStart);
+					newEvent.setEndDate(neEnd);
+					events.add(newEvent);
+					//jse = new JsSchedulerEvent(newEvent, rec, cal, userTz);
+					//jse.id = JsonUtils.buildRecId(newEvent.getEventId(), count);
+					//events.add(jse);
+					//count++;
+				}
+			}
+			
+		} catch(Exception ex) {
+			
+		} finally {
+			return events;
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	public List<JsSchedulerEvent> expandRecurringEvent__old(Connection con, OCalendar cal, OEvent event, DateTime fromDate, DateTime toDate, TimeZone userTz) {
 		ArrayList<JsSchedulerEvent> events = new ArrayList<>();
 		ORecurrence rr = null;
 		OEvent newEvent = null;
@@ -289,55 +387,6 @@ public class CalendarManager {
 		}
 		return events;
 	}
-	
-	public List<JsSchedulerEvent> expandRecurringEvent2(Connection con, OCalendar cal, OEvent event, DateTime fromDate, DateTime toDate, TimeZone userTz) {
-		ArrayList<JsSchedulerEvent> events = new ArrayList<>();
-		ORecurrence rec = null;
-		OEvent newEvent = null;
-		PeriodList periods = null;
-		
-		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
-		
-		if(event.getRecurrenceId() == null) return null;
-		rec = rdao.select(con, event.getRecurrenceId());
-		if(rec == null) return null;
-		
-		// If not present, updates rrule
-		if(StringUtils.isEmpty(rec.getRule())) {
-			rec.setRule(rec.asRRule(DateTimeZone.UTC).getValue());
-			rdao.updateRRule(con, rec.getRecurrenceId(), rec.getRule());
-		}
-		
-		try {
-			DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
-			RRule rr = new RRule(rec.getRule());
-			periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), rec.getStartDate(), rr, fromDate, toDate, utz);
-			
-			DateTime rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), utz);
-			int eventDays = Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays();
-			
-			DateTime perStart, neStart, neEnd;
-			for(net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
-				perStart = ICal4jUtils.toJodaDateTime(per.getStart());
-				if(perStart.compareTo(rrStart) >= 0) {
-					neStart = event.getStartDate().withDate(perStart.toLocalDate());
-					neEnd = event.getEndDate().withDate(neStart.plusDays(eventDays).toLocalDate());
-					
-					newEvent = new Cloner().deepClone(event);
-					newEvent.setStartDate(neStart);
-					newEvent.setEndDate(neEnd);
-					events.add(new JsSchedulerEvent(newEvent, cal, userTz));
-				}
-			}
-			
-		} catch(Exception ex) {
-			
-		}
-		return events;
-	}
-	
-	
-	
 	
 	
 	

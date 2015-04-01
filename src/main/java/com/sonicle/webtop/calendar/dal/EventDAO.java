@@ -113,10 +113,12 @@ public class EventDAO extends BaseDAO {
 				.select(
 						EVENTS.fields()
 				)
+				/*
 				.select(
 						DSL.select(DSL.val(false))
 						.asField("hasBrokenRecurrences")
 				)
+				*/
 				.from(EVENTS)
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)
@@ -147,12 +149,14 @@ public class EventDAO extends BaseDAO {
 						EVENTS.END_DATE,
 						EVENTS.TIMEZONE
 				)
+				/*
 				.select(
 						DSL.select(DSL.field("COUNT(*)>0"))
 						.from(RECURRENCES_BROKEN)
 						.where(RECURRENCES_BROKEN.RECURRENCE_ID.equal(EVENTS.RECURRENCE_ID))
 						.asField("hasBrokenRecurrences")
 				)
+				*/
 				.from(EVENTS.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID)))
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)

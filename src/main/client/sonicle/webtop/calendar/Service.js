@@ -49,8 +49,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	init: function() {
 		var me = this;
-		
-		me._selectMyGroup();
 		me.initActions();
 		me.initCxm();
 
@@ -627,12 +625,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, this);
 	},
 	
+	/*
 	restoreEvent: function(rec) {
 		WT.confirm(this.res('calendar.confirm.restore', rec.get('title')), function(bid) {
-			if(bid === 'yes')
+			if(bid === 'yes') WT.info('TODO');
 		}, this);
 	},
-	
+	*/
 	
 	
 	onCalendarViewSave: function(s, success, model) {

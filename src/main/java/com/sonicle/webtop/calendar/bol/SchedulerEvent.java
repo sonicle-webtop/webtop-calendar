@@ -31,26 +31,51 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.ClientOptions', {
-	extend: 'WT.sdk.model.ClientOptions',
+package com.sonicle.webtop.calendar.bol;
+
+import com.rits.cloning.Cloner;
+
+/**
+ *
+ * @author malbinola
+ */
+public class SchedulerEvent extends OEvent {
 	
-	fields: [
-		'view',
-		{name: 'startDay', type: 'int'},
-		'workdayStart',
-		{name: 'workdayStartDate', type: 'date', 
-			depends: 'workdayStart',
-			convert: function(v, rec) {
-				console.log('convert');
-				return Ext.Date.parse(rec.get('workdayStart'), 'H:i');
-			}
-		},
-		'workdayEnd',
-		{name: 'workdayEndDate', type: 'date', 
-			depends: 'workdayEnd',
-			convert: function(v, rec) {
-				return Ext.Date.parse(rec.get('workdayEnd'), 'H:i');
-			}
-		}
-	]
-});
+	private String id;
+	private Boolean isRecurring = false;
+	private Boolean isBroken = false;
+	
+	public SchedulerEvent() {
+		super();
+	}
+	
+	public SchedulerEvent(OEvent event) {
+		super();
+		new Cloner().copyPropertiesOfInheritedClass(event, this);
+		id = String.valueOf(getEventId());
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String value) {
+		id = value;
+	}
+	
+	public Boolean getIsRecurring() {
+		return isRecurring;
+	}
+
+	public void setIsRecurring(Boolean value) {
+		this.isRecurring = value;
+	}
+	
+	public Boolean getIsBroken() {
+		return isBroken;
+	}
+
+	public void setIsBroken(Boolean value) {
+		this.isBroken = value;
+	}
+}

@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
+import com.sonicle.webtop.calendar.bol.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
@@ -45,7 +46,9 @@ import java.sql.Connection;
 import java.util.List;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.impl.DSL;
+import static org.jooq.impl.DSL.*;
 
 /**
  *
@@ -76,7 +79,22 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public List<OEvent> selectDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public OEvent selectLive(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(EVENTS)
+			.where(
+					EVENTS.EVENT_ID.equal(eventId)
+					.and(
+							EVENTS.STATUS.equal("N")
+							.or(EVENTS.STATUS.equal("M"))
+					)
+			)
+			.fetchOneInto(OEvent.class);
+	}
+	
+	public List<OEvent> selectLiveDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.select(
@@ -90,15 +108,18 @@ public class EventDAO extends BaseDAO {
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)
 						.and(
-							EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
-							.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
-							.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
+								EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
+								.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
+								.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
 						)
 						.and(
-							EVENTS.STATUS.equal("N")
-							.or(EVENTS.STATUS.equal("M"))
+								EVENTS.STATUS.equal("N")
+								.or(EVENTS.STATUS.equal("M"))
 						)
 						.and(EVENTS.RECURRENCE_ID.isNull())
+						.and(DSL.notExists(
+								DSL.selectOne().from(RECURRENCES_BROKEN).where(RECURRENCES_BROKEN.NEW_EVENT_ID.eq(EVENTS.EVENT_ID))
+						))
 				)
 				.orderBy(
 						EVENTS.START_DATE
@@ -106,7 +127,7 @@ public class EventDAO extends BaseDAO {
 				.fetchInto(OEvent.class);
 	}
 	
-	public List<OEvent> selectByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<OEvent> selectLiveByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		return dsl
@@ -115,8 +136,12 @@ public class EventDAO extends BaseDAO {
 				)
 				/*
 				.select(
-						DSL.select(DSL.val(false))
-						.asField("hasBrokenRecurrences")
+						field("false", Boolean.class)
+						.as("hasBrokenRecurrences")
+				)
+				.select(
+						field("false", Boolean.class)
+						.as("hasPlanning")
 				)
 				*/
 				.from(EVENTS)
@@ -132,6 +157,9 @@ public class EventDAO extends BaseDAO {
 							.or(EVENTS.STATUS.equal("M"))
 						)
 						.and(EVENTS.RECURRENCE_ID.isNull())
+						.and(DSL.notExists(
+								DSL.selectOne().from(RECURRENCES_BROKEN).where(RECURRENCES_BROKEN.NEW_EVENT_ID.eq(EVENTS.EVENT_ID))
+						))
 				)
 				.orderBy(
 						EVENTS.START_DATE
@@ -139,7 +167,7 @@ public class EventDAO extends BaseDAO {
 				.fetchInto(OEvent.class);
 	}
 	
-	public List<OEvent> selectRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<OEvent> selectLiveRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.select(
@@ -149,14 +177,6 @@ public class EventDAO extends BaseDAO {
 						EVENTS.END_DATE,
 						EVENTS.TIMEZONE
 				)
-				/*
-				.select(
-						DSL.select(DSL.field("COUNT(*)>0"))
-						.from(RECURRENCES_BROKEN)
-						.where(RECURRENCES_BROKEN.RECURRENCE_ID.equal(EVENTS.RECURRENCE_ID))
-						.asField("hasBrokenRecurrences")
-				)
-				*/
 				.from(EVENTS.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID)))
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)
@@ -176,10 +196,24 @@ public class EventDAO extends BaseDAO {
 				.fetchInto(OEvent.class);
 	}
 	
-	public List<OEvent> selectRecurringByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<OEvent> selectLiveRecurringByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		
 		return dsl
 				.select(EVENTS.fields())
+				/*
+				.select(field(
+						exists(
+								selectOne()
+								.from(RECURRENCES_BROKEN)
+								.where(RECURRENCES_BROKEN.RECURRENCE_ID.equal(EVENTS.RECURRENCE_ID))
+						)
+				).as("hasBrokenRecurrences"))
+				.select(
+						field("false", Boolean.class)
+						.as("hasPlanning")
+				)
+				*/
 				.from(EVENTS.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID)))
 				.where(
 						EVENTS.CALENDAR_ID.equal(calendarId)

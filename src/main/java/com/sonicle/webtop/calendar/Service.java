@@ -44,6 +44,7 @@ import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendarGroups;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
+import com.sonicle.webtop.calendar.bol.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
@@ -162,6 +163,8 @@ public class Service extends BaseService {
 		HashMap<String, Object> hm = new HashMap<>();
 		hm.put("view", cus.getCalendarView());
 		hm.put("startDay", cus.getCalendarStartDay());
+		hm.put("workdayStart", cus.getWorkdayStart());
+		hm.put("workdayEnd", cus.getWorkdayEnd());
 		return hm;
 	}
 	
@@ -286,29 +289,23 @@ public class Service extends BaseService {
 				
 				// Get events for each visible group
 				JsSchedulerEvent jse = null;
-				List<OEvent> expEvents = null;
+				List<SchedulerEvent> expEvents = null;
 				List<CalendarManager.GroupEvents> grpEvts = null;
 				for(CalendarGroup group : calendarGroups.values()) {
 					if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
 					
-					grpEvts = manager.getEvents(con, group, fromDate, toDate);
+					grpEvts = manager.getEvents(group, fromDate, toDate);
 					for(CalendarManager.GroupEvents ge : grpEvts) {
-						for(OEvent evt : ge.events) {
+						for(SchedulerEvent evt : ge.events) {
 							if(evt.getRecurrenceId() == null) {
 								jse = new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone());
 								items.add(jse);
 							} else {
-								expEvents = manager.expandRecurringEvent(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone());
-								int count = 1;
-								for(OEvent expEvent : expEvents) {
+								expEvents = manager.expandRecurringEvent(ge.calendar, evt, fromDate, toDate, up.getTimeZone());
+								for(SchedulerEvent expEvent : expEvents) {
 									jse = new JsSchedulerEvent(expEvent, ge.calendar, up.getTimeZone());
-									jse.id = JsonUtils.buildRecId(expEvent.getEventId(), count);
-									jse.isRecurring = true;
 									items.add(jse);
-									count++;
 								}
-								//TODO: valutare se generalizzare la chiamata costruendo qui il JsSchedulerEvent  
-								//items.addAll(manager.expandRecurringEvent2(con, ge.calendar, evt, fromDate, toDate, up.getTimeZone()));
 							}
 						}
 					}

@@ -32,7 +32,7 @@
 		<dependency>
 			<groupId>org.jooq</groupId>
 			<artifactId>jooq</artifactId>
-			<version>3.4.2</version>
+			<version>3.5.3</version>
 		</dependency>
 		<dependency>
 			<groupId>joda-time</groupId>
@@ -70,7 +70,7 @@
 				<!-- Specify the maven code generator plugin -->
 				<groupId>org.jooq</groupId>
 				<artifactId>jooq-codegen-maven</artifactId>
-				<version>3.4.2</version>
+				<version>3.5.3</version>
 				<!-- Manage the plugin's dependency. In this example, we'll use a PostgreSQL database -->
 				<dependencies>
 					<dependency>

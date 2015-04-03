@@ -37,6 +37,7 @@ import com.sonicle.commons.web.JsonUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
+import com.sonicle.webtop.calendar.bol.SchedulerEvent;
 import java.util.TimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -64,6 +65,7 @@ public class JsSchedulerEvent {
 	public String reminder;
 	public Boolean isReadOnly;
 	public Boolean isRecurring;
+	public Boolean isBroken;
 	
 	
 	public String notes = "";
@@ -73,13 +75,8 @@ public class JsSchedulerEvent {
 		
 	}
 	
-	public JsSchedulerEvent(OEvent event, ORecurrence recurrence, OCalendar calendar, TimeZone userTz) {
-		this(event, calendar, userTz);
-		isRecurring = true;
-	}
-	
-	public JsSchedulerEvent(OEvent event, OCalendar calendar, TimeZone userTz) {
-		id = String.valueOf(event.getEventId());
+	public JsSchedulerEvent(SchedulerEvent event, OCalendar calendar, TimeZone userTz) {
+		id = event.getId();
 		eventId = event.getEventId();
 		calendarId = event.getCalendarId();
 		recurrenceId = event.getRecurrenceId();
@@ -98,7 +95,8 @@ public class JsSchedulerEvent {
 		isPrivate = event.getIsPrivate();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly();
-		isRecurring = false;
+		isRecurring = event.getIsRecurring();
+		isBroken = event.getIsBroken();
 	}
 	
 	public static String toYmdHmsWithZone(DateTime dt, TimeZone tz) {

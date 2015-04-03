@@ -47,8 +47,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.view.Calendar'
 	],
 	
-	selectedGroup: null,
-	
 	init: function() {
 		var me = this;
 		
@@ -231,17 +229,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						checkchange: function(n, ck) {
 							me._showHideCal(n, ck);
 						},
-						select: function(s, rec, i) {
-							console.log('selectedGroup: '+rec.get('_groupId'));
-							me.selectedGroup = rec.get('_groupId');
-						},
 						itemcontextmenu: function(vw, rec, itm, i, e) {
-							// TODO: disabilitare azioni se readonly
 							if(rec.get('_nodeType') === 'group') {
-								me._showCxm(me.getRef('cxmCalGroup'), e);
+								WT.showContextMenu(e, me.getRef('cxmCalGroup'), {treecal: rec});
 							} else {
-								me.getAction('deleteCalendar').setDisabled(rec.get('builtIn'));
-								me._showCxm(me.getRef('cxmCal'), e);
+								WT.showContextMenu(e, me.getRef('cxmCal'), {treecal: rec});
 							}
 						}
 					}
@@ -287,16 +279,33 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					onComplete();
 					var cal = me.getSelectedCalendar();
 					if(cal) me.addEvent(cal.get('_groupId'), cal.getId(), dates.startDate, dates.endDate);
+				},
+				eventdblclick: function(s, rec) {
+					//TODO: controllo se possibile editare
+					me.editEvent(rec);
+				},
+				daydblclick: function(s, dt, ad) {
+					var cal = me.getSelectedCalendar(),
+							soDate = Sonicle.Date,
+							wd, start, end;
+					if(cal) {
+						if(ad) {
+							wd = Ext.Date.parse(me.getOption('workdayStart'), 'H:i');
+							start = soDate.copyTime(wd, dt);
+							wd = Ext.Date.parse(me.getOption('workdayEnd'), 'H:i');
+							end = soDate.copyTime(wd, dt);
+						} else {
+							start = dt;
+							end = soDate.add(dt, {minutes: 30});
+						}
+						me.addEvent(cal.get('_groupId'), cal.getId(), start, end);
+					}
+				},
+				eventcontextmenu: function(s, rec, el, evt) {
+					WT.showContextMenu(me.getRef('cxmEvent'), {event: rec}, evt);
 				}
 			}
 		}));
-	},
-	
-	/**
-	 * Resets selected group to my
-	 */
-	_selectMyGroup: function() {
-		this.selectedGroup = WT.getOption('principal');
 	},
 	
 	
@@ -307,11 +316,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		me.getRef('multical').getStore().load();
 		me.getMainComponent().getStore().load();
-	},
-	
-	_showCxm: function(menu, evt) {
-		evt.preventDefault();
-		menu.showAt(evt.getXY());
 	},
 	
 	initActions: function() {
@@ -423,6 +427,28 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId());
 			}
 		});
+		me.addAction('deleteEvent', {
+			text: WT.res('act-delete.lbl'),
+			iconCls: 'wt-icon-delete-xs',
+			handler: function() {
+				
+			}
+		});
+		me.addAction('restoreEvent', {
+			text: WT.res('act-restore.lbl'),
+			iconCls: 'wt-icon-restore-xs',
+			handler: function() {
+				var rec = WT.getContextMenuData().event;
+				me.restoreEvent(rec);
+			}
+		});
+		me.addAction('printEvents', {
+			text: WT.res('act-print.lbl'),
+			iconCls: 'wt-icon-print-xs',
+			handler: function() {
+				
+			}
+		});
 	},
 	
 	initCxm: function() {
@@ -452,7 +478,34 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				'-',
 				me.getAction('addEvent')
 				//TODO: azioni altri servizi?
-			]
+			],
+			listeners: {
+				beforeshow: function() {
+					var rec = WT.getContextMenuData().treecal;
+					me.getAction('deleteCalendar').setDisabled(rec.get('_builtIn'));
+					//TODO: disabilitare azioni se readonly
+				}
+			}
+		}));
+		
+		me.addRef('cxmEvent', Ext.create({
+			xtype: 'menu',
+			items: [
+				me.getAction('editEvent'),
+				me.getAction('deleteEvent'),
+				me.getAction('restoreEvent'),
+				'-',
+				me.getAction('addEvent'),
+				me.getAction('printEvents'),
+				me.getAction('today')
+				//TODO: azioni altri servizi?
+			],
+			listeners: {
+				beforeshow: function() {
+					var rec = WT.getContextMenuData().event;
+					me.getAction('restoreEvent').setDisabled(!rec.get('isBroken'));
+				}
+			}
 		}));
 	},
 	
@@ -554,7 +607,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	editEvent: function(eventId) {
+	editEvent: function(rec) {
 		var me = this,
 				wnd = this._buildEventWnd();
 		
@@ -562,7 +615,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		wnd.show(false, function() {
 			wnd.getComponent(0).beginEdit({
 				data: {
-					eventId: eventId
+					eventId: rec.get('eventId')
 				}
 			});
 		});
@@ -571,6 +624,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	deleteEvent: function(rec) {
 		WT.confirm(this.res('calendar.confirm.delete', rec.get('text')), function(bid) {
 			if(bid === 'yes') rec.drop();
+		}, this);
+	},
+	
+	restoreEvent: function(rec) {
+		WT.confirm(this.res('calendar.confirm.restore', rec.get('title')), function(bid) {
+			if(bid === 'yes')
 		}, this);
 	},
 	

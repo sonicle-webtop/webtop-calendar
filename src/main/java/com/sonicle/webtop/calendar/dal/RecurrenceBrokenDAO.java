@@ -31,34 +31,57 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.dal;
+
+import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
+import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
+import com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesBrokenRecord;
+import com.sonicle.webtop.core.dal.BaseDAO;
+import com.sonicle.webtop.core.dal.DAOException;
+import java.sql.Connection;
+import java.util.List;
+import org.jooq.DSLContext;
 
 /**
  *
  * @author malbinola
  */
-public class Event extends OEvent {
+public class RecurrenceBrokenDAO extends BaseDAO {
 	
-	private Boolean hasPlanning;
-	private Boolean hasBrokenRecurrence;
+	private final static RecurrenceBrokenDAO INSTANCE = new RecurrenceBrokenDAO();
+
+	public static RecurrenceBrokenDAO getInstance() {
+		return INSTANCE;
+	}
 	
-	public Event() {
-		super();
+	public List<ORecurrenceBroken> selectByEventRecurrence(Connection con, Integer eventId, Integer recurrenceId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(RECURRENCES_BROKEN)
+			.where(
+					RECURRENCES_BROKEN.EVENT_ID.equal(eventId)
+					.and(RECURRENCES_BROKEN.RECURRENCE_ID.equal(recurrenceId))
+			)
+			.fetchInto(ORecurrenceBroken.class);
 	}
 	
-	public Boolean getHasPlanning() {
-		return hasPlanning;
+	public int insert(Connection con, ORecurrenceBroken item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesBrokenRecord record = dsl.newRecord(RECURRENCES_BROKEN, item);
+		return dsl
+			.insertInto(RECURRENCES_BROKEN)
+			.set(record)
+			.execute();
 	}
-
-	public void setHasPlanning(Boolean value) {
-		this.hasPlanning = value;
+	
+	/*
+	public int deleteByRecurrence(Connection con, Integer recurrenceId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.delete(RECURRENCES_BROKEN)
+				.where(RECURRENCES_BROKEN.RECURRENCE_ID.equal(recurrenceId))
+				.execute();
 	}
-
-	public Boolean getHasBrokenRecurrence() {
-		return hasBrokenRecurrence;
-	}
-
-	public void setHasBrokenRecurrence(Boolean value) {
-		this.hasBrokenRecurrence = value;
-	}
+	*/
 }

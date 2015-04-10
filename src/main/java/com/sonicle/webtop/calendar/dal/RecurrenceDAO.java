@@ -83,6 +83,33 @@ public class RecurrenceDAO extends BaseDAO {
 			.execute();
 	}
 	
+	public int update(Connection con, ORecurrence item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(RECURRENCES)
+			.set(RECURRENCES.START_DATE, item.getStartDate())
+			.set(RECURRENCES.UNTIL_DATE, item.getUntilDate())
+			.set(RECURRENCES.REPEAT, item.getRepeat())
+			.set(RECURRENCES.PERMANENT, item.getPermanent())
+			.set(RECURRENCES.TYPE, item.getType())
+			.set(RECURRENCES.DAYLY_FREQ, item.getDaylyFreq())
+			.set(RECURRENCES.WEEKLY_FREQ, item.getWeeklyFreq())
+			.set(RECURRENCES.WEEKLY_DAY_1, item.getWeeklyDay_1())
+			.set(RECURRENCES.WEEKLY_DAY_2, item.getWeeklyDay_2())
+			.set(RECURRENCES.WEEKLY_DAY_3, item.getWeeklyDay_3())
+			.set(RECURRENCES.WEEKLY_DAY_4, item.getWeeklyDay_4())
+			.set(RECURRENCES.WEEKLY_DAY_5, item.getWeeklyDay_5())
+			.set(RECURRENCES.WEEKLY_DAY_6, item.getWeeklyDay_6())
+			.set(RECURRENCES.WEEKLY_DAY_7, item.getWeeklyDay_7())
+			.set(RECURRENCES.MONTHLY_FREQ, item.getMonthlyFreq())
+			.set(RECURRENCES.MONTHLY_DAY, item.getMonthlyDay())
+			.set(RECURRENCES.YEARLY_FREQ, item.getYearlyFreq())
+			.set(RECURRENCES.YEARLY_DAY, item.getYearlyDay())
+			.set(RECURRENCES.RULE, item.getRule())
+			.where(RECURRENCES.RECURRENCE_ID.equal(item.getRecurrenceId()))
+			.execute();
+	}
+	
 	public int updateRRule(Connection con, Integer recurrenceId, String rr) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
@@ -92,18 +119,5 @@ public class RecurrenceDAO extends BaseDAO {
 					RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
 			)
 			.execute();
-	}
-	
-	public ORecurrenceBroken selectBroken(Connection con, Integer recurrenceId, Integer eventId, LocalDate eventDate) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.select()
-			.from(RECURRENCES_BROKEN)
-			.where(
-					RECURRENCES_BROKEN.RECURRENCE_ID.equal(recurrenceId)
-					.and(RECURRENCES_BROKEN.EVENT_ID.equal(eventId))
-					.and(RECURRENCES_BROKEN.EVENT_DATE.equal(eventDate))
-			)
-			.fetchOneInto(ORecurrenceBroken.class);
 	}
 }

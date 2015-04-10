@@ -35,8 +35,9 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WT.model.Base',
 	proxy: WT.Util.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents'),
 	
-	idProperty: 'eventId',
+	idProperty: 'id',
 	fields: [
+		WT.Util.field('id', 'string', false),
 		WT.Util.field('eventId', 'int', false),
 		WT.Util.field('calendarId', 'int', false),
 		WT.Util.field('recurrenceId', 'int', true),
@@ -61,7 +62,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WT.Util.field('rrEndsMode', 'string', false, {defaultValue: 'never'}),
 		WT.Util.field('rrRepeatTimes', 'int', false, {defaultValue: 1}),
 		WT.Util.field('rrUntilDate', 'date', false, {dateFormat: 'Y-m-d H:i:s', defaultValue: new Date()}),
-		WT.Util.field('rrType', 'string', true),
+		WT.Util.field('rrType', 'string', false, {defaultValue: ''}),
 		WT.Util.field('rrDaylyType', 'string', false, {defaultValue: '1'}),
 		WT.Util.field('rrDaylyFreq', 'int', false, {defaultValue: 1}),
 		WT.Util.field('rrWeeklyFreq', 'int', false, {defaultValue: 1}),

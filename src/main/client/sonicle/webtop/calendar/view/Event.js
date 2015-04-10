@@ -99,66 +99,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			allDay: WT.Util.checkboxBind('record', 'allDay'),
 			isPrivate: WT.Util.checkboxBind('record', 'isPrivate'),
 			busy: WT.Util.checkboxBind('record', 'busy'),
-			/*
-			allDay: {
-				bind: {bindTo: '{record.allDay}'},
-				get: function(val) {
-					return val;
-				},
-				set: function(val) {
-					this.get('record').set('allDay', val);
-				}
-			},
-			isPrivate: {
-				bind: {bindTo: '{record.isPrivate}'},
-				get: function(val) {
-					return val;
-				},
-				set: function(val) {
-					this.get('record').set('isPrivate', val);
-				}
-			},
-			busy: {
-				bind: {bindTo: '{record.busy}'},
-				get: function(val) {
-					return val;
-				},
-				set: function(val) {
-					this.get('record').set('busy', val);
-				}
-			}
-			*/
 			rrType: WT.Util.checkboxGroupBind('record', 'rrType'),
 			isRRDayly: WT.Util.equalsFormula('record', 'rrType', 'D'),
 			isRRWeekly: WT.Util.equalsFormula('record', 'rrType', 'W'),
 			isRRMonthly: WT.Util.equalsFormula('record', 'rrType', 'M'),
 			isRRYearly: WT.Util.equalsFormula('record', 'rrType', 'Y'),
-			/*
-			isRRDayly: {
-				bind: {bindTo: '{record.rrType}'},
-				get: function(val) {
-					return (val === 'D');
-				}
-			},
-			isRRWeekly: {
-				bind: {bindTo: '{record.rrType}'},
-				get: function(val) {
-					return (val === 'W');
-				}
-			},
-			isRRMonthly: {
-				bind: {bindTo: '{record.rrType}'},
-				get: function(val) {
-					return (val === 'M');
-				}
-			},
-			isRRYearly: {
-				bind: {bindTo: '{record.rrType}'},
-				get: function(val) {
-					return (val === 'Y');
-				}
-			},
-			*/
 			rrDaylyType: WT.Util.checkboxGroupBind('record', 'rrDaylyType'),
 			rrWeeklyDay1: WT.Util.checkboxBind('record', 'rrWeeklyDay1'),
 			rrWeeklyDay2: WT.Util.checkboxBind('record', 'rrWeeklyDay2'),
@@ -363,11 +308,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}]	
 			}, {
 				xtype: 'soseparator'
-			} /*{
-				xtype: 'fieldset', // separator
-				collapsed: true,
-				width: '100%'
-			}*/]
+			}]
 		}));
 		me.addRef('planning', Ext.create({
 			xtype: 'panel',
@@ -436,6 +377,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						},
 						items: [{
 							xtype: 'radiogroup',
+							bind: {
+								value: '{rrDaylyType}'
+							},
 							columns: [80, 60, 80, 150],
 							items: [{
 								name: 'rrDaylyType',

@@ -300,7 +300,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}
 				},
 				eventcontextmenu: function(s, rec, el, evt) {
-					WT.showContextMenu(me.getRef('cxmEvent'), {event: rec}, evt);
+					WT.showContextMenu(evt, me.getRef('cxmEvent'), {event: rec});
 				}
 			}
 		}));
@@ -429,7 +429,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-delete.lbl'),
 			iconCls: 'wt-icon-delete-xs',
 			handler: function() {
-				
+				var rec = WT.getContextMenuData().event;
+				me.deleteEvent(rec);
 			}
 		});
 		me.addAction('restoreEvent', {
@@ -501,7 +502,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().event;
-					me.getAction('restoreEvent').setDisabled(!rec.get('isBroken'));
+					me.getAction('restoreEvent').setDisabled(rec.get('isBroken') === false);
 				}
 			}
 		}));
@@ -547,7 +548,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	addCalendar: function(domainId, userId) {
 		var me = this,
-				wnd = this._buildCalendarWnd();
+				wnd = this._createCalendarView();
 		
 		wnd.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
 		wnd.show(false, function() {
@@ -562,7 +563,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	editCalendar: function(calendarId) {
 		var me = this,
-				wnd = this._buildCalendarWnd();
+				wnd = this._createCalendarView();
 		
 		wnd.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
 		wnd.show(false, function() {
@@ -588,7 +589,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEvent: function(groupId, calendarId, start, end) {
 		var me = this,
 				EM = Sonicle.webtop.calendar.model.Event,
-				wnd = this._buildEventWnd({
+				wnd = this._createEventView({
 					groupId: groupId
 				});
 		
@@ -607,7 +608,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	editEvent: function(rec) {
 		var me = this,
-				wnd = this._buildEventWnd();
+				wnd = this._createEventView();
 		
 		wnd.getComponent(0).on('viewsave', me.onEventViewSave, me);
 		wnd.show(false, function() {
@@ -620,18 +621,56 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	deleteEvent: function(rec) {
-		WT.confirm(this.res('calendar.confirm.delete', rec.get('text')), function(bid) {
-			if(bid === 'yes') rec.drop();
-		}, this);
+		var me = this;
+		if(rec.get('isRecurring')) {
+			WT.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid) {
+				if(bid === 'ok') {
+					var target = null;
+					if((target === null) && (Ext.get('this').dom.checked === true)) target = 'this';
+					if((target === null) && (Ext.get('since').dom.checked === true)) target = 'since';
+					if((target === null) && (Ext.get('all').dom.checked === true)) target = 'all';
+					me._ajaxDeleteEvent(target, rec.get('id'));
+				}
+			}, me);
+		} else {
+			WT.confirm(me.res('event.confirm.delete', rec.get('title')), function(bid) {
+				if(bid === 'yes') {
+					me._ajaxDeleteEvent('this', rec.get('id'));
+				}
+			}, me);
+		}
 	},
 	
-	/*
-	restoreEvent: function(rec) {
-		WT.confirm(this.res('calendar.confirm.restore', rec.get('title')), function(bid) {
-			if(bid === 'yes') WT.info('TODO');
-		}, this);
+	_ajaxDeleteEvent: function(target, id) {
+		var me = this;
+		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
+			params: {
+				crud: 'delete',
+				target: target,
+				id: id
+			},
+			callback: function(success, o) {
+				if(success) me.refreshEvents();
+			}
+		});
 	},
-	*/
+	
+	restoreEvent: function(rec) {
+		var me = this;
+		WT.confirm(me.res('event.recurring.confirm.restore'), function(bid) {
+			if(bid === 'yes') {
+				WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
+					params: {
+						crud: 'restore',
+						id: rec.get('id')
+					},
+					callback: function(success, o) {
+						if(success) me.refreshEvents();
+					}
+				});
+			}
+		}, me);
+	},
 	
 	
 	onCalendarViewSave: function(s, success, model) {
@@ -651,7 +690,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		//TODO: completare
 	},
 	
-	_buildCalendarWnd: function(cfg) {
+	_createCalendarView: function(cfg) {
 		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.Calendar', {
 			containerCfg: {
 				width: 360,
@@ -661,7 +700,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	_buildEventWnd: function(cfg) {
+	_createEventView: function(cfg) {
 		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.Event', {
 			containerCfg: {
 				width: 650,

@@ -33,68 +33,57 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.rits.cloning.Cloner;
-import com.sonicle.commons.web.JsonUtils;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
 /**
  *
  * @author malbinola
  */
-public class SchedulerEvent extends DecoEvent {
+public class DecoEvent extends OEvent {
 	
-	private String id;
+	private Integer originalEventId;
+	private Boolean isRecurring;
+	private Boolean isBroken;
 	
-	public SchedulerEvent() {
+	public DecoEvent() {
 		super();
 	}
 	
-	public SchedulerEvent(DecoEvent event) {
-		super();
-		new Cloner().copyPropertiesOfInheritedClass(event, this);
-		id = SchedulerEvent.buildId(event.getEventId(), event.getOriginalEventId());
+	public Integer getOriginalEventId() {
+		return originalEventId;
 	}
 
-	public String getId() {
-		return id;
+	public void setOriginalEventId(Integer value) {
+		originalEventId = value;
 	}
 	
-	public void setId(String value) {
-		id = value;
+	public Boolean getIsRecurring() {
+		return isRecurring;
+	}
+
+	public void setIsRecurring(Boolean value) {
+		isRecurring = value;
 	}
 	
-	public static String buildId(Integer eventId, Integer originalEventId) {
-		return eventId + "_" + originalEventId;
+	public Boolean getIsBroken() {
+		return isBroken;
+	}
+
+	public void setIsBroken(Boolean value) {
+		isBroken = value;
 	}
 	
-	public static String buildId(Integer eventId, Integer originalEventId, LocalDate date) {
-		return eventId + "_" + originalEventId + "_" + date.toString("yyyyMMdd");
-	}
-	
-	public static class EventUID {
-		private static final Pattern PATTERN_UID = Pattern.compile("^([0-9]+)_([0-9]+)$");
-		private static final Pattern PATTERN_UID_RECURRING = Pattern.compile("^([0-9]+)_([0-9]+)_([0-9]+)$");
-		
-		public Integer eventId;
-		public Integer originalEventId;
-		public LocalDate atDate;
-		
-		public EventUID(String eventUid) {
-			Matcher matcher = null;
-			if((matcher = PATTERN_UID_RECURRING.matcher(eventUid)).matches()) {
-				eventId = Integer.valueOf(matcher.group(1));
-				originalEventId = Integer.valueOf(matcher.group(2));
-				DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd").withZone(DateTimeZone.UTC);
-				atDate = formatter.parseDateTime(matcher.group(3)).toLocalDate();
-			} else if((matcher = PATTERN_UID.matcher(eventUid)).matches()) {
-				eventId = Integer.valueOf(matcher.group(1));
-				originalEventId = Integer.valueOf(matcher.group(2));
+	public void updateCalculatedFields() {
+		if(getRecurrenceId() == null) {
+			isRecurring = false;
+			if(originalEventId == null) {
+				originalEventId = getEventId();
+				isBroken = false;
+			} else {
+				isBroken = true;
 			}
+		} else {
+			isRecurring = true;
+			originalEventId = getEventId();
+			isBroken = false;
 		}
 	}
 }

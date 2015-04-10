@@ -44,6 +44,7 @@ import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendarGroups;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
+import com.sonicle.webtop.calendar.bol.Event;
 import com.sonicle.webtop.calendar.bol.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
@@ -104,12 +105,13 @@ public class Service extends BaseService {
 	
 	private final LinkedHashMap<String, CalendarGroup> calendarGroups = new LinkedHashMap<>();
 	private CheckedCalendarGroups checkedCalendarGroups = null;
+	private final HashMap<String, SchedulerEvent> events = new HashMap<>();
 
 	@Override
 	public void initialize() {
 		env = getEnv();
 		UserProfile profile = env.getProfile();
-		manager = new CalendarManager(getManifest());
+		manager = new CalendarManager(getManifest(), profile.getStringId());
 		cus = new CalendarUserSettings(profile.getDomainId(), profile.getUserId(), getId());
 		
 		// Loads available groups
@@ -237,104 +239,6 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processGetEventDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
-		ArrayList<JsCalEventDate> items = new ArrayList<>();
-		List<OEvent> grpEvts = null;
-		
-		try {
-			con = getConnection();
-			UserProfile up = env.getProfile();
-			
-			// Defines boundaries
-			String start = ServletUtils.getStringParameter(request, "startDate", true);
-			String end = ServletUtils.getStringParameter(request, "endDate", true);
-			DateTime fromDate = OEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
-			DateTime toDate = OEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
-			
-			// Get events for each visible group
-			List<DateTime> dates = null;
-			for(CalendarGroup group : calendarGroups.values()) {
-				if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
-				
-				dates = manager.getEventsDates(group, fromDate, toDate, up.getTimeZone());
-				for(DateTime dt : dates) {
-					items.add(new JsCalEventDate(JsSchedulerEvent.toYmdWithZone(dt, up.getTimeZone())));
-				}
-			}
-			new JsonResult("dates", items).printTo(out);
-			
-		} catch(Exception ex) {
-			logger.error("Error executing action ManageEventsView", ex);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	public void processManageEventsScheduler(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
-		ArrayList<JsSchedulerEvent> items = new ArrayList<>();
-		
-		try {
-			con = getConnection();
-			UserProfile up = env.getProfile();
-			
-			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			if(crud.equals(Crud.READ)) {
-				String from = ServletUtils.getStringParameter(request, "startDate", true);
-				String to = ServletUtils.getStringParameter(request, "endDate", true);
-				DateTime fromDate = OEvent.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
-				DateTime toDate = OEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
-				
-				// Get events for each visible group
-				JsSchedulerEvent jse = null;
-				List<SchedulerEvent> expEvents = null;
-				List<CalendarManager.GroupEvents> grpEvts = null;
-				for(CalendarGroup group : calendarGroups.values()) {
-					if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
-					
-					grpEvts = manager.getEvents(group, fromDate, toDate);
-					for(CalendarManager.GroupEvents ge : grpEvts) {
-						for(SchedulerEvent evt : ge.events) {
-							if(evt.getRecurrenceId() == null) {
-								jse = new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone());
-								items.add(jse);
-							} else {
-								expEvents = manager.expandRecurringEvent(ge.calendar, evt, fromDate, toDate, up.getTimeZone());
-								for(SchedulerEvent expEvent : expEvents) {
-									jse = new JsSchedulerEvent(expEvent, ge.calendar, up.getTimeZone());
-									items.add(jse);
-								}
-							}
-						}
-					}
-				}
-				
-				new JsonResult("events", items).printTo(out);
-				
-			} else if(crud.equals(Crud.UPDATE)) {
-				JsPayload<JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
-				
-				EventDAO edao = EventDAO.getInstance();
-				OEvent event = edao.select(con, pl.data.eventId);
-				if(event == null) throw new Exception("Unable to get desired event");
-				
-				event.updateDates(pl.data.startDate, pl.data.endDate, up.getTimeZone());
-				edao.update(con, event);
-				
-				new JsonResult().printTo(out);
-			}
-			
-		} catch(Exception ex) {
-			logger.error("Error executing action ManageEventsView", ex);
-			new JsonResult(false, "Error").printTo(out);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
 	public void processManageCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		OCalendar item = null;
@@ -408,6 +312,122 @@ public class Service extends BaseService {
 		}
 	}
 	
+	public void processGetEventDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		Connection con = null;
+		ArrayList<JsCalEventDate> items = new ArrayList<>();
+		List<OEvent> grpEvts = null;
+		
+		try {
+			con = getConnection();
+			UserProfile up = env.getProfile();
+			
+			// Defines boundaries
+			String start = ServletUtils.getStringParameter(request, "startDate", true);
+			String end = ServletUtils.getStringParameter(request, "endDate", true);
+			DateTime fromDate = OEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
+			DateTime toDate = OEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
+			
+			// Get events for each visible group
+			List<DateTime> dates = null;
+			for(CalendarGroup group : calendarGroups.values()) {
+				if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
+				
+				dates = manager.getEventsDates(group, fromDate, toDate, up.getTimeZone());
+				for(DateTime dt : dates) {
+					items.add(new JsCalEventDate(JsSchedulerEvent.toYmdWithZone(dt, up.getTimeZone())));
+				}
+			}
+			new JsonResult("dates", items).printTo(out);
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageEventsView", ex);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public void processManageEventsScheduler(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		Connection con = null;
+		ArrayList<JsSchedulerEvent> items = new ArrayList<>();
+		
+		try {
+			con = getConnection();
+			UserProfile up = env.getProfile();
+			
+			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			if(crud.equals(Crud.READ)) {
+				String from = ServletUtils.getStringParameter(request, "startDate", true);
+				String to = ServletUtils.getStringParameter(request, "endDate", true);
+				DateTime fromDate = OEvent.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+				DateTime toDate = OEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
+				
+				synchronized(events) {
+					events.clear();
+					
+					// Get events for each visible group
+					JsSchedulerEvent jse = null;
+					List<SchedulerEvent> expEvents = null;
+					List<CalendarManager.GroupEvents> grpEvts = null;
+					for(CalendarGroup group : calendarGroups.values()) {
+						if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
+						
+						grpEvts = manager.getEvents(group, fromDate, toDate);
+						for(CalendarManager.GroupEvents ge : grpEvts) {
+							for(SchedulerEvent evt : ge.events) {
+								if(evt.getRecurrenceId() == null) {
+									//events.put(evt.getId(), evt); // Cache into internal map
+									jse = new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone());
+									items.add(jse);
+								} else {
+									expEvents = manager.expandRecurringEvent(ge.calendar, evt, fromDate, toDate, up.getTimeZone());
+									for(SchedulerEvent expEvent : expEvents) {
+										//events.put(expEvent.getId(), evt); // Cache into internal map
+										jse = new JsSchedulerEvent(expEvent, ge.calendar, up.getTimeZone());
+										items.add(jse);
+									}
+								}
+							}
+						}
+					}
+				}
+				new JsonResult("events", items).printTo(out);
+				
+			} else if(crud.equals(Crud.UPDATE)) {
+				JsPayload<JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
+				
+				EventDAO edao = EventDAO.getInstance();
+				OEvent event = edao.select(con, pl.data.eventId);
+				if(event == null) throw new Exception("Unable to get desired event");
+				
+				event.updateDates(pl.data.startDate, pl.data.endDate, up.getTimeZone());
+				edao.update(con, event);
+				
+				new JsonResult().printTo(out);
+				
+			} else if(crud.equals(Crud.DELETE)) {
+				String uid = ServletUtils.getStringParameter(request, "id", true);
+				String target = ServletUtils.getStringParameter(request, "target", true);
+				
+				manager.deleteEvent(target, uid);
+				new JsonResult().printTo(out);
+				
+			} else if(crud.equals("restore")) {
+				String uid = ServletUtils.getStringParameter(request, "id", true);
+				
+				manager.restoreEvent(uid);
+				new JsonResult().printTo(out);
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageEventsView", ex);
+			new JsonResult(false, "Error").printTo(out);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
 	public void processManageEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		OEvent event = null;
@@ -431,9 +451,14 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
+				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
+				manager.insertEvent(evt);
+				
+				/*
 				event = new OEvent();
 				event.fillFrom(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				event.setEventId(edao.getSequence(con).intValue());
+				event.setStatus(OEvent.STATUS_NEW);
 				
 				if(!StringUtils.isEmpty(pl.data.rrType)) {
 					rec = new ORecurrence();
@@ -443,19 +468,18 @@ public class Service extends BaseService {
 				
 				try {
 					con.setAutoCommit(false);
-					
 					if(rec != null) {
 						rrdao.insert(con, rec);
 						event.setRecurrenceId(rec.getRecurrenceId());
 					}
 					edao.insert(con, event);
-					
 					con.commit();
 					
 				} catch(Exception ex1) {
 					con.rollback();
 					throw ex1;
 				}
+				*/
 				
 				new JsonResult().printTo(out);
 				

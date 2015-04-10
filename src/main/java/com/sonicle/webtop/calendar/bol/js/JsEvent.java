@@ -33,9 +33,17 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.webtop.calendar.bol.Event;
 import com.sonicle.webtop.calendar.bol.OEvent;
+import static com.sonicle.webtop.calendar.bol.OEvent.parseYmdHmsWithZone;
+import com.sonicle.webtop.calendar.bol.SchedulerEvent;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 /**
  *
@@ -91,5 +99,71 @@ public class JsEvent {
 		timezone = event.getTimezone();
 		allDay = event.getAllDay();
 		location = event.getLocation();
+	}
+	
+	public static Event buildEvent(JsEvent jse, String workdayStart, String workdayEnd) {
+		Event event = new Event();
+		
+		event.id = null;
+		event.eventId = jse.eventId;
+		event.calendarId = jse.calendarId;
+		
+		// Incoming fields are in a precise timezone, so we need to instantiate
+		// the formatter specifying the right timezone to use.
+		// Then DateTime objects are automatically translated to UTC
+		DateTimeZone etz = DateTimeZone.forID(jse.timezone);
+		event.startDate = parseYmdHmsWithZone(jse.startDate, etz);
+		event.endDate = parseYmdHmsWithZone(jse.endDate, etz);
+		event.timezone = jse.timezone;
+		event.allDay = jse.allDay;
+		adjustTimes(event);
+		event.title = jse.title;
+		event.description = jse.description;
+		event.location = jse.location;
+		event.isPrivate = jse.isPrivate;
+		event.busy = jse.busy;
+		event.reminder = jse.reminder;
+		event.rrEndsMode = jse.rrEndsMode;
+		event.rrRepeatTimes = jse.rrRepeatTimes;
+		event.rrUntilDate = (jse.rrUntilDate != null) ? parseYmdHmsWithZone(jse.rrUntilDate, etz) : null;
+		event.rrType = jse.rrType;
+		event.rrDaylyType = jse.rrDaylyType;
+		event.rrDaylyFreq = jse.rrDaylyFreq;
+		event.rrWeeklyFreq = jse.rrWeeklyFreq;
+		event.rrWeeklyDay1 = jse.rrWeeklyDay1;
+		event.rrWeeklyDay2 = jse.rrWeeklyDay2;
+		event.rrWeeklyDay3 = jse.rrWeeklyDay3;
+		event.rrWeeklyDay4 = jse.rrWeeklyDay4;
+		event.rrWeeklyDay5 = jse.rrWeeklyDay5;
+		event.rrWeeklyDay6 = jse.rrWeeklyDay6;
+		event.rrWeeklyDay7 = jse.rrWeeklyDay7;
+		event.rrMonthlyFreq = jse.rrMonthlyFreq;
+		event.rrMonthlyDay = jse.rrMonthlyDay;
+		event.rrYearlyFreq = jse.rrYearlyFreq;
+		event.rrYearlyDay = jse.rrYearlyDay;
+		
+		return event;
+	}
+	
+	private static void adjustTimes(Event event) {
+		// Checks if end < start
+		if(event.endDate.compareTo(event.startDate) < 0) {
+			event.endDate = event.startDate.toDateTime();
+		}
+		// Force allDay hours
+		if(event.allDay) {
+			event.startDate = event.startDate.withTimeAtStartOfDay();
+			event.endDate = event.endDate.withTime(23, 59, 59, 0);
+		}
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
+		return parseYmdHmsWithZone(date + " " + time, tz);
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String dateTime, DateTimeZone tz) {
+		String dt = StringUtils.replace(dateTime, "T", " ");
+		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
+		return formatter.parseDateTime(dt);
 	}
 }

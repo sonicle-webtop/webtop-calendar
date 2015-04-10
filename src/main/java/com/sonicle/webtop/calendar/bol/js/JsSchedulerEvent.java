@@ -52,8 +52,8 @@ public class JsSchedulerEvent {
 	
 	public String id;
 	public Integer eventId;
+	public Integer originalEventId;
 	public Integer calendarId;
-	public Integer recurrenceId;
 	public String startDate;
 	public String endDate;
 	public String timezone;
@@ -78,8 +78,8 @@ public class JsSchedulerEvent {
 	public JsSchedulerEvent(SchedulerEvent event, OCalendar calendar, TimeZone userTz) {
 		id = event.getId();
 		eventId = event.getEventId();
+		originalEventId = event.getEventId();
 		calendarId = event.getCalendarId();
-		recurrenceId = event.getRecurrenceId();
 		
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.

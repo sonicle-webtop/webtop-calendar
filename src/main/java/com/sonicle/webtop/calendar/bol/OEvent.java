@@ -58,6 +58,26 @@ public class OEvent extends Events {
 		setStatus(STATUS_NEW);
 	}
 	
+	public void setRevisionInfo(RevisionInfo info) {
+		setLastModified(info.lastModified);
+		setUpdateDevice(info.updateDevice);
+		setUpdateUser(info.updateUser);
+	}
+	
+	public void fillFrom(Event event) {
+		setCalendarId(event.calendarId);
+		setStartDate(event.startDate);
+		setEndDate(event.endDate);
+		setTimezone(event.timezone);
+		setAllDay(event.allDay);
+		setTitle(event.title);
+		setDescription(event.description);
+		setLocation(event.location);
+		setIsPrivate(event.isPrivate);
+		setBusy(event.busy);
+		setReminder(event.reminder);
+	}
+	
 	public void doTimeChecks() {
 		
 		// Checks if end < start
@@ -119,7 +139,25 @@ public class OEvent extends Events {
 		return parseYmdHmsWithZone(date, time + ":00", tz);
 	}
 	
-	
+	public static class RevisionInfo {
+		public DateTime lastModified;
+		public String updateDevice;
+		public String updateUser;
+		
+		public RevisionInfo() {
+			
+		}
+		
+		public RevisionInfo(String updateDevice, String updateUser) {
+			this(DateTime.now(DateTimeZone.UTC), updateDevice, updateUser);
+		}
+		
+		public RevisionInfo(DateTime lastModified, String updateDevice, String updateUser) {
+			this.lastModified = lastModified;
+			this.updateDevice = updateDevice;
+			this.updateUser = updateUser;
+		}
+	} 
 	
 	
 	

@@ -31,24 +31,17 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.TreeCal', {
-	extend: 'Ext.data.Model',
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsPlanning;
+
+/**
+ *
+ * @author malbinola
+ */
+public class OEventPlanning extends EventsPlanning {
 	
-	fields: [
-		{name: '_nodeType', type: 'string'},
-		{name: '_groupId', type: 'string'},
-		WT.Util.calcField('_domainId', 'string', '_groupId', function(v, rec) {
-			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[1] : null;
-		}),
-		WT.Util.calcField('_domainId', 'string', '_groupId', function(v, rec) {
-			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[0] : null;
-		}),
-		{name: '_builtIn', type: 'boolean', persist: false},
-		{name: '_default', type: 'boolean', persist: false},
-		{name: '_visible', type: 'boolean', persist: true}, // Same as checked
-		{name: '_color', type: 'string', persist: false},
-		{name: '_isPrivate', type: 'boolean', persist: false},
-		{name: '_busy', type: 'boolean', persist: false},
-		{name: '_reminder', type: 'int', persist: false}
-	]
-});
+	public OEventPlanning() {
+		super();
+	}
+}

@@ -31,59 +31,16 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
-
-/**
- *
- * @author malbinola
- */
-public class DecoEvent extends OEvent {
+Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
+	extend: 'WT.model.Base',
 	
-	private Integer originalEventId;
-	private Boolean isRecurring;
-	private Boolean isBroken;
-	
-	public DecoEvent() {
-		super();
-	}
-	
-	public Integer getOriginalEventId() {
-		return originalEventId;
-	}
-
-	public void setOriginalEventId(Integer value) {
-		originalEventId = value;
-	}
-	
-	public Boolean getIsRecurring() {
-		return isRecurring;
-	}
-
-	public void setIsRecurring(Boolean value) {
-		isRecurring = value;
-	}
-	
-	public Boolean getIsBroken() {
-		return isBroken;
-	}
-
-	public void setIsBroken(Boolean value) {
-		isBroken = value;
-	}
-	
-	public void updateCalculatedFields() {
-		if(getRecurrenceId() == null) {
-			isRecurring = false;
-			if(originalEventId == null) {
-				originalEventId = getEventId();
-				isBroken = false;
-			} else {
-				isBroken = true;
-			}
-		} else {
-			isRecurring = true;
-			originalEventId = getEventId();
-			isBroken = false;
-		}
-	}
-}
+	idProperty: 'id',
+	fields: [
+		WT.Util.field('id', 'int', false),
+		WT.Util.field('eventId', 'int', true),
+		WT.Util.field('email', 'string', false),
+		WT.Util.field('recipientType', 'string', false),
+		WT.Util.field('answerType', 'string', false),
+		WT.Util.field('invitation', 'boolean', false)
+	]
+});

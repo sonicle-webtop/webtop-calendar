@@ -43,12 +43,9 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 		WT.Util.field('name', 'string', false),
 		WT.Util.field('description', 'string', true),
 		WT.Util.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
-		{name: 'colorCls', type: 'string', persist: false, 
-			depends: 'color', 
-			convert: function(v, rec) {
-				return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
-			}
-		},
+		WT.Util.calcField('colorCls', 'string', 'color', function(v, rec) {
+			return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
+		}),
 		WT.Util.field('isDefault', 'boolean', false, {defaultValue: false}),
 		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WT.Util.field('busy', 'boolean', false, {defaultValue: false}),

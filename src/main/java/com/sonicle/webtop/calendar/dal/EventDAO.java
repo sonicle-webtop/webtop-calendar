@@ -33,7 +33,7 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
-import com.sonicle.webtop.calendar.bol.DecoEvent;
+import com.sonicle.webtop.calendar.bol.ViewableEvent;
 import com.sonicle.webtop.calendar.bol.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEvent.RevisionInfo;
@@ -83,22 +83,34 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public OEvent selectLive(Connection con, Integer eventId) throws DAOException {
+	public ViewableEvent view(Connection con, Integer eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		Events eve = EVENTS.as("eve");
+		Field<Integer> originalEventId = dsl
+				.select(eve.EVENT_ID)
+				.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+				.where(
+						rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+						.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+				)
+				.asField("original_event_id");
+		
 		return dsl
-			.select()
+			.select(
+					EVENTS.fields()
+			)
+			.select(
+					originalEventId
+			)
 			.from(EVENTS)
 			.where(
 					EVENTS.EVENT_ID.equal(eventId)
-					.and(
-							EVENTS.STATUS.equal("N")
-							.or(EVENTS.STATUS.equal("M"))
-					)
 			)
-			.fetchOneInto(DecoEvent.class);
+			.fetchOneInto(ViewableEvent.class);
 	}
 	
-	public List<DecoEvent> selectLiveDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<ViewableEvent> viewDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
 		Events eve = EVENTS.as("eve");
@@ -146,19 +158,14 @@ public class EventDAO extends BaseDAO {
 								.or(EVENTS.STATUS.equal("M"))
 						)
 						.and(EVENTS.RECURRENCE_ID.isNull())
-						/*
-						.and(DSL.notExists(
-								DSL.selectOne().from(RECURRENCES_BROKEN).where(RECURRENCES_BROKEN.NEW_EVENT_ID.eq(EVENTS.EVENT_ID))
-						))
-						*/
 				)
 				.orderBy(
 						EVENTS.START_DATE
 				)
-				.fetchInto(DecoEvent.class);
+				.fetchInto(ViewableEvent.class);
 	}
 	
-	public List<DecoEvent> selectLiveByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<ViewableEvent> viewByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
 		Events eve = EVENTS.as("eve");
@@ -215,19 +222,14 @@ public class EventDAO extends BaseDAO {
 							.or(EVENTS.STATUS.equal("M"))
 						)
 						.and(EVENTS.RECURRENCE_ID.isNull())
-						/*
-						.and(DSL.notExists(
-								DSL.selectOne().from(RECURRENCES_BROKEN).where(RECURRENCES_BROKEN.NEW_EVENT_ID.eq(EVENTS.EVENT_ID))
-						))
-						*/
 				)
 				.orderBy(
 						EVENTS.START_DATE
 				)
-				.fetchInto(DecoEvent.class);
+				.fetchInto(ViewableEvent.class);
 	}
 	
-	public List<DecoEvent> selectLiveRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<ViewableEvent> viewRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.select(
@@ -256,10 +258,10 @@ public class EventDAO extends BaseDAO {
 				.orderBy(
 						EVENTS.START_DATE
 				)
-				.fetchInto(DecoEvent.class);
+				.fetchInto(ViewableEvent.class);
 	}
 	
-	public List<DecoEvent> selectLiveRecurringByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<ViewableEvent> viewRecurringByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		return dsl
@@ -298,11 +300,12 @@ public class EventDAO extends BaseDAO {
 				.orderBy(
 						EVENTS.START_DATE
 				)
-				.fetchInto(DecoEvent.class);
+				.fetchInto(ViewableEvent.class);
 	}
 	
 	public int insert(Connection con, OEvent item) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		OEvent.checkTimesCoherence(item);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)
@@ -312,16 +315,25 @@ public class EventDAO extends BaseDAO {
 	
 	public int update(Connection con, OEvent item) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		OEvent.checkTimesCoherence(item);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
+			.set(EVENTS.RECURRENCE_ID, item.getRecurrenceId())
 			.set(EVENTS.START_DATE, item.getStartDate())
 			.set(EVENTS.END_DATE, item.getEndDate())
 			.set(EVENTS.TIMEZONE, item.getTimezone())
 			.set(EVENTS.ALL_DAY, item.getAllDay())
 			.set(EVENTS.TITLE, item.getTitle())
-			.set(EVENTS.LOCATION, item.getLocation())
 			.set(EVENTS.DESCRIPTION, item.getDescription())
+			.set(EVENTS.LOCATION, item.getLocation())
+			.set(EVENTS.IS_PRIVATE, item.getIsPrivate())
+			.set(EVENTS.BUSY, item.getBusy())
+			.set(EVENTS.REMINDER, item.getReminder())
+			.set(EVENTS.READ_ONLY, item.getReadOnly())
+			.set(EVENTS.LAST_MODIFIED, item.getLastModified())
+			.set(EVENTS.UPDATE_DEVICE, item.getUpdateDevice())
+			.set(EVENTS.UPDATE_USER, item.getUpdateUser())
 			.where(
 				EVENTS.EVENT_ID.equal(item.getEventId())
 			)
@@ -333,8 +345,8 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_USER, updateInfo.updateUser)
 			.set(EVENTS.UPDATE_DEVICE, updateInfo.updateDevice)
+			.set(EVENTS.UPDATE_USER, updateInfo.updateUser)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
@@ -347,8 +359,8 @@ public class EventDAO extends BaseDAO {
 			.update(EVENTS)
 			.set(EVENTS.STATUS, status)
 			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_USER, updateInfo.updateUser)
 			.set(EVENTS.UPDATE_DEVICE, updateInfo.updateDevice)
+			.set(EVENTS.UPDATE_USER, updateInfo.updateUser)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)

@@ -38,6 +38,7 @@ import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
 import java.util.ArrayList;
 import java.util.HashSet;
+import org.joda.time.LocalTime;
 
 /**
  *
@@ -54,21 +55,25 @@ public class CalendarUserSettings extends BaseUserSettings {
 	 * Calendar view (d:day, w:week, w5:workweek, m:month)
 	 */
 	public static final String VIEW = "view";
+	public static final String DEFAULT_VIEW = "w5";
 	/**
 	 * [int]
 	 * Calendar start day (0:sunday, 1:monday)
 	 */
 	public static final String START_DAY = "startday";
+	public static final int DEFAULT_START_DAY = 1;
 	/**
 	 * [string]
 	 * Workday hours start time
 	 */
 	public static final String WORKDAY_START = "workday.start";
+	public static final String DEFAULT_WORKDAY_START = "09:00";
 	/**
 	 * [string]
 	 * Workday hours end time
 	 */
 	public static final String WORKDAY_END = "workday.end";
+	public static final String DEFAULT_WORKDAY_END = "18:00";
 	/**
 	 * [string]
 	 * Selected calendar group.
@@ -78,64 +83,70 @@ public class CalendarUserSettings extends BaseUserSettings {
 	 * [string[]]
 	 * List of checked (or visible) calendar groups.
 	 */
-	public static final String CHECKED_CALENDAR_GROUP = "calendargroups.checked";
+	public static final String CHECKED_CALENDAR_GROUPS = "calendargroups.checked";
+	
+	/**
+	 * [int[]]
+	 * List of checked (or visible) calendars.
+	 */
+	public static final String CHECKED_CALENDARS = "calendars.checked";
 	
 	
 	public String getCalendarView() {
-		return getUserSetting(VIEW, "w5");
+		return getString(VIEW, DEFAULT_VIEW);
 	}
 	
 	public boolean setCalendarView(String value) {
-		return setUserSetting(VIEW, value);
+		return setString(VIEW, value);
 	}
 	
 	public Integer getCalendarStartDay() {
-		return getUserSetting(START_DAY, 1);
+		return getInteger(START_DAY, DEFAULT_START_DAY);
 	}
 	
 	public boolean setCalendarStartDay(Integer value) {
-		return setUserSetting(START_DAY, value);
+		return setInteger(START_DAY, value);
 	}
 	
-	public String getWorkdayStart() {
-		//TODO: verificare formattazione
-		return getUserSetting(WORKDAY_START, "09:00");
+	public LocalTime getWorkdayStart() {
+		return getTime(WORKDAY_START, DEFAULT_WORKDAY_START, "HH:mm");
 	}
 	
 	public boolean setWorkdayStart(String value) {
-		return setUserSetting(WORKDAY_START, value);
+		return setString(WORKDAY_START, value);
 	}
 	
-	public String getWorkdayEnd() {
-		//TODO: verificare formattazione
-		return getUserSetting(WORKDAY_END, "18:00");
+	public LocalTime getWorkdayEnd() {
+		return getTime(WORKDAY_END, DEFAULT_WORKDAY_END, "HH:mm");
 	}
 	
 	public boolean setWorkdayEnd(String value) {
-		return setUserSetting(WORKDAY_END, value);
+		return setString(WORKDAY_END, value);
 	}
 	
 	public String getSelectedCalendarGroup() {
-		return getUserSetting(SELECTED_CALENDAR_GROUP, null);
+		return getString(SELECTED_CALENDAR_GROUP, null);
 	}
 	
 	public boolean setSelectedCalendarGroup(String value) {
-		return setUserSetting(SELECTED_CALENDAR_GROUP, value);
+		return setString(SELECTED_CALENDAR_GROUP, value);
 	}
 	
 	public CheckedCalendarGroups getCheckedCalendarGroups() {
-		CheckedCalendarGroups value = LangUtils.deserialize(getUserSetting(CHECKED_CALENDAR_GROUP), CheckedCalendarGroups.class);
-		return (value != null) ? value : new CheckedCalendarGroups();
+		return getObject(CHECKED_CALENDAR_GROUPS, new CheckedCalendarGroups(), CheckedCalendarGroups.class);
 	}
 	
 	public boolean setCheckedCalendarGroups(CheckedCalendarGroups value) {
-		return setUserSetting(CHECKED_CALENDAR_GROUP, LangUtils.serialize(value, CheckedCalendarGroups.class));
+		return setObject(CHECKED_CALENDAR_GROUPS, value, CheckedCalendarGroups.class);
 	}
 	
+	public CheckedCalendars getCheckedCalendars() {
+		return getObject(CHECKED_CALENDARS, new CheckedCalendars(), CheckedCalendars.class);
+	}
 	
-	
-	
-	
+	public boolean setCheckedCalendars(CheckedCalendars value) {
+		return setObject(CHECKED_CALENDARS, value, CheckedCalendars.class);
+	}
 	
 	public static class CheckedCalendarGroups extends HashSet<String> {
 		public CheckedCalendarGroups() {
@@ -147,6 +158,20 @@ public class CalendarUserSettings extends BaseUserSettings {
 		}
 		
 		public static String toJson(CheckedCalendarGroups value) {
+			return JsonResult.gson.toJson(value, CheckedCalendarGroups.class);
+		}
+	}
+	
+	public static class CheckedCalendars extends HashSet<Integer> {
+		public CheckedCalendars() {
+			super();
+		}
+		
+		public static CheckedCalendars fromJson(String value) {
+			return JsonResult.gson.fromJson(value, CheckedCalendars.class);
+		}
+		
+		public static String toJson(CheckedCalendars value) {
 			return JsonResult.gson.toJson(value, CheckedCalendarGroups.class);
 		}
 	}

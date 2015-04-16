@@ -51,6 +51,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.webtop.calendar.store.Reminder'
 	],
 	
+	confirm: 'yn',
+	autoToolbar: false,
+	
 	title: '@event.tit',
 	iconCls: 'wtcal-icon-event-xs',
 	model: 'Sonicle.webtop.calendar.model.Event',
@@ -100,10 +103,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			isPrivate: WT.Util.checkboxBind('record', 'isPrivate'),
 			busy: WT.Util.checkboxBind('record', 'busy'),
 			rrType: WT.Util.checkboxGroupBind('record', 'rrType'),
-			isRRDayly: WT.Util.equalsFormula('record', 'rrType', 'D'),
-			isRRWeekly: WT.Util.equalsFormula('record', 'rrType', 'W'),
-			isRRMonthly: WT.Util.equalsFormula('record', 'rrType', 'M'),
-			isRRYearly: WT.Util.equalsFormula('record', 'rrType', 'Y'),
 			rrDaylyType: WT.Util.checkboxGroupBind('record', 'rrDaylyType'),
 			rrWeeklyDay1: WT.Util.checkboxBind('record', 'rrWeeklyDay1'),
 			rrWeeklyDay2: WT.Util.checkboxBind('record', 'rrWeeklyDay2'),
@@ -112,12 +111,57 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			rrWeeklyDay5: WT.Util.checkboxBind('record', 'rrWeeklyDay5'),
 			rrWeeklyDay6: WT.Util.checkboxBind('record', 'rrWeeklyDay6'),
 			rrWeeklyDay7: WT.Util.checkboxBind('record', 'rrWeeklyDay7'),
-			rrEndsMode: WT.Util.checkboxGroupBind('record', 'rrEndsMode')
+			rrEndsMode: WT.Util.checkboxGroupBind('record', 'rrEndsMode'),
+			
+			isRRNone: WT.Util.equalsFormula('record', 'rrType', '_'),
+			isRRDayly: WT.Util.equalsFormula('record', 'rrType', 'D'),
+			isRRWeekly: WT.Util.equalsFormula('record', 'rrType', 'W'),
+			isRRMonthly: WT.Util.equalsFormula('record', 'rrType', 'M'),
+			isRRYearly: WT.Util.equalsFormula('record', 'rrType', 'Y')
 		}
 	},
 	
 	initComponent: function() {
 		var me = this;
+		Ext.apply(me, {
+			tbar: [
+				me.addAction('saveClose', {
+					text: WT.res('act-saveClose.lbl'),
+					iconCls: 'wt-icon-saveClose-xs',
+					handler: function() {
+						me.saveEvent();
+					}
+				}),
+				'-',
+				me.addAction('deleteEvent', {
+					text: null,
+					tooltip: WT.res('act-delete.lbl'),
+					iconCls: 'wt-icon-delete-xs',
+					handler: function() {
+						me.deleteEvent();
+					}
+				}),
+				me.addAction('restoreEvent', {
+					text: null,
+					tooltip: WT.res('act-restore.lbl'),
+					iconCls: 'wt-icon-restore-xs',
+					handler: function() {
+						me.restoreEvent();
+					},
+					disabled: true
+				}),
+				'-',
+				me.addAction('printEvent', {
+					text: null,
+					tooltip: WT.res('act-print.lbl'),
+					iconCls: 'wt-icon-print-xs',
+					handler: function() {
+						//TODO: implementare stampa evento
+						WT.warn('TODO');
+					}
+				})
+			]
+		});
 		me.callParent(arguments);
 		
 		
@@ -157,7 +201,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				},
 				items: [{
 					xtype: 'datefield',
-					bind: '{startDate}',
+					bind: {
+						value: '{startDate}',
+						disabled: '{record._isRecurring}'
+					},
 					margin: '0 5 0 0',
 					width: 105
 				}, {
@@ -197,7 +244,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				},
 				items: [{
 					xtype: 'datefield',
-					bind: '{endDate}',
+					bind: {
+						value: '{endDate}',
+						disabled: '{record._isRecurring}'
+					},
 					margin: '0 5 0 0',
 					width: 105
 				}, {
@@ -285,7 +335,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}, {
 					xtype: 'soiconcombo',
 					bind: '{record.calendarId}',
-					typeAhead: true,
+					typeAhead: false,
 					queryMode: 'local',
 					forceSelection: true,
 					selectOnFocus: true,
@@ -304,7 +354,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					labelWidth: 70,
 					fieldLabel: me.mys.res('event.fld-calendar.lbl'),
 					margin: 0,
-					flex: 1
+					flex: 1,
+					listeners: {
+						select: function(s, rec) {
+							me.onCalendarSelect(rec);
+						}
+					}
 				}]	
 			}, {
 				xtype: 'soseparator'
@@ -341,7 +396,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							margin: '0 0 15 0'
 						},
 						items: [{
-							inputValue: '',
+							inputValue: '_',
 							boxLabel: WT.res('rr.type.none')
 						}, {
 							inputValue: 'D',
@@ -368,8 +423,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}, {
 						xtype: 'fieldcontainer', // dayly row
 						bind: {
-							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
-							//disabled: '{!isRRDayly}'
+							disabled: '{!isRRDayly}'
 						},
 						layout: 'hbox',
 						defaults: {
@@ -410,8 +464,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}, {
 						xtype: 'fieldcontainer', // weekly row
 						bind: {
-							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
-							//disabled: '{!isRRWeekly}'
+							disabled: '{!isRRWeekly}'
 						},
 						layout: 'hbox',
 						defaults: {
@@ -468,8 +521,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}, {
 						xtype: 'fieldcontainer', // monthly row
 						bind: {
-							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
-							//disabled: '{!isRRMonthly}'
+							disabled: '{!isRRMonthly}'
 						},
 						layout: 'hbox',
 						defaults: {
@@ -511,8 +563,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}, {
 						xtype: 'fieldcontainer', // yearly row
 						bind: {
-							//TODO: uncomment when resolved (see http://www.sencha.com/forum/showthread.php?296787-FieldContainer-enable-disable-bug-ExtJs-5.1)
-							//disabled: '{!isRRYearly}'
+							disabled: '{!isRRYearly}'
 						},
 						layout: 'hbox',
 						defaults: {
@@ -554,7 +605,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				items: [{
 					xtype: 'radiogroup',
 					bind: {
-						value: '{rrEndsMode}'
+						value: '{rrEndsMode}',
+						disabled: '{isRRNone}'
 					},
 					columns: [70, 70, 50, 90, 50, 105],
 					items: [{
@@ -620,7 +672,107 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		// Overrides autogenerated string id by extjs...
 		// It avoids type conversion problems server-side!
-		if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
+		//if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
+		
+		if(me.isMode(me.MODE_EDIT)) {
+			me.getAction('restoreEvent').setDisabled(!(me.getModel().get('_isBroken') === true));
+		} else {
+			
+		}
+		
 		main.getComponent('fldtitle').focus(true);
+	},
+	
+	onCalendarSelect: function(cal) {
+		var mo = this.getModel();
+		mo.set({
+			isPrivate: cal.get('isPrivate'),
+			busy: cal.get('busy'),
+			reminder: cal.get('reminder')
+		});
+	},
+	
+	saveEvent: function() {
+		var me = this,
+				rec = me.getModel();
+		
+		if(rec.get('_isRecurring') === true) {
+			WT.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid) {
+				if(bid === 'ok') {
+					var target = WT.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']),
+						proxy = rec.getProxy();
+					
+					// Inject target param into proxy...
+					proxy.setExtraParams(Ext.apply(proxy.getExtraParams(), {
+						target: target
+					}));
+					me.doSave(true);
+				}
+			}, me);
+		} else {
+			me.doSave(true);
+		}
+	},
+	
+	deleteEvent: function() {
+		var me = this,
+				rec = me.getModel(),
+				ajaxFn;
+		
+		ajaxFn = function(target, id) {
+			me.wait();
+			WT.ajaxReq(me.mys.ID, 'ManageEventsScheduler', {
+				params: {
+					crud: 'delete',
+					target: target,
+					id: id
+				},
+				callback: function(success, o) {
+					me.unwait();
+					if(success) {
+						me.closeView(false);
+						me.mys.refreshEvents();
+					}
+				}
+			});
+		};
+		
+		if(rec.get('_isRecurring') === true) {
+			WT.confirmForRecurrence(me.mys.res('event.recurring.confirm.delete'), function(bid) {
+				if(bid === 'ok') {
+					var target = WT.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
+					ajaxFn(target, rec.get('id'));
+				}
+			}, me);
+		} else {
+			WT.confirm(me.mys.res('event.confirm.delete', rec.get('title')), function(bid) {
+				if(bid === 'yes') {
+					ajaxFn('this', rec.get('id'));
+				}
+			}, me);
+		}
+	},
+	
+	restoreEvent: function() {
+		var me = this,
+				rec = me.getModel();
+		WT.confirm(me.mys.res('event.recurring.confirm.restore'), function(bid) {
+			if(bid === 'yes') {
+				me.wait();
+				WT.ajaxReq(me.mys.ID, 'ManageEventsScheduler', {
+					params: {
+						crud: 'restore',
+						id: rec.get('id')
+					},
+					callback: function(success, o) {
+						me.unwait();
+						if(success) {
+							me.closeView(false);
+							me.mys.refreshEvents();
+						}
+					}
+				});
+			}
+		}, me);
 	}
 });

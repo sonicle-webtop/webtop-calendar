@@ -31,17 +31,64 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol.js;
+package com.sonicle.webtop.calendar.dal;
+
+import com.sonicle.webtop.calendar.bol.OEventPlanning;
+import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS_PLANNING;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_PLANNING;
+import com.sonicle.webtop.calendar.jooq.tables.records.EventsPlanningRecord;
+import com.sonicle.webtop.core.dal.BaseDAO;
+import com.sonicle.webtop.core.dal.DAOException;
+import java.sql.Connection;
+import java.util.List;
+import org.jooq.DSLContext;
 
 /**
  *
  * @author malbinola
  */
-public class JsCalEventDate {
+public class EventPlanningDAO extends BaseDAO {
 	
-	public String date;
+	private final static EventPlanningDAO INSTANCE = new EventPlanningDAO();
+
+	public static EventPlanningDAO getInstance() {
+		return INSTANCE;
+	}
+
+	public Long getSequence(Connection con) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		Long nextID = dsl.nextval(SEQ_EVENTS_PLANNING);
+		return nextID;
+	}
 	
-	public JsCalEventDate(String date) {
-		this.date = date;
+	public List<OEventPlanning> selectByEvent(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(EVENTS_PLANNING)
+				.where(
+						EVENTS_PLANNING.EVENT_ID.equal(eventId)
+				)
+				.orderBy(
+						EVENTS_PLANNING.EMAIL.asc()
+				)
+				.fetchInto(OEventPlanning.class);
+	}
+	
+	public int insert(Connection con, OEventPlanning item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		EventsPlanningRecord record = dsl.newRecord(EVENTS_PLANNING, item);
+		return dsl
+			.insertInto(EVENTS_PLANNING)
+			.set(record)
+			.execute();
+	}
+	
+	public int deleteByEvent(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.delete(EVENTS_PLANNING)
+				.where(EVENTS_PLANNING.EVENT_ID.equal(eventId))
+				.execute();
 	}
 }

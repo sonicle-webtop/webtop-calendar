@@ -33,11 +33,9 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.commons.web.JsonUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.calendar.bol.OEvent;
-import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.SchedulerEvent;
+import com.sonicle.webtop.core.sdk.UserProfile;
 import java.util.TimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -75,7 +73,16 @@ public class JsSchedulerEvent {
 		
 	}
 	
-	public JsSchedulerEvent(SchedulerEvent event, OCalendar calendar, TimeZone userTz) {
+	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id profileId, TimeZone profileTz) {
+		
+		boolean keepDataPrivate = false;
+		if(event.getIsPrivate()) {
+			UserProfile.Id calProfileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId());
+			if(!calProfileId.equals(profileId)) {
+				keepDataPrivate = true;
+			}
+		}
+		
 		id = event.getId();
 		eventId = event.getEventId();
 		originalEventId = event.getEventId();
@@ -84,17 +91,19 @@ public class JsSchedulerEvent {
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
 		// Formatter will be instantiated specifying desired timezone.
-		startDate = toYmdHmsWithZone(event.getStartDate(), userTz);
-		endDate = toYmdHmsWithZone(event.getEndDate(), userTz);
-		timezone = (userTz.getID().equals(event.getTimezone())) ? null : event.getTimezone();
+		startDate = toYmdHmsWithZone(event.getStartDate(), profileTz);
+		endDate = toYmdHmsWithZone(event.getEndDate(), profileTz);
+		timezone = event.getTimezone();
 		isAllDay = event.getAllDay();
 		
-		title = (!event.getIsPrivate()) ? event.getTitle() : "***";
+		//title = (!event.getIsPrivate()) ? event.getTitle() : "***";
+		title = (keepDataPrivate) ? "***" : event.getTitle();
 		color = calendar.getColor();
 		location = event.getLocation();
+		location = (keepDataPrivate) ? "" : event.getLocation();
 		isPrivate = event.getIsPrivate();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = event.getReadOnly();
+		isReadOnly = event.getReadOnly() || keepDataPrivate;
 		isRecurring = event.getIsRecurring();
 		isBroken = event.getIsBroken();
 	}
@@ -116,63 +125,4 @@ public class JsSchedulerEvent {
 		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd").withZone(tz);
 		return dtf.print(dt);
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	/*
-	private void jdkTime(OEvent event, OCalendar calendar, TimeZone userTz) {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		sdf.setTimeZone(userTz);
-		
-		start = sdf.format(event.getFrom());
-		end = sdf.format(event.getTo());
-		tz = (userTz.getID().equals(event.getTimezone())) ? null : event.getTimezone();
-		
-	}
-	
-	private void jodaTime(OEvent event, OCalendar calendar, TimeZone userTz) {
-		DateTimeZone utc = DateTimeZone.UTC;
-		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
-		
-		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(utz);
-		start = formatter.print(event.getFrom());
-		end = formatter.print(event.getTo());
-		tz = (userTz.getID().equals(event.getTimezone())) ? null : event.getTimezone();
-	}
-	
-	
-	
-	
-	
-	public final Date convert(Timestamp ts, TimeZone tsTz, TimeZone newTz) {
-		return convert2(ts, tsTz, newTz);
-		//return convert(ts, DateTimeZone.forTimeZone(tsTz), DateTimeZone.forTimeZone(newTz));
-	}
-	
-	public final Date convert(Timestamp ts, DateTimeZone tsTz, DateTimeZone newTz) {
-		DateTime from = new DateTime(ts.getTime(), tsTz);
-		return from.toDateTime(newTz).toDate();
-	}
-	
-	public Date convert2(Timestamp ts, TimeZone fromTz, TimeZone toTz) {
-		Calendar fromCalendar = new GregorianCalendar();
-		fromCalendar.setTimeZone(fromTz);
-		fromCalendar.setTimeInMillis(ts.getTime());
-		
-		Calendar toCalendar = new GregorianCalendar();
-		toCalendar.setTimeZone(toTz);
-		toCalendar.setTimeInMillis(fromCalendar.getTimeInMillis());
-		
-		if(toTz.inDaylightTime(toCalendar.getTime()) && fromTz.hasSameRules(toTz)) {
-			toCalendar.setTimeInMillis(fromCalendar.getTimeInMillis() + toTz.getDSTSavings());
-		}
-		return toCalendar.getTime();
-	}
-	*/
 }

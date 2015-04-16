@@ -33,47 +33,18 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import org.joda.time.DateTime;
-
 /**
  *
  * @author malbinola
  */
-public class Event {
+public class Event extends EventData {
 	
 	public String id;
 	public Integer eventId;
-	public Integer calendarId;
-	public DateTime startDate;
-	public DateTime endDate;
-	public String timezone;
-	public Boolean allDay;
-	public String title;
-	public String description;
-	public String location;
-	public Boolean isPrivate;
-	public Boolean busy;
-	public Integer reminder;
-	public String rrEndsMode;
-	public Integer rrRepeatTimes;
-	public DateTime rrUntilDate;
-	public String rrType;
-	public String rrDaylyType;
-	public Integer rrDaylyFreq;
-	public Integer rrWeeklyFreq;
-	public Boolean rrWeeklyDay1;
-	public Boolean rrWeeklyDay2;
-	public Boolean rrWeeklyDay3;
-	public Boolean rrWeeklyDay4;
-	public Boolean rrWeeklyDay5;
-	public Boolean rrWeeklyDay6;
-	public Boolean rrWeeklyDay7;
-	public Integer rrMonthlyFreq;
-	public Integer rrMonthlyDay;
-	public Integer rrYearlyFreq;
-	public Integer rrYearlyDay;
+	public Boolean isRecurring;
+	public Boolean isBroken;
 	
 	public Event() {
-		
+		super();
 	}
 }

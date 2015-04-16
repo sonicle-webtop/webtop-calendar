@@ -46,7 +46,7 @@ import org.joda.time.format.DateTimeFormatter;
  *
  * @author malbinola
  */
-public class SchedulerEvent extends DecoEvent {
+public class SchedulerEvent extends ViewableEvent {
 	
 	private String id;
 	
@@ -54,7 +54,7 @@ public class SchedulerEvent extends DecoEvent {
 		super();
 	}
 	
-	public SchedulerEvent(DecoEvent event) {
+	public SchedulerEvent(ViewableEvent event) {
 		super();
 		new Cloner().copyPropertiesOfInheritedClass(event, this);
 		id = SchedulerEvent.buildId(event.getEventId(), event.getOriginalEventId());
@@ -69,16 +69,16 @@ public class SchedulerEvent extends DecoEvent {
 	}
 	
 	public static String buildId(Integer eventId, Integer originalEventId) {
-		return eventId + "_" + originalEventId;
+		return originalEventId + "_" + eventId;
 	}
 	
 	public static String buildId(Integer eventId, Integer originalEventId, LocalDate date) {
-		return eventId + "_" + originalEventId + "_" + date.toString("yyyyMMdd");
+		return originalEventId + "_" + eventId + "-" + date.toString("yyyyMMdd");
 	}
 	
 	public static class EventUID {
 		private static final Pattern PATTERN_UID = Pattern.compile("^([0-9]+)_([0-9]+)$");
-		private static final Pattern PATTERN_UID_RECURRING = Pattern.compile("^([0-9]+)_([0-9]+)_([0-9]+)$");
+		private static final Pattern PATTERN_UID_RECURRING = Pattern.compile("^([0-9]+)_([0-9]+)-([0-9]+)$");
 		
 		public Integer eventId;
 		public Integer originalEventId;
@@ -87,13 +87,13 @@ public class SchedulerEvent extends DecoEvent {
 		public EventUID(String eventUid) {
 			Matcher matcher = null;
 			if((matcher = PATTERN_UID_RECURRING.matcher(eventUid)).matches()) {
-				eventId = Integer.valueOf(matcher.group(1));
-				originalEventId = Integer.valueOf(matcher.group(2));
+				originalEventId = Integer.valueOf(matcher.group(1));
+				eventId = Integer.valueOf(matcher.group(2));
 				DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd").withZone(DateTimeZone.UTC);
 				atDate = formatter.parseDateTime(matcher.group(3)).toLocalDate();
 			} else if((matcher = PATTERN_UID.matcher(eventUid)).matches()) {
-				eventId = Integer.valueOf(matcher.group(1));
-				originalEventId = Integer.valueOf(matcher.group(2));
+				originalEventId = Integer.valueOf(matcher.group(1));
+				eventId = Integer.valueOf(matcher.group(2));
 			}
 		}
 	}

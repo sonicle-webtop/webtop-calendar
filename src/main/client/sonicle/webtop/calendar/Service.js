@@ -244,6 +244,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			activeView: me.getOption('view'),
 			startDay: me.getOption('startDay'),
 			use24HourTime: WT.getOption('use24HourTime'),
+			timezone: WT.getOption('timezone'),
 			viewCfg: {
 				timezoneIconCls: 'fa fa-globe',
 				privateIconCls: 'fa fa-lock',
@@ -276,11 +277,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				rangeselect: function(s,dates,onComplete) {
 					onComplete();
 					var cal = me.getSelectedCalendar();
-					if(cal) me.addEvent(cal.get('_groupId'), cal.getId(), dates.startDate, dates.endDate);
+					if(cal) me.addEvent(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate);
 				},
 				eventdblclick: function(s, rec) {
-					//TODO: controllo se possibile editare
-					me.editEvent(rec);
+					console.log('clicked: '+rec.get('id'));
+					if(me.isEventEditable(rec)) me.editEvent(rec);
 				},
 				daydblclick: function(s, dt, ad) {
 					var cal = me.getSelectedCalendar(),
@@ -296,7 +297,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							start = dt;
 							end = soDate.add(dt, {minutes: 30});
 						}
-						me.addEvent(cal.get('_groupId'), cal.getId(), start, end);
+						me.addEvent(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end);
 					}
 				},
 				eventcontextmenu: function(s, rec, el, evt) {
@@ -323,7 +324,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('new', 'addEvent', {
 			handler: function() {
 				var cal = me.getSelectedCalendar();
-				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId());
+				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'));
 			}
 		});
 		me.addAction('today', {
@@ -403,8 +404,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAction('importEvents', {
 			handler: function() {
-				// TODO: implementare importazione
-				WT.warn('To be implemented!');
+				//TODO: implementare importazione
+				WT.warn('TODO');
 			}
 		});
 		me.addAction('viewAllCalendars', {
@@ -422,7 +423,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('addEvent', {
 			handler: function() {
 				var cal = me.getSelectedCalendar();
-				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId());
+				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'));
+			}
+		});
+		me.addAction('openEvent', {
+			text: WT.res('act-open.lbl'),
+			handler: function() {
+				var rec = WT.getContextMenuData().event;
+				if(me.isEventEditable(rec)) me.editEvent(rec);
 			}
 		});
 		me.addAction('deleteEvent', {
@@ -445,7 +453,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-print.lbl'),
 			iconCls: 'wt-icon-print-xs',
 			handler: function() {
-				
+				//TODO: implementare stampa
+				WT.warn('TODO');
 			}
 		});
 	},
@@ -490,19 +499,25 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addRef('cxmEvent', Ext.create({
 			xtype: 'menu',
 			items: [
-				me.getAction('editEvent'),
+				me.getAction('openEvent'),
+				'-',
 				me.getAction('deleteEvent'),
 				me.getAction('restoreEvent'),
 				'-',
 				me.getAction('addEvent'),
-				me.getAction('printEvents'),
-				me.getAction('today')
+				me.getAction('printEvents')
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
 				beforeshow: function() {
-					var rec = WT.getContextMenuData().event;
-					me.getAction('restoreEvent').setDisabled(rec.get('isBroken') === false);
+					var rec = WT.getContextMenuData().event,
+							readOnly = (rec.get('isReadOnly') === true),
+							broken = (rec.get('isBroken') === true);
+					
+					me.getAction('openEvent').setDisabled(readOnly);
+					me.getAction('deleteEvent').setDisabled(readOnly);
+					me.getAction('restoreEvent').setDisabled(readOnly || !broken);
+					//me.getAction('restoreEvent').setDisabled(rec.get('isBroken') === false);
 				}
 			}
 		}));
@@ -581,12 +596,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, this);
 	},
 	
-	addEventAtNow: function(groupId, calendarId) {
-		var now = new Date();
-		this.addEvent(groupId, calendarId, now, now);
+	isEventEditable: function(rec) {
+		return !(rec.get('isReadOnly') === true);
 	},
 	
-	addEvent: function(groupId, calendarId, start, end) {
+	addEventAtNow: function(groupId, calendarId, isPrivate, busy, reminder) {
+		var now = new Date();
+		this.addEvent(groupId, calendarId, isPrivate, busy, reminder, now, now);
+	},
+	
+	addEvent: function(groupId, calendarId, isPrivate, busy, reminder, start, end) {
 		var me = this,
 				EM = Sonicle.webtop.calendar.model.Event,
 				wnd = this._createEventView({
@@ -598,6 +617,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			wnd.getComponent(0).beginNew({
 				data: {
 					calendarId: calendarId,
+					isPrivate: isPrivate,
+					busy: busy,
+					reminder: reminder,
 					startDate: start,
 					endDate: end,
 					timezone: WT.getOption('timezone')
@@ -608,54 +630,57 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	editEvent: function(rec) {
 		var me = this,
-				wnd = this._createEventView();
+				wnd = this._createEventView({
+					groupId: 'matteo.albinola@sonicleldap' //TODO: rendere dinamico......
+				});
 		
 		wnd.getComponent(0).on('viewsave', me.onEventViewSave, me);
 		wnd.show(false, function() {
 			wnd.getComponent(0).beginEdit({
 				data: {
-					eventId: rec.get('eventId')
+					id: rec.get('id')
 				}
 			});
 		});
 	},
 	
-	deleteEvent: function(rec) {
-		var me = this;
+	deleteEvent: function(rec, opts) {
+		opts = opts || {};
+		var me = this, ajaxFn;
+		
+		ajaxFn = function(target, id) {
+			WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
+				params: {
+					crud: 'delete',
+					target: target,
+					id: id
+				},
+				callback: function(success, o) {
+					Ext.callback(opts.callback, opts.scope, [success, o]);
+					if(success) me.refreshEvents();
+					
+				}
+			});
+		};
+		
 		if(rec.get('isRecurring')) {
 			WT.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid) {
 				if(bid === 'ok') {
-					var target = null;
-					if((target === null) && (Ext.get('this').dom.checked === true)) target = 'this';
-					if((target === null) && (Ext.get('since').dom.checked === true)) target = 'since';
-					if((target === null) && (Ext.get('all').dom.checked === true)) target = 'all';
-					me._ajaxDeleteEvent(target, rec.get('id'));
+					var target = WT.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
+					ajaxFn(target, rec.get('id'));
 				}
 			}, me);
 		} else {
 			WT.confirm(me.res('event.confirm.delete', rec.get('title')), function(bid) {
 				if(bid === 'yes') {
-					me._ajaxDeleteEvent('this', rec.get('id'));
+					ajaxFn('this', rec.get('id'));
 				}
 			}, me);
 		}
 	},
 	
-	_ajaxDeleteEvent: function(target, id) {
-		var me = this;
-		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
-			params: {
-				crud: 'delete',
-				target: target,
-				id: id
-			},
-			callback: function(success, o) {
-				if(success) me.refreshEvents();
-			}
-		});
-	},
-	
-	restoreEvent: function(rec) {
+	restoreEvent: function(rec, opts) {
+		opts = opts || {};
 		var me = this;
 		WT.confirm(me.res('event.recurring.confirm.restore'), function(bid) {
 			if(bid === 'yes') {
@@ -665,6 +690,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						id: rec.get('id')
 					},
 					callback: function(success, o) {
+						Ext.callback(opts.callback, opts.scope, [success, o]);
 						if(success) me.refreshEvents();
 					}
 				});
@@ -687,7 +713,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	onEventViewSave: function(s, success, model) {
 		if(!success) return;
-		//TODO: completare
+		this.refreshEvents();
 	},
 	
 	_createCalendarView: function(cfg) {

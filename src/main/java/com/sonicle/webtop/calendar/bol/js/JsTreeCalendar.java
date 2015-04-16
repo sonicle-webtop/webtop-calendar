@@ -40,9 +40,12 @@ import java.util.ArrayList;
  * @author malbinola
  */
 public class JsTreeCalendar {
+	public static final String TYPE_GROUP = "group";
+	public static final String TYPE_CALENDAR = "calendar";
 	
 	public String id;
 	public String _nodeType;
+	public String _groupId;
 	public Boolean _visible;
 	
 	public JsTreeCalendar() {

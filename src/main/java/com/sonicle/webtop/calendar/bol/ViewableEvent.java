@@ -31,28 +31,59 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol.js;
-
-import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.calendar.bol.OEvent;
-import java.util.TimeZone;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+package com.sonicle.webtop.calendar.bol;
 
 /**
  *
  * @author malbinola
  */
-public class JsSchedulerEvent1 {
+public class ViewableEvent extends OEvent {
 	
-	public Integer eventId;
-	public String startDate;
-	public String endDate;
-	public String timezone;
+	private Integer originalEventId;
+	private Boolean isRecurring;
+	private Boolean isBroken;
 	
-	public JsSchedulerEvent1() {
-		
+	public ViewableEvent() {
+		super();
+	}
+	
+	public Integer getOriginalEventId() {
+		return originalEventId;
+	}
+
+	public void setOriginalEventId(Integer value) {
+		originalEventId = value;
+	}
+	
+	public Boolean getIsRecurring() {
+		return isRecurring;
+	}
+
+	public void setIsRecurring(Boolean value) {
+		isRecurring = value;
+	}
+	
+	public Boolean getIsBroken() {
+		return isBroken;
+	}
+
+	public void setIsBroken(Boolean value) {
+		isBroken = value;
+	}
+	
+	public void updateCalculatedFields() {
+		if(getRecurrenceId() == null) {
+			isRecurring = false;
+			if(originalEventId == null) {
+				originalEventId = getEventId();
+				isBroken = false;
+			} else {
+				isBroken = true;
+			}
+		} else {
+			isRecurring = true;
+			originalEventId = getEventId();
+			isBroken = false;
+		}
 	}
 }

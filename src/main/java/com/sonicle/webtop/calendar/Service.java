@@ -35,36 +35,26 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.web.Crud;
-import com.sonicle.commons.web.JsonUtils;
 import com.sonicle.commons.web.json.JsListPayload;
 import com.sonicle.commons.web.json.JsPayload;
-import com.sonicle.commons.web.json.JsPayloadRecord;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendarGroups;
+import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendars;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.Event;
 import com.sonicle.webtop.calendar.bol.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
-import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
-import com.sonicle.webtop.calendar.bol.js.JsCalEventDate;
+import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
-import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent1;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar.JsTreeCalendarList;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
-import com.sonicle.webtop.calendar.dal.EventDAO;
-import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
-import static com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS;
-import com.sonicle.webtop.core.WT;
-import com.sonicle.webtop.core.bol.js.JsSimple;
-import com.sonicle.webtop.core.bol.js.JsValue;
-import com.sonicle.webtop.core.dal.BaseDAO.FieldsMap;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BasicEnvironment;
 import com.sonicle.webtop.core.sdk.UserProfile;
@@ -72,20 +62,14 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.jooq.Field;
+import org.joda.time.LocalTime;
 import org.slf4j.Logger;
 
 /**
@@ -105,7 +89,7 @@ public class Service extends BaseService {
 	
 	private final LinkedHashMap<String, CalendarGroup> calendarGroups = new LinkedHashMap<>();
 	private CheckedCalendarGroups checkedCalendarGroups = null;
-	private final HashMap<String, SchedulerEvent> events = new HashMap<>();
+	private CheckedCalendars checkedCalendars = null;
 
 	@Override
 	public void initialize() {
@@ -127,14 +111,17 @@ public class Service extends BaseService {
 			synchronized(calendarGroups) {
 				calendarGroups.clear();
 				calendarGroups.putAll(manager.getCalendarGroups(con, pid));
+				
 				checkedCalendarGroups = cus.getCheckedCalendarGroups();
 				if(checkedCalendarGroups.isEmpty()) {
 					// If empty, adds MyGroup checked by default!
 					checkedCalendarGroups.add(pid.toString());
 					cus.setCheckedCalendarGroups(checkedCalendarGroups);
 				}
-			}	
-
+				
+				checkedCalendars = cus.getCheckedCalendars();
+			}
+			
 		} catch(SQLException ex) {
 			logger.error("Error initializing calendar groups", ex);
 			//TODO: gestire errore
@@ -151,6 +138,17 @@ public class Service extends BaseService {
 				checkedCalendarGroups.remove(groupId);
 			}
 			cus.setCheckedCalendarGroups(checkedCalendarGroups);
+		}
+	}
+	
+	private void toggleCheckedCalendar(int calendarId, boolean checked) {
+		synchronized(calendarGroups) {
+			if(checked) {
+				checkedCalendars.add(calendarId);
+			} else {
+				checkedCalendars.remove(calendarId);
+			}
+			cus.setCheckedCalendars(checkedCalendars);
 		}
 	}
 	
@@ -193,7 +191,7 @@ public class Service extends BaseService {
 							
 						} else if(group instanceof SharedCalendarGroup) { // Adds group as Shared
 							sharedGroup = (SharedCalendarGroup)group;
-							child = createCalendarGroupNode(sharedGroup, true);
+							child = createCalendarGroupNode(sharedGroup, false);
 							children.add(child);
 						}
 					}
@@ -211,10 +209,10 @@ public class Service extends BaseService {
 				CalendarDAO cdao = CalendarDAO.getInstance();
 				
 				for(JsTreeCalendar cal : pl.data) {
-					if(cal._nodeType.equals("group")) {
-						toggleCheckedCalendarGroup(cal.id, cal._visible);
-					} else if(cal._nodeType.equals("calendar")) {
-						cdao.updateVisible(con, Integer.valueOf(cal.id), cal._visible);
+					if(cal._nodeType.equals(JsTreeCalendar.TYPE_GROUP)) {
+						toggleCheckedCalendarGroup(cal._groupId, cal._visible);
+					} else if(cal._nodeType.equals(JsTreeCalendar.TYPE_CALENDAR)) {
+						toggleCheckedCalendar(Integer.valueOf(cal.id), cal._visible);
 					}
 				}
 				new JsonResult().printTo(out);
@@ -259,8 +257,8 @@ public class Service extends BaseService {
 				
 				pl.data.setCalendarId(cdao.getSequence(con).intValue());
 				pl.data.setBuiltIn(false);
-				pl.data.setVisible(true);
 				cdao.insert(con, pl.data);
+				toggleCheckedCalendar(pl.data.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
@@ -314,7 +312,7 @@ public class Service extends BaseService {
 	
 	public void processGetEventDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
-		ArrayList<JsCalEventDate> items = new ArrayList<>();
+		ArrayList<JsSchedulerEventDate> items = new ArrayList<>();
 		List<OEvent> grpEvts = null;
 		
 		try {
@@ -324,17 +322,19 @@ public class Service extends BaseService {
 			// Defines boundaries
 			String start = ServletUtils.getStringParameter(request, "startDate", true);
 			String end = ServletUtils.getStringParameter(request, "endDate", true);
-			DateTime fromDate = OEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
-			DateTime toDate = OEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
+			DateTime fromDate = JsEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
+			DateTime toDate = JsEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
 			// Get events for each visible group
+			Integer[] checked;
 			List<DateTime> dates = null;
 			for(CalendarGroup group : calendarGroups.values()) {
 				if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
 				
-				dates = manager.getEventsDates(group, fromDate, toDate, up.getTimeZone());
+				checked = checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
+				dates = manager.getEventsDates(group, checked, fromDate, toDate, up.getTimeZone());
 				for(DateTime dt : dates) {
-					items.add(new JsCalEventDate(JsSchedulerEvent.toYmdWithZone(dt, up.getTimeZone())));
+					items.add(new JsSchedulerEventDate(JsSchedulerEvent.toYmdWithZone(dt, up.getTimeZone())));
 				}
 			}
 			new JsonResult("dates", items).printTo(out);
@@ -359,33 +359,30 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				String from = ServletUtils.getStringParameter(request, "startDate", true);
 				String to = ServletUtils.getStringParameter(request, "endDate", true);
-				DateTime fromDate = OEvent.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
-				DateTime toDate = OEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
+				DateTime fromDate = JsEvent.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+				DateTime toDate = JsEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
-				synchronized(events) {
-					events.clear();
+				// Get events for each visible group
+				Integer[] checked;
+				JsSchedulerEvent jse = null;
+				List<SchedulerEvent> expEvents = null;
+				List<CalendarManager.GroupEvents> grpEvts = null;
+				for(CalendarGroup group : calendarGroups.values()) {
+					if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip group if not visible
 					
-					// Get events for each visible group
-					JsSchedulerEvent jse = null;
-					List<SchedulerEvent> expEvents = null;
-					List<CalendarManager.GroupEvents> grpEvts = null;
-					for(CalendarGroup group : calendarGroups.values()) {
-						if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
-						
-						grpEvts = manager.getEvents(group, fromDate, toDate);
-						for(CalendarManager.GroupEvents ge : grpEvts) {
-							for(SchedulerEvent evt : ge.events) {
-								if(evt.getRecurrenceId() == null) {
-									//events.put(evt.getId(), evt); // Cache into internal map
-									jse = new JsSchedulerEvent(evt, ge.calendar, up.getTimeZone());
+					checked = checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
+					grpEvts = manager.getEvents(group, checked, fromDate, toDate);
+					for(CalendarManager.GroupEvents ge : grpEvts) {
+						for(SchedulerEvent evt : ge.events) {
+							if(evt.getRecurrenceId() == null) {
+								
+								jse = new JsSchedulerEvent(ge.calendar, evt, up.getId(), up.getTimeZone());
+								items.add(jse);
+							} else {
+								expEvents = manager.expandRecurringEvent(ge.calendar, evt, fromDate, toDate, up.getTimeZone());
+								for(SchedulerEvent expEvent : expEvents) {
+									jse = new JsSchedulerEvent(ge.calendar, expEvent, up.getId(), up.getTimeZone());
 									items.add(jse);
-								} else {
-									expEvents = manager.expandRecurringEvent(ge.calendar, evt, fromDate, toDate, up.getTimeZone());
-									for(SchedulerEvent expEvent : expEvents) {
-										//events.put(expEvent.getId(), evt); // Cache into internal map
-										jse = new JsSchedulerEvent(expEvent, ge.calendar, up.getTimeZone());
-										items.add(jse);
-									}
 								}
 							}
 						}
@@ -396,12 +393,10 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.UPDATE)) {
 				JsPayload<JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
 				
-				EventDAO edao = EventDAO.getInstance();
-				OEvent event = edao.select(con, pl.data.eventId);
-				if(event == null) throw new Exception("Unable to get desired event");
-				
-				event.updateDates(pl.data.startDate, pl.data.endDate, up.getTimeZone());
-				edao.update(con, event);
+				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
+				DateTime newStart = JsEvent.parseYmdHmsWithZone(pl.data.startDate, etz);
+				DateTime newEnd = JsEvent.parseYmdHmsWithZone(pl.data.endDate, etz);
+				manager.moveEvent(pl.data.id, newStart, newEnd);
 				
 				new JsonResult().printTo(out);
 				
@@ -430,22 +425,18 @@ public class Service extends BaseService {
 	
 	public void processManageEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
-		OEvent event = null;
-		ORecurrence rec = null;
 		JsEvent item = null;
 		
 		try {
 			UserProfile up = env.getProfile();
-			EventDAO edao = EventDAO.getInstance();
-			RecurrenceDAO rrdao = RecurrenceDAO.getInstance();
 			con = getConnection();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
-				Integer id = ServletUtils.getIntParameter(request, "id", true);
+				String id = ServletUtils.getStringParameter(request, "id", true);
 				
-				event = edao.select(con, id);
-				item = new JsEvent(event, up.getTimeZone());
+				Event evt = manager.getEvent(id);
+				item = new JsEvent(manager.getEvent(id), manager.getCalendarGroupId(evt.calendarId));
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
@@ -453,43 +444,16 @@ public class Service extends BaseService {
 				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				manager.insertEvent(evt);
-				
-				/*
-				event = new OEvent();
-				event.fillFrom(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
-				event.setEventId(edao.getSequence(con).intValue());
-				event.setStatus(OEvent.STATUS_NEW);
-				
-				if(!StringUtils.isEmpty(pl.data.rrType)) {
-					rec = new ORecurrence();
-					rec.fillFrom(pl.data, event);
-					rec.setRecurrenceId(rrdao.getSequence(con).intValue());
-				}
-				
-				try {
-					con.setAutoCommit(false);
-					if(rec != null) {
-						rrdao.insert(con, rec);
-						event.setRecurrenceId(rec.getRecurrenceId());
-					}
-					edao.insert(con, event);
-					con.commit();
-					
-				} catch(Exception ex1) {
-					con.rollback();
-					throw ex1;
-				}
-				*/
-				
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				/*
+				String target = ServletUtils.getStringParameter(request, "target", true);
 				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				edao.update(con, pl.data);
+				System.out.println("TAERGET: "+target);
+				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
+				manager.updateEvent(target, evt, up.getTimeZone());
 				new JsonResult().printTo(out);
-				*/
 			}
 			
 		} catch(Exception ex) {
@@ -525,8 +489,6 @@ public class Service extends BaseService {
 		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
 		node.put("_nodeType", "group");
 		node.put("_groupId", id);
-		node.put("_domainId", domainId);
-		node.put("_userId", userId);
 		node.put("_visible", visible);
 		node.setIconClass(iconClass);
 		node.setChecked(visible);
@@ -534,17 +496,19 @@ public class Service extends BaseService {
 	}
 	
 	private ExtTreeNode createCalendarNode(String groupId, OCalendar cal) {
+		boolean visible = checkedCalendars.contains(cal.getCalendarId());
 		ExtTreeNode node = new ExtTreeNode(cal.getCalendarId(), cal.getName(), true);
 		node.put("_nodeType", "calendar");
 		node.put("_groupId", groupId);
-		node.put("_domainId", cal.getDomainId());
-		node.put("_userId", cal.getUserId());
 		node.put("_builtIn", cal.getBuiltIn());
 		node.put("_default", cal.getIsDefault());
 		node.put("_color", cal.getColor());
-		node.put("_visible", cal.getVisible());
+		node.put("_visible", visible);
+		node.put("_isPrivate", cal.getIsPrivate());
+		node.put("_busy", cal.getBusy());
+		node.put("_reminder", cal.getReminder());
 		node.setIconClass("wt-palette-" + cal.getHexColor());
-		node.setChecked(cal.getVisible());
+		node.setChecked(visible);
 		return node;
 	}
 }

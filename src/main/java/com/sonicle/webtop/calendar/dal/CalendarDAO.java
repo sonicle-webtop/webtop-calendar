@@ -88,7 +88,7 @@ public class CalendarDAO extends BaseDAO {
 				.fetchInto(OCalendar.class);
 	}
 	
-	public List<OCalendar> selectVisibleByDomainUser(Connection con, String domainId, String userId) throws DAOException {
+	public List<OCalendar> selectByDomainUserIn(Connection con, String domainId, String userId, Integer[] calendars) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.select()
@@ -96,7 +96,7 @@ public class CalendarDAO extends BaseDAO {
 				.where(
 						CALENDARS.DOMAIN_ID.equal(domainId)
 						.and(CALENDARS.USER_ID.equal(userId))
-						.and(CALENDARS.VISIBLE.equal(true))
+						.and(CALENDARS.CALENDAR_ID.in(calendars))
 				)
 				.orderBy(
 						CALENDARS.BUILT_IN.desc(),
@@ -171,130 +171,11 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateVisible(Connection con, Integer calendarId, boolean value) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.update(CALENDARS)
-			.set(CALENDARS.VISIBLE, value)
-			.where(
-				CALENDARS.CALENDAR_ID.equal(calendarId)
-			)
-			.execute();
-	}
-	
 	public int delete(Connection con, Integer calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.delete(CALENDARS)
 				.where(CALENDARS.CALENDAR_ID.equal(calendarId))
 				.execute();
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	public OCalendar selectDefaultPersonalCalendar(Connection con, String domainId, String userId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl.
-				select()
-				.from(CALENDARS)
-				.where(
-						CALENDARS.DOMAIN_ID.equal(domainId)
-						.and(CALENDARS.USER_ID.equal(userId)
-								.and(CALENDARS.BUILT_IN.equal(true)))
-				)
-				.fetchOneInto(OCalendar.class);
-	}
-
-	public int insertPersonalCalendar(Connection con, OCalendar item) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
-		return dsl
-				.insertInto(CALENDARS)
-				.set(record)
-				.execute();
-	}
-
-	public int deletePersonalCalendar(Connection con, Integer calendarId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-				.delete(CALENDARS)
-				.where(CALENDARS.CALENDAR_ID.equal(calendarId))
-				.execute();
-	}
-
-	public int resetPersonalDefaultCalendar(Connection con, String domainId, String userId) {
-		DSLContext dsl = getDSL(con);
-		return dsl.update(CALENDARS)
-				.set(CALENDARS.IS_DEFAULT, false)
-				.where(
-						CALENDARS.DOMAIN_ID.equal(domainId)
-						.and(CALENDARS.USER_ID.equal(userId))
-						.and(CALENDARS.IS_DEFAULT.equal(true))
-				)
-				.execute();
-	}
-
-	public int updatePersonalCalendar(Connection con, Integer calendarId, OCalendar item) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
-		return dsl
-				.update(CALENDARS)
-				.set(record)
-				.where(CALENDARS.CALENDAR_ID.equal(calendarId))
-				.execute();
-	}
-
-	public int checkPersonalCalendar(Connection con, Integer calendarId, boolean calVisible) {
-		DSLContext dsl = getDSL(con);
-		return dsl.update(CALENDARS)
-			.set(CALENDARS.VISIBLE, calVisible)
-			.where(
-				CALENDARS.CALENDAR_ID.equal(calendarId)
-			)
-			.execute();
-	}
-
-	public int resetPersonalDefaultCalendarToWebTop(Connection con, String domainId, String userId) {
-		DSLContext dsl = getDSL(con);
-		return dsl.update(CALENDARS)
-			.set(CALENDARS.IS_DEFAULT, true)
-			.where(
-				CALENDARS.DOMAIN_ID.equal(domainId)
-				.and(CALENDARS.USER_ID.equal(userId))
-				.and(CALENDARS.BUILT_IN.equal(true))
-			)
-			.execute();
-	}
-
-	public int viewOnlyPersonalCalendar(Connection con, Integer calendarId) {
-		DSLContext dsl = getDSL(con);
-		return dsl.update(CALENDARS)
-			.set(CALENDARS.VISIBLE, true)
-			.where(
-				CALENDARS.CALENDAR_ID.equal(calendarId)
-			)
-			.execute();
-	}
-
-	public int viewNothingPersonalCalendar(Connection con, String domainId, String userId) {
-		DSLContext dsl = getDSL(con);
-		return dsl.update(CALENDARS)
-			.set(CALENDARS.VISIBLE, false)
-			.where(
-				CALENDARS.DOMAIN_ID.equal(domainId)
-				.and(CALENDARS.USER_ID.equal(userId))
-				.and(CALENDARS.VISIBLE.equal(true))
-			)
-			.execute();
 	}
 }

@@ -64,79 +64,34 @@ public class OEvent extends Events {
 		setUpdateUser(info.updateUser);
 	}
 	
-	public void fillFrom(Event event) {
-		setCalendarId(event.calendarId);
-		setStartDate(event.startDate);
-		setEndDate(event.endDate);
-		setTimezone(event.timezone);
-		setAllDay(event.allDay);
-		setTitle(event.title);
-		setDescription(event.description);
-		setLocation(event.location);
-		setIsPrivate(event.isPrivate);
-		setBusy(event.busy);
-		setReminder(event.reminder);
+	public void fillFrom(EventData data) {
+		fillFrom(data, true);
 	}
 	
-	public void doTimeChecks() {
-		
-		// Checks if end < start
-		if(getEndDate().compareTo(getStartDate()) < 0) {
-			setEndDate(getStartDate().toDateTime());
+	public void fillFrom(EventData data, boolean setDates) {
+		setCalendarId(data.calendarId);
+		if(setDates) {
+			setStartDate(data.startDate);
+			setEndDate(data.endDate);
 		}
-		
-		// Force allDay hours
-		if(getAllDay()) {
-			setStartDate(getStartDate().withTime(0, 0, 0, 0));
-			setEndDate(getEndDate().withTime(23, 59, 59, 0));
+		setTimezone(data.timezone);
+		setAllDay(data.allDay);
+		setTitle(data.title);
+		setDescription(data.description);
+		setLocation(data.location);
+		setIsPrivate(data.isPrivate);
+		setBusy(data.busy);
+		setReminder(data.reminder);
+	}
+	
+	public static void checkTimesCoherence(OEvent event) {
+		// Ensure start < end
+		if(event.getEndDate().compareTo(event.getStartDate()) < 0) {
+			// Swap dates...
+			DateTime dt = event.getEndDate();
+			event.setEndDate(event.getStartDate());
+			event.setStartDate(dt);
 		}
-	}
-	
-	public void fillFrom(JsEvent jse, String workdayStart, String workdayEnd) {
-		if(jse.eventId > 0) setEventId(jse.eventId); // New events come with -1 as id
-		setCalendarId(jse.calendarId);
-		
-		// Incoming fields are in a precise timezone, so we need to instantiate
-		// the formatter specifying the right timezone to use.
-		// Then DateTime objects are automatically translated to UTC
-		DateTimeZone etz = DateTimeZone.forID(jse.timezone);
-		setStartDate(parseYmdHmsWithZone(jse.startDate, etz));
-		setEndDate(parseYmdHmsWithZone(jse.endDate, etz));
-		setTimezone(jse.timezone);
-		setAllDay(jse.allDay);
-		doTimeChecks();
-		
-		setTitle(jse.title);
-		setDescription(jse.description);
-		setLocation(jse.location);
-		setIsPrivate(jse.isPrivate);
-		setBusy(jse.busy);
-		setReminder(jse.reminder);
-	}
-	
-	public void updateDates(String satrtDate, String endDate, TimeZone userTz) {
-		DateTimeZone utz = DateTimeZone.forTimeZone(userTz);
-		DateTimeZone etz = DateTimeZone.forID(getTimezone());
-		setStartDate(parseYmdHmsWithZone(satrtDate, utz).toDateTime(etz));
-		setEndDate(parseYmdHmsWithZone(endDate, utz).toDateTime(etz));
-	}
-	
-	public static DateTime parseYmdHmsWithZone(String date, String time, TimeZone tz) {
-		return parseYmdHmsWithZone(date, time, DateTimeZone.forTimeZone(tz));
-	}
-	
-	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
-		return parseYmdHmsWithZone(date + " " + time, tz);
-	}
-	
-	public static DateTime parseYmdHmsWithZone(String dateTime, DateTimeZone tz) {
-		String dt = StringUtils.replace(dateTime, "T", " ");
-		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
-		return formatter.parseDateTime(dt);
-	}
-	
-	public static DateTime parseYmdHmWithZone(String date, String time, DateTimeZone tz) {
-		return parseYmdHmsWithZone(date, time + ":00", tz);
 	}
 	
 	public static class RevisionInfo {
@@ -157,50 +112,5 @@ public class OEvent extends Events {
 			this.updateDevice = updateDevice;
 			this.updateUser = updateUser;
 		}
-	} 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	/*
-	private void initWithJoda(JsEvent js) {
-		DateTimeZone utc = DateTimeZone.UTC;
-		DateTimeZone etz = DateTimeZone.forID(js.timezone);
-		DateTimeZone utz = DateTimeZone.forTimeZone(TimeZone.getDefault());
-		
-		DateTime dtFrom = joinDatePartsWithJoda(js.fromDate, js.fromTime, etz);
-		setFromDate(dtFrom);
-		//setFrom(dtFrom.toDateTime(utz));
-		
-		DateTime dtTo = joinDatePartsWithJoda(js.toDate, js.toTime, etz);
-		setToDate(dtTo);
-		//setTo(dtTo.toDateTime(utz));
 	}
-	
-	private DateTime joinDatePartsWithJoda(String date, String time, DateTimeZone tz) {
-		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").withZone(tz);
-		return formatter.parseDateTime(date + " " + time);
-	}
-	
-	private void initWithJava(JsEvent js) {
-		
-	}
-	
-	private Date joinDatePartsWithJava(String date, String time, TimeZone tz) {
-		try {
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-			sdf.setTimeZone(tz);
-			return sdf.parse(date + " " + time);
-			
-		} catch(Exception ex) {
-			throw new RuntimeException(ex);
-		}	
-	}
-	*/
 }

@@ -33,38 +33,15 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import org.joda.time.DateTime;
-
 /**
  *
  * @author malbinola
  */
-public class EventBase {
+public class ShareParameters {
 	
-	protected String id;
-	protected Integer originalEventId;
-	protected Boolean isRecurring;
-	protected Boolean isBroken;
+	public static final String PERMISSION_FULL_CONTROL = "";
+	public static final String PERMISSION_WRITE = "";
+	public static final String PERMISSION_READ = "";
 	
-	protected Integer eventId;
-	protected Integer calendarId;
-	protected DateTime startDate;
-	protected DateTime endDate;
-	protected String timezone;
-	protected Boolean allDay;
-	protected String title;
-	protected String description;
-	protected String location;
-	protected Boolean isPrivate;
-	protected Boolean busy;
-	protected Integer reminder;
-	protected Boolean readOnly;
-	protected String status;
-	protected DateTime lastModified;
-	protected String updateUser;
-	protected String updateDevice;
-	
-	public EventBase() {
-		
-	}
+	public String permission;
 }

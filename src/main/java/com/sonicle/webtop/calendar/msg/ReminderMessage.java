@@ -31,64 +31,72 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.dal;
+package com.sonicle.webtop.calendar.msg;
 
-import com.sonicle.webtop.calendar.bol.OEventPlanning;
-import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS_PLANNING;
-import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_PLANNING;
-import com.sonicle.webtop.calendar.jooq.tables.records.EventsPlanningRecord;
-import com.sonicle.webtop.core.dal.BaseDAO;
-import com.sonicle.webtop.core.dal.DAOException;
-import java.sql.Connection;
-import java.util.List;
-import org.jooq.DSLContext;
+import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
+import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
+import com.sonicle.webtop.core.sdk.ServiceMessage;
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 /**
  *
  * @author malbinola
  */
-public class EventPlanningDAO extends BaseDAO {
+public class ReminderMessage extends ServiceMessage {
 	
-	private final static EventPlanningDAO INSTANCE = new EventPlanningDAO();
-
-	public static EventPlanningDAO getInstance() {
-		return INSTANCE;
-	}
-
-	public Long getSequence(Connection con) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		Long nextID = dsl.nextval(SEQ_EVENTS_PLANNING);
-		return nextID;
-	}
+	public static final String REMIND_ON = "remindOn";
+	public static final String TEXT = "text";
+	public static final String EVENT = "event";
+	public static final String EVENT_ID = "id";
+	public static final String EVENT_EVENT_ID = "eventId";
 	
-	public List<OEventPlanning> selectByEvent(Connection con, Integer eventId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-				.select()
-				.from(EVENTS_PLANNING)
-				.where(
-						EVENTS_PLANNING.EVENT_ID.equal(eventId)
-				)
-				.orderBy(
-						EVENTS_PLANNING.EMAIL.asc()
-				)
-				.fetchInto(OEventPlanning.class);
+	private String remindOn;
+	private String text;
+	private EventData event;
+	
+	public ReminderMessage(String serviceId, DateTime remindOn, SchedulerEvent event, DateTimeZone profileTz) {
+		super(serviceId, "notifyReminder");
+		setRemindOn(remindOn, profileTz);
+		setText(event);
+		setEvent(event);
 	}
 	
-	public int insert(Connection con, OEventPlanning item) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		EventsPlanningRecord record = dsl.newRecord(EVENTS_PLANNING, item);
-		return dsl
-			.insertInto(EVENTS_PLANNING)
-			.set(record)
-			.execute();
+	public String getRemindOn() {
+		return remindOn;
 	}
 	
-	public int deleteByEvent(Connection con, Integer eventId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-				.delete(EVENTS_PLANNING)
-				.where(EVENTS_PLANNING.EVENT_ID.equal(eventId))
-				.execute();
+	public final ServiceMessage setRemindOn(DateTime remindOn, DateTimeZone profileTz) {
+		this.remindOn = JsSchedulerEvent.toYmdHmsWithZone(remindOn, profileTz);
+		return this;
+	}
+	
+	public String getText() {
+		return text;
+	}
+	
+	public final ServiceMessage setText(SchedulerEvent event) {
+		text = StringUtils.isEmpty(event.getLocation()) ? event.getTitle() : event.getTitle()+" @ "+event.getLocation();
+		return this;
+	}
+	
+	public EventData getEvent() {
+		return event;
+	}
+	
+	public final ServiceMessage setEvent(SchedulerEvent event) {
+		this.event = new EventData(event.getId(), event.getEventId());
+		return this;
+	}
+	
+	public static class EventData {
+		public String id;
+		public Integer eventId;
+		
+		public EventData(String id, Integer eventId) {
+			this.id = id;
+			this.eventId = eventId;
+		}
 	}
 }

@@ -77,10 +77,26 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WT.Util.field('rrMonthlyDay', 'int', true),//false, {defaultValue: 1}),
 		WT.Util.field('rrYearlyFreq', 'int', true),//false, {defaultValue: 1}),
 		WT.Util.field('rrYearlyDay', 'int', true),//false, {defaultValue: 1}),
-		WT.Util.field('_isBroken', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('_isRecurring', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('_groupId', 'string', true)
+		// Read-only fields
+		WT.Util.roField('_groupId', 'string'),
+		WT.Util.roField('_recurringInfo', 'string', {defaultValue: 'single'}),
+		WT.Util.calcField('_isSingle', 'boolean', '_recurringInfo', function(v, rec) {
+			return (rec.get('_recurringInfo') === 'single');
+		}),
+		WT.Util.calcField('_isBroken', 'boolean', '_recurringInfo', function(v, rec) {
+			return (rec.get('_recurringInfo') === 'broken');
+		}),
+		WT.Util.calcField('_isRecurring', 'boolean', '_recurringInfo', function(v, rec) {
+			return (rec.get('_recurringInfo') === 'recurring');
+		})
 	],
+
+	/*
+	hasMany: [{
+		name: 'attendees',
+		model: 'Sonicle.webtop.calendar.model.EventAttendee'
+	}],
+*/
 	
 	statics: {
 		setDate: function(model, field, date) {
@@ -95,4 +111,22 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 			model.set(field, Sonicle.Date.copyTime(date, val));
 		}
 	}
+});
+Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
+	extend: 'WT.model.Base',
+	
+	idProperty: 'attendeeId',
+	fields: [
+		WT.Util.field('_fk', 'string', true, {
+			reference: {
+				parent: 'Sonicle.webtop.calendar.model.Event',
+				inverse: 'attendees'
+			}
+		}),
+		WT.Util.field('attendeeId', 'string', true),
+		WT.Util.field('email', 'string', false),
+		WT.Util.field('recipientType', 'string', false),
+		WT.Util.field('responseStatus', 'string', false),
+		WT.Util.field('notify', 'boolean', false)
+	]
 });

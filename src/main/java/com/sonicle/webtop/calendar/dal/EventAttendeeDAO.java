@@ -31,16 +31,57 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
-	extend: 'WT.model.Base',
+package com.sonicle.webtop.calendar.dal;
+
+import com.sonicle.webtop.calendar.bol.OEventAttendee;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
+import com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord;
+import com.sonicle.webtop.core.dal.BaseDAO;
+import com.sonicle.webtop.core.dal.DAOException;
+import java.sql.Connection;
+import java.util.List;
+import org.jooq.DSLContext;
+
+/**
+ *
+ * @author malbinola
+ */
+public class EventAttendeeDAO extends BaseDAO {
 	
-	idProperty: 'planningUid',
-	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
-	]
-});
+	private final static EventAttendeeDAO INSTANCE = new EventAttendeeDAO();
+
+	public static EventAttendeeDAO getInstance() {
+		return INSTANCE;
+	}
+	
+	public List<OEventAttendee> selectByEvent(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(EVENTS_ATTENDEES)
+				.where(
+						EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
+				)
+				.orderBy(
+						EVENTS_ATTENDEES.EMAIL.asc()
+				)
+				.fetchInto(OEventAttendee.class);
+	}
+	
+	public int insert(Connection con, OEventAttendee item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		EventsAttendeesRecord record = dsl.newRecord(EVENTS_ATTENDEES, item);
+		return dsl
+			.insertInto(EVENTS_ATTENDEES)
+			.set(record)
+			.execute();
+	}
+	
+	public int deleteByEvent(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(EVENTS_ATTENDEES)
+			.where(EVENTS_ATTENDEES.EVENT_ID.equal(eventId))
+			.execute();
+	}
+}

@@ -31,16 +31,77 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
-	extend: 'WT.model.Base',
+package com.sonicle.webtop.calendar.bol;
+
+/**
+ *
+ * @author malbinola
+ */
+public class VSchedulerEvent extends OEvent {
 	
-	idProperty: 'planningUid',
-	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
-	]
-});
+	private Integer originalEventId;
+	private String calendarDomainId;
+	private String calendarUserId;
+	private Boolean isRecurring;
+	private Boolean isBroken;
+	
+	public VSchedulerEvent() {
+		super();
+	}
+	
+	public Integer getOriginalEventId() {
+		return originalEventId;
+	}
+
+	public void setOriginalEventId(Integer value) {
+		originalEventId = value;
+	}
+	
+	public String getCalendarDomainId() {
+		return calendarDomainId;
+	}
+
+	public void setCalendarDomainId(String value) {
+		calendarDomainId = value;
+	}
+	
+	public String getCalendarUserId() {
+		return calendarUserId;
+	}
+
+	public void setCalendarUserId(String value) {
+		calendarUserId = value;
+	}
+	
+	public Boolean getIsRecurring() {
+		return isRecurring;
+	}
+
+	public void setIsRecurring(Boolean value) {
+		isRecurring = value;
+	}
+	
+	public Boolean getIsBroken() {
+		return isBroken;
+	}
+
+	public void setIsBroken(Boolean value) {
+		isBroken = value;
+	}
+	
+	public void updateCalculatedFields() {
+		if(getRecurrenceId() == null) {
+			isRecurring = false;
+			if(originalEventId == null) {
+				originalEventId = getEventId();
+				isBroken = false;
+			} else {
+				isBroken = true;
+			}
+		} else {
+			isRecurring = true;
+			originalEventId = getEventId();
+			isBroken = false;
+		}
+	}
+}

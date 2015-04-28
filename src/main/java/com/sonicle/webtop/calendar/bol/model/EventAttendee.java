@@ -31,16 +31,89 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
-	extend: 'WT.model.Base',
+package com.sonicle.webtop.calendar.bol.model;
+
+import java.util.ArrayList;
+
+/**
+ *
+ * @author malbinola
+ */
+public class EventAttendee {
 	
-	idProperty: 'planningUid',
-	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
-	]
-});
+	protected String attendeeId;
+	protected Integer eventId;
+	//protected String displayName;
+	protected String email;
+	protected String recipientType;
+	protected String responseStatus;
+	protected Boolean notify;
+	
+	public EventAttendee() {
+		
+	}
+
+	public String getAttendeeId() {
+		return attendeeId;
+	}
+
+	public void setAttendeeId(String value) {
+		attendeeId = value;
+	}
+	
+	public Integer getEventId() {
+		return eventId;
+	}
+
+	public void setEventId(Integer value) {
+		eventId = value;
+	}
+	
+	/*
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public void setDisplayName(String value) {
+		displayName = value;
+	}
+	*/
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String value) {
+		email = value;
+	}
+
+	public String getRecipientType() {
+		return recipientType;
+	}
+
+	public void setRecipientType(String value) {
+		recipientType = value;
+	}
+
+	public String getResponseStatus() {
+		return responseStatus;
+	}
+
+	public void setResponseStatus(String value) {
+		responseStatus = value;
+	}
+
+	public Boolean getNotify() {
+		return notify;
+	}
+
+	public void setNotify(Boolean value) {
+		notify = value;
+	}
+	
+	public class AttendeeList extends ArrayList<EventAttendee> {
+		public AttendeeList() {
+			super();
+		}
+	}
+}

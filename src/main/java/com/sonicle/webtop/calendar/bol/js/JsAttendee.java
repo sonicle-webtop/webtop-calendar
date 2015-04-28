@@ -31,16 +31,18 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
-	extend: 'WT.model.Base',
+package com.sonicle.webtop.calendar.bol.js;
+
+/**
+ *
+ * @author malbinola
+ */
+public class JsAttendee {
 	
-	idProperty: 'planningUid',
-	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
-	]
-});
+	public String _fk;
+	public String attendeeId;
+	public String email;
+	public String recipientType;
+	public String responseStatus;
+	public Boolean notify;
+}

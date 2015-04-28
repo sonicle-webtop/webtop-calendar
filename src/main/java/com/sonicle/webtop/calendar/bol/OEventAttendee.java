@@ -33,15 +33,33 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsPlanning;
+import com.sonicle.webtop.calendar.bol.model.EventAttendee;
+import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsAttendees;
 
 /**
  *
  * @author malbinola
  */
-public class OEventPlanning extends EventsPlanning {
+public class OEventAttendee extends EventsAttendees {
 	
-	public OEventPlanning() {
+	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
+	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of needsAction
+	public static final String RESPONSE_STATUS_DECLINED = "declined";
+	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
+	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
+	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
+	
+	
+	public OEventAttendee() {
 		super();
+	}
+	
+	public void fillFrom(EventAttendee attendee) {
+		setAttendeeId(attendee.getAttendeeId());
+		setEventId(attendee.getEventId());
+		setEmail(attendee.getEmail());
+		setRecipientType(attendee.getRecipientType());
+		setResponseStatus(attendee.getResponseStatus());
+		setNotify(attendee.getNotify());
 	}
 }

@@ -31,9 +31,12 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.ICal4jUtils;
+import com.sonicle.webtop.calendar.bol.OEvent;
+import com.sonicle.webtop.calendar.bol.ORecurrence;
+import java.util.List;
 import org.joda.time.DateTime;
 
 /**
@@ -54,17 +57,18 @@ public class EventData {
 	public static final String ENDS_MODE_REPEAT = "repeat";
 	public static final String ENDS_MODE_UNTIL = "until";
 	
-	public Integer calendarId;
-	public DateTime startDate;
-	public DateTime endDate;
-	public String timezone;
-	public Boolean allDay;
-	public String title;
-	public String description;
-	public String location;
-	public Boolean isPrivate;
-	public Boolean busy;
-	public Integer reminder;
+	protected Integer calendarId;
+	protected DateTime startDate;
+	protected DateTime endDate;
+	protected String timezone;
+	protected Boolean allDay;
+	protected String title;
+	protected String description;
+	protected String location;
+	protected Boolean isPrivate;
+	protected Boolean busy;
+	protected Integer reminder;
+	protected List<EventAttendee> attendees;
 	public String rrEndsMode;
 	public Integer rrRepeatTimes;
 	public DateTime rrUntilDate;
@@ -84,24 +88,107 @@ public class EventData {
 	public Integer rrYearlyFreq;
 	public Integer rrYearlyDay;
 	
+	public Integer getCalendarId() {
+		return calendarId;
+	}
+
+	public void setCalendarId(Integer value) {
+		calendarId = value;
+	}
+
+	public DateTime getStartDate() {
+		return startDate;
+	}
+	
+	public void setStartDate(DateTime value) {
+		startDate = value;
+	}
+
+	public DateTime getEndDate() {
+		return endDate;
+	}
+	
+	public void setEndDate(DateTime value) {
+		endDate = value;
+	}
+
+	public String getTimezone() {
+		return timezone;
+	}
+	
+	public void setTimezone(String value) {
+		timezone = value;
+	}
+
+	public Boolean getAllDay() {
+		return allDay;
+	}
+	
+	public void setAllDay(boolean value) {
+		allDay = value;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+	
+	public void setTitle(String value) {
+		title = value;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+	
+	public void setDescription(String value) {
+		description = value;
+	}
+
+	public String getLocation() {
+		return location;
+	}
+	
+	public void setLocation(String value) {
+		location = value;
+	}
+
+	public Boolean getIsPrivate() {
+		return isPrivate;
+	}
+	
+	public void setIsPrivate(boolean value) {
+		isPrivate = value;
+	}
+
+	public Boolean getBusy() {
+		return busy;
+	}
+	
+	public void setBusy(boolean value) {
+		busy = value;
+	}
+
+	public Integer getReminder() {
+		return reminder;
+	}
+	
+	public void setReminder(Integer value) {
+		reminder = value;
+	}
+	
+	public List<EventAttendee> getAttendees() {
+		return attendees;
+	}
+	
+	public void setAttendees(List<EventAttendee> value) {
+		attendees = value;
+	}
+	
+	
 	public EventData() {
 		rrType = TYPE_NONE;
 		rrDaylyType = DAILY_TYPE_DAY;
 		rrEndsMode = ENDS_MODE_NEVER;
-	}
-	
-	public void fillFrom(OEvent evt) {
-		calendarId = evt.getCalendarId();
-		startDate = evt.getStartDate();
-		endDate = evt.getEndDate();
-		timezone = evt.getTimezone();
-		allDay = evt.getAllDay();
-		title = evt.getTitle();
-		description = evt.getDescription();
-		location = evt.getLocation();
-		isPrivate = evt.getIsPrivate();
-		busy = evt.getBusy();
-		reminder = evt.getReminder();
 	}
 	
 	public void fillFrom(ORecurrence rec) {
@@ -144,7 +231,7 @@ public class EventData {
 		rrYearlyDay = rec.getYearlyDay();
 	}
 	
-	public boolean hasRecurrence(EventData data) {
+	public static boolean hasRecurrence(EventData data) {
 		return !data.rrType.equals(EventData.TYPE_NONE);
 	}
 }

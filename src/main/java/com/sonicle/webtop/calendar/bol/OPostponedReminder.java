@@ -31,16 +31,24 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
-	extend: 'WT.model.Base',
+package com.sonicle.webtop.calendar.bol;
+
+import com.sonicle.webtop.calendar.jooq.tables.pojos.PostponedReminders;
+import org.joda.time.DateTime;
+
+/**
+ *
+ * @author malbinola
+ */
+public class OPostponedReminder extends PostponedReminders {
 	
-	idProperty: 'planningUid',
-	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
-	]
-});
+	public OPostponedReminder() {
+		super();
+	}
+	
+	public OPostponedReminder(Integer eventId, DateTime remindOn) {
+		super();
+		setEventId(eventId);
+		setRemindOn(remindOn);
+	}
+}

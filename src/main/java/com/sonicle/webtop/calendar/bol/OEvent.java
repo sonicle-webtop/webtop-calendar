@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.webtop.calendar.bol.model.EventData;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import java.util.TimeZone;
@@ -69,22 +70,22 @@ public class OEvent extends Events {
 	}
 	
 	public void fillFrom(EventData data, boolean setDates) {
-		setCalendarId(data.calendarId);
+		setCalendarId(data.getCalendarId());
 		if(setDates) {
-			setStartDate(data.startDate);
-			setEndDate(data.endDate);
+			setStartDate(data.getStartDate());
+			setEndDate(data.getEndDate());
 		}
-		setTimezone(data.timezone);
-		setAllDay(data.allDay);
-		setTitle(data.title);
-		setDescription(data.description);
-		setLocation(data.location);
-		setIsPrivate(data.isPrivate);
-		setBusy(data.busy);
-		setReminder(data.reminder);
+		setTimezone(data.getTimezone());
+		setAllDay(data.getAllDay());
+		setTitle(data.getTitle());
+		setDescription(data.getDescription());
+		setLocation(data.getLocation());
+		setIsPrivate(data.getIsPrivate());
+		setBusy(data.getBusy());
+		setReminder(data.getReminder());
 	}
 	
-	public static void checkTimesCoherence(OEvent event) {
+	public static void ensureTimesCoherence(OEvent event) {
 		// Ensure start < end
 		if(event.getEndDate().compareTo(event.getStartDate()) < 0) {
 			// Swap dates...

@@ -33,11 +33,11 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
-import com.sonicle.webtop.calendar.bol.ViewableEvent;
-import com.sonicle.webtop.calendar.bol.SchedulerEvent;
+import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEvent.RevisionInfo;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
+import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
@@ -51,8 +51,6 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 import org.jooq.Field;
-import org.jooq.impl.DSL;
-import static org.jooq.impl.DSL.*;
 
 /**
  *
@@ -83,229 +81,9 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public ViewableEvent view(Connection con, Integer eventId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
-		Events eve = EVENTS.as("eve");
-		Field<Integer> originalEventId = dsl
-				.select(eve.EVENT_ID)
-				.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
-				.where(
-						rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-						.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
-				)
-				.asField("original_event_id");
-		
-		return dsl
-			.select(
-					EVENTS.fields()
-			)
-			.select(
-					originalEventId
-			)
-			.from(EVENTS)
-			.where(
-					EVENTS.EVENT_ID.equal(eventId)
-			)
-			.fetchOneInto(ViewableEvent.class);
-	}
-	
-	public List<ViewableEvent> viewDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
-		Events eve = EVENTS.as("eve");
-		Field<Integer> originalEventId = dsl
-				.select(eve.EVENT_ID)
-				.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
-				.where(
-						rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-						.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
-				)
-				.asField("original_event_id");
-		
-		return dsl
-				.select(
-						EVENTS.EVENT_ID,
-						EVENTS.RECURRENCE_ID,
-						EVENTS.START_DATE,
-						EVENTS.END_DATE,
-						EVENTS.TIMEZONE,
-						originalEventId
-						//field("false", Boolean.class).as("is_recurring")
-						/*
-						field(
-							exists(
-									selectOne()
-									.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
-									.where(
-											rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-											.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
-									)
-							)
-						).as("is_broken")
-						*/
-				)
-				.from(EVENTS)
-				.where(
-						EVENTS.CALENDAR_ID.equal(calendarId)
-						.and(
-								EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
-								.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
-								.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
-						)
-						.and(
-								EVENTS.STATUS.equal("N")
-								.or(EVENTS.STATUS.equal("M"))
-						)
-						.and(EVENTS.RECURRENCE_ID.isNull())
-				)
-				.orderBy(
-						EVENTS.START_DATE
-				)
-				.fetchInto(ViewableEvent.class);
-	}
-	
-	public List<ViewableEvent> viewByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
-		Events eve = EVENTS.as("eve");
-		
-		Field<Integer> originalEventId = dsl
-				.select(eve.EVENT_ID)
-				.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
-				.where(
-						rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-						.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
-				)
-				.asField("original_event_id");
-		
-		return dsl
-				.select(
-						EVENTS.fields()
-				)
-				.select(
-						originalEventId
-						/*
-						DSL.coalesce(
-								dsl.select(eve.EVENT_ID)
-								.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
-								.where(
-										rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-										.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
-								), 
-						EVENTS.EVENT_ID).as("original_event_id")
-						*/
-						//field("false", Boolean.class).as("is_recurring")
-						/*
-						field(
-							exists(
-									selectOne()
-									.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
-									.where(
-											rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-											.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
-									)
-							)
-						).as("is_broken"),
-						*/
-				)
-				.from(EVENTS)
-				.where(
-						EVENTS.CALENDAR_ID.equal(calendarId)
-						.and(
-							EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
-							.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
-							.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
-						)
-						.and(
-							EVENTS.STATUS.equal("N")
-							.or(EVENTS.STATUS.equal("M"))
-						)
-						.and(EVENTS.RECURRENCE_ID.isNull())
-				)
-				.orderBy(
-						EVENTS.START_DATE
-				)
-				.fetchInto(ViewableEvent.class);
-	}
-	
-	public List<ViewableEvent> viewRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-				.select(
-						EVENTS.EVENT_ID,
-						EVENTS.RECURRENCE_ID,
-						EVENTS.START_DATE,
-						EVENTS.END_DATE,
-						EVENTS.TIMEZONE,
-						EVENTS.EVENT_ID.as("original_event_id") // For recurring events, originalEventId is always equal to eventId
-						//field("true", Boolean.class).as("is_recurring")
-						//field("false", Boolean.class).as("is_broken")
-				)
-				.from(EVENTS.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID)))
-				.where(
-						EVENTS.CALENDAR_ID.equal(calendarId)
-						.and(
-							RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
-							.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
-							.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
-						)
-						.and(
-							EVENTS.STATUS.equal("N")
-							.or(EVENTS.STATUS.equal("M"))
-						)
-				)
-				.orderBy(
-						EVENTS.START_DATE
-				)
-				.fetchInto(ViewableEvent.class);
-	}
-	
-	public List<ViewableEvent> viewRecurringByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		
-		return dsl
-				.select(EVENTS.fields())
-				.select(
-						EVENTS.EVENT_ID.as("original_event_id")
-						//field("true", Boolean.class).as("is_recurring")
-						//field("false", Boolean.class).as("is_broken")
-				)
-				/*
-				.select(field(
-						exists(
-								selectOne()
-								.from(RECURRENCES_BROKEN)
-								.where(RECURRENCES_BROKEN.RECURRENCE_ID.equal(EVENTS.RECURRENCE_ID))
-						)
-				).as("hasBrokenRecurrences"))
-				.select(
-						field("false", Boolean.class)
-						.as("hasPlanning")
-				)
-				*/
-				.from(EVENTS.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID)))
-				.where(
-						EVENTS.CALENDAR_ID.equal(calendarId)
-						.and(
-							RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
-							.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
-							.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
-						)
-						.and(
-							EVENTS.STATUS.equal("N")
-							.or(EVENTS.STATUS.equal("M"))
-						)
-				)
-				.orderBy(
-						EVENTS.START_DATE
-				)
-				.fetchInto(ViewableEvent.class);
-	}
-	
 	public int insert(Connection con, OEvent item) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		OEvent.checkTimesCoherence(item);
+		OEvent.ensureTimesCoherence(item);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)
@@ -315,7 +93,7 @@ public class EventDAO extends BaseDAO {
 	
 	public int update(Connection con, OEvent item) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		OEvent.checkTimesCoherence(item);
+		OEvent.ensureTimesCoherence(item);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
@@ -336,6 +114,29 @@ public class EventDAO extends BaseDAO {
 			.set(EVENTS.UPDATE_USER, item.getUpdateUser())
 			.where(
 				EVENTS.EVENT_ID.equal(item.getEventId())
+			)
+			.execute();
+	}
+	
+	public int updateRemindedOn(Connection con, Integer eventId, DateTime remindedOn) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.REMINDED_ON, remindedOn)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+			)
+			.execute();
+	}
+	
+	public int updateRemindedOnIfNull(Connection con, Integer eventId, DateTime remindedOn) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.REMINDED_ON, remindedOn)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+				.and(EVENTS.REMINDED_ON.isNull())
 			)
 			.execute();
 	}
@@ -379,5 +180,331 @@ public class EventDAO extends BaseDAO {
 				EVENTS.EVENT_ID.equal(eventId)
 			)
 			.execute();
+	}
+	
+	public VSchedulerEvent view(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		Events eve = EVENTS.as("eve");
+		Field<Integer> originalEventId = dsl
+			.select(eve.EVENT_ID)
+			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+			.where(
+				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+			)
+			.asField("original_event_id");
+		
+		return dsl
+			.select(
+				EVENTS.fields()
+			)
+			.select(
+				originalEventId,
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+			)
+			.fetchOneInto(VSchedulerEvent.class);
+	}
+	
+	public List<VSchedulerEvent> viewDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		Events eve = EVENTS.as("eve");
+		Field<Integer> originalEventId = dsl
+			.select(eve.EVENT_ID)
+			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+			.where(
+				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+			)
+			.asField("original_event_id");
+		
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.RECURRENCE_ID,
+				EVENTS.START_DATE,
+				EVENTS.END_DATE,
+				EVENTS.TIMEZONE,
+				originalEventId,
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+				//field("false", Boolean.class).as("is_recurring")
+				/*
+				field(
+					exists(
+							selectOne()
+							.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+							.where(
+									rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+									.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+							)
+					)
+				).as("is_broken")
+				*/
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
+					.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
+					.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+				.and(EVENTS.RECURRENCE_ID.isNull())
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VSchedulerEvent.class);
+	}
+	
+	public List<VSchedulerEvent> viewByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		Events eve = EVENTS.as("eve");
+		
+		Field<Integer> originalEventId = dsl
+			.select(eve.EVENT_ID)
+			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+			.where(
+				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+			)
+			.asField("original_event_id");
+		
+		return dsl
+			.select(
+				EVENTS.fields()
+			)
+			.select(
+				originalEventId,
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+				/*
+				DSL.coalesce(
+						dsl.select(eve.EVENT_ID)
+						.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+						.where(
+								rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+								.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+						), 
+				EVENTS.EVENT_ID).as("original_event_id")
+				*/
+				//field("false", Boolean.class).as("is_recurring")
+				/*
+				field(
+					exists(
+							selectOne()
+							.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+							.where(
+									rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+									.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+							)
+					)
+				).as("is_broken"),
+				*/
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
+					.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
+					.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+				.and(EVENTS.RECURRENCE_ID.isNull())
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VSchedulerEvent.class);
+	}
+	
+	public List<VSchedulerEvent> viewRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.RECURRENCE_ID,
+				EVENTS.START_DATE,
+				EVENTS.END_DATE,
+				EVENTS.TIMEZONE,
+				EVENTS.EVENT_ID.as("original_event_id"), // For recurring events, originalEventId is always equal to eventId
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+				//field("true", Boolean.class).as("is_recurring")
+				//field("false", Boolean.class).as("is_broken")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID))
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
+					.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
+					.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VSchedulerEvent.class);
+	}
+	
+	public List<VSchedulerEvent> viewRecurringByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		
+		return dsl
+			.select(EVENTS.fields())
+			.select(
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id"),
+				EVENTS.EVENT_ID.as("original_event_id")
+				//field("true", Boolean.class).as("is_recurring")
+				//field("false", Boolean.class).as("is_broken")
+			)
+			/*
+			.select(field(
+					exists(
+							selectOne()
+							.from(RECURRENCES_BROKEN)
+							.where(RECURRENCES_BROKEN.RECURRENCE_ID.equal(EVENTS.RECURRENCE_ID))
+					)
+			).as("hasBrokenRecurrences"))
+			.select(
+					field("false", Boolean.class)
+					.as("hasPlanning")
+			)
+			*/
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID))
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
+					.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
+					.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VSchedulerEvent.class);
+	}
+	
+	public List<VSchedulerEvent> viewExpiredForUpdateByFromTo(Connection con, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		Events eve = EVENTS.as("eve");
+		Field<Integer> originalEventId = dsl
+			.select(eve.EVENT_ID)
+			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+			.where(
+				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+			)
+			.asField("original_event_id");
+		
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.CALENDAR_ID,
+				EVENTS.RECURRENCE_ID,
+				EVENTS.START_DATE,
+				EVENTS.END_DATE,
+				EVENTS.TIMEZONE,
+				EVENTS.REMINDER,
+				originalEventId,
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
+				.and(
+					EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
+					.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
+					.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+				.and(EVENTS.RECURRENCE_ID.isNull())
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.forUpdate()
+			.fetchInto(VSchedulerEvent.class);
+	}
+	
+	public List<VSchedulerEvent> viewRecurringExpiredForUpdateByFromTo(Connection con, DateTime fromDate, DateTime toDate) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.CALENDAR_ID,
+				EVENTS.RECURRENCE_ID,
+				EVENTS.START_DATE,
+				EVENTS.END_DATE,
+				EVENTS.TIMEZONE,
+				EVENTS.REMINDER,
+				EVENTS.EVENT_ID.as("original_event_id"), // For recurring events, originalEventId is always equal to eventId
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID))
+			.where(
+				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
+				.and(
+					RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
+					.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
+					.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.forUpdate()
+			.fetchInto(VSchedulerEvent.class);
 	}
 }

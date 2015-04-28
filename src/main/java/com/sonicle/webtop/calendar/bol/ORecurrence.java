@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.webtop.calendar.bol.model.EventData;
 import com.sonicle.webtop.calendar.ICal4jUtils;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -214,7 +215,8 @@ public class ORecurrence extends Recurrences {
 				if((getRepeat() != null) && (getRepeat() > 0)) {
 					rec.setCount(getRepeat());
 				} else {
-					rec.setUntil(ICal4jUtils.toICal4jDateTime(getUntilDate(), etz));
+					// We need to sum 1day to defined until date, for rrule untilDate is not inclusive!
+					rec.setUntil(ICal4jUtils.toICal4jDateTime(getUntilDate().plusDays(1), etz));
 				}
 			}
 			

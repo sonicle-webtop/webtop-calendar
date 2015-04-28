@@ -31,12 +31,12 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.bol.model;
 
-import com.rits.cloning.Cloner;
-import com.sonicle.commons.web.JsonUtils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
@@ -46,55 +46,41 @@ import org.joda.time.format.DateTimeFormatter;
  *
  * @author malbinola
  */
-public class SchedulerEvent extends ViewableEvent {
-	
-	private String id;
-	
-	public SchedulerEvent() {
-		super();
-	}
-	
-	public SchedulerEvent(ViewableEvent event) {
-		super();
-		new Cloner().copyPropertiesOfInheritedClass(event, this);
-		id = SchedulerEvent.buildId(event.getEventId(), event.getOriginalEventId());
-	}
+public class EventGenId {
+	private static final Pattern PATTERN_GENID = Pattern.compile("^([0-9]+)_([0-9]+)$");
+	private static final Pattern PATTERN_GENID_RECURRING = Pattern.compile("^([0-9]+)_([0-9]+)_([0-9]+)$");
 
-	public String getId() {
-		return id;
-	}
-	
-	public void setId(String value) {
-		id = value;
+	public Integer eventId;
+	public Integer originalEventId;
+	public LocalDate atDate;
+
+	public EventGenId(String eventUid) {
+		String decoded = null;
+		try {
+			decoded = new String(Hex.decodeHex(eventUid.toCharArray()));
+		} catch(DecoderException ex) {
+			throw new RuntimeException(ex);
+		}
+		
+		Matcher matcher = null;
+		if((matcher = PATTERN_GENID_RECURRING.matcher(decoded)).matches()) {
+			originalEventId = Integer.valueOf(matcher.group(1));
+			eventId = Integer.valueOf(matcher.group(2));
+			DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd").withZone(DateTimeZone.UTC);
+			atDate = formatter.parseDateTime(matcher.group(3)).toLocalDate();
+		} else if((matcher = PATTERN_GENID.matcher(decoded)).matches()) {
+			originalEventId = Integer.valueOf(matcher.group(1));
+			eventId = Integer.valueOf(matcher.group(2));
+		}
 	}
 	
 	public static String buildId(Integer eventId, Integer originalEventId) {
-		return originalEventId + "_" + eventId;
+		String str = originalEventId + "_" + eventId;
+		return Hex.encodeHexString(str.getBytes());
 	}
 	
 	public static String buildId(Integer eventId, Integer originalEventId, LocalDate date) {
-		return originalEventId + "_" + eventId + "-" + date.toString("yyyyMMdd");
-	}
-	
-	public static class EventUID {
-		private static final Pattern PATTERN_UID = Pattern.compile("^([0-9]+)_([0-9]+)$");
-		private static final Pattern PATTERN_UID_RECURRING = Pattern.compile("^([0-9]+)_([0-9]+)-([0-9]+)$");
-		
-		public Integer eventId;
-		public Integer originalEventId;
-		public LocalDate atDate;
-		
-		public EventUID(String eventUid) {
-			Matcher matcher = null;
-			if((matcher = PATTERN_UID_RECURRING.matcher(eventUid)).matches()) {
-				originalEventId = Integer.valueOf(matcher.group(1));
-				eventId = Integer.valueOf(matcher.group(2));
-				DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd").withZone(DateTimeZone.UTC);
-				atDate = formatter.parseDateTime(matcher.group(3)).toLocalDate();
-			} else if((matcher = PATTERN_UID.matcher(eventUid)).matches()) {
-				originalEventId = Integer.valueOf(matcher.group(1));
-				eventId = Integer.valueOf(matcher.group(2));
-			}
-		}
+		String str = originalEventId + "_" + eventId + "_" + date.toString("yyyyMMdd");
+		return Hex.encodeHexString(str.getBytes());
 	}
 }

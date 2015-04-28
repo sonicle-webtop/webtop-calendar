@@ -34,7 +34,9 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
-import com.sonicle.webtop.calendar.bol.Event;
+import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventAttendee;
+import java.util.ArrayList;
 import java.util.TimeZone;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -84,26 +86,27 @@ public class JsEvent {
 	public Integer rrYearlyFreq;
 	public Integer rrYearlyDay;
 	
+	public ArrayList<JsAttendee> attendees = new ArrayList<>();
+	
 	// Read-only fields
-	public Boolean _isBroken;
-	public Boolean _isRecurring;
+	public String _recurringInfo;
 	public String _groupId;
 	
 	public JsEvent(Event event, String calendarGroupId) {
 		id = event.id;
 		eventId = event.eventId;
-		calendarId = event.calendarId;
-		DateTimeZone eventTz = DateTimeZone.forID(event.timezone);
-		startDate = toYmdHmsWithZone(event.startDate, eventTz);
-		endDate = toYmdHmsWithZone(event.endDate, eventTz);
-		timezone = event.timezone;
-		allDay = event.allDay;
-		title = event.title;
-		description = event.description;
-		location = event.location;
-		isPrivate = event.isPrivate;
-		busy = event.busy;
-		reminder = event.reminder;
+		calendarId = event.getCalendarId();
+		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
+		startDate = toYmdHmsWithZone(event.getStartDate(), eventTz);
+		endDate = toYmdHmsWithZone(event.getEndDate(), eventTz);
+		timezone = event.getTimezone();
+		allDay = event.getAllDay();
+		title = event.getTitle();
+		description = event.getDescription();
+		location = event.getLocation();
+		isPrivate = event.getIsPrivate();
+		busy = event.getBusy();
+		reminder = event.getReminder();
 		
 		rrEndsMode = event.rrEndsMode;
 		rrRepeatTimes = event.rrRepeatTimes;
@@ -123,9 +126,22 @@ public class JsEvent {
 		rrMonthlyDay = event.rrMonthlyDay;
 		rrYearlyFreq = event.rrYearlyFreq;
 		rrYearlyDay = event.rrYearlyDay;
+		
+		JsAttendee attendee = null;
+		for(EventAttendee att : event.getAttendees()) {
+			attendee = new JsAttendee();
+			attendee._fk = id;
+			attendee.attendeeId = att.getAttendeeId();
+			attendee.email = att.getEmail();
+			attendee.recipientType = att.getRecipientType();
+			attendee.responseStatus = att.getResponseStatus();
+			attendee.notify = att.getNotify();
+			attendees.add(attendee);
+		}
+		//attendees.addAll(event.getAttendees());
+		
 		// Read-only fields
-		_isRecurring = event.isRecurring;
-		_isBroken = event.isBroken;
+		_recurringInfo = event.getRecurringInfo().toString();
 		_groupId = calendarGroupId;
 	}
 	
@@ -134,22 +150,22 @@ public class JsEvent {
 		
 		event.id = jse.id;
 		event.eventId = jse.eventId;
-		event.calendarId = jse.calendarId;
+		event.setCalendarId(jse.calendarId);
 		// Incoming fields are in a precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
 		DateTimeZone eventTz = DateTimeZone.forID(jse.timezone);
-		event.startDate = parseYmdHmsWithZone(jse.startDate, eventTz);
-		event.endDate = parseYmdHmsWithZone(jse.endDate, eventTz);
-		event.timezone = jse.timezone;
-		event.allDay = jse.allDay;
+		event.setStartDate(parseYmdHmsWithZone(jse.startDate, eventTz));
+		event.setEndDate(parseYmdHmsWithZone(jse.endDate, eventTz));
+		event.setTimezone(jse.timezone);
+		event.setAllDay(jse.allDay);
 		adjustTimes(event, workdayStart, workdayEnd);
-		event.title = jse.title;
-		event.description = jse.description;
-		event.location = jse.location;
-		event.isPrivate = jse.isPrivate;
-		event.busy = jse.busy;
-		event.reminder = jse.reminder;
+		event.setTitle(jse.title);
+		event.setDescription(jse.description);
+		event.setLocation(jse.location);
+		event.setIsPrivate(jse.isPrivate);
+		event.setBusy(jse.busy);
+		event.setReminder(jse.reminder);
 		event.rrEndsMode = jse.rrEndsMode;
 		event.rrRepeatTimes = jse.rrRepeatTimes;
 		event.rrUntilDate = (jse.rrUntilDate != null) ? parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null;
@@ -174,16 +190,16 @@ public class JsEvent {
 	
 	private static void adjustTimes(Event event, LocalTime workdayStart, LocalTime workdayEnd) {
 		// Ensure start < end
-		if(event.endDate.compareTo(event.startDate) < 0) {
+		if(event.getEndDate().compareTo(event.getStartDate()) < 0) {
 			// Swap dates...
-			DateTime dt = event.endDate;
-			event.endDate = event.startDate;
-			event.startDate = dt;
+			DateTime dt = event.getEndDate();
+			event.setEndDate(event.getStartDate());
+			event.setStartDate(dt);
 		}
 		// Force allDay hours
-		if(event.allDay) {
-			event.startDate = event.startDate.withTime(workdayStart);
-			event.endDate = event.startDate.withTime(workdayEnd);
+		if(event.getAllDay()) {
+			event.setStartDate(event.getStartDate().withTime(workdayStart));
+			event.setEndDate(event.getEndDate().withTime(workdayEnd));
 		}
 	}
 	

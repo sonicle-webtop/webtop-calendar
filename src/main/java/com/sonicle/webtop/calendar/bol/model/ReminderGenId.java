@@ -31,20 +31,32 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.bol.model;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 /**
  *
  * @author malbinola
  */
-public class Event extends EventData {
+public class ReminderGenId {
 	
-	public String id;
-	public Integer eventId;
-	public Boolean isRecurring;
-	public Boolean isBroken;
+	public DateTime remindOn = null;
 	
-	public Event() {
-		super();
+	public ReminderGenId(String reminderGenId) {
+		String decoded = null;
+		try {
+			decoded = new String(Hex.decodeHex(reminderGenId.toCharArray()));
+			remindOn = new DateTime(decoded);
+		} catch(DecoderException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+	
+	public static String buildId(DateTime remindOn) {
+		return Hex.encodeHexString(remindOn.withZone(DateTimeZone.UTC).toString().getBytes());
 	}
 }

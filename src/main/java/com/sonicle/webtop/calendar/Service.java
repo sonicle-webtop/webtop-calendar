@@ -43,11 +43,10 @@ import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendarGroups;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendars;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
-import com.sonicle.webtop.calendar.bol.Event;
-import com.sonicle.webtop.calendar.bol.SchedulerEvent;
+import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
@@ -55,6 +54,7 @@ import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar.JsTreeCalendarList;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
+import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BasicEnvironment;
 import com.sonicle.webtop.core.sdk.UserProfile;
@@ -69,7 +69,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalTime;
 import org.slf4j.Logger;
 
 /**
@@ -77,8 +76,7 @@ import org.slf4j.Logger;
  * @author malbinola
  */
 public class Service extends BaseService {
-	
-	public static final Logger logger = BaseService.getLogger(Service.class);
+	public static final Logger logger = WT.getLogger(Service.class);
 	
 	private BasicEnvironment env = null;
 	private CalendarManager manager;
@@ -100,6 +98,22 @@ public class Service extends BaseService {
 		
 		// Loads available groups
 		initCalendarGroups();
+	}
+	
+	@Override
+	public void cleanup() {
+		
+	}
+	
+	@Override
+	public HashMap<String, Object> returnClientOptions() {
+		UserProfile profile = env.getProfile();
+		HashMap<String, Object> hm = new HashMap<>();
+		hm.put("view", cus.getCalendarView());
+		hm.put("startDay", cus.getCalendarStartDay());
+		hm.put("workdayStart", cus.getWorkdayStart());
+		hm.put("workdayEnd", cus.getWorkdayEnd());
+		return hm;
 	}
 	
 	private void initCalendarGroups() {
@@ -128,44 +142,6 @@ public class Service extends BaseService {
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
-	}
-	
-	private void toggleCheckedCalendarGroup(String groupId, boolean checked) {
-		synchronized(calendarGroups) {
-			if(checked) {
-				checkedCalendarGroups.add(groupId);
-			} else {
-				checkedCalendarGroups.remove(groupId);
-			}
-			cus.setCheckedCalendarGroups(checkedCalendarGroups);
-		}
-	}
-	
-	private void toggleCheckedCalendar(int calendarId, boolean checked) {
-		synchronized(calendarGroups) {
-			if(checked) {
-				checkedCalendars.add(calendarId);
-			} else {
-				checkedCalendars.remove(calendarId);
-			}
-			cus.setCheckedCalendars(checkedCalendars);
-		}
-	}
-	
-	@Override
-	public void cleanup() {
-		
-	}
-	
-	@Override
-	public HashMap<String, Object> returnClientOptions() {
-		UserProfile profile = env.getProfile();
-		HashMap<String, Object> hm = new HashMap<>();
-		hm.put("view", cus.getCalendarView());
-		hm.put("startDay", cus.getCalendarStartDay());
-		hm.put("workdayStart", cus.getWorkdayStart());
-		hm.put("workdayEnd", cus.getWorkdayEnd());
-		return hm;
 	}
 	
 	public void processManageCalendarsTree(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
@@ -206,7 +182,6 @@ public class Service extends BaseService {
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				JsListPayload<JsTreeCalendarList> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarList.class);
-				CalendarDAO cdao = CalendarDAO.getInstance();
 				
 				for(JsTreeCalendar cal : pl.data) {
 					if(cal._nodeType.equals(JsTreeCalendar.TYPE_GROUP)) {
@@ -313,7 +288,6 @@ public class Service extends BaseService {
 	public void processGetEventDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		ArrayList<JsSchedulerEventDate> items = new ArrayList<>();
-		List<OEvent> grpEvts = null;
 		
 		try {
 			con = getConnection();
@@ -365,7 +339,7 @@ public class Service extends BaseService {
 				// Get events for each visible group
 				Integer[] checked;
 				JsSchedulerEvent jse = null;
-				List<SchedulerEvent> expEvents = null;
+				List<SchedulerEvent> recInstances = null;
 				List<CalendarManager.GroupEvents> grpEvts = null;
 				for(CalendarGroup group : calendarGroups.values()) {
 					if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip group if not visible
@@ -379,9 +353,9 @@ public class Service extends BaseService {
 								jse = new JsSchedulerEvent(ge.calendar, evt, up.getId(), up.getTimeZone());
 								items.add(jse);
 							} else {
-								expEvents = manager.expandRecurringEvent(ge.calendar, evt, fromDate, toDate, up.getTimeZone());
-								for(SchedulerEvent expEvent : expEvents) {
-									jse = new JsSchedulerEvent(ge.calendar, expEvent, up.getId(), up.getTimeZone());
+								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, up.getTimeZone());
+								for(SchedulerEvent recInstance : recInstances) {
+									jse = new JsSchedulerEvent(ge.calendar, recInstance, up.getId(), up.getTimeZone());
 									items.add(jse);
 								}
 							}
@@ -402,7 +376,7 @@ public class Service extends BaseService {
 				
 			} else if(crud.equals(Crud.DELETE)) {
 				String uid = ServletUtils.getStringParameter(request, "id", true);
-				String target = ServletUtils.getStringParameter(request, "target", true);
+				String target = ServletUtils.getStringParameter(request, "target", "this");
 				
 				manager.deleteEvent(target, uid);
 				new JsonResult().printTo(out);
@@ -435,24 +409,24 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				String id = ServletUtils.getStringParameter(request, "id", true);
 				
-				Event evt = manager.getEvent(id);
-				item = new JsEvent(manager.getEvent(id), manager.getCalendarGroupId(evt.calendarId));
+				Event evt = manager.readEvent(id);
+				item = new JsEvent(evt, manager.getCalendarGroupId(evt.getCalendarId()));
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
 				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
-				manager.insertEvent(evt);
+				manager.addEvent(evt);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				String target = ServletUtils.getStringParameter(request, "target", true);
+				String target = ServletUtils.getStringParameter(request, "target", "this");
 				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
 				System.out.println("TAERGET: "+target);
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
-				manager.updateEvent(target, evt, up.getTimeZone());
+				manager.editEvent(target, evt, up.getTimeZone());
 				new JsonResult().printTo(out);
 			}
 			
@@ -474,7 +448,27 @@ public class Service extends BaseService {
 	
 	
 	
+	private void toggleCheckedCalendarGroup(String groupId, boolean checked) {
+		synchronized(calendarGroups) {
+			if(checked) {
+				checkedCalendarGroups.add(groupId);
+			} else {
+				checkedCalendarGroups.remove(groupId);
+			}
+			cus.setCheckedCalendarGroups(checkedCalendarGroups);
+		}
+	}
 	
+	private void toggleCheckedCalendar(int calendarId, boolean checked) {
+		synchronized(calendarGroups) {
+			if(checked) {
+				checkedCalendars.add(calendarId);
+			} else {
+				checkedCalendars.remove(calendarId);
+			}
+			cus.setCheckedCalendars(checkedCalendars);
+		}
+	}
 	
 	private ExtTreeNode createCalendarGroupNode(MyCalendarGroup group, boolean leaf) {
 		return createCalendarGroupNode(group.getId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), leaf, group.getDomainId(), group.getUserId(), "wtcal-icon-calendar-my");

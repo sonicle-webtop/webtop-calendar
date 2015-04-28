@@ -51,6 +51,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		me.initActions();
 		me.initCxm();
+		
+		me.onMessage('notifyReminder', function() {
+			WT.info('reminder arrived');
+		});
 
 /*
 		this.addAction('new', 'testaction', {
@@ -301,6 +305,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}
 				},
 				eventcontextmenu: function(s, rec, el, evt) {
+					console.log('context: '+rec.get('id'));
 					WT.showContextMenu(evt, me.getRef('cxmEvent'), {event: rec});
 				}
 			}

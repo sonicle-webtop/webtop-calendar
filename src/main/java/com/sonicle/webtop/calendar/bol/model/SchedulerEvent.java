@@ -31,59 +31,33 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.bol.model;
+
+import com.rits.cloning.Cloner;
+import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 
 /**
  *
  * @author malbinola
  */
-public class ViewableEvent extends OEvent {
+public class SchedulerEvent extends VSchedulerEvent {
+	private String id;
 	
-	private Integer originalEventId;
-	private Boolean isRecurring;
-	private Boolean isBroken;
-	
-	public ViewableEvent() {
+	public SchedulerEvent() {
 		super();
 	}
 	
-	public Integer getOriginalEventId() {
-		return originalEventId;
+	public SchedulerEvent(VSchedulerEvent event) {
+		super();
+		new Cloner().copyPropertiesOfInheritedClass(event, this);
+		id = EventGenId.buildId(event.getEventId(), event.getOriginalEventId());
 	}
 
-	public void setOriginalEventId(Integer value) {
-		originalEventId = value;
+	public String getId() {
+		return id;
 	}
 	
-	public Boolean getIsRecurring() {
-		return isRecurring;
-	}
-
-	public void setIsRecurring(Boolean value) {
-		isRecurring = value;
-	}
-	
-	public Boolean getIsBroken() {
-		return isBroken;
-	}
-
-	public void setIsBroken(Boolean value) {
-		isBroken = value;
-	}
-	
-	public void updateCalculatedFields() {
-		if(getRecurrenceId() == null) {
-			isRecurring = false;
-			if(originalEventId == null) {
-				originalEventId = getEventId();
-				isBroken = false;
-			} else {
-				isBroken = true;
-			}
-		} else {
-			isRecurring = true;
-			originalEventId = getEventId();
-			isBroken = false;
-		}
+	public void setId(String value) {
+		id = value;
 	}
 }

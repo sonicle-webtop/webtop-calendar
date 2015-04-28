@@ -31,16 +31,60 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
-	extend: 'WT.model.Base',
+package com.sonicle.webtop.calendar.dal;
+
+import com.sonicle.webtop.calendar.bol.OPostponedReminder;
+import static com.sonicle.webtop.calendar.jooq.Tables.POSTPONED_REMINDERS;
+import com.sonicle.webtop.calendar.jooq.tables.records.PostponedRemindersRecord;
+import com.sonicle.webtop.core.dal.BaseDAO;
+import com.sonicle.webtop.core.dal.DAOException;
+import java.sql.Connection;
+import java.util.List;
+import org.joda.time.DateTime;
+import org.jooq.DSLContext;
+
+/**
+ *
+ * @author malbinola
+ */
+public class PostponedReminderDAO extends BaseDAO {
 	
-	idProperty: 'planningUid',
-	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
-	]
-});
+	private final static PostponedReminderDAO INSTANCE = new PostponedReminderDAO();
+
+	public static PostponedReminderDAO getInstance() {
+		return INSTANCE;
+	}
+	
+	public List<OPostponedReminder> selectExpiredForUpdateByInstant(Connection con, DateTime greaterInstant) {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(POSTPONED_REMINDERS)
+			.where(
+				POSTPONED_REMINDERS.REMIND_ON.lessOrEqual(greaterInstant)
+			)
+			.fetchInto(OPostponedReminder.class);
+	}
+	
+	public int insert(Connection con, OPostponedReminder item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		PostponedRemindersRecord record = dsl.newRecord(POSTPONED_REMINDERS, item);
+		return dsl
+			.insertInto(POSTPONED_REMINDERS)
+			.set(record)
+			.execute();
+	}
+	
+	public int delete(Connection con, Integer eventId, DateTime remindOn) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(POSTPONED_REMINDERS)
+			.where(
+				POSTPONED_REMINDERS.EVENT_ID.equal(eventId)
+				.and(POSTPONED_REMINDERS.REMIND_ON.equal(remindOn))
+			)
+			.execute();
+	}
+	
+	
+}

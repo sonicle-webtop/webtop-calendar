@@ -31,16 +31,58 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
-	extend: 'WT.model.Base',
+package com.sonicle.webtop.calendar.bol.model;
+
+/**
+ *
+ * @author malbinola
+ */
+public class Event extends EventData {
 	
-	idProperty: 'planningUid',
-	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
-	]
-});
+	public String id;
+	public Integer eventId;
+	public RecurringInfo recurringInfo;
+	
+	public Event() {
+		super();
+	}
+	
+	public Event(RecurringInfo recurringInfo) {
+		super();
+		this.recurringInfo = recurringInfo;
+	}
+	
+	public RecurringInfo getRecurringInfo() {
+		return recurringInfo;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	public static enum RecurringInfo {
+		SINGLE {
+			@Override
+			public String toString() {
+				return "single";
+			}
+		},
+		BROKEN {
+			@Override
+			public String toString() {
+				return "broken";
+			}
+		},
+		RECURRING {
+			@Override
+			public String toString() {
+				return "recurring";
+			}
+		}
+	}
+}

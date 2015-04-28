@@ -33,10 +33,9 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
-import java.util.ArrayList;
+import com.sonicle.webtop.core.sdk.UserProfile;
 import java.util.HashSet;
 import org.joda.time.LocalTime;
 
@@ -45,6 +44,10 @@ import org.joda.time.LocalTime;
  * @author malbinola
  */
 public class CalendarUserSettings extends BaseUserSettings {
+	
+	public CalendarUserSettings(UserProfile.Id profileId, String serviceId) {
+		super(profileId, serviceId);
+	}
 	
 	public CalendarUserSettings(String domainId, String userId, String serviceId) {
         super(domainId, userId, serviceId);
@@ -56,29 +59,41 @@ public class CalendarUserSettings extends BaseUserSettings {
 	 */
 	public static final String VIEW = "view";
 	public static final String DEFAULT_VIEW = "w5";
+	
 	/**
 	 * [int]
 	 * Calendar start day (0:sunday, 1:monday)
 	 */
 	public static final String START_DAY = "startday";
 	public static final int DEFAULT_START_DAY = 1;
+	
 	/**
 	 * [string]
 	 * Workday hours start time
 	 */
 	public static final String WORKDAY_START = "workday.start";
 	public static final String DEFAULT_WORKDAY_START = "09:00";
+	
 	/**
 	 * [string]
 	 * Workday hours end time
 	 */
 	public static final String WORKDAY_END = "workday.end";
 	public static final String DEFAULT_WORKDAY_END = "18:00";
+	
+	/**
+	 * [boolean]
+	 * Workday hours end time
+	 */
+	public static final String REMINDER_BY_EMAIL = "reminder.byemail";
+	public static final Boolean DEFAULT_REMINDER_BY_EMAIL = false;
+	
 	/**
 	 * [string]
 	 * Selected calendar group.
 	 */
 	public static final String SELECTED_CALENDAR_GROUP = "calendargroups.selected";
+	
 	/**
 	 * [string[]]
 	 * List of checked (or visible) calendar groups.
@@ -122,6 +137,14 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	public boolean setWorkdayEnd(String value) {
 		return setString(WORKDAY_END, value);
+	}
+	
+	public Boolean getReminderByEmail() {
+		return getBoolean(REMINDER_BY_EMAIL, DEFAULT_REMINDER_BY_EMAIL);
+	}
+	
+	public boolean setReminderByEmail(Boolean value) {
+		return setBoolean(REMINDER_BY_EMAIL, value);
 	}
 	
 	public String getSelectedCalendarGroup() {

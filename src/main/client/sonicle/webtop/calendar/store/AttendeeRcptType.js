@@ -31,36 +31,15 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsAttendees;
-
-/**
- *
- * @author malbinola
- */
-public class OEventAttendee extends EventsAttendees {
+Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptType', {
+	extend: 'Ext.data.ArrayStore',
 	
-	public static final String RECIPIENT_TYPE_NECESSARY = "N";
-	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
-	public static final String RECIPIENT_TYPE_RESOURCE = "R";
-	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
-	public static final String RESPONSE_STATUS_DECLINED = "declined";
-	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
-	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
-	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of needsAction
-	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
-	
-	public OEventAttendee() {
-		super();
-	}
-	
-	public void fillFrom(EventAttendee attendee) {
-		setAttendeeId(attendee.getAttendeeId());
-		setRecipient(attendee.getRecipient());
-		setRecipientType(attendee.getRecipientType());
-		setResponseStatus(attendee.getResponseStatus());
-		setNotify(attendee.getNotify());
-	}
-}
+	autoLoad: true,
+	model: 'WT.model.Simple',
+	data: [
+		['N', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.N')],
+		['O', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.O')],
+		['R', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.R')]
+	]
+});

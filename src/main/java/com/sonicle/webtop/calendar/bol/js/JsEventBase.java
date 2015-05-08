@@ -33,11 +33,8 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.webtop.calendar.CalendarManager;
-import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
-import com.sonicle.webtop.core.sdk.UserProfile;
 import java.util.TimeZone;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
@@ -47,64 +44,66 @@ import org.joda.time.format.DateTimeFormatter;
  *
  * @author malbinola
  */
-public class JsSchedulerEvent {
-	
+public class JsEventBase {
 	public String id;
+	
 	public Integer eventId;
-	public Integer originalEventId;
 	public Integer calendarId;
+	public Integer recurrenceId;
 	public String startDate;
 	public String endDate;
 	public String timezone;
-	public Boolean isAllDay;
+	public Boolean allDay;
 	public String title;
-	public String color;
+	public String description;
 	public String location;
 	public Boolean isPrivate;
-	public String reminder;
-	public Boolean isReadOnly;
-	public Boolean isRecurring;
-	public Boolean isBroken;
+	public Boolean busy;
+	public Integer reminder;
 	
-	public String notes = "";
-	public String url = "";
+	public String rrEndsMode;
+	public Integer rrRepeatTimes;
+	public String rrUntilDate;
+	public String rrType;
+	public String rrDaylyType;
+	public Integer rrDaylyFreq;
+	public Integer rrWeeklyFreq;
+	public Boolean rrWeeklyDay1;
+	public Boolean rrWeeklyDay2;
+	public Boolean rrWeeklyDay3;
+	public Boolean rrWeeklyDay4;
+	public Boolean rrWeeklyDay5;
+	public Boolean rrWeeklyDay6;
+	public Boolean rrWeeklyDay7;
+	public Integer rrMonthlyFreq;
+	public Integer rrMonthlyDay;
+	public Integer rrYearlyFreq;
+	public Integer rrYearlyDay;
 	
-	public JsSchedulerEvent() {
-		
+	// Read-only fields
+	public String _recurringInfo;
+	public String _groupId;
+	
+	public static String toYmdHmsWithZone(DateTime dt, TimeZone tz) {
+		return toYmdHmsWithZone(dt, DateTimeZone.forTimeZone(tz));
 	}
 	
-	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id profileId, DateTimeZone profileTz) {
-		
-		boolean keepDataPrivate = false;
-		if(event.getIsPrivate()) {
-			UserProfile.Id calProfileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId());
-			if(!calProfileId.equals(profileId)) {
-				keepDataPrivate = true;
-			}
-		}
-		
-		id = event.getId();
-		eventId = event.getEventId();
-		originalEventId = event.getEventId();
-		calendarId = event.getCalendarId();
-		
-		// Source field is already in UTC, we need only to display it
-		// in the timezone choosen by user in his settings.
-		// Formatter will be instantiated specifying desired timezone.
-		startDate = CalendarManager.toYmdHmsWithZone(event.getStartDate(), profileTz);
-		endDate = CalendarManager.toYmdHmsWithZone(event.getEndDate(), profileTz);
-		timezone = event.getTimezone();
-		isAllDay = event.getAllDay();
-		
-		//title = (!event.getIsPrivate()) ? event.getTitle() : "***";
-		title = (keepDataPrivate) ? "***" : event.getTitle();
-		color = calendar.getColor();
-		location = event.getLocation();
-		location = (keepDataPrivate) ? "" : event.getLocation();
-		isPrivate = event.getIsPrivate();
-		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = event.getReadOnly() || keepDataPrivate;
-		isRecurring = event.getIsRecurring();
-		isBroken = event.getIsBroken();
+	public static String toYmdHmsWithZone(DateTime dt, DateTimeZone tz) {
+		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
+		return dtf.print(dt);
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String date, String time, TimeZone tz) {
+		return parseYmdHmsWithZone(date, time, DateTimeZone.forTimeZone(tz));
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
+		return parseYmdHmsWithZone(date + " " + time, tz);
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String dateTime, DateTimeZone tz) {
+		String dt = StringUtils.replace(dateTime, "T", " ");
+		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
+		return formatter.parseDateTime(dt);
 	}
 }

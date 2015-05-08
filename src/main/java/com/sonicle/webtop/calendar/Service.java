@@ -36,9 +36,10 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.JsListPayload;
-import com.sonicle.commons.web.json.JsPayload;
+import com.sonicle.commons.web.json.Payload;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendarGroups;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendars;
@@ -64,11 +65,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
+import org.joda.time.LocalTime;
 import org.slf4j.Logger;
 
 /**
@@ -228,7 +233,7 @@ public class Service extends BaseService {
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
-				JsPayload<OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
 				pl.data.setCalendarId(cdao.getSequence(con).intValue());
 				pl.data.setBuiltIn(false);
@@ -237,13 +242,13 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				JsPayload<OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
 				cdao.update(con, pl.data);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
-				JsPayload<OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
 				cdao.delete(con, pl.data.getCalendarId());
 				//TODO: cancellare eventi collegati
@@ -292,6 +297,7 @@ public class Service extends BaseService {
 		try {
 			con = getConnection();
 			UserProfile up = env.getProfile();
+			DateTimeZone utz = DateTimeZone.forTimeZone(up.getTimeZone());
 			
 			// Defines boundaries
 			String start = ServletUtils.getStringParameter(request, "startDate", true);
@@ -306,9 +312,9 @@ public class Service extends BaseService {
 				if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
 				
 				checked = checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
-				dates = manager.getEventsDates(group, checked, fromDate, toDate, up.getTimeZone());
+				dates = manager.getEventsDates(group, checked, fromDate, toDate, utz);
 				for(DateTime dt : dates) {
-					items.add(new JsSchedulerEventDate(JsSchedulerEvent.toYmdWithZone(dt, up.getTimeZone())));
+					items.add(new JsSchedulerEventDate(CalendarManager.toYmdWithZone(dt, utz)));
 				}
 			}
 			new JsonResult("dates", items).printTo(out);
@@ -328,6 +334,7 @@ public class Service extends BaseService {
 		try {
 			con = getConnection();
 			UserProfile up = env.getProfile();
+			DateTimeZone utz = DateTimeZone.forTimeZone(up.getTimeZone());
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
@@ -349,13 +356,12 @@ public class Service extends BaseService {
 					for(CalendarManager.GroupEvents ge : grpEvts) {
 						for(SchedulerEvent evt : ge.events) {
 							if(evt.getRecurrenceId() == null) {
-								
-								jse = new JsSchedulerEvent(ge.calendar, evt, up.getId(), up.getTimeZone());
+								jse = new JsSchedulerEvent(ge.calendar, evt, up.getId(), utz);
 								items.add(jse);
 							} else {
-								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, up.getTimeZone());
+								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
 								for(SchedulerEvent recInstance : recInstances) {
-									jse = new JsSchedulerEvent(ge.calendar, recInstance, up.getId(), up.getTimeZone());
+									jse = new JsSchedulerEvent(ge.calendar, recInstance, up.getId(), utz);
 									items.add(jse);
 								}
 							}
@@ -365,11 +371,11 @@ public class Service extends BaseService {
 				new JsonResult("events", items).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				JsPayload<JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
+				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
-				DateTime newStart = JsEvent.parseYmdHmsWithZone(pl.data.startDate, etz);
-				DateTime newEnd = JsEvent.parseYmdHmsWithZone(pl.data.endDate, etz);
+				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
+				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
 				manager.moveEvent(pl.data.id, newStart, newEnd);
 				
 				new JsonResult().printTo(out);
@@ -414,7 +420,7 @@ public class Service extends BaseService {
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
-				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
+				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				manager.addEvent(evt);
@@ -422,9 +428,20 @@ public class Service extends BaseService {
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				String target = ServletUtils.getStringParameter(request, "target", "this");
-				JsPayload<JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
+				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				System.out.println("TAERGET: "+target);
+				//logger.debug("getCalendarId: {}", pl.data.calendarId);
+				//logger.debug("attendees.size: {}", pl.data.attendees.size());
+				//System.out.println("TAERGET: "+target);
+				/*
+				logger.debug("contains attendees: {}", pl.map.containsKey("attendees"));
+				if(pl.map.attendees != null) {
+					logger.debug("updated: {}", pl.map.attendees.U.size());
+					
+					//logger.debug("attendees: {}", pl.map.get("attendees"));
+				}
+				*/
+				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				manager.editEvent(target, evt, up.getTimeZone());
 				new JsonResult().printTo(out);
@@ -439,9 +456,108 @@ public class Service extends BaseService {
 		}
 	}
 	
+	public void processGetPlanning(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		Connection con = null;
+		
+		try {
+			String eventStartDate = ServletUtils.getStringParameter(request, "startDate", true);
+			String eventEndDate = ServletUtils.getStringParameter(request, "endDate", true);
+			String timezone = ServletUtils.getStringParameter(request, "timezone", true);
+			
+			// Parses string parameters
+			DateTimeZone eventTz = DateTimeZone.forID(timezone);
+			DateTime eventStartDt = CalendarManager.parseYmdHmsWithZone(eventStartDate, eventTz);
+			DateTime eventEndDt = CalendarManager.parseYmdHmsWithZone(eventEndDate, eventTz);
+			
+			UserProfile up = env.getProfile();
+			DateTimeZone profileTz = DateTimeZone.forTimeZone(up.getTimeZone());
+			
+			LocalTime fromTime = CalendarManager.min(eventStartDt.toLocalTime(), cus.getWorkdayStart());
+			LocalTime toTime = CalendarManager.max(eventEndDt.toLocalTime(), cus.getWorkdayEnd());
+			
+			ArrayList<String> hours = manager.generateTimeSpansKeys(30, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
+			LinkedHashSet<String> busyHours = manager.calculateAvailabilitySpans(30, new UserProfile.Id("matteo.albinola@sonicleldap"), eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
+			
+			LinkedHashMap<String, String> availability = new LinkedHashMap<>();
+			for(String hourKey : hours) {
+				if(busyHours.contains(hourKey)) {
+					availability.put(hourKey, "busy");
+				} else {
+					availability.put(hourKey, "free");
+				}
+			}
+			
+			/*
+			if(data.equals("hours")) {
+				new JsonResult(hours).printTo(out);
+			} else if(data.equals("busyHours")) {
+				new JsonResult(busyHours).printTo(out);
+			} else {
+				new JsonResult(availability).printTo(out);
+			}
+			*/
+			
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageEvents", ex);
+			new JsonResult(false, "Error").printTo(out);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
 	
-	
-	
+	public void processGetHourlyPlanning22222222(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		Connection con = null;
+		JsEvent item = null;
+		
+		try {
+			UserProfile up = env.getProfile();
+			
+			String data = ServletUtils.getStringParameter(request, "data", "availability");
+			
+			DateTimeZone profileTz = DateTimeZone.forTimeZone(up.getTimeZone());
+			DateTimeZone eventTz = DateTimeZone.forID("Europe/Rome");
+			DateTime fromDt = CalendarManager.parseYmdHmsWithZone("2015-04-23 11:00:00", eventTz);
+			DateTime toDt = CalendarManager.parseYmdHmsWithZone("2015-04-24 11:30:00", eventTz);
+			
+			LocalDate fromDate = fromDt.toLocalDate();
+			LocalDate toDate = toDt.toLocalDate();
+			LocalTime fromTime = CalendarManager.min(fromDt.toLocalTime(), cus.getWorkdayStart());
+			LocalTime toTime = CalendarManager.max(toDt.toLocalTime(), cus.getWorkdayEnd());
+			
+			
+			ArrayList<String> hours = manager.generateTimeSpansKeys(30, fromDate, toDate, cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
+			
+			LinkedHashSet<String> busyHours = manager.calculateAvailabilitySpans(30, new UserProfile.Id("matteo.albinola@sonicleldap"), fromDt.withTime(fromTime), toDt.withTime(toTime), eventTz, true);
+			
+			LinkedHashMap<String, String> availability = new LinkedHashMap<>();
+			for(String hourKey : hours) {
+				if(busyHours.contains(hourKey)) {
+					availability.put(hourKey, "busy");
+				} else {
+					availability.put(hourKey, "free");
+				}
+			}
+			
+			
+			if(data.equals("hours")) {
+				new JsonResult(hours).printTo(out);
+			} else if(data.equals("busyHours")) {
+				new JsonResult(busyHours).printTo(out);
+			} else {
+				new JsonResult(availability).printTo(out);
+			}
+			
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageEvents", ex);
+			new JsonResult(false, "Error").printTo(out);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
 	
 	
 	

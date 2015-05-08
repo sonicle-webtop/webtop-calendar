@@ -39,7 +39,7 @@ package com.sonicle.webtop.calendar.bol.model;
  */
 public class Event extends EventData {
 	
-	public String id;
+	public String key;
 	public Integer eventId;
 	public RecurringInfo recurringInfo;
 	

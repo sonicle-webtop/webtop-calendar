@@ -38,6 +38,6 @@ Ext.define('Sonicle.webtop.calendar.store.StartDay', {
 	model: 'WT.model.Simple',
 	data: [
 		[0, WT.res('com.sonicle.webtop.calendar', 'store.startDay.0')],
-		[1, WT.decodeHtmlEntities(WT.res('com.sonicle.webtop.calendar', 'store.startDay.1'))]
+		[1, WT.res('com.sonicle.webtop.calendar', 'store.startDay.1')]
 	]
 });

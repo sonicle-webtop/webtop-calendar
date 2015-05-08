@@ -36,6 +36,7 @@ package com.sonicle.webtop.calendar.bol.model;
 import com.sonicle.webtop.calendar.ICal4jUtils;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
+import java.util.ArrayList;
 import java.util.List;
 import org.joda.time.DateTime;
 
@@ -68,7 +69,7 @@ public class EventData {
 	protected Boolean isPrivate;
 	protected Boolean busy;
 	protected Integer reminder;
-	protected List<EventAttendee> attendees;
+	protected List<EventAttendee> attendees = new ArrayList<>();
 	public String rrEndsMode;
 	public Integer rrRepeatTimes;
 	public DateTime rrUntilDate;

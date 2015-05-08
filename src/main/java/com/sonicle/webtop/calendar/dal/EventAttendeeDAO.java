@@ -63,7 +63,7 @@ public class EventAttendeeDAO extends BaseDAO {
 						EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
 				)
 				.orderBy(
-						EVENTS_ATTENDEES.EMAIL.asc()
+						EVENTS_ATTENDEES.RECIPIENT.asc()
 				)
 				.fetchInto(OEventAttendee.class);
 	}
@@ -74,6 +74,26 @@ public class EventAttendeeDAO extends BaseDAO {
 		return dsl
 			.insertInto(EVENTS_ATTENDEES)
 			.set(record)
+			.execute();
+	}
+	
+	public int update(Connection con, OEventAttendee item) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS_ATTENDEES)
+			.set(EVENTS_ATTENDEES.RECIPIENT, item.getRecipient())
+			.set(EVENTS_ATTENDEES.RECIPIENT_TYPE, item.getRecipientType())
+			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, item.getResponseStatus())
+			.set(EVENTS_ATTENDEES.NOTIFY, item.getNotify())
+			.where(EVENTS_ATTENDEES.ATTENDEE_ID.equal(item.getAttendeeId()))
+			.execute();
+	}
+	
+	public int delete(Connection con, String attendeeId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(EVENTS_ATTENDEES)
+			.where(EVENTS_ATTENDEES.ATTENDEE_ID.equal(attendeeId))
 			.execute();
 	}
 	

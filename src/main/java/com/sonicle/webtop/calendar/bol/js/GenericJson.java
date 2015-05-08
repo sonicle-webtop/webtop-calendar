@@ -31,36 +31,47 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsAttendees;
+import java.util.HashMap;
 
 /**
  *
  * @author malbinola
  */
-public class OEventAttendee extends EventsAttendees {
+public class GenericJson extends HashMap<String, Object> {
 	
-	public static final String RECIPIENT_TYPE_NECESSARY = "N";
-	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
-	public static final String RECIPIENT_TYPE_RESOURCE = "R";
-	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
-	public static final String RESPONSE_STATUS_DECLINED = "declined";
-	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
-	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
-	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of needsAction
-	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
-	
-	public OEventAttendee() {
+	public GenericJson() {
 		super();
 	}
 	
-	public void fillFrom(EventAttendee attendee) {
-		setAttendeeId(attendee.getAttendeeId());
-		setRecipient(attendee.getRecipient());
-		setRecipientType(attendee.getRecipientType());
-		setResponseStatus(attendee.getResponseStatus());
-		setNotify(attendee.getNotify());
+	public <T> T getAs(String key, Class<T> clazz) {
+		return (T)get(key);
 	}
+	
+	public <T> void putAs(String key, T value, Class<T> clazz) {
+		put(key, value);
+	}
+	
+	public boolean has(String key) {
+		return containsKey(key);
+	}
+	
+	/*
+	public String getString(String key) {
+		return (String) get(key);
+	}
+	
+	public Boolean getBoolean(String key) {
+		return (Boolean) get(key);
+	}
+	
+	public Integer getInteger(String key) {
+		return (Integer) get(key);
+	}
+	
+	public String getString(String key) {
+		return (String) get(key);
+	}
+	*/
 }

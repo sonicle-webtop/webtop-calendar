@@ -38,6 +38,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.Separator',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.IconComboBox',
+		'WT.model.Empty',
 		'WT.model.Value',
 		'WT.store.Timezone',
 		'WT.store.RRDaylyFreq',
@@ -48,7 +49,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'WT.ux.SuggestCombo',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.Calendar',
-		'Sonicle.webtop.calendar.store.Reminder'
+		'Sonicle.webtop.calendar.store.Reminder',
+		'Sonicle.webtop.calendar.store.AttendeeRcptType',
+		'Sonicle.webtop.calendar.store.AttendeeRespStatus'
 	],
 	
 	confirm: 'yn',
@@ -57,13 +60,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	title: '@event.tit',
 	iconCls: 'wtcal-icon-event-xs',
 	model: 'Sonicle.webtop.calendar.model.Event',
-	session: true,
+	//session: true,
 	viewModel: {
 		formulas: {
 			startDate: {
 				bind: {bindTo: '{record.startDate}'},
 				get: function(val) {
-					return Ext.Date.clone(val);
+					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
 					var EM = Sonicle.webtop.calendar.model.Event;
@@ -73,7 +76,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			startTime: {
 				bind: {bindTo: '{record.startDate}'},
 				get: function(val) {
-					return Ext.Date.clone(val);
+					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
 					var EM = Sonicle.webtop.calendar.model.Event;
@@ -83,7 +86,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			endDate: {
 				bind: {bindTo: '{record.endDate}'},
 				get: function(val) {
-					return Ext.Date.clone(val);
+					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
 					var EM = Sonicle.webtop.calendar.model.Event;
@@ -93,7 +96,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			endTime: {
 				bind: {bindTo: '{record.endDate}'},
 				get: function(val) {
-					return Ext.Date.clone(val);
+					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
 					var EM = Sonicle.webtop.calendar.model.Event;
@@ -290,7 +293,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}]
 			}]
 		}));
-		me.addRef('appointment', Ext.create({
+		me.addRef('pAppointment', Ext.create({
 			itemId: 'appointment',
 			xtype: 'form',
 			layout: 'anchor',
@@ -366,40 +369,138 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				xtype: 'soseparator'
 			}]
 		}));
-		me.addRef('planning', Ext.create({
-			xtype: 'gridpanel',
-			itemId: 'planning',
-			title: me.mys.res('event.planning.tit'),
-			bind: {
-				store: '{record.attendees}'
-			},
-			columns: [{
-				dataIndex: 'email',
-				editor: {
-					allowBlank: false
-				},
-				header: 'Email'
-			}, {
-				dataIndex: 'recipientType',
-				editor: {
-					allowBlank: false
-				},
-				header: 'Type'
-			}, {
-				dataIndex: 'responseStatus',
-				editor: {
-					allowBlank: false
-				},
-				header: 'Status'
-			}],
-			plugins: [
-				Ext.create('Ext.grid.plugin.RowEditing', {
-					clicksToMoveEditor: 2,
-					autoCancel: false
-				})
+		me.addRef('pInvitation', Ext.create({
+			xtype: 'panel',
+			itemId: 'invitation',
+			title: me.mys.res('event.invitation.tit'),
+			layout: 'card',
+			items: [
+				me.addRef('gpAttendees', Ext.create({
+					xtype: 'gridpanel',
+					itemId: 'attendees',
+					bind: {
+						store: '{record.attendees}'
+					},
+					columns: [{
+						dataIndex: 'notify',
+						xtype: 'checkcolumn',
+						editor: {
+							xtype: 'checkbox'
+						},
+						header: me.mys.res('event.gp-attendees.notify.lbl'),
+						width: 70
+					}, {
+						dataIndex: 'recipient',
+						editor: {
+							xtype: 'textfield'
+						},
+						header: me.mys.res('event.gp-attendees.recipient.lbl'),
+						flex: 1
+					}, {
+						dataIndex: 'recipientType',
+						renderer: WT.Util.resValueRenderer(me.mys.ID, 'store.attendeeRcptType'),
+						editor: Ext.create(WT.Util.localCombo({
+							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRcptType', {
+								autoLoad: true
+							})
+						})),
+						header: me.mys.res('event.gp-attendees.recipientType.lbl'),
+						width: 180
+					}, {
+						dataIndex: 'responseStatus',
+						renderer: WT.Util.resValueRenderer(me.mys.ID, 'store.attendeeRespStatus'),
+						editor: Ext.create(WT.Util.localCombo({
+							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
+								autoLoad: true
+							})
+						})),
+						header: me.mys.res('event.gp-attendees.responseStatus.lbl'),
+						width: 100
+					}],
+					plugins: [
+						Ext.create('Ext.grid.plugin.RowEditing', {
+							pluginId: 'rowediting',
+							clicksToMoveEditor: 2,
+							saveBtnText: 'Conferma',
+							cancelBtnText: 'Annulla'
+						})
+					],
+					tbar: [
+						me.addAction('addAttendee', {
+							text: WT.res('act-add.lbl'),
+							tooltip: null,
+							iconCls: 'wt-icon-add-xs',
+							handler: function() {
+								me.addAttendee();
+							}
+						}),
+						me.addAction('deleteAttendee', {
+							text: WT.res('act-delete.lbl'),
+							tooltip: null,
+							iconCls: 'wt-icon-delete-xs',
+							handler: function() {
+								var sm = me.getRef('gpAttendees').getSelectionModel();
+								me.deleteAttendee(sm.getSelection());
+							},
+							disabled: true
+						}),
+						'->',
+						{
+							xtype: 'button',
+							text: me.mys.res('event.btn-planning.lbl'),
+							handler: function() {
+								me.getRef('pInvitation').getLayout().setActiveItem('planning');
+							}
+						}
+					],
+					listeners: {
+						selectionchange: function(s,recs) {
+							me.getAction('deleteAttendee').setDisabled(!recs.length);
+						}
+					}
+				})),
+				me.addRef('gpPlanning', Ext.create({
+					xtype: 'gridpanel',
+					itemId: 'planning',
+					columns: [],
+					store: {
+						model: 'WT.model.Empty',
+						proxy: WT.Util.proxy(me.mys.ID, 'GetPlanning', 'data')
+					},
+					tbar: [
+						me.addAction('refreshPlanning', {
+							text: WT.res('act-refresh.lbl'),
+							tooltip: null,
+							iconCls: 'wt-icon-refresh-xs',
+							handler: function() {
+								var sto = me.getRef('gpPlanning').getStore(),
+										model = me.getModel(),
+										params;
+								
+								console.log('refreshPlanning');
+								
+								WT.Util.applyExtraParams(sto.getProxy(), {
+									startDate: '',
+									endDate: '',
+									timezone: model.get('timezone')
+								});
+								
+								WT.warn('TODO');
+							}
+						}),
+						'->',
+						{
+							xtype: 'button',
+							text: me.mys.res('event.btn-attendees.lbl'),
+							handler: function() {
+								me.getRef('pInvitation').getLayout().setActiveItem('attendees');
+							}
+						}
+					]
+				}))
 			]
 		}));
-		me.addRef('recurrence', Ext.create({
+		me.addRef('pRecurrence', Ext.create({
 			xtype: 'panel',
 			itemId: 'recurrence',
 			//layout: 'anchor',
@@ -682,9 +783,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					flex: 1,
 					activeTab: 0,
 					items: [
-						me.getRef('appointment'), 
-						me.getRef('planning'), 
-						me.getRef('recurrence')
+						me.getRef('pAppointment'), 
+						me.getRef('pInvitation'), 
+						me.getRef('pRecurrence')
 					]
 			}]
 		}));
@@ -700,8 +801,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		
 		
-		me.getRef('planning').setDisabled(!model.get('_isSingle') && !model.get('_isBroken'));
-		me.getRef('recurrence').setDisabled(!model.get('_isSingle') && !model.get('_isRecurring'));
+		me.getRef('pInvitation').setDisabled(!model.get('_isSingle') && !model.get('_isBroken'));
+		me.getRef('pRecurrence').setDisabled(!model.get('_isSingle') && !model.get('_isRecurring'));
 		
 		// Overrides autogenerated string id by extjs...
 		// It avoids type conversion problems server-side!
@@ -805,6 +906,37 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						}
 					}
 				});
+			}
+		}, me);
+	},
+	
+	addAttendee: function() {
+		var me = this,
+				grid = me.getRef('gpAttendees'),
+				sto = grid.getStore(),
+				rowEditing = grid.getPlugin('rowediting'),
+				rec;
+		
+		rowEditing.cancelEdit();
+		rec = Ext.create('Sonicle.webtop.calendar.model.EventAttendee', {
+			recipientType: 'N',
+			responseStatus: 'needsAction',
+			notify: true
+		});
+		sto.insert(0, rec);
+		rowEditing.startEdit(0, 0);
+	},
+	
+	deleteAttendee: function(rec) {
+		var me = this,
+				grid = me.getRef('gpAttendees'),
+				sto = grid.getStore(),
+				rowEditing = grid.getPlugin('rowediting');
+		
+		WT.confirm(WT.res('confirm.delete'), function(bid) {
+			if(bid === 'yes') {
+				rowEditing.cancelEdit();
+				sto.remove(rec);
 			}
 		}, me);
 	}

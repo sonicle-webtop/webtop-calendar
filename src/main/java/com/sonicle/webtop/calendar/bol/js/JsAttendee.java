@@ -41,7 +41,7 @@ public class JsAttendee {
 	
 	public String _fk;
 	public String attendeeId;
-	public String email;
+	public String recipient;
 	public String recipientType;
 	public String responseStatus;
 	public Boolean notify;

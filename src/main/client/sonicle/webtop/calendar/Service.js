@@ -39,11 +39,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.MultiCalendar',
 		'Sonicle.webtop.calendar.model.TreeCal',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
-		'Sonicle.calendar.data.MemoryCalendarStore',
-		'Sonicle.calendar.data.MemoryEventStore',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.calendar.data.Events',
-		'Sonicle.calendar.data.Calendars',
+		'Sonicle.calendar.data.MemoryCalendarStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
+		'Sonicle.calendar.data.Calendars', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
+		'Sonicle.calendar.data.MemoryEventStore',
 		'Sonicle.webtop.calendar.view.Calendar'
 	],
 	
@@ -55,49 +55,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.onMessage('notifyReminder', function() {
 			WT.info('reminder arrived');
 		});
-
-/*
-		this.addAction('new', 'testaction', {
-			tooltip: null,
-			handler: function () {
-				alert('Calendar testaction clicked');
-			},
-			scope: this
-		});
-		*/
-		
-		/*
-		var tb = Ext.create({
-			xtype: 'toolbar',
-			items: [{
-					xtype: 'button',
-					text: 'Aggiungi cal.',
-					handler: function () {
-						calendarTools.addPersonalCalendar();
-
-					}
-				}, {
-					xtype: 'button',
-					text: 'Aggiorna cal.',
-					handler: function () {
-						calendarTools.editPersonalCalendar();
-					}
-				}, {
-					xtype: 'button',
-					text: 'Cancella cal.',
-					handler: function () {
-						calendarTools.deletePersonalCalendar();
-					}
-				}, {
-					xtype: 'button',
-					text: 'Visualizza',
-					handler: function () {
-						calendarTools.viewOnlyPersonalCalendar();
-					}
-				}
-			]
-		});
-		*/
 		
 		me.setToolbar(Ext.create({
 			xtype: 'toolbar',
@@ -113,47 +70,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('weekagview'),
 				me.getAction('monthview')
 			]
-			
-			/*
-			items: [{
-				xtype: 'segmentedbutton',
-				allowToggle: false,
-				items: [
-					me.getAction('today'),
-					me.getAction('previousday'),
-					me.getAction('nextday')
-				]
-			},{
-				xtype: 'segmentedbutton',
-				allowToggle: true,
-				items: [
-					me.getAction('dayview'),
-					me.getAction('week5view'),
-					me.getAction('weekview'),
-					me.getAction('weekagview'),
-					me.getAction('monthview')
-				],
-				listeners: {
-					toggle: function(s,btn) {
-						me.changeView(btn.getItemId());
-						//me.getToolComponent().changeView(btn.getItemId());
-						//me.getMainComponent().setActiveView(btn.getItemId());
-					}
-				}
-			}]
-		*/
 		}));
-		/*
-		me.setToolComponent(Ext.create('Sonicle.webtop.calendar.Tool', {
-			mys: me,
-			title: me.getName(),
-			listeners: {
-				datechanged: function(s,date) {
-					me.getMainComponent().setStartDate(date);
-				}
-			}
-		}));
-		*/
+		
 		me.setToolComponent(Ext.create({
 			xtype: 'panel',
 			layout: 'border',
@@ -211,22 +129,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					},
 					hideHeaders: true,
-					/*
-					columns: [{
-						xtype: 'treecolumn',
-						flex: 1,
-						dataIndex: 'text',
-						renderer: function(val, meta, rec, ri, ci, sto, view) {
-							Ext.defer(function() {
-								if(rec.get('leaf')) {
-									var node = view.getNode(rec);
-									if(node) Ext.get(node).down('.x-tree-icon').setStyle('background-color', rec.get('calColor'));
-								}
-							}, 100);
-							return val;
-						}
-					}],
-					*/
 					listeners: {
 						checkchange: function(n, ck) {
 							me._showHideCal(n, ck);
@@ -284,7 +186,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					if(cal) me.addEvent(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate);
 				},
 				eventdblclick: function(s, rec) {
-					console.log('clicked: '+rec.get('id'));
 					if(me.isEventEditable(rec)) me.editEvent(rec);
 				},
 				daydblclick: function(s, dt, ad) {
@@ -305,16 +206,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}
 				},
 				eventcontextmenu: function(s, rec, el, evt) {
-					console.log('context: '+rec.get('id'));
 					WT.showContextMenu(evt, me.getRef('cxmEvent'), {event: rec});
 				}
 			}
 		}));
 	},
-	
-	
-	
-	
 	
 	refreshEvents: function() {
 		var me = this;

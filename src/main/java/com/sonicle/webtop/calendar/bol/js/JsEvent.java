@@ -33,6 +33,9 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.web.json.CrudItems;
+import com.sonicle.commons.web.json.MapItem;
+import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
@@ -86,19 +89,19 @@ public class JsEvent {
 	public Integer rrYearlyFreq;
 	public Integer rrYearlyDay;
 	
-	public ArrayList<JsAttendee> attendees = new ArrayList<>();
+	public ArrayList<JsAttendee> attendees;
 	
 	// Read-only fields
 	public String _recurringInfo;
 	public String _groupId;
 	
 	public JsEvent(Event event, String calendarGroupId) {
-		id = event.id;
+		id = event.key;
 		eventId = event.eventId;
 		calendarId = event.getCalendarId();
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
-		startDate = toYmdHmsWithZone(event.getStartDate(), eventTz);
-		endDate = toYmdHmsWithZone(event.getEndDate(), eventTz);
+		startDate = CalendarManager.toYmdHmsWithZone(event.getStartDate(), eventTz);
+		endDate = CalendarManager.toYmdHmsWithZone(event.getEndDate(), eventTz);
 		timezone = event.getTimezone();
 		allDay = event.getAllDay();
 		title = event.getTitle();
@@ -110,7 +113,7 @@ public class JsEvent {
 		
 		rrEndsMode = event.rrEndsMode;
 		rrRepeatTimes = event.rrRepeatTimes;
-		rrUntilDate = toYmdHmsWithZone(event.rrUntilDate, eventTz);
+		rrUntilDate = CalendarManager.toYmdHmsWithZone(event.rrUntilDate, eventTz);
 		rrType = event.rrType;
 		rrDaylyType = event.rrDaylyType;
 		rrDaylyFreq = event.rrDaylyFreq;
@@ -127,12 +130,13 @@ public class JsEvent {
 		rrYearlyFreq = event.rrYearlyFreq;
 		rrYearlyDay = event.rrYearlyDay;
 		
+		attendees = new ArrayList<>();
 		JsAttendee attendee = null;
 		for(EventAttendee att : event.getAttendees()) {
 			attendee = new JsAttendee();
 			attendee._fk = id;
 			attendee.attendeeId = att.getAttendeeId();
-			attendee.email = att.getEmail();
+			attendee.recipient = att.getRecipient();
 			attendee.recipientType = att.getRecipientType();
 			attendee.responseStatus = att.getResponseStatus();
 			attendee.notify = att.getNotify();
@@ -148,15 +152,15 @@ public class JsEvent {
 	public static Event buildEvent(JsEvent jse, LocalTime workdayStart, LocalTime workdayEnd) {
 		Event event = new Event();
 		
-		event.id = jse.id;
+		event.key = jse.id;
 		event.eventId = jse.eventId;
 		event.setCalendarId(jse.calendarId);
 		// Incoming fields are in a precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
 		DateTimeZone eventTz = DateTimeZone.forID(jse.timezone);
-		event.setStartDate(parseYmdHmsWithZone(jse.startDate, eventTz));
-		event.setEndDate(parseYmdHmsWithZone(jse.endDate, eventTz));
+		event.setStartDate(CalendarManager.parseYmdHmsWithZone(jse.startDate, eventTz));
+		event.setEndDate(CalendarManager.parseYmdHmsWithZone(jse.endDate, eventTz));
 		event.setTimezone(jse.timezone);
 		event.setAllDay(jse.allDay);
 		adjustTimes(event, workdayStart, workdayEnd);
@@ -166,9 +170,10 @@ public class JsEvent {
 		event.setIsPrivate(jse.isPrivate);
 		event.setBusy(jse.busy);
 		event.setReminder(jse.reminder);
+		
 		event.rrEndsMode = jse.rrEndsMode;
 		event.rrRepeatTimes = jse.rrRepeatTimes;
-		event.rrUntilDate = (jse.rrUntilDate != null) ? parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null;
+		event.rrUntilDate = (jse.rrUntilDate != null) ? CalendarManager.parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null;
 		event.rrType = jse.rrType;
 		event.rrDaylyType = jse.rrDaylyType;
 		event.rrDaylyFreq = jse.rrDaylyFreq;
@@ -185,6 +190,16 @@ public class JsEvent {
 		event.rrYearlyFreq = jse.rrYearlyFreq;
 		event.rrYearlyDay = jse.rrYearlyDay;
 		
+		EventAttendee attendee = null;
+		for(JsAttendee jsa : jse.attendees) {
+			attendee = new EventAttendee();
+			attendee.setAttendeeId(jsa.attendeeId);
+			attendee.setRecipient(jsa.recipient);
+			attendee.setRecipientType(jsa.recipientType);
+			attendee.setResponseStatus(jsa.responseStatus);
+			attendee.setNotify(jsa.notify);
+			event.getAttendees().add(attendee);
+		}
 		return event;
 	}
 	
@@ -203,26 +218,7 @@ public class JsEvent {
 		}
 	}
 	
-	public static String toYmdHmsWithZone(DateTime dt, TimeZone tz) {
-		return toYmdHmsWithZone(dt, DateTimeZone.forTimeZone(tz));
-	}
-	
-	public static String toYmdHmsWithZone(DateTime dt, DateTimeZone tz) {
-		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
-		return dtf.print(dt);
-	}
-	
 	public static DateTime parseYmdHmsWithZone(String date, String time, TimeZone tz) {
-		return parseYmdHmsWithZone(date, time, DateTimeZone.forTimeZone(tz));
-	}
-	
-	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
-		return parseYmdHmsWithZone(date + " " + time, tz);
-	}
-	
-	public static DateTime parseYmdHmsWithZone(String dateTime, DateTimeZone tz) {
-		String dt = StringUtils.replace(dateTime, "T", " ");
-		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
-		return formatter.parseDateTime(dt);
+		return CalendarManager.parseYmdHmsWithZone(date, time, DateTimeZone.forTimeZone(tz));
 	}
 }

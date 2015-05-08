@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.msg;
 
+import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.core.sdk.ServiceMessage;
@@ -68,7 +69,7 @@ public class ReminderMessage extends ServiceMessage {
 	}
 	
 	public final ServiceMessage setRemindOn(DateTime remindOn, DateTimeZone profileTz) {
-		this.remindOn = JsSchedulerEvent.toYmdHmsWithZone(remindOn, profileTz);
+		this.remindOn = CalendarManager.toYmdHmsWithZone(remindOn, profileTz);
 		return this;
 	}
 	

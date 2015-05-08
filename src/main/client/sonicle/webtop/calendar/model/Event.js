@@ -33,8 +33,19 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WT.model.Base',
-	proxy: WT.Util.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents'),
+	requires: [
+		'Sonicle.data.writer.Json'
+	],
+	proxy: WT.Util.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents', 'data', {
+		writer: {
+			type: 'sojson',
+			writeAssociations: true
+			//writeChanges: true
+		}
+	}),
 	
+	//identifier: 'negativestring',
+	identifier: 'negative',
 	idProperty: 'id',
 	fields: [
 		WT.Util.field('id', 'string', false),
@@ -91,7 +102,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		})
 	],
 
-	/*
+/*	
 	hasMany: [{
 		name: 'attendees',
 		model: 'Sonicle.webtop.calendar.model.EventAttendee'
@@ -116,6 +127,7 @@ Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
 	extend: 'WT.model.Base',
 	
 	idProperty: 'attendeeId',
+	identifier: 'negativestring',
 	fields: [
 		WT.Util.field('_fk', 'string', true, {
 			reference: {
@@ -123,8 +135,8 @@ Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
 				inverse: 'attendees'
 			}
 		}),
-		WT.Util.field('attendeeId', 'string', true),
-		WT.Util.field('email', 'string', false),
+		WT.Util.field('attendeeId', 'string', false),
+		WT.Util.field('recipient', 'string', false),
 		WT.Util.field('recipientType', 'string', false),
 		WT.Util.field('responseStatus', 'string', false),
 		WT.Util.field('notify', 'boolean', false)

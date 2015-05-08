@@ -50,7 +50,7 @@ public class SchedulerEvent extends VSchedulerEvent {
 	public SchedulerEvent(VSchedulerEvent event) {
 		super();
 		new Cloner().copyPropertiesOfInheritedClass(event, this);
-		id = EventGenId.buildId(event.getEventId(), event.getOriginalEventId());
+		id = EventKey.buildKey(event.getEventId(), event.getOriginalEventId());
 	}
 
 	public String getId() {

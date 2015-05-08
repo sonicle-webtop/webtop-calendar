@@ -46,7 +46,7 @@ import org.joda.time.format.DateTimeFormatter;
  *
  * @author malbinola
  */
-public class EventGenId {
+public class EventKey {
 	private static final Pattern PATTERN_GENID = Pattern.compile("^([0-9]+)_([0-9]+)$");
 	private static final Pattern PATTERN_GENID_RECURRING = Pattern.compile("^([0-9]+)_([0-9]+)_([0-9]+)$");
 
@@ -54,10 +54,10 @@ public class EventGenId {
 	public Integer originalEventId;
 	public LocalDate atDate;
 
-	public EventGenId(String eventUid) {
+	public EventKey(String eventKey) {
 		String decoded = null;
 		try {
-			decoded = new String(Hex.decodeHex(eventUid.toCharArray()));
+			decoded = new String(Hex.decodeHex(eventKey.toCharArray()));
 		} catch(DecoderException ex) {
 			throw new RuntimeException(ex);
 		}
@@ -74,12 +74,12 @@ public class EventGenId {
 		}
 	}
 	
-	public static String buildId(Integer eventId, Integer originalEventId) {
+	public static String buildKey(Integer eventId, Integer originalEventId) {
 		String str = originalEventId + "_" + eventId;
 		return Hex.encodeHexString(str.getBytes());
 	}
 	
-	public static String buildId(Integer eventId, Integer originalEventId, LocalDate date) {
+	public static String buildKey(Integer eventId, Integer originalEventId, LocalDate date) {
 		String str = originalEventId + "_" + eventId + "_" + date.toString("yyyyMMdd");
 		return Hex.encodeHexString(str.getBytes());
 	}

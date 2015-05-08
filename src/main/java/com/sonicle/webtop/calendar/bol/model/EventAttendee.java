@@ -34,6 +34,8 @@
 package com.sonicle.webtop.calendar.bol.model;
 
 import java.util.ArrayList;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  *
@@ -42,9 +44,8 @@ import java.util.ArrayList;
 public class EventAttendee {
 	
 	protected String attendeeId;
-	protected Integer eventId;
 	//protected String displayName;
-	protected String email;
+	protected String recipient;
 	protected String recipientType;
 	protected String responseStatus;
 	protected Boolean notify;
@@ -61,14 +62,6 @@ public class EventAttendee {
 		attendeeId = value;
 	}
 	
-	public Integer getEventId() {
-		return eventId;
-	}
-
-	public void setEventId(Integer value) {
-		eventId = value;
-	}
-	
 	/*
 	public String getDisplayName() {
 		return displayName;
@@ -79,12 +72,12 @@ public class EventAttendee {
 	}
 	*/
 
-	public String getEmail() {
-		return email;
+	public String getRecipient() {
+		return recipient;
 	}
 
-	public void setEmail(String value) {
-		email = value;
+	public void setRecipient(String value) {
+		recipient = value;
 	}
 
 	public String getRecipientType() {
@@ -109,6 +102,27 @@ public class EventAttendee {
 
 	public void setNotify(Boolean value) {
 		notify = value;
+	}
+	
+	@Override
+	public int hashCode() {
+		return new HashCodeBuilder()
+			.append(getAttendeeId())
+			.append(getRecipient())
+			.append(getRecipientType())
+			.append(getResponseStatus())
+			.append(getNotify())
+			.toHashCode();
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof EventAttendee == false) return false;
+		if(this == obj) return true;
+		final EventAttendee otherObject = (EventAttendee) obj;
+		return new EqualsBuilder()
+			.append(getAttendeeId(), otherObject.getAttendeeId())
+			.isEquals();
 	}
 	
 	public class AttendeeList extends ArrayList<EventAttendee> {

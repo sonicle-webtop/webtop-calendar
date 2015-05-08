@@ -31,36 +31,51 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
-
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsAttendees;
+package com.sonicle.webtop.calendar.bol.js;
 
 /**
  *
  * @author malbinola
  */
-public class OEventAttendee extends EventsAttendees {
+public class JOAttendee extends GenericJson {
 	
-	public static final String RECIPIENT_TYPE_NECESSARY = "N";
-	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
-	public static final String RECIPIENT_TYPE_RESOURCE = "R";
-	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
-	public static final String RESPONSE_STATUS_DECLINED = "declined";
-	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
-	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
-	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of needsAction
-	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
-	
-	public OEventAttendee() {
-		super();
+	public String getAttendeeId() {
+		return getAs("attendeeId", String.class);
 	}
 	
-	public void fillFrom(EventAttendee attendee) {
-		setAttendeeId(attendee.getAttendeeId());
-		setRecipient(attendee.getRecipient());
-		setRecipientType(attendee.getRecipientType());
-		setResponseStatus(attendee.getResponseStatus());
-		setNotify(attendee.getNotify());
+	public void setAttendeeId(String value) {
+		putAs("attendeeId", value, String.class);
+	}
+	
+	public String getEmail() {
+		return getAs("email", String.class);
+	}
+	
+	public void setEmail(String value) {
+		putAs("email", value, String.class);
+	}
+	
+	public String getRecipientType() {
+		return getAs("recipientType", String.class);
+	}
+	
+	public void setRecipientType(String value) {
+		putAs("recipientType", value, String.class);
+	}
+	
+	public String getResponseStatus() {
+		return getAs("responseStatus", String.class);
+	}
+	
+	public void setResponseStatus(String value) {
+		putAs("responseStatus", value, String.class);
+	}
+	
+	public Boolean getNotify() {
+		return getAs("notify", Boolean.class);
+	}
+	
+	public void setNotify(Boolean value) {
+		putAs("notify", value, Boolean.class);
 	}
 }

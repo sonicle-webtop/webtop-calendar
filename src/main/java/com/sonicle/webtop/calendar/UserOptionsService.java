@@ -34,6 +34,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
@@ -45,6 +46,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 
 /**
@@ -61,6 +63,7 @@ public class UserOptionsService extends BaseUserOptionsService {
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			CalendarUserSettings cus = new CalendarUserSettings(getDomainId(), getUserId(), getServiceId());
+			DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 			
 			if(crud.equals(Crud.READ)) {
 				String id = ServletUtils.getStringParameter(request, "id", true);
@@ -69,8 +72,8 @@ public class UserOptionsService extends BaseUserOptionsService {
 				JsOptions main = new JsOptions();
 				main.put("view", cus.getCalendarView());
 				main.put("startDay", cus.getCalendarStartDay());
-				main.put("workdayStart", cus.getWorkdayStart());
-				main.put("workdayEnd", cus.getWorkdayEnd());
+				main.put("workdayStart", hmf.print(cus.getWorkdayStart()));
+				main.put("workdayEnd", hmf.print(cus.getWorkdayEnd()));
 				
 				JsOptions opts = new JsOptions();
 				opts.put("id", id);
@@ -83,10 +86,10 @@ public class UserOptionsService extends BaseUserOptionsService {
 				JsUserOptions uo = JsonResult.gson.fromJson(payload, JsUserOptions.class);
 				
 				// Main
-				if(opts.containsKey("view")) cus.setCalendarView(uo.view);
-				if(opts.containsKey("startDay")) cus.setCalendarStartDay(uo.startDay);
-				if(opts.containsKey("workdayStart")) cus.setWorkdayStart(uo.workdayStart);
-				if(opts.containsKey("workdayEnd")) cus.setWorkdayEnd(uo.workdayEnd);
+				if(opts.has("view")) cus.setCalendarView(uo.view);
+				if(opts.has("startDay")) cus.setCalendarStartDay(uo.startDay);
+				if(opts.has("workdayStart")) cus.setWorkdayStart(hmf.parseLocalTime(uo.workdayStart));
+				if(opts.has("workdayEnd")) cus.setWorkdayEnd(hmf.parseLocalTime(uo.workdayEnd));
 				
 				new JsonResult().printTo(out);
 			}

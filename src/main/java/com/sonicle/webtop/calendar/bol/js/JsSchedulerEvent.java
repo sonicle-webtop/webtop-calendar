@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
@@ -74,6 +75,7 @@ public class JsSchedulerEvent {
 	}
 	
 	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id profileId, DateTimeZone profileTz) {
+		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		
 		boolean keepDataPrivate = false;
 		if(event.getIsPrivate()) {
@@ -91,8 +93,8 @@ public class JsSchedulerEvent {
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
 		// Formatter will be instantiated specifying desired timezone.
-		startDate = CalendarManager.toYmdHmsWithZone(event.getStartDate(), profileTz);
-		endDate = CalendarManager.toYmdHmsWithZone(event.getEndDate(), profileTz);
+		startDate = ymdhmsZoneFmt.print(event.getStartDate());
+		endDate = ymdhmsZoneFmt.print(event.getEndDate());
 		timezone = event.getTimezone();
 		isAllDay = event.getAllDay();
 		

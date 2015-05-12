@@ -33,23 +33,23 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 	extend: 'WT.model.Base',
-	proxy: WT.Util.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
+	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
 	
 	idProperty: 'calendarId',
 	fields: [
-		WT.Util.field('calendarId', 'int', false),
-		WT.Util.field('domainId', 'string', false),
-		WT.Util.field('userId', 'string', false),
-		WT.Util.field('name', 'string', false),
-		WT.Util.field('description', 'string', true),
-		WT.Util.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
-		WT.Util.calcField('colorCls', 'string', 'color', function(v, rec) {
+		WTF.field('calendarId', 'int', false),
+		WTF.field('domainId', 'string', false),
+		WTF.field('userId', 'string', false),
+		WTF.field('name', 'string', false),
+		WTF.field('description', 'string', true),
+		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
+		WTF.calcField('colorCls', 'string', 'color', function(v, rec) {
 			return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
 		}),
-		WT.Util.field('isDefault', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('busy', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('reminder', 'int', false, {
+		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
+		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
+		WTF.field('busy', 'boolean', false, {defaultValue: false}),
+		WTF.field('reminder', 'int', false, {
 			defaultValue: -1,
 			convert: function(v) {
 				return (v) ? v : -1;
@@ -58,7 +58,7 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 				return (v === -1) ? null : v;
 			}
 		}),
-		WT.Util.field('invitation', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('sync', 'boolean', false, {defaultValue: false})
+		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
+		WTF.field('sync', 'boolean', false, {defaultValue: false})
 	]
 });

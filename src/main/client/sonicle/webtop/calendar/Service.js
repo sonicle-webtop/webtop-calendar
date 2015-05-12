@@ -93,7 +93,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							height: 298,
 							store: {
 								model: 'Sonicle.webtop.calendar.model.MultiCalDate',
-								proxy: WT.Util.proxy(me.ID, 'GetEventDates', 'dates')
+								proxy: WTF.proxy(me.ID, 'GetEventDates', 'dates')
 							},
 							listeners: {
 								change: function(s, nv) {
@@ -113,7 +113,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						autoLoad: true,
 						autoSync: true,
 						model: 'Sonicle.webtop.calendar.model.TreeCal',
-						proxy: WT.Util.apiProxy(me.ID, 'ManageCalendarsTree', 'children', {
+						proxy: WTF.apiProxy(me.ID, 'ManageCalendarsTree', 'children', {
 							writer: {
 								allowSingle: false // Make update/delete using array payload
 							}
@@ -177,7 +177,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			store: {
 				autoSync: true,
 				model: 'Sonicle.calendar.data.EventModel',
-				proxy: WT.Util.apiProxy(me.ID, 'ManageEventsScheduler', 'events')
+				proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events')
 			},
 			listeners: {
 				rangeselect: function(s,dates,onComplete) {

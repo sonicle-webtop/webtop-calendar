@@ -36,11 +36,11 @@ Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
 	
 	idProperty: 'planningUid',
 	fields: [
-		WT.Util.field('planningUid', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('email', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('answer', 'string', false),
-		WT.Util.field('sendEmail', 'boolean', false)
+		WTF.field('planningUid', 'string', false),
+		WTF.field('eventId', 'int', true),
+		WTF.field('email', 'string', false),
+		WTF.field('recipientType', 'string', false),
+		WTF.field('answer', 'string', false),
+		WTF.field('sendEmail', 'boolean', false)
 	]
 });

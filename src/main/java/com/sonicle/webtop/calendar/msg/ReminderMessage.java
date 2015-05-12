@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.msg;
 
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
@@ -40,6 +41,7 @@ import com.sonicle.webtop.core.sdk.ServiceMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormatter;
 
 /**
  *
@@ -69,7 +71,8 @@ public class ReminderMessage extends ServiceMessage {
 	}
 	
 	public final ServiceMessage setRemindOn(DateTime remindOn, DateTimeZone profileTz) {
-		this.remindOn = CalendarManager.toYmdHmsWithZone(remindOn, profileTz);
+		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
+		this.remindOn = ymdhmsZoneFmt.print(remindOn);
 		return this;
 	}
 	

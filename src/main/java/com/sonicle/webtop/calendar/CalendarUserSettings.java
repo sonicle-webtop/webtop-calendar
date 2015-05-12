@@ -127,16 +127,16 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return getTime(WORKDAY_START, DEFAULT_WORKDAY_START, "HH:mm");
 	}
 	
-	public boolean setWorkdayStart(String value) {
-		return setString(WORKDAY_START, value);
+	public boolean setWorkdayStart(LocalTime value) {
+		return setTime(WORKDAY_START, value, "HH:mm");
 	}
 	
 	public LocalTime getWorkdayEnd() {
 		return getTime(WORKDAY_END, DEFAULT_WORKDAY_END, "HH:mm");
 	}
 	
-	public boolean setWorkdayEnd(String value) {
-		return setString(WORKDAY_END, value);
+	public boolean setWorkdayEnd(LocalTime value) {
+		return setTime(WORKDAY_END, value, "HH:mm");
 	}
 	
 	public Boolean getReminderByEmail() {

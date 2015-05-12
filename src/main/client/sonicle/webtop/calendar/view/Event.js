@@ -103,25 +103,25 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					EM.setTime(this.get('record'), 'endDate', val);
 				}
 			},
-			allDay: WT.Util.checkboxBind('record', 'allDay'),
-			isPrivate: WT.Util.checkboxBind('record', 'isPrivate'),
-			busy: WT.Util.checkboxBind('record', 'busy'),
-			rrType: WT.Util.checkboxGroupBind('record', 'rrType'),
-			rrDaylyType: WT.Util.checkboxGroupBind('record', 'rrDaylyType'),
-			rrWeeklyDay1: WT.Util.checkboxBind('record', 'rrWeeklyDay1'),
-			rrWeeklyDay2: WT.Util.checkboxBind('record', 'rrWeeklyDay2'),
-			rrWeeklyDay3: WT.Util.checkboxBind('record', 'rrWeeklyDay3'),
-			rrWeeklyDay4: WT.Util.checkboxBind('record', 'rrWeeklyDay4'),
-			rrWeeklyDay5: WT.Util.checkboxBind('record', 'rrWeeklyDay5'),
-			rrWeeklyDay6: WT.Util.checkboxBind('record', 'rrWeeklyDay6'),
-			rrWeeklyDay7: WT.Util.checkboxBind('record', 'rrWeeklyDay7'),
-			rrEndsMode: WT.Util.checkboxGroupBind('record', 'rrEndsMode'),
+			allDay: WTF.checkboxBind('record', 'allDay'),
+			isPrivate: WTF.checkboxBind('record', 'isPrivate'),
+			busy: WTF.checkboxBind('record', 'busy'),
+			rrType: WTF.checkboxGroupBind('record', 'rrType'),
+			rrDaylyType: WTF.checkboxGroupBind('record', 'rrDaylyType'),
+			rrWeeklyDay1: WTF.checkboxBind('record', 'rrWeeklyDay1'),
+			rrWeeklyDay2: WTF.checkboxBind('record', 'rrWeeklyDay2'),
+			rrWeeklyDay3: WTF.checkboxBind('record', 'rrWeeklyDay3'),
+			rrWeeklyDay4: WTF.checkboxBind('record', 'rrWeeklyDay4'),
+			rrWeeklyDay5: WTF.checkboxBind('record', 'rrWeeklyDay5'),
+			rrWeeklyDay6: WTF.checkboxBind('record', 'rrWeeklyDay6'),
+			rrWeeklyDay7: WTF.checkboxBind('record', 'rrWeeklyDay7'),
+			rrEndsMode: WTF.checkboxGroupBind('record', 'rrEndsMode'),
 			
-			isRRNone: WT.Util.equalsFormula('record', 'rrType', '_'),
-			isRRDayly: WT.Util.equalsFormula('record', 'rrType', 'D'),
-			isRRWeekly: WT.Util.equalsFormula('record', 'rrType', 'W'),
-			isRRMonthly: WT.Util.equalsFormula('record', 'rrType', 'M'),
-			isRRYearly: WT.Util.equalsFormula('record', 'rrType', 'Y')
+			isRRNone: WTF.equalsFormula('record', 'rrType', '_'),
+			isRRDayly: WTF.equalsFormula('record', 'rrType', 'D'),
+			isRRWeekly: WTF.equalsFormula('record', 'rrType', 'W'),
+			isRRMonthly: WTF.equalsFormula('record', 'rrType', 'M'),
+			isRRYearly: WTF.equalsFormula('record', 'rrType', 'Y')
 		}
 	},
 	
@@ -210,7 +210,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						disabled: '{record._isRecurring}'
 					},
 					margin: '0 5 0 0',
-					width: 105
+					width: 105,
+					listeners: {
+						change: function() {
+							if(me.isPlanningActive()) me.refreshPlanning();
+						}
+					}
 				}, {
 					xtype: 'timefield',
 					bind: {
@@ -219,7 +224,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					},
 					format: WT.getTimeFmt(),
 					margin: '0 5 0 0',
-					width: 80
+					width: 80,
+					listeners: {
+						change: function() {
+							if(me.isPlanningActive()) me.refreshPlanning();
+						}
+					}
 				}, {
 					xtype: 'button',
 					iconCls: 'wtcal-icon-now-xs',
@@ -253,7 +263,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						disabled: '{record._isRecurring}'
 					},
 					margin: '0 5 0 0',
-					width: 105
+					width: 105,
+					listeners: {
+						change: function() {
+							if(me.isPlanningActive()) me.refreshPlanning();
+						}
+					}
 				}, {
 					xtype: 'timefield',
 					bind: {
@@ -262,7 +277,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					},
 					format: WT.getTimeFmt(),
 					margin: '0 5 0 0',
-					width: 80
+					width: 80,
+					listeners: {
+						change: function() {
+							if(me.isPlanningActive()) me.refreshPlanning();
+						}
+					}
 				}, {
 					xtype: 'button',
 					iconCls: 'wtcal-icon-now-xs',
@@ -289,7 +309,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					fieldLabel: me.mys.res('event.fld-timezone.lbl'),
 					margin: 0,
 					flex: 1,
-					labelWidth: 75
+					labelWidth: 75,
+					listeners: {
+						change: function() {
+							if(me.isPlanningActive()) me.refreshPlanning();
+						}
+					}
 				}]
 			}]
 		}));
@@ -346,7 +371,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					store: {
 						autoLoad: true,
 						model: 'Sonicle.webtop.calendar.model.Calendar',
-						proxy: WT.Util.proxy(me.mys.ID, 'GetCalendars', 'calendars', {
+						proxy: WTF.proxy(me.mys.ID, 'GetCalendars', 'calendars', {
 							extraParams: {
 								groupId: me.groupId
 							}
@@ -398,8 +423,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						flex: 1
 					}, {
 						dataIndex: 'recipientType',
-						renderer: WT.Util.resValueRenderer(me.mys.ID, 'store.attendeeRcptType'),
-						editor: Ext.create(WT.Util.localCombo({
+						renderer: WTF.resColRenderer({
+							id: me.mys.ID,
+							key: 'store.attendeeRcptType'
+						}),
+						editor: Ext.create(WTF.localCombo({
 							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRcptType', {
 								autoLoad: true
 							})
@@ -408,8 +436,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						width: 180
 					}, {
 						dataIndex: 'responseStatus',
-						renderer: WT.Util.resValueRenderer(me.mys.ID, 'store.attendeeRespStatus'),
-						editor: Ext.create(WT.Util.localCombo({
+						renderer: WTF.resColRenderer({
+							id: me.mys.ID,
+							key: 'store.attendeeRespStatus'
+						}),
+						editor: Ext.create(WTF.localCombo({
 							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 								autoLoad: true
 							})
@@ -465,7 +496,49 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					columns: [],
 					store: {
 						model: 'WT.model.Empty',
-						proxy: WT.Util.proxy(me.mys.ID, 'GetPlanning', 'data')
+						proxy: WTF.proxy(me.mys.ID, 'GetPlanning', 'data'),
+						listeners: {
+							metachange: function(s, meta) {
+								if(meta.colsInfo) {
+									// In order to draw a better view we need to nest grid columns (hours) 
+									// belonging to same day date under the same master header.
+									// So we need to create a nested structure identifying useful columns.
+									
+									var colsInfo = [];
+									Ext.iterate(meta.colsInfo, function(col,i) {
+										if(col.dataIndex === 'recipient') {
+											col.header = me.mys.res('event.gp-planning.recipient.lbl');
+											col.width = 200;
+											
+											// Add this column as is... skip nesting
+											colsInfo.push(col);
+											
+										} else {
+											col.renderer = WTF.clsColRenderer({
+												clsPrefix: 'wtcal-planning-',
+												moreCls: (col.overlaps) ? 'wtcal-planning-overlaps' : null
+											});
+											col.sortable = false;
+											col.hideable = false;
+											col.menuDisabled = true;
+											col.draggable = false;
+											col.width = 55;
+											
+											// Nest this column under right day date
+											if(colsInfo[colsInfo.length-1].date !== col.date) {
+												colsInfo.push({
+													date: col.date,
+													text: col.date,
+													columns: []
+												});
+											}
+											colsInfo[colsInfo.length-1].columns.push(col);
+										}
+									});
+									me.getRef('gpPlanning').reconfigure(s, colsInfo);
+								}
+							}
+						}
 					},
 					tbar: [
 						me.addAction('refreshPlanning', {
@@ -473,21 +546,35 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							tooltip: null,
 							iconCls: 'wt-icon-refresh-xs',
 							handler: function() {
-								var sto = me.getRef('gpPlanning').getStore(),
-										model = me.getModel(),
-										params;
-								
-								console.log('refreshPlanning');
-								
-								WT.Util.applyExtraParams(sto.getProxy(), {
-									startDate: '',
-									endDate: '',
-									timezone: model.get('timezone')
-								});
-								
-								WT.warn('TODO');
+								me.refreshPlanning();
 							}
 						}),
+						'-',
+						{
+							xtype: 'tbitem',
+							width: 15,
+							height: 15,
+							cls: 'wtcal-planning-legend-free'
+						}, {
+							xtype: 'tbtext',
+							html: me.mys.res('event.gp-planning.free')
+						}, {
+							xtype: 'tbitem',
+							width: 15,
+							height: 15,
+							cls: 'wtcal-planning-legend-busy'
+						}, {
+							xtype: 'tbtext',
+							html: me.mys.res('event.gp-planning.busy')
+						}, {
+							xtype: 'tbitem',
+							width: 15,
+							height: 15,
+							cls: 'wtcal-planning-legend-unknown'
+						}, {
+							xtype: 'tbtext',
+							html: me.mys.res('event.gp-planning.unknown')
+						},
 						'->',
 						{
 							xtype: 'button',
@@ -496,7 +583,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								me.getRef('pInvitation').getLayout().setActiveItem('attendees');
 							}
 						}
-					]
+					],
+					listeners: {
+						activate: function() {
+							me.refreshPlanning();
+						}
+					}
 				}))
 			]
 		}));
@@ -939,5 +1031,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				sto.remove(rec);
 			}
 		}, me);
+	},
+	
+	isPlanningActive: function() {
+		return (this.getRef('pInvitation').getLayout().getActiveItem() === 'planning');
+	},
+	
+	refreshPlanning: function() {
+		var me = this,
+				sto = me.getRef('gpPlanning').getStore(),
+				model = me.getModel(),
+				serData = model.getData({serialize: true, associated: true});
+
+		WT.Util.applyExtraParams(sto.getProxy(), {
+			startDate: serData['startDate'],
+			endDate: serData['endDate'],
+			timezone: serData['timezone'],
+			attendees: serData['attendees']
+		});
+		sto.load();
 	}
 });

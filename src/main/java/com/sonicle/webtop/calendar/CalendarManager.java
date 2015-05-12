@@ -36,6 +36,7 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
@@ -85,6 +86,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
+import org.joda.time.Instant;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
@@ -271,6 +273,54 @@ public class CalendarManager extends BaseServiceManager {
 	}
 	
 	
+	public LinkedHashSet<String> calculateAvailabilitySpans2(int minRange, UserProfile.Id profileId, DateTime fromDate, DateTime toDate, DateTimeZone userTz, boolean busy) throws Exception {
+		Connection con = null;
+		LinkedHashSet<String> hours = new LinkedHashSet<>();
+		CalendarDAO cdao = CalendarDAO.getInstance();
+		EventDAO edao = EventDAO.getInstance();
+		
+		try {
+			con = WT.getConnection(manifest);
+			
+			// Lists desired calendars by profile
+			List<OCalendar> cals = cdao.selectByDomainUser(con, profileId.getDomainId(), profileId.getUserId());
+			List<SchedulerEvent> sevs = new ArrayList<>();
+			for(OCalendar cal : cals) {
+				for(VSchedulerEvent se : edao.viewByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
+					se.updateCalculatedFields();
+					sevs.add(new SchedulerEvent(se));
+				}
+				for(VSchedulerEvent se : edao.viewRecurringByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
+					se.updateCalculatedFields();
+					sevs.add(new SchedulerEvent(se));
+				}
+			}
+			
+			DateTime startDt, endDt;
+			List<SchedulerEvent> recInstances = null;
+			for(SchedulerEvent se : sevs) {
+				if(se.getBusy() != busy) continue; // Ignore unwanted events...
+				
+				if(se.getRecurrenceId() == null) {
+					startDt = se.getStartDate().withZone(userTz);
+					endDt = se.getEndDate().withZone(userTz);
+					hours.addAll(generateTimeSpansKeys(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
+				} else {
+					recInstances = calculateRecurringInstances(se, fromDate, toDate, userTz);
+					for(SchedulerEvent recInstance : recInstances) {
+						startDt = recInstance.getStartDate().withZone(userTz);
+						endDt = recInstance.getEndDate().withZone(userTz);
+						hours.addAll(generateTimeSpansKeys(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
+					}
+				}
+			}
+		
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+		return hours;
+	}
+	
 	public LinkedHashSet<String> calculateAvailabilitySpans(int minRange, UserProfile.Id profileId, DateTime fromDate, DateTime toDate, DateTimeZone userTz, boolean busy) throws Exception {
 		Connection con = null;
 		LinkedHashSet<String> hours = new LinkedHashSet<>();
@@ -316,13 +366,11 @@ public class CalendarManager extends BaseServiceManager {
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
-		
 		return hours;
 	}
 	
-	
-	public ArrayList<String> generateTimeSpansKeys(int minRange, LocalDate fromDate, LocalDate toDate, LocalTime fromTime, LocalTime toTime, DateTimeZone tz) {
-		ArrayList<String> hours = new ArrayList<>();
+	public ArrayList<Instant> generateTimeSpans(int minRange, LocalDate fromDate, LocalDate toDate, LocalTime fromTime, LocalTime toTime, DateTimeZone tz) {
+		ArrayList<Instant> hours = new ArrayList<>();
 		
 		LocalDate date = fromDate;
 		DateTime instant = null, boundaryInstant = null;
@@ -333,7 +381,7 @@ public class CalendarManager extends BaseServiceManager {
 			boundaryInstant = boundaryInstant.withSecondOfMinute(0).withMillisOfSecond(0);
 			
 			while(instant.compareTo(boundaryInstant) < 0) {
-				hours.add(toYmdHmWithZone(instant, tz));
+				hours.add(instant.toInstant());
 				instant = instant.plusMinutes(minRange);
 			}
 			date = date.plusDays(1);
@@ -342,30 +390,32 @@ public class CalendarManager extends BaseServiceManager {
 		return hours;
 	}
 	
-	public static LocalTime min(LocalTime time1, LocalTime time2) {
-		return (time1.compareTo(time2) < 0) ? time1 : time2;
+	public ArrayList<String> generateTimeSpansKeys(int minRange, LocalDate fromDate, LocalDate toDate, LocalTime fromTime, LocalTime toTime, DateTimeZone tz) {
+		ArrayList<String> hours = new ArrayList<>();
+		DateTimeFormatter ymdhmZoneFmt = DateTimeUtils.createYmdHmFormatter(tz);
+		
+		LocalDate date = fromDate;
+		DateTime instant = null, boundaryInstant = null;
+		while(date.compareTo(toDate) <= 0) {
+			instant = new DateTime(tz).withDate(date).withTime(fromTime).withMinuteOfHour(0);
+			instant = instant.withSecondOfMinute(0).withMillisOfSecond(0);
+			boundaryInstant = new DateTime(tz).withDate(date).withTime(toTime);
+			boundaryInstant = boundaryInstant.withSecondOfMinute(0).withMillisOfSecond(0);
+			
+			while(instant.compareTo(boundaryInstant) < 0) {
+				hours.add(ymdhmZoneFmt.print(instant));
+				instant = instant.plusMinutes(minRange);
+			}
+			date = date.plusDays(1);
+		}
+		
+		return hours;
 	}
 	
-	public static LocalTime max(LocalTime time1, LocalTime time2) {
-		return (time1.compareTo(time2) > 0) ? time1 : time2;
-	}
 	
-	public static String toYmdHmWithZone(DateTime dt, DateTimeZone tz) {
-		return formatWithZone("yyyy-MM-dd HH:mm", dt, tz);
-	}
 	
-	public static String toYmdHmsWithZone(DateTime dt, DateTimeZone tz) {
-		return formatWithZone("yyyy-MM-dd HH:mm:ss", dt, tz);
-	}
 	
-	public static String toYmdWithZone(DateTime dt, DateTimeZone tz) {
-		return formatWithZone("yyyy-MM-dd", dt, tz);
-	}
 	
-	public static String formatWithZone(String pattern, DateTime dt, DateTimeZone tz) {
-		DateTimeFormatter dtf = DateTimeFormat.forPattern(pattern).withZone(tz);
-		return dtf.print(dt);
-	}
 	
 	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
 		return parseYmdHmsWithZone(date + " " + time, tz);
@@ -376,6 +426,8 @@ public class CalendarManager extends BaseServiceManager {
 		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
 		return formatter.parseDateTime(dt);
 	}
+	
+	
 	
 	public List<GroupEvents> getEvents(CalendarGroup group, Integer[] calendars, DateTime fromDate, DateTime toDate) throws Exception {
 		UserProfile.Id profileId = new UserProfile.Id(group.getDomainId(), group.getUserId());

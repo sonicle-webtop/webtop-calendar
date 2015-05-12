@@ -37,10 +37,10 @@ Ext.define('Sonicle.webtop.calendar.model.TreeCal', {
 	fields: [
 		{name: '_nodeType', type: 'string'},
 		{name: '_groupId', type: 'string'},
-		WT.Util.calcField('_domainId', 'string', '_groupId', function(v, rec) {
+		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
 			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[1] : null;
 		}),
-		WT.Util.calcField('_domainId', 'string', '_groupId', function(v, rec) {
+		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
 			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[0] : null;
 		}),
 		{name: '_builtIn', type: 'boolean', persist: false},

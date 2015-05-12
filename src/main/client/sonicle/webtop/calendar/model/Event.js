@@ -36,7 +36,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	requires: [
 		'Sonicle.data.writer.Json'
 	],
-	proxy: WT.Util.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents', 'data', {
+	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents', 'data', {
 		writer: {
 			type: 'sojson',
 			writeAssociations: true
@@ -48,20 +48,20 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	identifier: 'negative',
 	idProperty: 'id',
 	fields: [
-		WT.Util.field('id', 'string', false),
-		WT.Util.field('eventId', 'int', true),
-		WT.Util.field('calendarId', 'int', false),
-		WT.Util.field('recurrenceId', 'int', true),
-		WT.Util.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
-		WT.Util.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
-		WT.Util.field('timezone', 'string', false),
-		WT.Util.field('allDay', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('title', 'string', false),
-		WT.Util.field('description', 'string', true),
-		WT.Util.field('location', 'int', true),
-		WT.Util.field('isPrivate', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('busy', 'boolean', false, {defaultValue: false}),
-		WT.Util.field('reminder', 'int', false, {
+		WTF.field('id', 'string', false),
+		WTF.field('eventId', 'int', true),
+		WTF.field('calendarId', 'int', false),
+		WTF.field('recurrenceId', 'int', true),
+		WTF.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.field('timezone', 'string', false),
+		WTF.field('allDay', 'boolean', false, {defaultValue: false}),
+		WTF.field('title', 'string', false),
+		WTF.field('description', 'string', true),
+		WTF.field('location', 'int', true),
+		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
+		WTF.field('busy', 'boolean', false, {defaultValue: false}),
+		WTF.field('reminder', 'int', false, {
 			defaultValue: -1,
 			convert: function(v) {
 				return (v) ? v : -1;
@@ -70,34 +70,34 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 				return (v === -1) ? null : v;
 			}
 		}),
-		WT.Util.field('rrEndsMode', 'string', false, {defaultValue: 'never'}),
-		WT.Util.field('rrRepeatTimes', 'int', true),//false, {defaultValue: 1}),
-		WT.Util.field('rrUntilDate', 'date', true, {dateFormat: 'Y-m-d H:i:s'}),//false, {dateFormat: 'Y-m-d H:i:s', defaultValue: new Date()}),
-		WT.Util.field('rrType', 'string', false, {defaultValue: '_'}),
-		WT.Util.field('rrDaylyType', 'string', false, {defaultValue: '1'}),
-		WT.Util.field('rrDaylyFreq', 'int', true),//false, {defaultValue: 1}),
-		WT.Util.field('rrWeeklyFreq', 'int', true),//false, {defaultValue: 1}),
-		WT.Util.field('rrWeeklyDay1', 'boolean', true),//false, {defaultValue: false}),
-		WT.Util.field('rrWeeklyDay2', 'boolean', true),//false, {defaultValue: false}),
-		WT.Util.field('rrWeeklyDay3', 'boolean', true),//false, {defaultValue: false}),
-		WT.Util.field('rrWeeklyDay4', 'boolean', true),//false, {defaultValue: false}),
-		WT.Util.field('rrWeeklyDay5', 'boolean', true),//false, {defaultValue: false}),
-		WT.Util.field('rrWeeklyDay6', 'boolean', true),//false, {defaultValue: false}),
-		WT.Util.field('rrWeeklyDay7', 'boolean', true),//false, {defaultValue: false}),
-		WT.Util.field('rrMonthlyFreq', 'int', true),//false, {defaultValue: 1}),
-		WT.Util.field('rrMonthlyDay', 'int', true),//false, {defaultValue: 1}),
-		WT.Util.field('rrYearlyFreq', 'int', true),//false, {defaultValue: 1}),
-		WT.Util.field('rrYearlyDay', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrEndsMode', 'string', false, {defaultValue: 'never'}),
+		WTF.field('rrRepeatTimes', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrUntilDate', 'date', true, {dateFormat: 'Y-m-d H:i:s'}),//false, {dateFormat: 'Y-m-d H:i:s', defaultValue: new Date()}),
+		WTF.field('rrType', 'string', false, {defaultValue: '_'}),
+		WTF.field('rrDaylyType', 'string', false, {defaultValue: '1'}),
+		WTF.field('rrDaylyFreq', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrWeeklyFreq', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrWeeklyDay1', 'boolean', true),//false, {defaultValue: false}),
+		WTF.field('rrWeeklyDay2', 'boolean', true),//false, {defaultValue: false}),
+		WTF.field('rrWeeklyDay3', 'boolean', true),//false, {defaultValue: false}),
+		WTF.field('rrWeeklyDay4', 'boolean', true),//false, {defaultValue: false}),
+		WTF.field('rrWeeklyDay5', 'boolean', true),//false, {defaultValue: false}),
+		WTF.field('rrWeeklyDay6', 'boolean', true),//false, {defaultValue: false}),
+		WTF.field('rrWeeklyDay7', 'boolean', true),//false, {defaultValue: false}),
+		WTF.field('rrMonthlyFreq', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrMonthlyDay', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrYearlyFreq', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrYearlyDay', 'int', true),//false, {defaultValue: 1}),
 		// Read-only fields
-		WT.Util.roField('_groupId', 'string'),
-		WT.Util.roField('_recurringInfo', 'string', {defaultValue: 'single'}),
-		WT.Util.calcField('_isSingle', 'boolean', '_recurringInfo', function(v, rec) {
+		WTF.roField('_groupId', 'string'),
+		WTF.roField('_recurringInfo', 'string', {defaultValue: 'single'}),
+		WTF.calcField('_isSingle', 'boolean', '_recurringInfo', function(v, rec) {
 			return (rec.get('_recurringInfo') === 'single');
 		}),
-		WT.Util.calcField('_isBroken', 'boolean', '_recurringInfo', function(v, rec) {
+		WTF.calcField('_isBroken', 'boolean', '_recurringInfo', function(v, rec) {
 			return (rec.get('_recurringInfo') === 'broken');
 		}),
-		WT.Util.calcField('_isRecurring', 'boolean', '_recurringInfo', function(v, rec) {
+		WTF.calcField('_isRecurring', 'boolean', '_recurringInfo', function(v, rec) {
 			return (rec.get('_recurringInfo') === 'recurring');
 		})
 	],
@@ -129,16 +129,16 @@ Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
 	idProperty: 'attendeeId',
 	identifier: 'negativestring',
 	fields: [
-		WT.Util.field('_fk', 'string', true, {
+		WTF.field('_fk', 'string', true, {
 			reference: {
 				parent: 'Sonicle.webtop.calendar.model.Event',
 				inverse: 'attendees'
 			}
 		}),
-		WT.Util.field('attendeeId', 'string', false),
-		WT.Util.field('recipient', 'string', false),
-		WT.Util.field('recipientType', 'string', false),
-		WT.Util.field('responseStatus', 'string', false),
-		WT.Util.field('notify', 'boolean', false)
+		WTF.field('attendeeId', 'string', false),
+		WTF.field('recipient', 'string', false),
+		WTF.field('recipientType', 'string', false),
+		WTF.field('responseStatus', 'string', false),
+		WTF.field('notify', 'boolean', false)
 	]
 });

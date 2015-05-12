@@ -34,12 +34,16 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.JsListPayload;
 import com.sonicle.commons.web.json.Payload;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.MapItem;
+import com.sonicle.commons.web.json.extjs.ExtFieldMeta;
+import com.sonicle.commons.web.json.extjs.ExtGridColumnMeta;
+import com.sonicle.commons.web.json.extjs.ExtGridMetaData;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendarGroups;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendars;
@@ -74,6 +78,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 
 /**
@@ -298,6 +303,7 @@ public class Service extends BaseService {
 			con = getConnection();
 			UserProfile up = env.getProfile();
 			DateTimeZone utz = DateTimeZone.forTimeZone(up.getTimeZone());
+			DateTimeFormatter ymdZoneFmt = DateTimeUtils.createYmdFormatter(utz);
 			
 			// Defines boundaries
 			String start = ServletUtils.getStringParameter(request, "startDate", true);
@@ -314,7 +320,8 @@ public class Service extends BaseService {
 				checked = checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
 				dates = manager.getEventsDates(group, checked, fromDate, toDate, utz);
 				for(DateTime dt : dates) {
-					items.add(new JsSchedulerEventDate(CalendarManager.toYmdWithZone(dt, utz)));
+					items.add(new JsSchedulerEventDate(ymdZoneFmt.print(dt)));
+					//items.add(new JsSchedulerEventDate(CalendarManager.toYmdWithZone(dt, utz)));
 				}
 			}
 			new JsonResult("dates", items).printTo(out);
@@ -458,6 +465,7 @@ public class Service extends BaseService {
 	
 	public void processGetPlanning(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
+		ArrayList<MapItem> items = new ArrayList<>();
 		
 		try {
 			String eventStartDate = ServletUtils.getStringParameter(request, "startDate", true);
@@ -472,20 +480,68 @@ public class Service extends BaseService {
 			UserProfile up = env.getProfile();
 			DateTimeZone profileTz = DateTimeZone.forTimeZone(up.getTimeZone());
 			
-			LocalTime fromTime = CalendarManager.min(eventStartDt.toLocalTime(), cus.getWorkdayStart());
-			LocalTime toTime = CalendarManager.max(eventEndDt.toLocalTime(), cus.getWorkdayEnd());
+			LocalTime localStartTime = eventStartDt.toLocalTime();
+			LocalTime localEndTime = eventEndDt.toLocalTime();
+			LocalTime fromTime = DateTimeUtils.min(localStartTime, cus.getWorkdayStart());
+			LocalTime toTime = DateTimeUtils.max(localEndTime, cus.getWorkdayEnd());
 			
-			ArrayList<String> hours = manager.generateTimeSpansKeys(30, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
-			LinkedHashSet<String> busyHours = manager.calculateAvailabilitySpans(30, new UserProfile.Id("matteo.albinola@sonicleldap"), eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
+			// Defines fields and columnsInfo dynamically
+			ArrayList<String> hours = manager.generateTimeSpansKeys(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
+			ArrayList<ExtFieldMeta> fields = new ArrayList<>();
+			ArrayList<ExtGridColumnMeta> colsInfo = new ArrayList<>();
 			
-			LinkedHashMap<String, String> availability = new LinkedHashMap<>();
+			DateTimeFormatter ymdhmFmt = DateTimeUtils.createYmdHmFormatter();
+			DateTimeFormatter tFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getTimeFormat());
+			DateTimeFormatter dFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getDateFormat());
+			
+			ExtGridColumnMeta col = null;
+			fields.add(new ExtFieldMeta("recipient"));
+			colsInfo.add(new ExtGridColumnMeta("recipient"));
 			for(String hourKey : hours) {
+				LocalDateTime ldt = ymdhmFmt.parseLocalDateTime(hourKey);
+				fields.add(new ExtFieldMeta(hourKey));
+				col = new ExtGridColumnMeta(hourKey, tFmt.print(ldt));
+				col.put("date", dFmt.print(ldt));
+				col.put("overlaps", DateTimeUtils.between(ldt, eventStartDt.toLocalDateTime(), eventEndDt.toLocalDateTime()));
+				colsInfo.add(col);
+			}
+			
+			
+			LinkedHashSet<String> busyHours = manager.calculateAvailabilitySpans(60, new UserProfile.Id("matteo.albinola@sonicleldap"), eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
+			
+			MapItem item = null;
+			
+			item = new MapItem();
+			item.put("recipient", "matteo.albinola@sonicleldap");
+			for(String hourKey : hours) {
+				if(busyHours.contains(hourKey)) {
+					item.put(hourKey, "busy");
+				} else {
+					item.put(hourKey, "free");
+				}
+			}
+			items.add(item);
+			
+			ExtGridMetaData meta = new ExtGridMetaData(true);
+			meta.setFields(fields);
+			meta.setColumnsInfo(colsInfo);
+			new JsonResult(items, meta, items.size()).printTo(out);
+			
+			
+			/*
+			LinkedHashMap<String, String> availability = new LinkedHashMap<>();
+			ExtFieldMeta fieldMeta = null;
+			ExtGridColumnMeta columnMeta = null;
+			for(String hourKey : hours) {
+				fieldMeta = new ExtFieldMeta(hourKey);
+				
 				if(busyHours.contains(hourKey)) {
 					availability.put(hourKey, "busy");
 				} else {
 					availability.put(hourKey, "free");
 				}
 			}
+			*/
 			
 			/*
 			if(data.equals("hours")) {
@@ -523,8 +579,8 @@ public class Service extends BaseService {
 			
 			LocalDate fromDate = fromDt.toLocalDate();
 			LocalDate toDate = toDt.toLocalDate();
-			LocalTime fromTime = CalendarManager.min(fromDt.toLocalTime(), cus.getWorkdayStart());
-			LocalTime toTime = CalendarManager.max(toDt.toLocalTime(), cus.getWorkdayEnd());
+			LocalTime fromTime = DateTimeUtils.min(fromDt.toLocalTime(), cus.getWorkdayStart());
+			LocalTime toTime = DateTimeUtils.max(toDt.toLocalTime(), cus.getWorkdayEnd());
 			
 			
 			ArrayList<String> hours = manager.generateTimeSpansKeys(30, fromDate, toDate, cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);

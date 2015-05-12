@@ -31,3 +31,41 @@
 	margin: 0;
 	background-image: none;
 }
+
+.wtcal-planning-free {
+	background-color: #F3E4B1;
+}
+
+.wtcal-planning-legend-free {
+	margin: 0;
+	padding: 0;
+	border: 1px solid;
+	background-color: #F3E4B1;
+}
+
+.wtcal-planning-busy {
+	background-color: #9FC6E7;
+}
+
+.wtcal-planning-legend-busy {
+	margin: 0;
+	padding: 0;
+	border: 1px solid;
+	background-color: #9FC6E7;
+}
+
+.wtcal-planning-unknown {
+	background-color: lightgray;
+}
+
+.wtcal-planning-legend-unknown {
+	margin: 0;
+	padding: 0;
+	border: 1px solid;
+	background-color: lightgray;
+}
+
+.wtcal-planning-overlaps {
+	background-image: url('striked-shadow_20.png');
+	background-repeat: repeat;
+}

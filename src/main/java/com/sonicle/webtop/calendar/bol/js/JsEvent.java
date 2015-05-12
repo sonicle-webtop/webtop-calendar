@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.json.CrudItems;
 import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.webtop.calendar.CalendarManager;
@@ -96,12 +97,14 @@ public class JsEvent {
 	public String _groupId;
 	
 	public JsEvent(Event event, String calendarGroupId) {
+		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
+		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(eventTz);
+		
 		id = event.key;
 		eventId = event.eventId;
 		calendarId = event.getCalendarId();
-		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
-		startDate = CalendarManager.toYmdHmsWithZone(event.getStartDate(), eventTz);
-		endDate = CalendarManager.toYmdHmsWithZone(event.getEndDate(), eventTz);
+		startDate = ymdhmsZoneFmt.print(event.getStartDate());
+		endDate = ymdhmsZoneFmt.print(event.getEndDate());
 		timezone = event.getTimezone();
 		allDay = event.getAllDay();
 		title = event.getTitle();
@@ -113,7 +116,7 @@ public class JsEvent {
 		
 		rrEndsMode = event.rrEndsMode;
 		rrRepeatTimes = event.rrRepeatTimes;
-		rrUntilDate = CalendarManager.toYmdHmsWithZone(event.rrUntilDate, eventTz);
+		rrUntilDate = ymdhmsZoneFmt.print(event.rrUntilDate);
 		rrType = event.rrType;
 		rrDaylyType = event.rrDaylyType;
 		rrDaylyFreq = event.rrDaylyFreq;

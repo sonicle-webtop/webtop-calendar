@@ -58,7 +58,9 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 				name: 'view',
 				allowBlank: false,
 				editable: false,
-				store: Ext.create('Sonicle.webtop.calendar.store.View'),
+				store: Ext.create('Sonicle.webtop.calendar.store.View', {
+					autoLoad: true
+				}),
 				valueField: 'id',
 				displayField: 'desc',
 				fieldLabel: WT.res(me.ID, 'opts.main.fld-view.lbl'),
@@ -70,7 +72,9 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 				name: 'startDay',
 				allowBlank: false,
 				editable: false,
-				store: Ext.create('Sonicle.webtop.calendar.store.StartDay'),
+				store: Ext.create('Sonicle.webtop.calendar.store.StartDay', {
+					autoLoad: true
+				}),
 				valueField: 'id',
 				displayField: 'desc',
 				fieldLabel: WT.res(me.ID, 'opts.main.fld-startDay.lbl'),

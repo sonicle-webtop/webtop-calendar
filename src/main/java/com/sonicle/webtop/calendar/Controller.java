@@ -31,40 +31,63 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol.js;
+package com.sonicle.webtop.calendar;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.sonicle.commons.db.DbUtils;
+import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.calendar.dal.CalendarDAO;
+import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.sdk.BaseController;
+import com.sonicle.webtop.core.sdk.ServiceManifest;
+import com.sonicle.webtop.core.sdk.UserProfile;
+import java.sql.Connection;
 
 /**
  *
  * @author malbinola
  */
-public class JOEvent extends GenericJson {
+public class Controller extends BaseController {
 	
-	public List<JOAttendee> attendees = new ArrayList<>();
-	
-	public String getId() {
-		return getAs("id", String.class);
+	public Controller(ServiceManifest manifest) {
+		super(manifest);
 	}
 	
-	public void setId(String value) {
-		putAs("id", value, String.class);
+	@Override
+	public void initializeUser(UserProfile.Id profileId) throws Exception {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(manifest);
+			CalendarDAO cdao = CalendarDAO.getInstance();
+			
+			// Adds built-in calendar
+			OCalendar cal = cdao.selectBuiltInByDomainUser(con, profileId.getDomainId(), profileId.getUserId());
+			if(cal == null) {
+				cal = new OCalendar();
+				cal.setDomainId(profileId.getDomainId());
+				cal.setUserId(profileId.getUserId());
+				cal.setBuiltIn(true);
+				cal.setName("WebTop");
+				cal.setDescription("");
+				cal.setColor("#FFFFFF");
+				cal.setIsPrivate(false);
+				cal.setBusy(false);
+				cal.setReminder(null);
+				cal.setSync(true);
+				cal.setInvitation(false);
+				cal.setIsDefault(true);
+				cal.setBusy(false);
+				cal.setCalendarId(cdao.getSequence(con).intValue());
+				cdao.insert(con, cal);
+			}
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
 	}
 	
-	public Integer getEventId() {
-		return getAs("eventId", Integer.class);
-	}
-	
-	public void setEventId(Integer value) {
-		putAs("eventId", value, Integer.class);
-	}
-	
-	public Integer getCalendarId() {
-		return getAs("calendarId", Integer.class);
-	}
-	
-	public void setCalendarId(Integer value) {
-		putAs("calendarId", value, Integer.class);
+	@Override
+	public void cleanupUser(UserProfile.Id profileId, boolean deep) {
+		//TODO: implementare cleanup utente
 	}
 }

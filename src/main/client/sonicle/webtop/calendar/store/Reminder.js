@@ -34,10 +34,8 @@
 Ext.define('Sonicle.webtop.calendar.store.Reminder', {
 	extend: 'Ext.data.ArrayStore',
 	
-	autoLoad: true,
 	model: 'WT.model.Simple',
 	data: [
-		[-1, ''],
 		[0, ''],
 		[5, ''],
 		[10, ''],

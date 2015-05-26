@@ -35,6 +35,7 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 	extend: 'WT.model.Base',
 	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
 	
+	identifier: 'negative',
 	idProperty: 'calendarId',
 	fields: [
 		WTF.field('calendarId', 'int', false),
@@ -49,15 +50,7 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
 		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('busy', 'boolean', false, {defaultValue: false}),
-		WTF.field('reminder', 'int', false, {
-			defaultValue: -1,
-			convert: function(v) {
-				return (v) ? v : -1;
-			},
-			serialize: function(v) {
-				return (v === -1) ? null : v;
-			}
-		}),
+		WTF.field('reminder', 'int', true),
 		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
 		WTF.field('sync', 'boolean', false, {defaultValue: false})
 	]

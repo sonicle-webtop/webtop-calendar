@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/png" href="${urlPublic}/images/logo_16.png">
+		<title>${event.title}</title>
+	</head>
+	<body>
+		<DIV style='width:95%'>
+		<TABLE cellspacing='0' cellpadding='8' border='0' style='width:100%;font-family:Arial,Sans-serif;border:1px Solid #ccc;border-width:1px 2px 2px 1px;background-color:#fff;'>
+		<TR>
+			<TD>
+				<DIV style='padding:2px'>
+				<DIV style='float:right;font-weight:bold;font-size:13px'><BR></DIV>
+				<#if reply == "yes">
+				<h4 style='padding:6px 10px;margin:0 0 15px 0;font-family:Arial,Sans-serif;font-size:13px;line-height:1.4;border:1px Solid #ccc;background:#95CFB6;color:#222;font-weight:bold;width:95%'>
+					${i18n.pubConfirmYes}
+				</h4>
+				<#elseif reply == "no">
+				<h4 style='padding:6px 10px;margin:0 0 15px 0;font-family:Arial,Sans-serif;font-size:13px;line-height:1.4;border:1px Solid #ccc;background:#E19183;color:#222;font-weight:bold;width:95%'>
+					${i18n.pubConfirmNo}
+				</h4>
+				<#elseif reply == "maybe">
+				<h4 style='padding:6px 10px;margin:0 0 15px 0;font-family:Arial,Sans-serif;font-size:13px;line-height:1.4;border:1px Solid #ccc;background:#EEBE76;color:#222;font-weight:bold;width:95%'>
+					${i18n.pubConfirmMaybe}
+				</h4>
+				</#if>
+				<DIV style='float:right;font-weight:bold;font-size:13px'><BR></DIV>
+				<H3 style='padding:0 0 6px 0;margin:0;font-family:Arial,Sans-serif;font-size:16px;font-weight:bold;color:#222'>
+					${event.title}
+				</H3>
+				<TABLE cellpadding='0' cellspacing='0' border='0'>
+				<TR>
+					<TD style='padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap' valign='top'>
+						<DIV><I style='font-style:normal'>${i18n.pubWhen}</I></DIV>
+					</TD>
+					<TD style='padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222' valign='top'>
+						${event.when} <span style='color:#888'>${event.timezone}</span>
+					</TD>
+				</TR>
+				<#if event.location??>
+				<TR>
+					<TD style='padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap' valign='top'>
+						<DIV><I style='font-style:normal'>${i18n.pubLocation}</I></DIV>
+					</TD>
+					<TD style='padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222' valign='top'>
+						${event.location}
+						<SPAN dir='ltr'> (<A href='http://maps.google.it/maps?q=${event.location?replace(" ","+")}&hl=it' style='color:#20c;white-space:nowrap' target='_new'>${i18n.pubMap}</A>)</SPAN>
+					</TD>
+				</TR>
+				</#if>
+				<TR>
+					<TD style='padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap' valign='top'>
+						<DIV><I style='font-style:normal'>${i18n.pubOrganizer}</I></DIV>
+					</TD>
+					<TD style='padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222' valign='top'>
+						<TABLE cellspacing='0' cellpadding='0'>
+						<TR>
+							<TD style='padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222'>
+								<SPAN style='font-family:Courier New,monospace'>&#8226;</SPAN>
+							</TD>
+							<TD style='padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222'>
+								<DIV><DIV style='margin:0 0 0.3em 0'>${event.organizer}</DIV></DIV>
+							</TD>
+						</TR>
+						</TABLE>
+					</TD>
+				</TR>
+				</TABLE>
+				</DIV>
+			</TD>
+		</TR>
+		<TR>
+			<TD style='background-color:#f6f6f6;color:#888;border-top:1px Solid #ccc;font-family:Arial,Sans-serif;font-size:11px'>
+				<TABLE cellspacing='0' cellpadding='0' border='0'>
+					<TR>
+						<TD style='padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222'>
+							<img src='${urlPublic}/images/logo_32.png' border='0' title='${i18n.pubSignature}'>
+						</TD>
+						<TD style='vertical-align:middle;'>
+							${i18n.pubSignature}
+						</TD>
+					</TR>
+				</TABLE>
+			</TD>
+		</TR>
+		</TABLE>
+		</DIV>
+	</body>
+</html>

@@ -34,7 +34,6 @@
 Ext.define('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 	extend: 'Ext.data.ArrayStore',
 	
-	autoLoad: true,
 	model: 'WT.model.Simple',
 	data: [
 		['needsAction', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.needsAction')],

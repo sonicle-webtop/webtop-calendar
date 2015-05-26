@@ -54,6 +54,7 @@ public class JsSchedulerEvent {
 	public Integer eventId;
 	public Integer originalEventId;
 	public Integer calendarId;
+	public String calendarGroupId;
 	public String startDate;
 	public String endDate;
 	public String timezone;
@@ -74,21 +75,22 @@ public class JsSchedulerEvent {
 		
 	}
 	
-	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id currentProfileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		
 		boolean keepDataPrivate = false;
 		if(event.getIsPrivate()) {
 			UserProfile.Id calProfileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId());
-			if(!calProfileId.equals(profileId)) {
+			if(!calProfileId.equals(currentProfileId)) {
 				keepDataPrivate = true;
 			}
 		}
 		
-		id = event.getId();
+		id = event.getKey();
 		eventId = event.getEventId();
 		originalEventId = event.getEventId();
 		calendarId = event.getCalendarId();
+		calendarGroupId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();
 		
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.

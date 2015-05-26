@@ -23,6 +23,9 @@
 		<deamonServiceClassName> -> Deamon service class name (do not specify base package name).
 			If empty, default "DeamonService" value will be used.
 			
+		<clientOptionsModelJsClassName> Client options model class name.
+			Defaults to "model.ClientOptions"
+			
 		<userOptions> -> User options section.
 			If empty, default keys values will be used. See below!
 			
@@ -42,13 +45,13 @@
 	<service>
 		<package>com.sonicle.webtop.calendar</package>
 		<jsPackage>Sonicle.webtop.calendar</jsPackage>
-		<name>Calendar</name>
 		<shortName>wtcal</shortName>
 		<version>2.0.0</version>
 		<buildDate>03/11/2014</buildDate>
 		<serviceClassName>Service</serviceClassName>
-		<publicServiceClassName></publicServiceClassName>
-		<deamonServiceClassName></deamonServiceClassName>
+		<publicServiceClassName>PublicService</publicServiceClassName>
+		<deamonServiceClassName>DeamonService</deamonServiceClassName>
+		<clientOptionsModelJsClassName>model.ClientOptions</clientOptionsModelJsClassName>
 		<userOptions>
 			<serviceClassName>UserOptionsService</serviceClassName>
 			<viewJsClassName>view.UserOptions</viewJsClassName>

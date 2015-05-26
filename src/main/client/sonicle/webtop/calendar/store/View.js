@@ -34,7 +34,6 @@
 Ext.define('Sonicle.webtop.calendar.store.View', {
 	extend: 'Ext.data.ArrayStore',
 	
-	autoLoad: true,
 	model: 'WT.model.Simple',
 	data: [
 		['d', WT.res('com.sonicle.webtop.calendar', 'store.view.d')],

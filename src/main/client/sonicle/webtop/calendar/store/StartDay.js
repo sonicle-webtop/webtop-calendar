@@ -34,7 +34,6 @@
 Ext.define('Sonicle.webtop.calendar.store.StartDay', {
 	extend: 'Ext.data.ArrayStore',
 	
-	autoLoad: true,
 	model: 'WT.model.Simple',
 	data: [
 		[0, WT.res('com.sonicle.webtop.calendar', 'store.startDay.0')],

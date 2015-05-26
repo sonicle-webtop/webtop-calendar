@@ -33,15 +33,27 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
+import javax.mail.internet.InternetAddress;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.jooq.tools.StringUtils;
 
 /**
  *
  * @author malbinola
  */
 public class EventAttendee {
+	public static final String RECIPIENT_TYPE_NECESSARY = "N";
+	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
+	public static final String RECIPIENT_TYPE_RESOURCE = "R";
+	public static final String RESPONSE_STATUS_UNKNOWN = "unknown";
+	public static final String RESPONSE_STATUS_DECLINED = "declined";
+	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
+	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
+	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of unknown/needsAction
+	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
 	
 	protected String attendeeId;
 	//protected String displayName;
@@ -123,6 +135,19 @@ public class EventAttendee {
 		return new EqualsBuilder()
 			.append(getAttendeeId(), otherObject.getAttendeeId())
 			.isEquals();
+	}
+	
+	public boolean isResource() {
+		return StringUtils.equals(getRecipientType(), RECIPIENT_TYPE_RESOURCE);
+	}
+	
+	public boolean hasEmailRecipient() {
+		try {
+			InternetAddress email = new InternetAddress(getRecipient());
+			return true;
+		} catch(Exception ex) {
+			return false;
+		}
 	}
 	
 	public class AttendeeList extends ArrayList<EventAttendee> {

@@ -44,8 +44,8 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		}
 	}),
 	
-	//identifier: 'negativestring',
-	identifier: 'negative',
+	identifier: 'negativestring',
+	//identifier: 'negative',
 	idProperty: 'id',
 	fields: [
 		WTF.field('id', 'string', false),
@@ -61,21 +61,17 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('location', 'int', true),
 		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('busy', 'boolean', false, {defaultValue: false}),
-		WTF.field('reminder', 'int', false, {
-			defaultValue: -1,
-			convert: function(v) {
-				return (v) ? v : -1;
-			},
-			serialize: function(v) {
-				return (v === -1) ? null : v;
-			}
-		}),
+		WTF.field('reminder', 'int', true),
+		WTF.field('activityId', 'int', true),
+		WTF.field('customerId', 'string', true),
+		WTF.field('statisticId', 'string', true),
+		WTF.field('causalId', 'int', true),
 		WTF.field('rrEndsMode', 'string', false, {defaultValue: 'never'}),
 		WTF.field('rrRepeatTimes', 'int', true),//false, {defaultValue: 1}),
 		WTF.field('rrUntilDate', 'date', true, {dateFormat: 'Y-m-d H:i:s'}),//false, {dateFormat: 'Y-m-d H:i:s', defaultValue: new Date()}),
 		WTF.field('rrType', 'string', false, {defaultValue: '_'}),
-		WTF.field('rrDaylyType', 'string', false, {defaultValue: '1'}),
-		WTF.field('rrDaylyFreq', 'int', true),//false, {defaultValue: 1}),
+		WTF.field('rrDailyType', 'string', false, {defaultValue: '1'}),
+		WTF.field('rrDailyFreq', 'int', true),//false, {defaultValue: 1}),
 		WTF.field('rrWeeklyFreq', 'int', true),//false, {defaultValue: 1}),
 		WTF.field('rrWeeklyDay1', 'boolean', true),//false, {defaultValue: false}),
 		WTF.field('rrWeeklyDay2', 'boolean', true),//false, {defaultValue: false}),

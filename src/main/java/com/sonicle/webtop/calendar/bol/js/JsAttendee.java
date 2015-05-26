@@ -33,6 +33,9 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.web.json.JsonResult;
+import java.util.ArrayList;
+
 /**
  *
  * @author malbinola
@@ -45,4 +48,20 @@ public class JsAttendee {
 	public String recipientType;
 	public String responseStatus;
 	public Boolean notify;
+	
+	public static class JsAttendeeList extends ArrayList<JsAttendee> {
+		public JsAttendeeList() {
+			super();
+		}
+		
+		public static JsAttendeeList fromJson(String value) {
+			return JsonResult.gson.fromJson(value, JsAttendeeList.class);
+		}
+		
+		/*
+		public static String toJson(CheckedCalendarGroups value) {
+			return JsonResult.gson.toJson(value, CheckedCalendarGroups.class);
+		}
+		*/
+	}
 }

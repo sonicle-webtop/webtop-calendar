@@ -113,7 +113,7 @@ public class DeamonService extends BaseDeamonService {
 				
 				try {
 					DateTime remindOn = null;
-					List<SchedulerEvent> events = jobService.manager.getExpiredEvents(con, from, from.plusDays(7));
+					List<SchedulerEvent> events = jobService.manager.viewExpiredEvents(con, from, from.plusDays(7));
 					for(SchedulerEvent event : events) {
 						//TODO: implementare gestione reminder anche per le ricorrenze
 						remindOn = event.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(event.getReminder());
@@ -130,7 +130,7 @@ public class DeamonService extends BaseDeamonService {
 					SchedulerEvent prevent = null;
 					List<OPostponedReminder> prems = jobService.manager.getExpiredPostponedReminders(con, now);
 					for(OPostponedReminder prem : prems) {
-						prevent = jobService.manager.getEvent(prem.getEventId());
+						prevent = jobService.manager.viewEvent(prem.getEventId());
 						handleReminder(con, prevent, now, prem.getRemindOn());
 						jobService.manager.deletePostponedReminder(con, prem.getEventId(), prem.getRemindOn());
 					}

@@ -42,16 +42,6 @@ import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsAttendees;
  */
 public class OEventAttendee extends EventsAttendees {
 	
-	public static final String RECIPIENT_TYPE_NECESSARY = "N";
-	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
-	public static final String RECIPIENT_TYPE_RESOURCE = "R";
-	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
-	public static final String RESPONSE_STATUS_DECLINED = "declined";
-	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
-	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
-	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of needsAction
-	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
-	
 	public OEventAttendee() {
 		super();
 	}

@@ -68,6 +68,21 @@ public class EventAttendeeDAO extends BaseDAO {
 				.fetchInto(OEventAttendee.class);
 	}
 	
+	public List<OEventAttendee> selectByEventNotify(Connection con, Integer eventId, boolean notify) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(EVENTS_ATTENDEES)
+				.where(
+						EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
+						.and(EVENTS_ATTENDEES.NOTIFY.equal(notify))
+				)
+				.orderBy(
+						EVENTS_ATTENDEES.RECIPIENT.asc()
+				)
+				.fetchInto(OEventAttendee.class);
+	}
+	
 	public int insert(Connection con, OEventAttendee item) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		EventsAttendeesRecord record = dsl.newRecord(EVENTS_ATTENDEES, item);
@@ -86,6 +101,17 @@ public class EventAttendeeDAO extends BaseDAO {
 			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, item.getResponseStatus())
 			.set(EVENTS_ATTENDEES.NOTIFY, item.getNotify())
 			.where(EVENTS_ATTENDEES.ATTENDEE_ID.equal(item.getAttendeeId()))
+			.execute();
+	}
+	
+	public int updateAttendeeResponse(Connection con, String attendeeId, Integer eventId, String response) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS_ATTENDEES)
+			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, response)
+			.where(
+				EVENTS_ATTENDEES.ATTENDEE_ID.equal(attendeeId)
+				.and(EVENTS_ATTENDEES.EVENT_ID.equal(eventId)))
 			.execute();
 	}
 	

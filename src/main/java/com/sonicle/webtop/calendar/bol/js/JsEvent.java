@@ -34,19 +34,14 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.commons.web.json.CrudItems;
-import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.webtop.calendar.CalendarManager;
-import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import java.util.ArrayList;
 import java.util.TimeZone;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalTime;
-import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 /**
@@ -70,13 +65,17 @@ public class JsEvent {
 	public Boolean isPrivate;
 	public Boolean busy;
 	public Integer reminder;
+	public Integer activityId;
+	public String customerId;
+	public String statisticId;
+	public Integer causalId;
 	
 	public String rrEndsMode;
 	public Integer rrRepeatTimes;
 	public String rrUntilDate;
 	public String rrType;
-	public String rrDaylyType;
-	public Integer rrDaylyFreq;
+	public String rrDailyType;
+	public Integer rrDailyFreq;
 	public Integer rrWeeklyFreq;
 	public Boolean rrWeeklyDay1;
 	public Boolean rrWeeklyDay2;
@@ -100,8 +99,8 @@ public class JsEvent {
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(eventTz);
 		
-		id = event.key;
-		eventId = event.eventId;
+		id = event.getKey();
+		eventId = event.getEventId();
 		calendarId = event.getCalendarId();
 		startDate = ymdhmsZoneFmt.print(event.getStartDate());
 		endDate = ymdhmsZoneFmt.print(event.getEndDate());
@@ -113,13 +112,17 @@ public class JsEvent {
 		isPrivate = event.getIsPrivate();
 		busy = event.getBusy();
 		reminder = event.getReminder();
+		activityId = event.getActivityId();
+		customerId = event.getCustomerId();
+		statisticId = event.getStatisticId();
+		causalId = event.getCausalId();
 		
 		rrEndsMode = event.rrEndsMode;
 		rrRepeatTimes = event.rrRepeatTimes;
 		rrUntilDate = ymdhmsZoneFmt.print(event.rrUntilDate);
 		rrType = event.rrType;
-		rrDaylyType = event.rrDaylyType;
-		rrDaylyFreq = event.rrDaylyFreq;
+		rrDailyType = event.rrDailyType;
+		rrDailyFreq = event.rrDailyFreq;
 		rrWeeklyFreq = event.rrWeeklyFreq;
 		rrWeeklyDay1 = event.rrWeeklyDay1;
 		rrWeeklyDay2 = event.rrWeeklyDay2;
@@ -155,8 +158,8 @@ public class JsEvent {
 	public static Event buildEvent(JsEvent jse, LocalTime workdayStart, LocalTime workdayEnd) {
 		Event event = new Event();
 		
-		event.key = jse.id;
-		event.eventId = jse.eventId;
+		event.setKey(jse.id);
+		event.setEventId(jse.eventId);
 		event.setCalendarId(jse.calendarId);
 		// Incoming fields are in a precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use.
@@ -173,13 +176,17 @@ public class JsEvent {
 		event.setIsPrivate(jse.isPrivate);
 		event.setBusy(jse.busy);
 		event.setReminder(jse.reminder);
+		event.setActivityId(jse.activityId);
+		event.setCustomerId(jse.customerId);
+		event.setStatisticId(jse.statisticId);
+		event.setCausalId(jse.causalId);
 		
 		event.rrEndsMode = jse.rrEndsMode;
 		event.rrRepeatTimes = jse.rrRepeatTimes;
 		event.rrUntilDate = (jse.rrUntilDate != null) ? CalendarManager.parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null;
 		event.rrType = jse.rrType;
-		event.rrDaylyType = jse.rrDaylyType;
-		event.rrDaylyFreq = jse.rrDaylyFreq;
+		event.rrDailyType = jse.rrDailyType;
+		event.rrDailyFreq = jse.rrDailyFreq;
 		event.rrWeeklyFreq = jse.rrWeeklyFreq;
 		event.rrWeeklyDay1 = jse.rrWeeklyDay1;
 		event.rrWeeklyDay2 = jse.rrWeeklyDay2;

@@ -108,19 +108,19 @@ public class Recurrence {
 		type = value;
 	}
 
-	public String getDaylyType() {
+	public String getDailyType() {
 		return dailyType;
 	}
 
-	public void setDaylyType(String value) {
+	public void setDailyType(String value) {
 		dailyType = value;
 	}
 
-	public Integer getDaylyFreq() {
+	public Integer getDailyFreq() {
 		return dailyFreq;
 	}
 
-	public void setDaylyFreq(Integer value) {
+	public void setDailyFreq(Integer value) {
 		dailyFreq = value;
 	}
 

@@ -65,8 +65,8 @@ public class JsEventBase {
 	public Integer rrRepeatTimes;
 	public String rrUntilDate;
 	public String rrType;
-	public String rrDaylyType;
-	public Integer rrDaylyFreq;
+	public String rrDailyType;
+	public Integer rrDailyFreq;
 	public Integer rrWeeklyFreq;
 	public Boolean rrWeeklyDay1;
 	public Boolean rrWeeklyDay2;

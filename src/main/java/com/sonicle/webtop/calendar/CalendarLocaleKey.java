@@ -43,4 +43,28 @@ public class CalendarLocaleKey {
 	
     public static final String REMINDER_MINUTES = "reminder.minutes";
     public static final String REMINDER_HOURS = "reminder.hours";
+	public static final String PUB_SUMMARY = "pub.summary";
+	public static final String PUB_WHEN = "pub.when";
+	public static final String PUB_LOCATION = "pub.location";
+	public static final String PUB_MAP = "pub.map";
+	public static final String PUB_ORGANIZER = "pub.organizer";
+	public static final String PUB_ATTENDEES = "pub.attendees";
+	public static final String PUB_GOING = "pub.going";
+	public static final String PUB_REPLY_YES = "pub.reply.yes";
+	public static final String PUB_REPLY_NO = "pub.reply.no";
+	public static final String PUB_REPLY_MAYBE = "pub.reply.maybe";
+	public static final String PUB_VIEW_REPLIES = "pub.viewReplies";
+	public static final String PUB_CONFIRM_YES = "pub.confirm.yes";
+	public static final String PUB_CONFIRM_NO = "pub.confirm.no";
+	public static final String PUB_CONFIRM_MAYBE = "pub.confirm.maybe";
+	public static final String PUB_RESPONSE_UNKNOWN = "pub.response.unknown";
+	public static final String PUB_RESPONSE_DECLINED = "pub.response.declined";
+	public static final String PUB_RESPONSE_TENTATIVE = "pub.response.tentative";
+	public static final String PUB_RESPONSE_ACCEPTED = "pub.response.accepted";
+	public static final String PUB_SIGNATURE = "pub.signature";
+	public static final String PUB_SENT_FROM = "pub.sentFrom";
+	public static final String PUB_DISCLAIMER = "pub.disclaimer";
+	public static final String PUB_NOTFOUND_TITLE = "pub.notfound.title";
+	public static final String PUB_NOTFOUND_MESSAGE = "pub.notfound.message";
+	
 }

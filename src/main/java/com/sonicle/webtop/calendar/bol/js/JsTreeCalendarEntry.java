@@ -33,13 +33,28 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author malbinola
  */
-public class JsGroupCalendar {
+public class JsTreeCalendarEntry {
+	public static final String TYPE_GROUP = "group";
+	public static final String TYPE_CALENDAR = "calendar";
 	
-	public Integer calendarId;
-	public String name;
-	public String color;
+	public String id;
+	public String _nodeType;
+	public String _groupId;
+	public Boolean _visible;
+	
+	public JsTreeCalendarEntry() {
+		
+	}
+	
+	public static class JsTreeCalendarEntries extends ArrayList<JsTreeCalendarEntry> {
+		public JsTreeCalendarEntries() {
+			super();
+		}
+	}
 }

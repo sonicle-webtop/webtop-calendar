@@ -90,7 +90,7 @@ public class ReminderMessage extends ServiceMessage {
 	}
 	
 	public final ServiceMessage setEvent(SchedulerEvent event) {
-		this.event = new EventData(event.getId(), event.getEventId());
+		this.event = new EventData(event.getKey(), event.getEventId());
 		return this;
 	}
 	

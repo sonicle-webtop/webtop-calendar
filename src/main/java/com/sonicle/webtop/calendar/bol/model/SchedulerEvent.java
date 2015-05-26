@@ -41,7 +41,7 @@ import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
  * @author malbinola
  */
 public class SchedulerEvent extends VSchedulerEvent {
-	private String id;
+	private String key;
 	
 	public SchedulerEvent() {
 		super();
@@ -50,14 +50,14 @@ public class SchedulerEvent extends VSchedulerEvent {
 	public SchedulerEvent(VSchedulerEvent event) {
 		super();
 		new Cloner().copyPropertiesOfInheritedClass(event, this);
-		id = EventKey.buildKey(event.getEventId(), event.getOriginalEventId());
+		key = EventKey.buildKey(event.getEventId(), event.getOriginalEventId());
 	}
 
-	public String getId() {
-		return id;
+	public String getKey() {
+		return key;
 	}
 	
-	public void setId(String value) {
-		id = value;
+	public void setKey(String value) {
+		key = value;
 	}
 }

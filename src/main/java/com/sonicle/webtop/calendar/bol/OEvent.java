@@ -33,7 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.bol.model.EventData;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import java.util.TimeZone;
@@ -65,24 +65,28 @@ public class OEvent extends Events {
 		setUpdateUser(info.updateUser);
 	}
 	
-	public void fillFrom(EventData data) {
-		fillFrom(data, true);
+	public void fillFrom(Event event) {
+		fillFrom(event, true);
 	}
 	
-	public void fillFrom(EventData data, boolean setDates) {
-		setCalendarId(data.getCalendarId());
+	public void fillFrom(Event event, boolean setDates) {
+		setCalendarId(event.getCalendarId());
 		if(setDates) {
-			setStartDate(data.getStartDate());
-			setEndDate(data.getEndDate());
+			setStartDate(event.getStartDate());
+			setEndDate(event.getEndDate());
 		}
-		setTimezone(data.getTimezone());
-		setAllDay(data.getAllDay());
-		setTitle(data.getTitle());
-		setDescription(data.getDescription());
-		setLocation(data.getLocation());
-		setIsPrivate(data.getIsPrivate());
-		setBusy(data.getBusy());
-		setReminder(data.getReminder());
+		setTimezone(event.getTimezone());
+		setAllDay(event.getAllDay());
+		setTitle(event.getTitle());
+		setDescription(event.getDescription());
+		setLocation(event.getLocation());
+		setIsPrivate(event.getIsPrivate());
+		setBusy(event.getBusy());
+		setReminder(event.getReminder());
+		setActivityId(event.getActivityId());
+		setCustomerId(event.getCustomerId());
+		setStatisticId(event.getStatisticId());
+		setCausalId(event.getCausalId());
 	}
 	
 	public static void ensureTimesCoherence(OEvent event) {

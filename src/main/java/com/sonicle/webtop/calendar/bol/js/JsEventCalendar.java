@@ -33,45 +33,31 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
-import java.util.HashMap;
+import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.core.sdk.UserProfile;
 
 /**
  *
  * @author malbinola
  */
-public class GenericJson extends HashMap<String, Object> {
+public class JsEventCalendar {
+	public Integer calendarId;
+	public String groupId;
+	public String name;
+	public Boolean isDefault;
+	public Boolean isPrivate;
+	public Boolean busy;
+	public Integer reminder;
+	public String color;
 	
-	public GenericJson() {
-		super();
+	public void fillFrom(OCalendar calendar) {
+		calendarId = calendar.getCalendarId();
+		groupId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();
+		name = calendar.getName();
+		isDefault = calendar.getIsDefault();
+		isPrivate = calendar.getIsPrivate();
+		busy = calendar.getBusy();
+		reminder = calendar.getReminder();
+		color = calendar.getHexColor();
 	}
-	
-	public <T> T getAs(String key, Class<T> clazz) {
-		return (T)get(key);
-	}
-	
-	public <T> void putAs(String key, T value, Class<T> clazz) {
-		put(key, value);
-	}
-	
-	public boolean has(String key) {
-		return containsKey(key);
-	}
-	
-	/*
-	public String getString(String key) {
-		return (String) get(key);
-	}
-	
-	public Boolean getBoolean(String key) {
-		return (Boolean) get(key);
-	}
-	
-	public Integer getInteger(String key) {
-		return (Integer) get(key);
-	}
-	
-	public String getString(String key) {
-		return (String) get(key);
-	}
-	*/
 }

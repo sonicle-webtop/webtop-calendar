@@ -34,15 +34,12 @@
 package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.ORecurrence;
-import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
-import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
 import com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
-import org.joda.time.LocalDate;
 import org.jooq.DSLContext;
 
 /**
@@ -92,7 +89,7 @@ public class RecurrenceDAO extends BaseDAO {
 			.set(RECURRENCES.REPEAT, item.getRepeat())
 			.set(RECURRENCES.PERMANENT, item.getPermanent())
 			.set(RECURRENCES.TYPE, item.getType())
-			.set(RECURRENCES.DAYLY_FREQ, item.getDaylyFreq())
+			.set(RECURRENCES.DAILY_FREQ, item.getDailyFreq())
 			.set(RECURRENCES.WEEKLY_FREQ, item.getWeeklyFreq())
 			.set(RECURRENCES.WEEKLY_DAY_1, item.getWeeklyDay_1())
 			.set(RECURRENCES.WEEKLY_DAY_2, item.getWeeklyDay_2())

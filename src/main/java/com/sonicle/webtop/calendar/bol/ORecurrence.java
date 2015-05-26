@@ -33,7 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.bol.model.EventData;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.ICal4jUtils;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -54,35 +54,35 @@ public class ORecurrence extends Recurrences {
 		super();
 	}
 	
-	public void fillFrom(EventData data, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
+	public void fillFrom(Event event, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimeZone);
 		
 		setStartDate(eventStartDate);
 		
-		if(StringUtils.equals(data.rrType, EventData.TYPE_DAILY)) {
-			setType(data.rrType);
-			if(StringUtils.equals(data.rrDaylyType, EventData.DAILY_TYPE_DAY)) {
-				setDaylyFreq(data.rrDaylyFreq);
-			} else if(StringUtils.equals(data.rrDaylyType, EventData.DAILY_TYPE_FERIALI)) {
-				setType(EventData.TYPE_DAILY_FERIALI);
+		if(StringUtils.equals(event.rrType, Event.TYPE_DAILY)) {
+			setType(event.rrType);
+			if(StringUtils.equals(event.rrDailyType, Event.DAILY_TYPE_DAY)) {
+				setDailyFreq(event.rrDailyFreq);
+			} else if(StringUtils.equals(event.rrDailyType, Event.DAILY_TYPE_FERIALI)) {
+				setType(Event.TYPE_DAILY_FERIALI);
 			} else {
-				setDaylyFreq(null);
+				setDailyFreq(null);
 			}
 		} else {
 			// Reset fields...
-			setDaylyFreq(null);
+			setDailyFreq(null);
 		}
 			
-		if(StringUtils.equals(data.rrType, EventData.TYPE_WEEKLY)) {
-			setType(data.rrType);
-			setWeeklyFreq(data.rrWeeklyFreq);
-			setWeeklyDay_1(data.rrWeeklyDay1);
-			setWeeklyDay_2(data.rrWeeklyDay2);
-			setWeeklyDay_3(data.rrWeeklyDay3);
-			setWeeklyDay_4(data.rrWeeklyDay4);
-			setWeeklyDay_5(data.rrWeeklyDay5);
-			setWeeklyDay_6(data.rrWeeklyDay6);
-			setWeeklyDay_7(data.rrWeeklyDay7);
+		if(StringUtils.equals(event.rrType, Event.TYPE_WEEKLY)) {
+			setType(event.rrType);
+			setWeeklyFreq(event.rrWeeklyFreq);
+			setWeeklyDay_1(event.rrWeeklyDay1);
+			setWeeklyDay_2(event.rrWeeklyDay2);
+			setWeeklyDay_3(event.rrWeeklyDay3);
+			setWeeklyDay_4(event.rrWeeklyDay4);
+			setWeeklyDay_5(event.rrWeeklyDay5);
+			setWeeklyDay_6(event.rrWeeklyDay6);
+			setWeeklyDay_7(event.rrWeeklyDay7);
 		} else {
 			// Reset fields...
 			setWeeklyFreq(null);
@@ -95,10 +95,10 @@ public class ORecurrence extends Recurrences {
 			setWeeklyDay_7(null);
 		}
 		
-		if(StringUtils.equals(data.rrType, EventData.TYPE_MONTHLY)) {
-			setType(data.rrType);
-			setMonthlyFreq(data.rrMonthlyFreq);
-			setMonthlyDay(data.rrMonthlyDay);
+		if(StringUtils.equals(event.rrType, Event.TYPE_MONTHLY)) {
+			setType(event.rrType);
+			setMonthlyFreq(event.rrMonthlyFreq);
+			setMonthlyDay(event.rrMonthlyDay);
 			
 		} else {
 			// Reset fields...
@@ -106,11 +106,11 @@ public class ORecurrence extends Recurrences {
 			setMonthlyDay(null);
 		}
 		
-		if(StringUtils.equals(data.rrType, EventData.TYPE_YEARLY)) {
-			setType(data.rrType);
-			setYearlyFreq(data.rrYearlyFreq);
-			setYearlyDay(data.rrYearlyDay);
-			setStartDate(eventStartDate.withMonthOfYear(data.rrYearlyFreq).withDayOfMonth(data.rrYearlyDay));
+		if(StringUtils.equals(event.rrType, Event.TYPE_YEARLY)) {
+			setType(event.rrType);
+			setYearlyFreq(event.rrYearlyFreq);
+			setYearlyDay(event.rrYearlyDay);
+			setStartDate(eventStartDate.withMonthOfYear(event.rrYearlyFreq).withDayOfMonth(event.rrYearlyDay));
 			
 		} else {
 			// Reset fields...
@@ -119,15 +119,15 @@ public class ORecurrence extends Recurrences {
 		}
 		
 		RRule rr = null;
-		if(StringUtils.equals(data.rrEndsMode, EventData.ENDS_MODE_NEVER)) {
+		if(StringUtils.equals(event.rrEndsMode, Event.ENDS_MODE_NEVER)) {
 			rr = applyEndNever(etz, false);
 			
-		} else if(StringUtils.equals(data.rrEndsMode, EventData.ENDS_MODE_REPEAT)) {
-			rr = applyEndRepeat(data.rrRepeatTimes, eventStartDate, eventEndDate, etz, false);
+		} else if(StringUtils.equals(event.rrEndsMode, Event.ENDS_MODE_REPEAT)) {
+			rr = applyEndRepeat(event.rrRepeatTimes, eventStartDate, eventEndDate, etz, false);
 			//TODO: completare implementazione repeat
 			
-		} else if(StringUtils.equals(data.rrEndsMode, EventData.ENDS_MODE_UNTIL)) {
-			rr = applyEndUntil(data.rrUntilDate, etz, false);
+		} else if(StringUtils.equals(event.rrEndsMode, Event.ENDS_MODE_UNTIL)) {
+			rr = applyEndUntil(event.rrUntilDate, etz, false);
 		}
 		
 		setRule(rr.getValue());
@@ -173,7 +173,7 @@ public class ORecurrence extends Recurrences {
 			
 			if(StringUtils.equals(getType(), "D")) {
 				rec.setFrequency(Recur.DAILY);
-				rec.setInterval(getDaylyFreq());
+				rec.setInterval(getDailyFreq());
 			
 			} else if(StringUtils.equals(getType(), "F")) {
 				rec.setFrequency(Recur.WEEKLY);

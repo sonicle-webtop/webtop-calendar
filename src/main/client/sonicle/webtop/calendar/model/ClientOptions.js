@@ -41,7 +41,7 @@ Ext.define('Sonicle.webtop.calendar.model.ClientOptions', {
 		{name: 'workdayStartDate', type: 'date', 
 			depends: 'workdayStart',
 			convert: function(v, rec) {
-				console.log('convert');
+				//console.log('convert');
 				return Ext.Date.parse(rec.get('workdayStart'), 'H:i');
 			}
 		},

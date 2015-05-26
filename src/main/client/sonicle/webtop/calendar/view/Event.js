@@ -34,21 +34,25 @@
 Ext.define('Sonicle.webtop.calendar.view.Event', {
 	extend: 'WT.sdk.ModelView',
 	requires: [
+		'Ext.ux.form.trigger.Clear',
 		'Sonicle.form.field.Palette',
 		'Sonicle.form.Separator',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.IconComboBox',
 		'WT.model.Empty',
 		'WT.model.Value',
+		'WT.model.ActivityLkp',
+		'WT.model.CausalLkp',
 		'WT.store.Timezone',
-		'WT.store.RRDaylyFreq',
+		'WT.store.RRDailyFreq',
 		'WT.store.RRWeeklyFreq',
 		'WT.store.RRMonthlyDay',
 		'WT.store.RRMonthlyFreq',
 		'WT.store.RRYearlyDay',
+		'WT.store.RRYearlyFreq',
 		'WT.ux.SuggestCombo',
 		'Sonicle.webtop.calendar.model.Event',
-		'Sonicle.webtop.calendar.model.Calendar',
+		'Sonicle.webtop.calendar.model.EventCalendar',
 		'Sonicle.webtop.calendar.store.Reminder',
 		'Sonicle.webtop.calendar.store.AttendeeRcptType',
 		'Sonicle.webtop.calendar.store.AttendeeRespStatus'
@@ -125,8 +129,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		}
 	},
 	
+	groupId: null,
+	
 	initComponent: function() {
-		var me = this;
+		var me = this,
+				vm = me.getViewModel();
+		
 		Ext.apply(me, {
 			tbar: [
 				me.addAction('saveClose', {
@@ -163,12 +171,34 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						//TODO: implementare stampa evento
 						WT.warn('TODO');
 					}
-				})
+				}),
+				'->',
+				me.addRef('fldgroup', Ext.create({
+					xtype: 'combo',
+					typeAhead: true,
+					queryMode: 'local',
+					forceSelection: true,
+					selectOnFocus: true,
+					store: {
+						autoLoad: true,
+						model: 'WT.model.Simple',
+						proxy: WTF.proxy(me.mys.ID, 'GetCalendarGroups', 'groups')
+					},
+					valueField: 'id',
+					displayField: 'desc',
+					fieldLabel: me.mys.res('event.fld-group.lbl'),
+					labelWidth: 75,
+					listeners: {
+						select: function(s, rec) {
+							me.updateCalendarFilters();
+							me.updateActivityParams(true);
+						}
+					},
+					value: me.groupId
+				}))
 			]
 		});
 		me.callParent(arguments);
-		
-		
 		
 		me.addRef('main', Ext.create({
 			xtype: 'form',
@@ -210,26 +240,16 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						disabled: '{record._isRecurring}'
 					},
 					margin: '0 5 0 0',
-					width: 105,
-					listeners: {
-						change: function() {
-							if(me.isPlanningActive()) me.refreshPlanning();
-						}
-					}
+					width: 105
 				}, {
 					xtype: 'timefield',
 					bind: {
 						value: '{startTime}',
 						disabled: '{fldallDay.checked}'
 					},
-					format: WT.getTimeFmt(),
+					format: WT.getShortTimeFmt(),
 					margin: '0 5 0 0',
-					width: 80,
-					listeners: {
-						change: function() {
-							if(me.isPlanningActive()) me.refreshPlanning();
-						}
-					}
+					width: 80
 				}, {
 					xtype: 'button',
 					iconCls: 'wtcal-icon-now-xs',
@@ -248,7 +268,32 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
 					boxLabel: me.mys.res('event.fld-allDay.lbl')
-				}]
+				}, 
+				me.addRef('fldcalendar', Ext.create({
+					xtype: 'soiconcombo',
+					bind: '{record.calendarId}',
+					typeAhead: false,
+					queryMode: 'local',
+					forceSelection: true,
+					selectOnFocus: true,
+					store: {
+						autoLoad: true,
+						model: 'Sonicle.webtop.calendar.model.EventCalendar',
+						proxy: WTF.proxy(me.mys.ID, 'GetCalendars', 'calendars')
+					},
+					valueField: 'calendarId',
+					displayField: 'name',
+					iconClsField: 'colorCls',
+					labelWidth: 70,
+					fieldLabel: me.mys.res('event.fld-calendar.lbl'),
+					margin: 0,
+					flex: 1,
+					listeners: {
+						select: function(s, rec) {
+							me.onCalendarSelect(rec);
+						}
+					}
+				}))]
 			}, {
 				xtype: 'fieldcontainer',
 				fieldLabel: me.mys.res('event.fld-endDate.lbl'),
@@ -263,26 +308,16 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						disabled: '{record._isRecurring}'
 					},
 					margin: '0 5 0 0',
-					width: 105,
-					listeners: {
-						change: function() {
-							if(me.isPlanningActive()) me.refreshPlanning();
-						}
-					}
+					width: 105
 				}, {
 					xtype: 'timefield',
 					bind: {
 						value: '{endTime}',
 						disabled: '{fldallDay.checked}'
 					},
-					format: WT.getTimeFmt(),
+					format: WT.getShortTimeFmt(),
 					margin: '0 5 0 0',
-					width: 80,
-					listeners: {
-						change: function() {
-							if(me.isPlanningActive()) me.refreshPlanning();
-						}
-					}
+					width: 80
 				}, {
 					xtype: 'button',
 					iconCls: 'wtcal-icon-now-xs',
@@ -309,12 +344,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					fieldLabel: me.mys.res('event.fld-timezone.lbl'),
 					margin: 0,
 					flex: 1,
-					labelWidth: 75,
-					listeners: {
-						change: function() {
-							if(me.isPlanningActive()) me.refreshPlanning();
-						}
-					}
+					labelWidth: 75
 				}]
 			}]
 		}));
@@ -326,7 +356,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			modelValidation: true,
 			bodyPadding: 5,
 			defaults: {
-				labelWidth: 80
+				labelWidth: 110
 			},
 			items: [{
 				xtype: 'textareafield',
@@ -345,10 +375,16 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'combo',
 					bind: '{record.reminder}',
 					editable: false,
-					store: Ext.create('Sonicle.webtop.calendar.store.Reminder'),
+					store: Ext.create('Sonicle.webtop.calendar.store.Reminder', {
+						autoLoad: true
+					}),
 					valueField: 'id',
 					displayField: 'desc',
-					width: 110
+					triggers: {
+						clear: WTF.clearTrigger()
+					},
+					emptyText: WT.res('word.none.male'),
+					width: 150
 				}, {
 					xtype: 'checkbox',
 					bind: '{isPrivate}',
@@ -361,38 +397,71 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
 					boxLabel: me.mys.res('event.fld-busy.lbl')
-				}, {
-					xtype: 'soiconcombo',
-					bind: '{record.calendarId}',
-					typeAhead: false,
-					queryMode: 'local',
-					forceSelection: true,
-					selectOnFocus: true,
-					store: {
-						autoLoad: true,
-						model: 'Sonicle.webtop.calendar.model.Calendar',
-						proxy: WTF.proxy(me.mys.ID, 'GetCalendars', 'calendars', {
-							extraParams: {
-								groupId: me.groupId
-							}
-						})
-					},
-					valueField: 'calendarId',
-					displayField: 'name',
-					iconClsField: 'colorCls',
-					labelWidth: 70,
-					fieldLabel: me.mys.res('event.fld-calendar.lbl'),
-					margin: 0,
-					flex: 1,
-					listeners: {
-						select: function(s, rec) {
-							me.onCalendarSelect(rec);
-						}
-					}
-				}]	
+				}]
 			}, {
 				xtype: 'soseparator'
-			}]
+			}, me.addRef('fldactivity', Ext.create(WTF.remoteCombo('id', 'desc', {
+				bind: '{record.activityId}',
+				autoLoadOnValue: true,
+				store: {
+					model: 'WT.model.ActivityLkp',
+					proxy: WTF.proxy(WT.ID, 'GetActivities', 'data'),
+					filters: [{
+						filterFn: function(rec) {
+							if(rec.get('readOnly')) {
+								if(rec.getId() !== me.getRef('fldactivity').getValue()) {
+									return null;
+								}
+							}
+							return rec;
+						}
+					}]
+				},
+				triggers: {
+					clear: WTF.clearTrigger()
+				},
+				fieldLabel: me.mys.res('event.fld-activity.lbl'),
+				anchor: '100%'
+			}))),
+			me.addRef('fldcustomer', Ext.create(WTF.remoteCombo('id', 'desc', {
+				bind: '{record.customerId}',
+				autoLoadOnValue: true,
+				store: {
+					model: 'WT.model.Simple',
+					proxy: WTF.proxy(WT.ID, 'GetCustomers', 'data')
+				},
+				triggers: {
+					clear: WTF.clearTrigger()
+				},
+				fieldLabel: me.mys.res('event.fld-customer.lbl'),
+				anchor: '100%'
+			}))),
+			me.addRef('fldstatistic', Ext.create(WTF.remoteCombo('id', 'desc', {
+				bind: '{record.statisticId}',
+				autoLoadOnValue: true,
+				store: {
+					model: 'WT.model.Simple',
+					proxy: WTF.proxy(WT.ID, 'GetStatisticCustomers', 'data')
+				},
+				triggers: {
+					clear: WTF.clearTrigger()
+				},
+				fieldLabel: me.mys.res('event.fld-statistic.lbl'),
+				anchor: '100%'
+			}))),
+			me.addRef('fldcausal', Ext.create(WTF.remoteCombo('id', 'desc', {
+				bind: '{record.causalId}',
+				autoLoadOnValue: true,
+				store: {
+					model: 'WT.model.CausalLkp',
+					proxy: WTF.proxy(WT.ID, 'GetCausals', 'data')
+				},
+				triggers: {
+					clear: WTF.clearTrigger()
+				},
+				fieldLabel: me.mys.res('event.fld-causal.lbl'),
+				anchor: '100%'
+			})))]
 		}));
 		me.addRef('pInvitation', Ext.create({
 			xtype: 'panel',
@@ -427,7 +496,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							id: me.mys.ID,
 							key: 'store.attendeeRcptType'
 						}),
-						editor: Ext.create(WTF.localCombo({
+						editor: Ext.create(WTF.localCombo('id', 'desc', {
 							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRcptType', {
 								autoLoad: true
 							})
@@ -440,7 +509,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							id: me.mys.ID,
 							key: 'store.attendeeRespStatus'
 						}),
-						editor: Ext.create(WTF.localCombo({
+						editor: Ext.create(WTF.localCombo('id', 'desc', {
 							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 								autoLoad: true
 							})
@@ -452,8 +521,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						Ext.create('Ext.grid.plugin.RowEditing', {
 							pluginId: 'rowediting',
 							clicksToMoveEditor: 2,
-							saveBtnText: 'Conferma',
-							cancelBtnText: 'Annulla'
+							saveBtnText: WT.res('act-confirm.lbl'),
+							cancelBtnText: WT.res('act-cancel.lbl')
 						})
 					],
 					tbar: [
@@ -493,6 +562,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.addRef('gpPlanning', Ext.create({
 					xtype: 'gridpanel',
 					itemId: 'planning',
+					enableLocking: true,
 					columns: [],
 					store: {
 						model: 'WT.model.Empty',
@@ -508,6 +578,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									Ext.iterate(meta.colsInfo, function(col,i) {
 										if(col.dataIndex === 'recipient') {
 											col.header = me.mys.res('event.gp-planning.recipient.lbl');
+											col.locked = true;
 											col.width = 200;
 											
 											// Add this column as is... skip nesting
@@ -518,6 +589,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 												clsPrefix: 'wtcal-planning-',
 												moreCls: (col.overlaps) ? 'wtcal-planning-overlaps' : null
 											});
+											col.lockable = false;
 											col.sortable = false;
 											col.hideable = false;
 											col.menuDisabled = true;
@@ -620,7 +692,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							boxLabel: WT.res('rr.type.none')
 						}, {
 							inputValue: 'D',
-							boxLabel: WT.res('rr.type.dayly')
+							boxLabel: WT.res('rr.type.daily')
 						}, {
 							inputValue: 'W',
 							boxLabel: WT.res('rr.type.weekly')
@@ -658,25 +730,25 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							items: [{
 								name: 'rrDaylyType',
 								inputValue: '1',
-								boxLabel: WT.res('rr.type.dayly.type.1')
+								boxLabel: WT.res('rr.type.daily.type.1')
 							}, {
 								xtype: 'combo',
-								bind: '{record.rrDaylyFreq}',
+								bind: '{record.rrDailyFreq}',
 								typeAhead: true,
 								queryMode: 'local',
 								forceSelection: true,
-								store: Ext.create('WT.store.RRDaylyFreq'),
+								store: Ext.create('WT.store.RRDailyFreq'),
 								valueField: 'id',
 								displayField: 'id',
 								width: 60,
 								margin: '0 5 0 0'
 							}, {
 								xtype: 'label',
-								text: WT.res('rr.type.dayly.freq')
+								text: WT.res('rr.type.daily.freq')
 							}, {
 								name: 'rrDaylyType',
 								inputValue: '2',
-								boxLabel: WT.res('rr.type.dayly.type.2')
+								boxLabel: WT.res('rr.type.daily.type.2')
 							}]
 						}]
 					}, {
@@ -882,31 +954,78 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			}]
 		}));
 		
+		me.updateCalendarFilters();
+		me.updateActivityParams(false);
+		me.updateStatisticParams(false);
+		me.updateCausalParams(false);
+		
 		me.on('viewload', me.onViewLoad);
+		vm.bind('{record.startDate}', me.onDatesChanged, me);
+		vm.bind('{record.endDate}', me.onDatesChanged, me);
+		vm.bind('{record.timezone}', me.onDatesChanged, me);
+		vm.bind('{record.customerId}', me.onCustomerChanged, me);
 	},
 	
 	onViewLoad: function(s, success) {
 		if(!success) return;
 		var me = this,
 				model = me.getModel(),
-				main = me.getRef('main');
-		
-		
-		
-		me.getRef('pInvitation').setDisabled(!model.get('_isSingle') && !model.get('_isBroken'));
-		me.getRef('pRecurrence').setDisabled(!model.get('_isSingle') && !model.get('_isRecurring'));
+				main = me.getRef('main'),
+				group = me.getRef('fldgroup');
 		
 		// Overrides autogenerated string id by extjs...
 		// It avoids type conversion problems server-side!
 		//if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
 		
-		if(me.isMode(me.MODE_EDIT)) {
+		// Gui updates...
+		me.getRef('pInvitation').setDisabled(!model.get('_isSingle') && !model.get('_isBroken'));
+		me.getRef('pRecurrence').setDisabled(!model.get('_isSingle') && !model.get('_isRecurring'));
+		
+		if(me.isMode(me.MODE_NEW)) {
+			group.setDisabled(false);
+			me.getAction('deleteEvent').setDisabled(true);
+			me.getAction('restoreEvent').setDisabled(true);
+		} else if(me.isMode(me.MODE_EDIT)) {
+			group.setDisabled(true);
 			me.getAction('restoreEvent').setDisabled(!(model.get('_isBroken') === true));
-		} else {
-			
 		}
 		
 		main.getComponent('fldtitle').focus(true);
+	},
+	
+	updateActivityParams: function(reload) {
+		var store = this.getRef('fldactivity').getStore();
+		WTU.applyExtraParams(store, {
+			groupId: this.getRef('fldgroup').getValue()
+		});
+		if(reload) store.load();
+	},
+	
+	updateStatisticParams: function(reload) {
+		var me = this,
+				store = me.getRef('fldstatistic').getStore();
+		WTU.applyExtraParams(store, {
+			groupId: me.getRef('fldgroup').getValue(),
+			parentCustomerId: me.getRef('fldcustomer').getValue()
+		});
+		if(reload) store.load();
+	},
+	
+	updateCausalParams: function(reload) {
+		var me = this,
+				store = me.getRef('fldcausal').getStore();
+		WTU.applyExtraParams(store, {
+			groupId: me.getRef('fldgroup').getValue(),
+			customerId: me.getRef('fldcustomer').getValue()
+		});
+		if(reload) store.load();
+	},
+	
+	updateCalendarFilters: function() {
+		this.getRef('fldcalendar').getStore().addFilter({
+			property: 'groupId',
+			value: this.getRef('fldgroup').getValue()
+		});
 	},
 	
 	onCalendarSelect: function(cal) {
@@ -916,6 +1035,19 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			busy: cal.get('busy'),
 			reminder: cal.get('reminder')
 		});
+	},
+	
+	onDatesChanged: function() {
+		if(this.isPlanningActive()) this.refreshPlanning();
+	},
+	
+	onCustomerChanged: function() {
+		var me = this,
+				model = me.getModel();
+		model.set('statisticId', null);
+		model.set('causalId', null);
+		me.updateStatisticParams(true);
+		me.updateCausalParams(true);
 	},
 	
 	saveEvent: function() {
@@ -1034,7 +1166,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	isPlanningActive: function() {
-		return (this.getRef('pInvitation').getLayout().getActiveItem() === 'planning');
+		return (this.getRef('pInvitation').getLayout().getActiveItem().getItemId() === 'planning');
 	},
 	
 	refreshPlanning: function() {
@@ -1047,7 +1179,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			startDate: serData['startDate'],
 			endDate: serData['endDate'],
 			timezone: serData['timezone'],
-			attendees: serData['attendees']
+			attendees: Ext.JSON.encode(serData['attendees'])
 		});
 		sto.load();
 	}

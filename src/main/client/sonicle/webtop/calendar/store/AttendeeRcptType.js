@@ -35,7 +35,6 @@
 Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptType', {
 	extend: 'Ext.data.ArrayStore',
 	
-	autoLoad: true,
 	model: 'WT.model.Simple',
 	data: [
 		['N', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.N')],

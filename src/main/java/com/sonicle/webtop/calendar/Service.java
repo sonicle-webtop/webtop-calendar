@@ -53,16 +53,24 @@ import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
+import com.sonicle.webtop.calendar.bol.js.JsAttendee;
+import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
-import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar;
-import com.sonicle.webtop.calendar.bol.js.JsTreeCalendar.JsTreeCalendarList;
+import com.sonicle.webtop.calendar.bol.js.JsEventCalendar;
+import com.sonicle.webtop.calendar.bol.js.JsTreeCalendarEntry;
+import com.sonicle.webtop.calendar.bol.js.JsTreeCalendarEntry.JsTreeCalendarEntries;
+import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.bol.OUser;
+import com.sonicle.webtop.core.bol.js.JsSimple;
+import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BasicEnvironment;
 import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -191,22 +199,22 @@ public class Service extends BaseService {
 				new JsonResult("children", children).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				JsListPayload<JsTreeCalendarList> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarList.class);
+				JsListPayload<JsTreeCalendarEntries> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarEntries.class);
 				
-				for(JsTreeCalendar cal : pl.data) {
-					if(cal._nodeType.equals(JsTreeCalendar.TYPE_GROUP)) {
+				for(JsTreeCalendarEntry cal : pl.data) {
+					if(cal._nodeType.equals(JsTreeCalendarEntry.TYPE_GROUP)) {
 						toggleCheckedCalendarGroup(cal._groupId, cal._visible);
-					} else if(cal._nodeType.equals(JsTreeCalendar.TYPE_CALENDAR)) {
+					} else if(cal._nodeType.equals(JsTreeCalendarEntry.TYPE_CALENDAR)) {
 						toggleCheckedCalendar(Integer.valueOf(cal.id), cal._visible);
 					}
 				}
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
-				JsListPayload<JsTreeCalendarList> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarList.class);
+				JsListPayload<JsTreeCalendarEntries> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarEntries.class);
 				
 				CalendarDAO cdao = CalendarDAO.getInstance();
-				for(JsTreeCalendar cal : pl.data) {
+				for(JsTreeCalendarEntry cal : pl.data) {
 					if(cal._nodeType.equals("calendar")) {
 						cdao.delete(con, Integer.valueOf(cal.id));
 					}
@@ -269,20 +277,50 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processGetCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	public void processGetCalendarGroups(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
-		List<OCalendar> items = null;
+		List<JsSimple> items = new ArrayList<>();
 		
 		try {
-			CalendarDAO cdao = CalendarDAO.getInstance();
-			con = getConnection();
+			Boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", true);
+			UserProfile up = env.getProfile();
+			SharedCalendarGroup sharedGroup = null;
+			for(CalendarGroup group : calendarGroups.values()) {
+				if(group instanceof MyCalendarGroup) { // Adds group as Mine
+					items.add(new JsSimple(up.getStringId(), up.getDisplayName()));
+				} else if(group instanceof SharedCalendarGroup) { // Adds group as Shared
+					//TODO: se writableOnly verificare che il gruppo condiviso sia scrivibile
+					//if(writableOnly)
+					sharedGroup = (SharedCalendarGroup)group;
+					items.add(new JsSimple(sharedGroup.getId(), sharedGroup.getDisplayName()));
+				}
+			}
 			
-			String groupId = ServletUtils.getStringParameter(request, "groupId", true);
-			if(calendarGroups.containsKey(groupId)) {
-				CalendarGroup group = calendarGroups.get(groupId);
-				items = cdao.selectByDomainUser(con, group.getDomainId(), group.getUserId());
-			} else {
-				items = new ArrayList<>();
+			new JsonResult("groups", items, items.size()).printTo(out);
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action GetCalendarGroups", ex);
+			new JsonResult(false, "Error").printTo(out);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public void processGetCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		Connection con = null;
+		List<JsEventCalendar> items = new ArrayList<>();
+		
+		try {
+			JsEventCalendar jsCal = null;
+			List<OCalendar> cals = null;
+			for(CalendarGroup group : calendarGroups.values()) {
+				cals = manager.getCalendars(new UserProfile.Id(group.getId()));
+				for(OCalendar cal : cals) {
+					jsCal = new JsEventCalendar();
+					jsCal.fillFrom(cal);
+					items.add(jsCal);
+				}
 			}
 			new JsonResult("calendars", items, items.size()).printTo(out);
 			
@@ -359,7 +397,7 @@ public class Service extends BaseService {
 					if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip group if not visible
 					
 					checked = checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
-					grpEvts = manager.getEvents(group, checked, fromDate, toDate);
+					grpEvts = manager.viewEvents(group, checked, fromDate, toDate);
 					for(CalendarManager.GroupEvents ge : grpEvts) {
 						for(SchedulerEvent evt : ge.events) {
 							if(evt.getRecurrenceId() == null) {
@@ -377,13 +415,23 @@ public class Service extends BaseService {
 				}
 				new JsonResult("events", items).printTo(out);
 				
+			} else if(crud.equals(Crud.CREATE)) {
+				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
+				
+				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
+				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
+				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
+				manager.copyEvent(EventKey.buildKey(pl.data.eventId, pl.data.originalEventId), newStart, newEnd);
+				
+				new JsonResult().printTo(out);
+				
 			} else if(crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
 				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
 				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
-				manager.moveEvent(pl.data.id, newStart, newEnd);
+				manager.updateEvent(pl.data.id, newStart, newEnd, pl.data.title);
 				
 				new JsonResult().printTo(out);
 				
@@ -429,6 +477,8 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
+				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condividi)
+				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				manager.addEvent(evt);
 				new JsonResult().printTo(out);
@@ -471,6 +521,7 @@ public class Service extends BaseService {
 			String eventStartDate = ServletUtils.getStringParameter(request, "startDate", true);
 			String eventEndDate = ServletUtils.getStringParameter(request, "endDate", true);
 			String timezone = ServletUtils.getStringParameter(request, "timezone", true);
+			JsAttendeeList attendees = ServletUtils.getObjectParameter(request, "attendees", new JsAttendeeList(), JsAttendeeList.class);
 			
 			// Parses string parameters
 			DateTimeZone eventTz = DateTimeZone.forID(timezone);
@@ -485,14 +536,15 @@ public class Service extends BaseService {
 			LocalTime fromTime = DateTimeUtils.min(localStartTime, cus.getWorkdayStart());
 			LocalTime toTime = DateTimeUtils.max(localEndTime, cus.getWorkdayEnd());
 			
-			// Defines fields and columnsInfo dynamically
-			ArrayList<String> hours = manager.generateTimeSpansKeys(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
-			ArrayList<ExtFieldMeta> fields = new ArrayList<>();
-			ArrayList<ExtGridColumnMeta> colsInfo = new ArrayList<>();
-			
+			// Defines useful date/time formatters
 			DateTimeFormatter ymdhmFmt = DateTimeUtils.createYmdHmFormatter();
 			DateTimeFormatter tFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getTimeFormat());
 			DateTimeFormatter dFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getDateFormat());
+			
+			// Generates fields and columnsInfo dynamically
+			ArrayList<String> hours = manager.generateTimeSpans(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
+			ArrayList<ExtFieldMeta> fields = new ArrayList<>();
+			ArrayList<ExtGridColumnMeta> colsInfo = new ArrayList<>();
 			
 			ExtGridColumnMeta col = null;
 			fields.add(new ExtFieldMeta("recipient"));
@@ -506,54 +558,40 @@ public class Service extends BaseService {
 				colsInfo.add(col);
 			}
 			
-			
-			LinkedHashSet<String> busyHours = manager.calculateAvailabilitySpans(60, new UserProfile.Id("matteo.albinola@sonicleldap"), eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
-			
+			// Collects attendees availability...
+			OUser user = null;
+			UserProfile.Id profileId = null;
+			LinkedHashSet<String> busyHours = null;
 			MapItem item = null;
-			
-			item = new MapItem();
-			item.put("recipient", "matteo.albinola@sonicleldap");
-			for(String hourKey : hours) {
-				if(busyHours.contains(hourKey)) {
-					item.put(hourKey, "busy");
+			for(JsAttendee attendee : attendees) {
+				item = new MapItem();
+				item.put("recipient", attendee.recipient);
+				
+				user = guessUserByAttendee(attendee.recipient);
+				if(user != null) {
+					profileId = new UserProfile.Id(user.getDomainId(), user.getUserId());
+					busyHours = manager.calculateAvailabilitySpans(60, profileId, eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
+					for(String hourKey : hours) {
+						if(busyHours.contains(hourKey)) {
+							item.put(hourKey, "busy");
+						} else {
+							item.put(hourKey, "free");
+						}
+					}
 				} else {
-					item.put(hourKey, "free");
+					for(String hourKey : hours) {
+						item.put(hourKey, "unknown");
+					}
 				}
+				
+				items.add(item);
 			}
-			items.add(item);
 			
 			ExtGridMetaData meta = new ExtGridMetaData(true);
 			meta.setFields(fields);
 			meta.setColumnsInfo(colsInfo);
 			new JsonResult(items, meta, items.size()).printTo(out);
 			
-			
-			/*
-			LinkedHashMap<String, String> availability = new LinkedHashMap<>();
-			ExtFieldMeta fieldMeta = null;
-			ExtGridColumnMeta columnMeta = null;
-			for(String hourKey : hours) {
-				fieldMeta = new ExtFieldMeta(hourKey);
-				
-				if(busyHours.contains(hourKey)) {
-					availability.put(hourKey, "busy");
-				} else {
-					availability.put(hourKey, "free");
-				}
-			}
-			*/
-			
-			/*
-			if(data.equals("hours")) {
-				new JsonResult(hours).printTo(out);
-			} else if(data.equals("busyHours")) {
-				new JsonResult(busyHours).printTo(out);
-			} else {
-				new JsonResult(availability).printTo(out);
-			}
-			*/
-			
-			
 		} catch(Exception ex) {
 			logger.error("Error executing action ManageEvents", ex);
 			new JsonResult(false, "Error").printTo(out);
@@ -563,62 +601,26 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processGetHourlyPlanning22222222(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	private OUser guessUserByAttendee(String recipient) {
 		Connection con = null;
-		JsEvent item = null;
 		
 		try {
-			UserProfile up = env.getProfile();
+			//TODO: gestire definitivamente il campo attendee.recipient... lokup per email???
+			UserProfile.Id profileId = new UserProfile.Id(recipient);
 			
-			String data = ServletUtils.getStringParameter(request, "data", "availability");
-			
-			DateTimeZone profileTz = DateTimeZone.forTimeZone(up.getTimeZone());
-			DateTimeZone eventTz = DateTimeZone.forID("Europe/Rome");
-			DateTime fromDt = CalendarManager.parseYmdHmsWithZone("2015-04-23 11:00:00", eventTz);
-			DateTime toDt = CalendarManager.parseYmdHmsWithZone("2015-04-24 11:30:00", eventTz);
-			
-			LocalDate fromDate = fromDt.toLocalDate();
-			LocalDate toDate = toDt.toLocalDate();
-			LocalTime fromTime = DateTimeUtils.min(fromDt.toLocalTime(), cus.getWorkdayStart());
-			LocalTime toTime = DateTimeUtils.max(toDt.toLocalTime(), cus.getWorkdayEnd());
-			
-			
-			ArrayList<String> hours = manager.generateTimeSpansKeys(30, fromDate, toDate, cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
-			
-			LinkedHashSet<String> busyHours = manager.calculateAvailabilitySpans(30, new UserProfile.Id("matteo.albinola@sonicleldap"), fromDt.withTime(fromTime), toDt.withTime(toTime), eventTz, true);
-			
-			LinkedHashMap<String, String> availability = new LinkedHashMap<>();
-			for(String hourKey : hours) {
-				if(busyHours.contains(hourKey)) {
-					availability.put(hourKey, "busy");
-				} else {
-					availability.put(hourKey, "free");
-				}
-			}
-			
-			
-			if(data.equals("hours")) {
-				new JsonResult(hours).printTo(out);
-			} else if(data.equals("busyHours")) {
-				new JsonResult(busyHours).printTo(out);
-			} else {
-				new JsonResult(availability).printTo(out);
-			}
-			
-			
+			con = WT.getCoreConnection();
+			UserDAO udao = UserDAO.getInstance();
+			return udao.selectByDomainUser(con, profileId.getDomainId(), profileId.getUserId());
+		
+		} catch(WTRuntimeException ex) {
+			return null;
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageEvents", ex);
-			new JsonResult(false, "Error").printTo(out);
-			
+			logger.error("Error guessing user from attendee", ex);
+			return null;
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
-	
-	
-	
-	
-	
 	
 	private void toggleCheckedCalendarGroup(String groupId, boolean checked) {
 		synchronized(calendarGroups) {
@@ -643,14 +645,14 @@ public class Service extends BaseService {
 	}
 	
 	private ExtTreeNode createCalendarGroupNode(MyCalendarGroup group, boolean leaf) {
-		return createCalendarGroupNode(group.getId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), leaf, group.getDomainId(), group.getUserId(), "wtcal-icon-calendar-my");
+		return createCalendarGroupNode(group.getId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), leaf, "wtcal-icon-calendar-my");
 	}
 	
 	private ExtTreeNode createCalendarGroupNode(SharedCalendarGroup group, boolean leaf) {
-		return createCalendarGroupNode(group.getId(), group.getDisplayName(), leaf, group.getDomainId(), group.getUserId(), "wtcal-icon-calendar-shared");
+		return createCalendarGroupNode(group.getId(), group.getDisplayName(), leaf, "wtcal-icon-calendar-shared");
 	}
 	
-	private ExtTreeNode createCalendarGroupNode(String id, String text, boolean leaf, String domainId, String userId, String iconClass) {
+	private ExtTreeNode createCalendarGroupNode(String id, String text, boolean leaf, String iconClass) {
 		boolean visible = checkedCalendarGroups.contains(id);
 		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
 		node.put("_nodeType", "group");

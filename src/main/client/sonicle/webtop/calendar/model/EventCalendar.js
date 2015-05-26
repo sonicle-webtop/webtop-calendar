@@ -31,30 +31,29 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol.js;
-
-import java.util.ArrayList;
-
-/**
- *
- * @author malbinola
- */
-public class JsTreeCalendar {
-	public static final String TYPE_GROUP = "group";
-	public static final String TYPE_CALENDAR = "calendar";
+Ext.define('Sonicle.webtop.calendar.model.EventCalendar', {
+	extend: 'WT.model.Base',
 	
-	public String id;
-	public String _nodeType;
-	public String _groupId;
-	public Boolean _visible;
-	
-	public JsTreeCalendar() {
-		
-	}
-	
-	public static class JsTreeCalendarList extends ArrayList<JsTreeCalendar> {
-		public JsTreeCalendarList() {
-			super();
-		}
-	}
-}
+	idProperty: 'calendarId',
+	fields: [
+		WTF.field('calendarId', 'int', false),
+		WTF.field('groupId', 'string', false),
+		WTF.field('name', 'string', false),
+		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
+		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
+		WTF.field('busy', 'boolean', false, {defaultValue: false}),
+		WTF.field('reminder', 'int', false, {
+			defaultValue: -1,
+			convert: function(v) {
+				return (v) ? v : -1;
+			},
+			serialize: function(v) {
+				return (v === -1) ? null : v;
+			}
+		}),
+		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
+		WTF.calcField('colorCls', 'string', 'color', function(v, rec) {
+			return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
+		})
+	]
+});

@@ -59,7 +59,6 @@ import org.jooq.Field;
 public class EventDAO extends BaseDAO {
 	
 	private final static EventDAO INSTANCE = new EventDAO();
-
 	public static EventDAO getInstance() {
 		return INSTANCE;
 	}
@@ -112,6 +111,10 @@ public class EventDAO extends BaseDAO {
 			.set(EVENTS.LAST_MODIFIED, item.getLastModified())
 			.set(EVENTS.UPDATE_DEVICE, item.getUpdateDevice())
 			.set(EVENTS.UPDATE_USER, item.getUpdateUser())
+			.set(EVENTS.ACTIVITY_ID, item.getActivityId())
+			.set(EVENTS.CUSTOMER_ID, item.getCustomerId())
+			.set(EVENTS.STATISTIC_ID, item.getStatisticId())
+			.set(EVENTS.CAUSAL_ID, item.getCausalId())
 			.where(
 				EVENTS.EVENT_ID.equal(item.getEventId())
 			)
@@ -208,6 +211,40 @@ public class EventDAO extends BaseDAO {
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+			)
+			.fetchOneInto(VSchedulerEvent.class);
+	}
+	
+	public VSchedulerEvent viewByPublicUid(Connection con, String publicUid) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		Events eve = EVENTS.as("eve");
+		Field<Integer> originalEventId = dsl
+			.select(eve.EVENT_ID)
+			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+			.where(
+				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+			)
+			.asField("original_event_id");
+		
+		return dsl
+			.select(
+				EVENTS.fields()
+			)
+			.select(
+				originalEventId,
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.PUBLIC_UID.equal(publicUid)
 				.and(
 					EVENTS.STATUS.equal("N")
 					.or(EVENTS.STATUS.equal("M"))
@@ -353,8 +390,6 @@ public class EventDAO extends BaseDAO {
 				EVENTS.EVENT_ID.as("original_event_id"), // For recurring events, originalEventId is always equal to eventId
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id")
-				//field("true", Boolean.class).as("is_recurring")
-				//field("false", Boolean.class).as("is_broken")
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))

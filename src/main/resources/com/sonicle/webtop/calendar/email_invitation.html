@@ -1,0 +1,87 @@
+<HTML>
+<BODY>
+	<DIV style='width:95%;'>
+	<TABLE cellspacing='0' cellpadding='8' border='0' summary='' style='width:100%;font-family:Arial,Sans-serif;border:1px Solid #ccc;background-color:#fff;'>
+	<TR>
+		<TD>
+			<DIV style='padding:2px'>
+				<DIV style='float:right;font-weight:bold;font-size:13px'><BR></DIV>
+				<H3 style='padding:0 0 6px 0;margin:0;font-family:Arial,Sans-serif;font-size:16px;font-weight:bold;color:#222'>
+					${event.title}
+				</H3>
+				<DIV style='padding-bottom:15px;font-size:13px;color:#222;white-space:pre-wrap!important;white-space:-moz-pre-wrap!important;white-space:-pre-wrap!important;white-space:-o-pre-wrap!important;white-space:pre;word-wrap:break-word'>
+					${event.description}
+				</DIV>
+				<TABLE cellpadding='0' cellspacing='0' border='0'>
+				<TR>
+					<TD style='padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap' valign='top'>
+						<DIV><I style='font-style:normal'>${i18n.tplWhen}</I></DIV>
+					</TD>
+					<TD style='padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222' valign='top'>
+						${event.when} ${event.timezone}
+					</TD>
+				</TR>
+				<#if (event.location)??>
+				<TR>
+					<TD style='padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap' valign='top'>
+						<DIV><I style='font-style:normal'>${i18n.tplLocation}</I></DIV>
+					</TD>
+					<TD style='padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222' valign='top'>
+						${event.location}
+						<SPAN dir='ltr'> (<A href='http://maps.google.it/maps?q=${event.location?replace(" ","+")}&hl=it' style='color:#20c;white-space:nowrap' target='_new'>${i18n.tplMap}</A>)</SPAN>
+					</TD>
+				</TR>
+				</#if>
+				<TR>
+					<TD style='padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap' valign='top'>
+						<DIV><I style='font-style:normal'>${i18n.tplAttendees}</I></DIV>
+					</TD>
+					<TD style='padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222' valign='top'>
+						<TABLE cellspacing='0' cellpadding='0'>
+							<TR>
+								<TD style='padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222'>
+									<SPAN style='font-family:Courier New,monospace'>&#8226;</SPAN>
+								</TD>
+								<TD style='padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222'>
+									<DIV><DIV style='margin:0 0 0.3em 0'>${event.organizer}<SPAN style='font-size:11px;color:#888'> - ${i18n.tplOrganizer}</SPAN></DIV></DIV>
+								</TD>
+							</TR>
+							<#list attendees as attendee>
+							<TR>
+								<TD style='padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222'>
+									<SPAN style='font-family:Courier New,monospace'>&#8226;</SPAN>
+								</TD>
+								<TD style='padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222'>
+									<DIV><DIV style='margin:0 0 0.3em 0'>${attendee.name}</DIV></DIV>
+								</TD>
+							</TR>
+							</#list>
+						</TABLE>
+					</TD>
+				</TR>
+				</TABLE>
+			</DIV>
+			<P style='color:#222;font-size:13px;margin:0'>
+				<SPAN style='color:#888'>${i18n.tplGoing}&nbsp;&nbsp;&nbsp;</SPAN><WBR></WBR>
+				<STRONG>
+					<A href='${urlReplyYes}' style='color:#20c;white-space:nowrap;text-decoration:none' target=_new>${i18n.tplReplyYes}</A>
+					<SPAN style='margin:0 0.4em;font-weight:normal'> - </SPAN>
+					<A href='${urlReplyNo}' style='color:#20c;white-space:nowrap;text-decoration:none' target=_new>${i18n.tplReplyNo}</A>
+					<SPAN style='margin:0 0.4em;font-weight:normal'> - </SPAN>
+					<A href='${urlReplyMaybe}' style='color:#20c;white-space:nowrap;text-decoration:none' target=_new>${i18n.tplReplyMaybe}</A>
+				</STRONG>
+				<BR><BR>
+				<A href='${urlView}' style='color:#20c;white-space:nowrap;text-decoration:none' target=_new >${i18n.viewReplies}</A>
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD style='background-color:#f6f6f6;color:#888;border-top:1px Solid #ccc;font-family:Arial,Sans-serif;font-size:11px'>
+			<P>${i18n.tplSentFrom} <A href='https://www.sonicle.com' target='_new' style='text-decoration:none'>${i18n.tplSignature}</A></P>
+			<P>${i18n.tplDiscaimer}</P>
+		</TD>
+	</TR>
+	</TABLE>
+	</DIV>
+</BODY>
+</HTML>

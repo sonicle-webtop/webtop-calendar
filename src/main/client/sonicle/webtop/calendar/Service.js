@@ -69,7 +69,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('week5view'),
 				me.getAction('weekview'),
 				me.getAction('weekagview'),
-				me.getAction('monthview')
+				me.getAction('monthview'),
+				'-'/*,
+				Ext.create('Sonicle.upload.Button', {
+					uploaderConfig: {
+						url: 'servlet-request',
+						flashSwfUrl: 'resources/js/plupload/Moxie.swf',
+						silverlightXapUrl: 'resources/js/plupload/Moxie.xap'
+					}
+				})
+				*/
 			]
 		}));
 		
@@ -821,129 +830,5 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		htmlSrc += "</TABLE>";
 
 		//WT.app.print(htmlSrc);
-	},
-	
-	printEvent: function(record) {
-		//TODO: completare informazioni evento!
-		//var event_id = rec.get('eventId');
-		var event_by = record.get('_groupId');
-		var event = record.get('title');
-		var report_id = eventForm.report_id.getValue();
-		var startdate = Ext.Date.format(record.get('startDate'), WT.getShortDateFmt());
-		var starttime = Ext.Date.format(record.get('startDate'), WT.getShortTimeFmt());
-		var enddate = Ext.Date.format(record.get('endDate'), WT.getShortDateFmt());
-		var endtime = Ext.Date.format(record.get('endDate'), WT.getShortTimeFmt());
-		var description = record.get('description');
-		var private_value = (record.get('isPrivate')) ? WT.res('word.yes') : WT.res('no');
-		var reminder = WTU.humanReadableDuration(record.get('reminder'));
-		//var share_with = eventForm.share_with.getValue();
-		var activity_id = eventForm.activity_id.getRawValue();
-		var activity_flag = eventForm.activity_flag.getRawValue();
-		var calendar_id = eventForm.calendar_id.getRawValue();
-		var customer_id = eventForm.customer_id.getRawValue();
-		var statistic_id = eventForm.statistic_id.getRawValue();
-		var rrtype = record.get('rrType');
-		var recurrence = "";
-		if (rrtype === '_')
-			recurrence = this.cs.res("none_recurrence");
-		if (rrtype === 'D')
-			recurrence = this.cs.res("dayly_recurrence");
-		if (rrtype === 'W')
-			recurrence = this.cs.res("weekly_recurrence");
-		if (rrtype === 'M')
-			recurrence = this.cs.res("monthly_recurrence");
-		if (rrtype === 'Y')
-			recurrence = this.cs.res("yearly_recurrence");
-
-		//var dayly1 = eventForm.dayly1.getValue();
-		//var dayly_step = eventForm.dayly_step.getValue();
-		//var dayly2 = eventForm.dayly2.getValue();
-		//var weekly_step = eventForm.weekly_step.getValue();
-		//var weekly1 = eventForm.weekly1.getValue();
-		//var weekly2 = eventForm.weekly2.getValue();
-		//var weekly3 = eventForm.weekly3.getValue();
-		//var weekly4 = eventForm.weekly4.getValue();
-		//var weekly5 = eventForm.weekly5.getValue();
-		//var weekly6 = eventForm.weekly6.getValue();
-		//var weekly7 = eventForm.weekly7.getValue();
-		//var monthly_day = eventForm.monthly_day.getValue();
-		//var monthly_month = eventForm.monthly_month.getValue();
-		//var yearly_day = eventForm.yearly_day.getValue();
-		//var yearly_month = eventForm.yearly_month.getValue();
-		//var until_ldate = eventForm.until_yyyymmdd.getValue();
-		//var until_yyyy = "";
-		//var until_mm = "";
-		//var until_dd = "";
-		//if (until_ldate!=null && until_ldate!="") {
-		//  until_yyyy = until_ldate.getFullYear();
-		//  until_mm = ""+(until_ldate.getMonth()+1);
-		//  if ((until_ldate.getMonth()+1)<10) until_mm="0"+until_mm;
-		//  until_dd = ""+until_ldate.getDate();
-		//  if (until_ldate.getDate()<10) until_dd="0"+until_dd;
-		//}
-		var htmlSrc = "<h3>" + event_by + "</h3>";
-		htmlSrc += "<hr width=100% size='4' color='black' align='center'>"
-		htmlSrc += "<br>";
-		htmlSrc += "<table width='100%' border='0'>"
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("textEvent") + "</b></td>";
-		htmlSrc += "<td>" + event + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("textLocation") + "</b></td>";
-		htmlSrc += "<td>" + report_id + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr><td>&nbsp</td></tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("textStartHour") + "</b></td>";
-		htmlSrc += "<td>" + startdate + " " + starttime + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("textEndHour") + "</b></td>";
-		htmlSrc += "<td>" + enddate + " " + endtime + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr><td>&nbsp</td></tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("recurrence") + ":</b></td>";
-		htmlSrc += "<td>" + recurrence + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr><td>&nbsp</td></tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td>" + description + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr><td>&nbsp</td></tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("reminder") + "</b></td>";
-		htmlSrc += "<td>" + reminder + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("private") + "</b></td>";
-		htmlSrc += "<td>" + private_value + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr><td>&nbsp</td></tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("activity") + "</b></td>";
-		htmlSrc += "<td>" + activity_id + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td>&nbsp</td>";
-		htmlSrc += "<td>" + activity_flag + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("category") + "</b></td>";
-		htmlSrc += "<td>" + calendar_id + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("customer") + "</b></td>";
-		htmlSrc += "<td>" + customer_id + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "<tr>";
-		htmlSrc += "<td width='30%'><b>" + this.cs.res("statistic") + "</b></td>";
-		htmlSrc += "<td>" + statistic_id + "</td>";
-		htmlSrc += "</tr>";
-		htmlSrc += "</table>";
-		
-		WT.app.print(htmlSrc);
 	}
 });

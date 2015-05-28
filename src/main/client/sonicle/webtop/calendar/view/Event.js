@@ -168,8 +168,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					tooltip: WT.res('act-print.lbl'),
 					iconCls: 'wt-icon-print-xs',
 					handler: function() {
-						//TODO: implementare stampa evento
-						WT.warn('TODO');
+						me.printEvent(me.getModel(), 
+							me.getRef('fldcalendar').getRawValue(),
+							me.getRef('fldactivity').getRawValue(),
+							me.getRef('fldcustomer').getRawValue(),
+							me.getRef('fldstatistic').getRawValue()
+						);
 					}
 				}),
 				'->',
@@ -1182,5 +1186,124 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			attendees: Ext.JSON.encode(serData['attendees'])
 		});
 		sto.load();
+	},
+	
+	printEvent: function (record, calendar, activity, customer, statistic) {
+		var me = this,
+				//var event_id = rec.get('eventId'),
+				eventBy = record.get('_groupId'),
+				title = record.get('title') || '',
+				location = record.get('location') || '',
+				startdate = Ext.Date.format(record.get('startDate'), WT.getShortDateFmt()),
+				starttime = Ext.Date.format(record.get('startDate'), WT.getShortTimeFmt()),
+				enddate = Ext.Date.format(record.get('endDate'), WT.getShortDateFmt()),
+				endtime = Ext.Date.format(record.get('endDate'), WT.getShortTimeFmt()),
+				description = record.get('description') || '',
+				private = (record.get('isPrivate')) ? WT.res('word.yes') : WT.res('word.no'),
+				reminder = WTU.humanReadableDuration(record.get('reminder'));
+		//var share_with = eventForm.share_with.getValue();
+		//var activity_id = eventForm.activity_id.getRawValue();
+		//var calendar_id = eventForm.calendar_id.getRawValue();
+		//var customer_id = eventForm.customer_id.getRawValue();
+		//var statistic_id = eventForm.statistic_id.getRawValue();
+		var rrtype = record.get('rrType');
+		var recurrence = "";
+		if (rrtype === '_')
+			recurrence = WT.res('rr.type.none');
+		if (rrtype === 'D')
+			recurrence = WT.res('rr.type.daily');
+		if (rrtype === 'W')
+			recurrence = WT.res('rr.type.weekly');
+		if (rrtype === 'M')
+			recurrence = WT.res('rr.type.monthly');
+		if (rrtype === 'Y')
+			recurrence = WT.res('rr.type.yearly');
+
+		//var dayly1 = eventForm.dayly1.getValue();
+		//var dayly_step = eventForm.dayly_step.getValue();
+		//var dayly2 = eventForm.dayly2.getValue();
+		//var weekly_step = eventForm.weekly_step.getValue();
+		//var weekly1 = eventForm.weekly1.getValue();
+		//var weekly2 = eventForm.weekly2.getValue();
+		//var weekly3 = eventForm.weekly3.getValue();
+		//var weekly4 = eventForm.weekly4.getValue();
+		//var weekly5 = eventForm.weekly5.getValue();
+		//var weekly6 = eventForm.weekly6.getValue();
+		//var weekly7 = eventForm.weekly7.getValue();
+		//var monthly_day = eventForm.monthly_day.getValue();
+		//var monthly_month = eventForm.monthly_month.getValue();
+		//var yearly_day = eventForm.yearly_day.getValue();
+		//var yearly_month = eventForm.yearly_month.getValue();
+		//var until_ldate = eventForm.until_yyyymmdd.getValue();
+		//var until_yyyy = "";
+		//var until_mm = "";
+		//var until_dd = "";
+		//if (until_ldate!=null && until_ldate!="") {
+		//  until_yyyy = until_ldate.getFullYear();
+		//  until_mm = ""+(until_ldate.getMonth()+1);
+		//  if ((until_ldate.getMonth()+1)<10) until_mm="0"+until_mm;
+		//  until_dd = ""+until_ldate.getDate();
+		//  if (until_ldate.getDate()<10) until_dd="0"+until_dd;
+		//}
+		var htmlSrc = "<h3>" + eventBy + "</h3>";
+		htmlSrc += "<hr width=100% size='4' color='black' align='center'>"
+		htmlSrc += "<br>";
+		htmlSrc += "<table width='100%' border='0'>"
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-title.lbl') + "</b></td>";
+		htmlSrc += "<td>" + title + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-location.lbl') + "</b></td>";
+		htmlSrc += "<td>" + location + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-calendar.lbl') + "</b></td>";
+		htmlSrc += "<td>" + calendar + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr><td>&nbsp</td></tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-startDate.lbl') + "</b></td>";
+		htmlSrc += "<td>" + startdate + " " + starttime + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-endDate.lbl') + "</b></td>";
+		htmlSrc += "<td>" + enddate + " " + endtime + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr><td>&nbsp</td></tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.recurrence.tit') + ":</b></td>";
+		htmlSrc += "<td>" + recurrence + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr><td>&nbsp</td></tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td>" + description + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr><td>&nbsp</td></tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-reminder.lbl') + "</b></td>";
+		htmlSrc += "<td>" + reminder + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-private.lbl') + "</b></td>";
+		htmlSrc += "<td>" + private + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr><td>&nbsp</td></tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-activity.lbl') + "</b></td>";
+		htmlSrc += "<td>" + activity + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-customer.lbl') + "</b></td>";
+		htmlSrc += "<td>" + customer + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "<tr>";
+		htmlSrc += "<td width='30%'><b>" + me.mys.res('event.fld-statistic.lbl') + "</b></td>";
+		htmlSrc += "<td>" + statistic + "</td>";
+		htmlSrc += "</tr>";
+		htmlSrc += "</table>";
+		
+		WT.print(htmlSrc);
 	}
 });

@@ -601,6 +601,10 @@ public class Service extends BaseService {
 		}
 	}
 	
+	public void processImportEventsUploadStream__(HttpServletRequest request) {
+		
+	}
+	
 	private OUser guessUserByAttendee(String recipient) {
 		Connection con = null;
 		

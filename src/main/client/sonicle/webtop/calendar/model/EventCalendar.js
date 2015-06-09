@@ -42,15 +42,7 @@ Ext.define('Sonicle.webtop.calendar.model.EventCalendar', {
 		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
 		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('busy', 'boolean', false, {defaultValue: false}),
-		WTF.field('reminder', 'int', false, {
-			defaultValue: -1,
-			convert: function(v) {
-				return (v) ? v : -1;
-			},
-			serialize: function(v) {
-				return (v === -1) ? null : v;
-			}
-		}),
+		WTF.field('reminder', 'int', true),
 		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
 		WTF.calcField('colorCls', 'string', 'color', function(v, rec) {
 			return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;

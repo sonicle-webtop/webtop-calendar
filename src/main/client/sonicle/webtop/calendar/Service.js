@@ -69,11 +69,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('week5view'),
 				me.getAction('weekview'),
 				me.getAction('weekagview'),
-				me.getAction('monthview'),
-				'-'/*,
+				me.getAction('monthview')
+				/*
+				'-',
 				Ext.create('Sonicle.upload.Button', {
+					text: 'plu 1',
 					uploaderConfig: {
-						url: 'servlet-request',
+						url: 'service-request',
+						extraParams: {
+							service: 'com.sonicle.webtop.calendar',
+							action: 'Upload',
+							context: 'test'
+						},
 						flashSwfUrl: 'resources/js/plupload/Moxie.swf',
 						silverlightXapUrl: 'resources/js/plupload/Moxie.xap'
 					}

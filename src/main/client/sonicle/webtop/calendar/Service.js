@@ -343,15 +343,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					service: 'com.sonicle.webtop.calendar',
 					action: 'Upload',
 					context: 'ICalImport',
-					calendarId: 99
+					calendarId: null
 				},
 				flashSwfUrl: 'resources/js/plupload/Moxie.swf',
 				silverlightXapUrl: 'resources/js/plupload/Moxie.xap'
 			},
-			handler: function() {
-				console.log('handler');
-				//var node = me._getSelectedNode();
-				//if(node) 
+			handler: function(s) {
+				var node = me._getSelectedNode();
+				if(node) {
+					s.uploader.forceExtraParams({
+						calendarId: node.getId()
+					});
+				}
 			}
 		}));
 		me.addAction('viewAllCalendars', {

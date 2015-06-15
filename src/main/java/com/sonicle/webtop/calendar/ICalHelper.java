@@ -90,20 +90,18 @@ public class ICalHelper {
 		CalendarBuilder builder = new CalendarBuilder();
 		Calendar cal = builder.build(is);
 		VEvent ve = null;
-		Event event = null;
 
 		for (Iterator xi = cal.getComponents().iterator(); xi.hasNext();) {
 			Component component = (Component) xi.next();
 			if (component instanceof VEvent) {
 				ve = (VEvent)component;
-				ICalHelper.parseVEvent(ve);
-				events.add(event);
+				events.add(ICalHelper.parseVEvent(ve));
 			}
 		}
 		return events;
 	}
 	
-	public static void parseVEvent(VEvent ve) throws Exception {
+	public static Event parseVEvent(VEvent ve) throws Exception {
 		Event event = new Event();
 		// See hhttp://www.kanzaki.com/docs/ical/vevent.html
 		
@@ -165,6 +163,8 @@ public class ICalHelper {
 			}
 			event.setAttendees(attendees);
 		}
+		
+		return event;
 	}
 	
 	public static void parseVEventRRule(RRule rr, Event event) throws Exception {

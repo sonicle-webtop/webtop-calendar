@@ -33,37 +33,18 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.calendar.bol.model.Event;
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import java.net.SocketException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.Date;
 import net.fortuna.ical4j.model.DateTime;
 import net.fortuna.ical4j.model.Period;
 import net.fortuna.ical4j.model.PeriodList;
 import net.fortuna.ical4j.model.Recur;
+import net.fortuna.ical4j.model.TimeZone;
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryImpl;
 import net.fortuna.ical4j.model.component.VEvent;
-import net.fortuna.ical4j.model.parameter.Cn;
-import net.fortuna.ical4j.model.parameter.Role;
-import net.fortuna.ical4j.model.property.Attendee;
-import net.fortuna.ical4j.model.property.CalScale;
-import net.fortuna.ical4j.model.property.Description;
-import net.fortuna.ical4j.model.property.Location;
-import net.fortuna.ical4j.model.property.Method;
-import net.fortuna.ical4j.model.property.Organizer;
-import net.fortuna.ical4j.model.property.ProdId;
 import net.fortuna.ical4j.model.property.RRule;
-import net.fortuna.ical4j.model.property.Uid;
-import net.fortuna.ical4j.model.property.Version;
 import net.fortuna.ical4j.util.UidGenerator;
-import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTimeZone;
 
 /**
@@ -107,7 +88,9 @@ public class ICal4jUtils {
 */
 	
 	
-	
+	public static TimeZone getTimeZone(String id) {
+		return tzRegistry.getTimeZone(id);
+	}
 	
 	public static String generateUid(String hostName, String pid) {
 		UidGenerator ug = null;
@@ -119,61 +102,15 @@ public class ICal4jUtils {
 		}
 	}
 	
-	public static void ical(Event event) {
-		org.joda.time.DateTimeZone etz = org.joda.time.DateTimeZone.forID(event.getTimezone());
-		Date start = ICal4jUtils.toICal4jDateTime(event.getStartDate(), etz);
-		Date end = ICal4jUtils.toICal4jDateTime(event.getEndDate(), etz);
-		VEvent ve = new VEvent(start, end, event.getTitle());
-		
-		//Uid
-		ve.getProperties().add(new Uid(event.getPublicUid()));
-		
-		// Description
-		ve.getProperties().add(new Description(event.getDescription()));
-		
-		// Location
-		if(!StringUtils.isEmpty(event.getLocation())) {
-			ve.getProperties().add(new Location(event.getLocation()));
-		}
-		
-		// Organizer
-		Organizer organizer = new Organizer(URI.create("mailto:dev1@mycompany.com"));
-		organizer.getParameters().add(new Cn("Organizer Name"));
-		ve.getProperties().add(organizer);
-		
-		// Attendees
-		Attendee attendee = null;
-		for(EventAttendee eatt : event.getAttendees()) {
-			try {
-				if(eatt.hasEmailRecipient()) {
-					attendee = new Attendee();
-					if(eatt.getRecipientType().equals(EventAttendee.RECIPIENT_TYPE_NECESSARY)) {
-						attendee.getParameters().add(Role.REQ_PARTICIPANT);
-					} else if(eatt.getRecipientType().equals(EventAttendee.RECIPIENT_TYPE_OPTIONAL)) {
-						attendee.getParameters().add(Role.OPT_PARTICIPANT);
-					}
-					InternetAddress email = new InternetAddress(eatt.getRecipient());
-					attendee.setCalAddress(new URI(MessageFormat.format("mailto:{0}", email.getAddress())));
-					if(!StringUtils.isEmpty(email.getPersonal())) attendee.getParameters().add(new Cn(email.getPersonal()));
-				}
-			} catch(URISyntaxException | AddressException ex) {
-				/* Do nothing...*/
-			}
-		}
-		
-		// Recerrence
-		//ve.getProperties().add(new RRule());
-		
-		// Calendar container
-		Calendar ical = new Calendar();
-		ical.getProperties().add(new ProdId("-//Events Calendar//iCal4j 1.0//EN"));
-		ical.getProperties().add(Version.VERSION_2_0);
-		ical.getProperties().add(CalScale.GREGORIAN);
-		ical.getProperties().add(Method.REQUEST);
-		ical.getComponents().add(ve);
+	public static org.joda.time.DateTime fromICal4jDate(Date date, TimeZone timezone) {
+		/*
+		org.joda.time.LocalDate ld = new org.joda.time.LocalDate(date.getTime());
+		DateTimeZone tz = DateTimeZone.forID(timezone.getID());
+		return new org.joda.time.DateTime(tz).withDate(ld);
+		*/
+		DateTimeZone tz = DateTimeZone.forID(timezone.getID());
+		return new org.joda.time.DateTime(date.getTime(), tz);
 	}
-	
-	
 	
 	public static org.joda.time.DateTime calculateRecurrenceStart(org.joda.time.DateTime eventStart, RRule rrule, org.joda.time.DateTimeZone tz) {
 		return calculateRecurrenceStart(eventStart, rrule.getRecur(), tz);

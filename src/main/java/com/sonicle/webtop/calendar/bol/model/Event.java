@@ -98,6 +98,7 @@ public class Event {
 	public Integer rrMonthlyDay;
 	public Integer rrYearlyFreq;
 	public Integer rrYearlyDay;
+	public String rrRule;
 	
 	public Event() {
 		rrType = TYPE_NONE;
@@ -320,6 +321,7 @@ public class Event {
 		rrMonthlyDay = rec.getMonthlyDay();
 		rrYearlyFreq = rec.getYearlyFreq();
 		rrYearlyDay = rec.getYearlyDay();
+		rrRule = rec.getRule();
 	}
 	
 	public static boolean hasRecurrence(Event event) {

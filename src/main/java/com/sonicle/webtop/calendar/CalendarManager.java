@@ -68,11 +68,13 @@ import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.ServiceManifest;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -918,6 +920,26 @@ public class CalendarManager {
 		}
 	}
 	
+	
+	
+	public void importICal(Integer calendarId, InputStream is) throws Exception {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(manifest);
+			ArrayList<Event> events = ICalHelper.parseICal(is);
+			for(Event event : events) {
+				event.setCalendarId(calendarId);
+				doEventInsert(con, event, false, true);
+			}
+			
+		} catch(Exception ex) {
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
 	/**
 	 * Computes event length in days.
 	 * For events that starts and ends in same date, returned lenght will be 0.
@@ -1081,7 +1103,12 @@ public class CalendarManager {
 		OEvent oevt = new OEvent();
 		oevt.fillFrom(event);
 		oevt.setEventId(edao.getSequence(con).intValue());
-		oevt.setPublicUid(WT.generateUUID());
+		if(StringUtils.isEmpty(event.getPublicUid())) {
+			oevt.setPublicUid(WT.generateUUID());
+		} else {
+			oevt.setPublicUid(event.getPublicUid());
+			
+		}
 		oevt.setStatus(OEvent.STATUS_NEW);
 		oevt.setRevisionInfo(createRevisionInfo());
 		

@@ -79,7 +79,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						extraParams: {
 							service: 'com.sonicle.webtop.calendar',
 							action: 'Upload',
-							context: 'test'
+							context: 'ICalImport',
+							calendarId: 99
 						},
 						flashSwfUrl: 'resources/js/plupload/Moxie.swf',
 						silverlightXapUrl: 'resources/js/plupload/Moxie.xap'
@@ -333,12 +334,26 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if(node) me.deleteCalendar(node);
 			}
 		});
-		me.addAction('importEvents', {
+		me.addRef('uploaders', 'importEvents', Ext.create('Sonicle.upload.Item', {
+			text: WT.res(me.ID, 'act-importEvents.lbl'),
+			iconCls: WTF.cssIconCls(me.XID, 'importEvents', 'xs'),
+			uploaderConfig: {
+				url: 'service-request',
+				extraParams: {
+					service: 'com.sonicle.webtop.calendar',
+					action: 'Upload',
+					context: 'ICalImport',
+					calendarId: 99
+				},
+				flashSwfUrl: 'resources/js/plupload/Moxie.swf',
+				silverlightXapUrl: 'resources/js/plupload/Moxie.xap'
+			},
 			handler: function() {
-				//TODO: implementare importazione
-				WT.warn('TODO');
+				console.log('handler');
+				//var node = me._getSelectedNode();
+				//if(node) 
 			}
-		});
+		}));
 		me.addAction('viewAllCalendars', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
@@ -410,7 +425,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('deleteCalendar'),
 				'-',
 				me.getAction('addCalendar'),
-				me.getAction('importEvents'),
+				me.getRef('uploaders', 'importEvents'),
 				'-',
 				me.getAction('viewAllCalendars'),
 				me.getAction('viewNoneCalendars'),

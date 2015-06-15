@@ -71,6 +71,7 @@ import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BasicEnvironment;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -459,12 +460,10 @@ public class Service extends BaseService {
 	}
 	
 	public void processManageEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
 		JsEvent item = null;
 		
 		try {
 			UserProfile up = env.getProfile();
-			con = getConnection();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
@@ -506,10 +505,7 @@ public class Service extends BaseService {
 			
 		} catch(Exception ex) {
 			logger.error("Error executing action ManageEvents", ex);
-			new JsonResult(false, "Error").printTo(out);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
+			new JsonResult(false, "Error").printTo(out);	
 		}
 	}
 	
@@ -601,8 +597,9 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processImportEventsUploadStream__(HttpServletRequest request) {
-		
+	public void processICalImportUploadStream(HttpServletRequest request, InputStream uploadStream) throws Exception {
+		Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
+		manager.importICal(calendarId, uploadStream);
 	}
 	
 	private OUser guessUserByAttendee(String recipient) {

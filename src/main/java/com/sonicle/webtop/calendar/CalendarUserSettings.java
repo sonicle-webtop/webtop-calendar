@@ -61,13 +61,6 @@ public class CalendarUserSettings extends BaseUserSettings {
 	public static final String DEFAULT_VIEW = "w5";
 	
 	/**
-	 * [int]
-	 * Calendar start day (0:sunday, 1:monday)
-	 */
-	public static final String START_DAY = "startday";
-	public static final int DEFAULT_START_DAY = 1;
-	
-	/**
 	 * [string]
 	 * Workday hours start time
 	 */
@@ -113,14 +106,6 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	public boolean setCalendarView(String value) {
 		return setString(VIEW, value);
-	}
-	
-	public Integer getCalendarStartDay() {
-		return getInteger(START_DAY, DEFAULT_START_DAY);
-	}
-	
-	public boolean setCalendarStartDay(Integer value) {
-		return setInteger(START_DAY, value);
 	}
 	
 	public LocalTime getWorkdayStart() {

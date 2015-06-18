@@ -35,20 +35,20 @@ Ext.define('Sonicle.webtop.calendar.model.TreeCal', {
 	extend: 'Ext.data.Model',
 	
 	fields: [
-		{name: '_nodeType', type: 'string'},
-		{name: '_groupId', type: 'string'},
+		WTF.roField('_nodeType', 'string'),
+		WTF.roField('_groupId', 'string'),
 		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
 			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[1] : null;
 		}),
 		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
 			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[0] : null;
 		}),
-		{name: '_builtIn', type: 'boolean', persist: false},
-		{name: '_default', type: 'boolean', persist: false},
-		{name: '_visible', type: 'boolean', persist: true}, // Same as checked
-		{name: '_color', type: 'string', persist: false},
-		{name: '_isPrivate', type: 'boolean', persist: false},
-		{name: '_busy', type: 'boolean', persist: false},
-		{name: '_reminder', type: 'int', persist: false}
+		WTF.roField('_builtIn', 'boolean'),
+		WTF.roField('_default', 'boolean'),
+		WTF.roField('_visible', 'boolean'), // Same as checked
+		WTF.roField('_color', 'string'),
+		WTF.roField('_isPrivate', 'boolean'),
+		WTF.roField('_busy', 'boolean'),
+		WTF.roField('_reminder', 'int')
 	]
 });

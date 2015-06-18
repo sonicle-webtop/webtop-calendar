@@ -171,6 +171,18 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
+	public int resetIsDefaultByDomainUser(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(CALENDARS)
+			.set(CALENDARS.IS_DEFAULT, false)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+			)
+			.execute();
+	}
+	
 	public int delete(Connection con, Integer calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl

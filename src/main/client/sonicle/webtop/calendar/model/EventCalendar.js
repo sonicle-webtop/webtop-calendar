@@ -46,6 +46,7 @@ Ext.define('Sonicle.webtop.calendar.model.EventCalendar', {
 		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
 		WTF.calcField('colorCls', 'string', 'color', function(v, rec) {
 			return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
-		})
+		}),
+		WTF.field('invitation', 'boolean', false, {defaultValue: false})
 	]
 });

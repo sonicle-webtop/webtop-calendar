@@ -68,21 +68,6 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 					blur: 'onBlurAutoSave'
 				}
 			}, {
-				xtype: 'combo',
-				name: 'startDay',
-				allowBlank: false,
-				editable: false,
-				store: Ext.create('Sonicle.webtop.calendar.store.StartDay', {
-					autoLoad: true
-				}),
-				valueField: 'id',
-				displayField: 'desc',
-				fieldLabel: WT.res(me.ID, 'opts.main.fld-startDay.lbl'),
-				listeners: {
-					blur: 'onBlurAutoSave'
-				},
-				reload: true
-			}, {
 				xtype: 'timefield',
 				name: 'workdayStart',
 				allowBlank: false,

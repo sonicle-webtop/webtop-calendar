@@ -166,9 +166,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.setMainComponent(Ext.create({
 			xtype: 'calendarpanel',
 			activeView: me.getOption('view'),
-			startDay: me.getOption('startDay'),
-			use24HourTime: WT.getOption('use24HourTime'),
-			timezone: WT.getOption('timezone'),
+			startDay: WT.getStartDay(),
+			use24HourTime: WT.getUse24HourTime(),
+			timezone: WT.getTimezone(),
 			viewCfg: {
 				timezoneIconCls: 'fa fa-globe',
 				privateIconCls: 'fa fa-lock',
@@ -337,21 +337,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addRef('uploaders', 'importEvents', Ext.create('Sonicle.upload.Item', {
 			text: WT.res(me.ID, 'act-importEvents.lbl'),
 			iconCls: WTF.cssIconCls(me.XID, 'importEvents', 'xs'),
-			uploaderConfig: {
-				url: 'service-request',
+			uploaderConfig: WTF.uploader(me.ID, 'ICalImport', {
 				extraParams: {
-					service: 'com.sonicle.webtop.calendar',
-					action: 'Upload',
-					context: 'ICalImport',
-					calendarId: null
-				},
-				flashSwfUrl: 'resources/js/plupload/Moxie.swf',
-				silverlightXapUrl: 'resources/js/plupload/Moxie.xap'
-			},
+					calendarId: null // Depends on selected node...
+				}
+			}),
 			handler: function(s) {
 				var node = me._getSelectedNode();
 				if(node) {
-					s.uploader.forceExtraParams({
+					s.uploader.mergeExtraParams({
 						calendarId: node.getId()
 					});
 				}

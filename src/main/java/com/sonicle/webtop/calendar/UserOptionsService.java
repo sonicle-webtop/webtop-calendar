@@ -71,7 +71,6 @@ public class UserOptionsService extends BaseUserOptionsService {
 				// Main
 				JsOptions main = new JsOptions();
 				main.put("view", cus.getCalendarView());
-				main.put("startDay", cus.getCalendarStartDay());
 				main.put("workdayStart", hmf.print(cus.getWorkdayStart()));
 				main.put("workdayEnd", hmf.print(cus.getWorkdayEnd()));
 				
@@ -87,7 +86,6 @@ public class UserOptionsService extends BaseUserOptionsService {
 				
 				// Main
 				if(opts.has("view")) cus.setCalendarView(uo.view);
-				if(opts.has("startDay")) cus.setCalendarStartDay(uo.startDay);
 				if(opts.has("workdayStart")) cus.setWorkdayStart(hmf.parseLocalTime(uo.workdayStart));
 				if(opts.has("workdayEnd")) cus.setWorkdayEnd(hmf.parseLocalTime(uo.workdayEnd));
 				

@@ -2,8 +2,6 @@
 .wtcal-icon-service-s { background-image: url('service_24.png') !important; }
 .wtcal-icon-service-m { background-image: url('service_32.png') !important; }
 .wtcal-icon-service-l { background-image: url('service_48.png') !important; }
-
-
 .wtcal-icon-today-xs { background-image: url('today_16.png') !important; }
 .wtcal-icon-previousday-xs { background-image: url('previous-day_16.png') !important; }
 .wtcal-icon-nextday-xs { background-image: url('next-day_16.png') !important; }
@@ -20,10 +18,10 @@
 .wtcal-icon-deleteCalendar-xs { background-image: url('calendar-delete_16.png') !important; }
 .wtcal-icon-importEvents-xs { background-image: url('calendar-import_16.png') !important; }
 .wtcal-icon-addEvent-xs { background-image: url('event-add_16.png') !important; }
-
 .wtcal-icon-calendar-xs { background-image: url('calendar_16.png') !important; }
 .wtcal-icon-event-xs { background-image: url('calendar_16.png') !important; }
 
+/*
 .wtcal-icon-cal-color {
 	width: 15px;
 	height: 15px;
@@ -31,40 +29,37 @@
 	margin: 0;
 	background-image: none;
 }
-
+*/
+.wtcal-tree-default {
+	font-weight: bold;
+}
 .wtcal-planning-free {
 	background-color: #F3E4B1;
 }
-
 .wtcal-planning-legend-free {
 	margin: 0;
 	padding: 0;
 	border: 1px solid;
 	background-color: #F3E4B1;
 }
-
 .wtcal-planning-busy {
 	background-color: #9FC6E7;
 }
-
 .wtcal-planning-legend-busy {
 	margin: 0;
 	padding: 0;
 	border: 1px solid;
 	background-color: #9FC6E7;
 }
-
 .wtcal-planning-unknown {
 	background-color: lightgray;
 }
-
 .wtcal-planning-legend-unknown {
 	margin: 0;
 	padding: 0;
 	border: 1px solid;
 	background-color: lightgray;
 }
-
 .wtcal-planning-overlaps {
 	background-image: url('striked-shadow_20.png');
 	background-repeat: repeat;

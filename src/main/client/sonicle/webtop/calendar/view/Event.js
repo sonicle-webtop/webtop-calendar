@@ -219,14 +219,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				sid: me.mys.ID,
 				suggestionContext: 'eventcalendar',
 				fieldLabel: me.mys.res('event.fld-title.lbl'),
-				anchor: '100%'
+				anchor: '100%',
+				listeners: {
+					specialkey: function(s, e) {
+						if(e.getKey() === e.ENTER) me.getAction('saveClose').execute();
+					}
+				}
 			}, {
 				xtype: 'wtsuggestcombo',
 				bind: '{record.location}',
 				sid: me.mys.ID,
 				suggestionContext: 'report_idcalendar', //TODO: verificare nome contesto
 				fieldLabel: me.mys.res('event.fld-location.lbl'),
-				anchor: '100%'
+				anchor: '100%',
+				listeners: {
+					specialkey: function(s, e) {
+						if(e.getKey() === e.ENTER) me.getAction('saveClose').execute();
+					}
+				}
 			}, {
 				xtype: 'fieldset', // separator
 				collapsed: true
@@ -243,6 +253,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						value: '{startDate}',
 						disabled: '{record._isRecurring}'
 					},
+					startDay: WT.getStartDay(),
 					margin: '0 5 0 0',
 					width: 105
 				}, {
@@ -311,6 +322,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						value: '{endDate}',
 						disabled: '{record._isRecurring}'
 					},
+					startDay: WT.getStartDay(),
 					margin: '0 5 0 0',
 					width: 105
 				}, {
@@ -745,7 +757,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								valueField: 'id',
 								displayField: 'id',
 								width: 60,
-								margin: '0 5 0 0'
+								margin: '0 5 0 0',
+								listeners: {
+									change: function() {
+										me.getModel().set('rrDaylyType', '1');
+									}
+								}
 							}, {
 								xtype: 'label',
 								text: WT.res('rr.type.daily.freq')
@@ -919,7 +936,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						minValue: 1,
 						maxValue: 10,
 						width: 50,
-						margin: '0 5 0 0'
+						margin: '0 5 0 0',
+						listeners: {
+							change: function() {
+								me.getModel().set('rrEndsMode', 'repeat');
+							}
+						}
 					}, {
 						xtype: 'label',
 						text: WT.res('rr.end.repeat.times')
@@ -930,7 +952,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}, {
 						xtype: 'datefield',
 						bind: '{record.rrUntilDate}',
-						width: 105
+						startDay: WT.getStartDay(),
+						width: 105,
+						listeners: {
+							change: function() {
+								me.getModel().set('rrEndsMode', 'until');
+							}
+						}
 					}],
 					fieldLabel: WT.res('rr.end')
 				}]
@@ -1143,13 +1171,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				grid = me.getRef('gpAttendees'),
 				sto = grid.getStore(),
 				rowEditing = grid.getPlugin('rowediting'),
+				cal = me.getRef('fldcalendar').getSelection(),
 				rec;
 		
 		rowEditing.cancelEdit();
 		rec = Ext.create('Sonicle.webtop.calendar.model.EventAttendee', {
 			recipientType: 'N',
 			responseStatus: 'needsAction',
-			notify: true
+			notify: (cal) ? cal.get('invitation') : false
 		});
 		sto.insert(0, rec);
 		rowEditing.startEdit(0, 0);

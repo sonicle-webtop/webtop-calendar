@@ -49,6 +49,7 @@ public class JsEventCalendar {
 	public Boolean busy;
 	public Integer reminder;
 	public String color;
+	public Boolean invitation;
 	
 	public void fillFrom(OCalendar calendar) {
 		calendarId = calendar.getCalendarId();
@@ -59,5 +60,6 @@ public class JsEventCalendar {
 		busy = calendar.getBusy();
 		reminder = calendar.getReminder();
 		color = calendar.getHexColor();
+		invitation = calendar.getInvitation();
 	}
 }

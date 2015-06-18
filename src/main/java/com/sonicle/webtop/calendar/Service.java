@@ -129,7 +129,6 @@ public class Service extends BaseService {
 		UserProfile profile = env.getProfile();
 		HashMap<String, Object> hm = new HashMap<>();
 		hm.put("view", cus.getCalendarView());
-		hm.put("startDay", cus.getCalendarStartDay());
 		hm.put("workdayStart", cus.getWorkdayStart());
 		hm.put("workdayEnd", cus.getWorkdayEnd());
 		return hm;
@@ -249,16 +248,34 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
-				pl.data.setCalendarId(cdao.getSequence(con).intValue());
-				pl.data.setBuiltIn(false);
-				cdao.insert(con, pl.data);
-				toggleCheckedCalendar(pl.data.getCalendarId(), true);
+				try {
+					con.setAutoCommit(false);
+					pl.data.setCalendarId(cdao.getSequence(con).intValue());
+					pl.data.setBuiltIn(false);
+					if(pl.data.getIsDefault()) cdao.resetIsDefaultByDomainUser(con, pl.data.getDomainId(), pl.data.getUserId());
+					cdao.insert(con, pl.data);
+					toggleCheckedCalendar(pl.data.getCalendarId(), true);
+					DbUtils.commitQuietly(con);
+				} catch(Throwable t) {
+					DbUtils.rollbackQuietly(con);
+					throw t;
+				}
+				
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
-				cdao.update(con, pl.data);
+				try {
+					con.setAutoCommit(false);
+					if(pl.data.getIsDefault()) cdao.resetIsDefaultByDomainUser(con, pl.data.getDomainId(), pl.data.getUserId());
+					cdao.update(con, pl.data);
+					DbUtils.commitQuietly(con);
+				} catch(Throwable t) {
+					DbUtils.rollbackQuietly(con);
+					throw t;
+				}
+				
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
@@ -534,8 +551,8 @@ public class Service extends BaseService {
 			
 			// Defines useful date/time formatters
 			DateTimeFormatter ymdhmFmt = DateTimeUtils.createYmdHmFormatter();
-			DateTimeFormatter tFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getTimeFormat());
-			DateTimeFormatter dFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getDateFormat());
+			DateTimeFormatter tFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getShortTimeFormat());
+			DateTimeFormatter dFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getShortDateFormat());
 			
 			// Generates fields and columnsInfo dynamically
 			ArrayList<String> hours = manager.generateTimeSpans(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
@@ -606,7 +623,7 @@ public class Service extends BaseService {
 		Connection con = null;
 		
 		try {
-			//TODO: gestire definitivamente il campo attendee.recipient... lokup per email???
+			//TODO: gestire definitivamente il campo attendee.recipient... lookup per email???
 			UserProfile.Id profileId = new UserProfile.Id(recipient);
 			
 			con = WT.getCoreConnection();
@@ -676,6 +693,7 @@ public class Service extends BaseService {
 		node.put("_isPrivate", cal.getIsPrivate());
 		node.put("_busy", cal.getBusy());
 		node.put("_reminder", cal.getReminder());
+		if(cal.getIsDefault()) node.setCls("wtcal-tree-default");
 		node.setIconClass("wt-palette-" + cal.getHexColor());
 		node.setChecked(visible);
 		return node;

@@ -351,7 +351,7 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processGetEventDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	public void processGetSchedulerDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		ArrayList<JsSchedulerEventDate> items = new ArrayList<>();
 		
@@ -383,7 +383,8 @@ public class Service extends BaseService {
 			new JsonResult("dates", items).printTo(out);
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageEventsView", ex);
+			logger.error("Error executing action GetSchedulerDates", ex);
+			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {
 			DbUtils.closeQuietly(con);
@@ -407,6 +408,28 @@ public class Service extends BaseService {
 				DateTime toDate = JsEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
 				// Get events for each visible group
+				Integer[] checked = getCheckedCalendars();
+				JsSchedulerEvent jse = null;
+				List<SchedulerEvent> recInstances = null;
+				List<CalendarManager.GroupEvents> grpEvts = null;
+				for(CalendarGroup group : getCheckedCalendarGroups()) {
+					grpEvts = manager.viewEvents(group, checked, fromDate, toDate);
+					for(CalendarManager.GroupEvents ge : grpEvts) {
+						for(SchedulerEvent evt : ge.events) {
+							if(evt.getRecurrenceId() == null) {
+								jse = new JsSchedulerEvent(ge.calendar, evt, up.getId(), utz);
+								items.add(jse);
+							} else {
+								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
+								for(SchedulerEvent recInstance : recInstances) {
+									jse = new JsSchedulerEvent(ge.calendar, recInstance, up.getId(), utz);
+									items.add(jse);
+								}
+							}
+						}
+					}
+				}
+				/*
 				Integer[] checked;
 				JsSchedulerEvent jse = null;
 				List<SchedulerEvent> recInstances = null;
@@ -431,6 +454,7 @@ public class Service extends BaseService {
 						}
 					}
 				}
+				*/
 				new JsonResult("events", items).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
@@ -465,10 +489,26 @@ public class Service extends BaseService {
 				
 				manager.restoreEvent(uid);
 				new JsonResult().printTo(out);
+			} else if(crud.equals("search")) {
+				String query = ServletUtils.getStringParameter(request, "query", true);
+				
+				Integer[] checked = getCheckedCalendars();
+				List<CalendarManager.GroupEvents> grpEvts = null;
+				for(CalendarGroup group : getCheckedCalendarGroups()) {
+					grpEvts = manager.searchEvents(group, checked, "%"+query+"%");
+					for(CalendarManager.GroupEvents ge : grpEvts) {
+						for(SchedulerEvent evt : ge.events) {
+							if(evt.getRecurrenceId() == null) {
+								items.add(new JsSchedulerEvent(ge.calendar, evt, up.getId(), utz));
+							}
+						}
+					}
+				}
+				new JsonResult("events", items).printTo(out);
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageEventsView", ex);
+			logger.error("Error executing action ManageEventsScheduler", ex);
 			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {
@@ -617,6 +657,19 @@ public class Service extends BaseService {
 	public void processICalImportUploadStream(HttpServletRequest request, InputStream uploadStream) throws Exception {
 		Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
 		manager.importICal(calendarId, uploadStream);
+	}
+	
+	private List<CalendarGroup> getCheckedCalendarGroups() {
+		ArrayList<CalendarGroup> groups = new ArrayList<>();
+		for(CalendarGroup group : calendarGroups.values()) {
+			if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip group if not visible
+			groups.add(group);
+		}
+		return groups;
+	}
+	
+	private Integer[] getCheckedCalendars() {
+		return checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
 	}
 	
 	private OUser guessUserByAttendee(String recipient) {

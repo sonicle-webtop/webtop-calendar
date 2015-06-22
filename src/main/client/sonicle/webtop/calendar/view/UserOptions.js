@@ -34,8 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 	extend: 'WT.sdk.UserOptionsView',
 	requires: [
-		'Sonicle.webtop.calendar.store.View',
-		'Sonicle.webtop.calendar.store.StartDay'
+		'Sonicle.webtop.calendar.store.View'
 	],
 	controller: Ext.create('Sonicle.webtop.calendar.view.UserOptionsC'),
 	//idField: 'id',

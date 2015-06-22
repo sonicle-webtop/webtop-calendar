@@ -421,7 +421,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.ActivityLkp',
-					proxy: WTF.proxy(WT.ID, 'GetActivities', 'data'),
+					proxy: WTF.proxy(WT.ID, 'LookupActivities', 'data'),
 					filters: [{
 						filterFn: function(rec) {
 							if(rec.get('readOnly')) {
@@ -444,7 +444,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.Simple',
-					proxy: WTF.proxy(WT.ID, 'GetCustomers', 'data')
+					proxy: WTF.proxy(WT.ID, 'LookupCustomers', 'data')
 				},
 				triggers: {
 					clear: WTF.clearTrigger()
@@ -457,7 +457,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.Simple',
-					proxy: WTF.proxy(WT.ID, 'GetStatisticCustomers', 'data')
+					proxy: WTF.proxy(WT.ID, 'LookupStatisticCustomers', 'data')
 				},
 				triggers: {
 					clear: WTF.clearTrigger()
@@ -470,7 +470,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.CausalLkp',
-					proxy: WTF.proxy(WT.ID, 'GetCausals', 'data')
+					proxy: WTF.proxy(WT.ID, 'LookupCausals', 'data')
 				},
 				triggers: {
 					clear: WTF.clearTrigger()
@@ -579,7 +579,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'gridpanel',
 					itemId: 'planning',
 					enableLocking: true,
-					columns: [],
 					store: {
 						model: 'WT.model.Empty',
 						proxy: WTF.proxy(me.mys.ID, 'GetPlanning', 'data'),
@@ -628,6 +627,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							}
 						}
 					},
+					columns: [],
 					tbar: [
 						me.addAction('refreshPlanning', {
 							text: WT.res('act-refresh.lbl'),

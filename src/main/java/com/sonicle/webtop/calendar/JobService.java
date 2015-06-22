@@ -38,7 +38,7 @@ import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.msg.ReminderMessage;
 import com.sonicle.webtop.core.WT;
-import com.sonicle.webtop.core.sdk.BaseDeamonService;
+import com.sonicle.webtop.core.sdk.BaseJobService;
 import com.sonicle.webtop.core.sdk.BaseJobServiceTask;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.sql.Connection;
@@ -56,8 +56,8 @@ import org.slf4j.Logger;
  *
  * @author malbinola
  */
-public class DeamonService extends BaseDeamonService {
-	private static final Logger logger = WT.getLogger(DeamonService.class);
+public class JobService extends BaseJobService {
+	private static final Logger logger = WT.getLogger(JobService.class);
 	
 	CalendarUserSettings cus;
 	CalendarManager manager;
@@ -89,14 +89,14 @@ public class DeamonService extends BaseDeamonService {
 	
 	public static class CalendarJob extends BaseJobServiceTask {
 		
-		private DeamonService jobService = null;
+		private JobService jobService = null;
 		private final HashMap<String, Boolean> notifyByEmailCache = new HashMap<>();
 		
 		@Override
-		public void setJobService(BaseDeamonService value) {
+		public void setJobService(BaseJobService value) {
 			// This method is automatically called by scheduler engine
 			// while instantiating this task.
-			jobService = (DeamonService)value;
+			jobService = (JobService)value;
 		}
 		
 		@Override

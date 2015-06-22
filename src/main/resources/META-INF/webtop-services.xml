@@ -20,8 +20,8 @@
 		<publicServiceClassName> -> Public service class name (do not specify base package name).
 			If empty, default "PublicService" value will be used.
 			
-		<deamonServiceClassName> -> Deamon service class name (do not specify base package name).
-			If empty, default "DeamonService" value will be used.
+		<jobServiceClassName> -> Job service class name (do not specify base package name).
+			If empty, default "JobService" value will be used.
 			
 		<clientOptionsModelJsClassName> Client options model class name.
 			Defaults to "model.ClientOptions"
@@ -50,7 +50,7 @@
 		<buildDate>03/11/2014</buildDate>
 		<serviceClassName>Service</serviceClassName>
 		<publicServiceClassName>PublicService</publicServiceClassName>
-		<deamonServiceClassName>DeamonService</deamonServiceClassName>
+		<jobServiceClassName>JobService</jobServiceClassName>
 		<clientOptionsModelJsClassName>model.ClientOptions</clientOptionsModelJsClassName>
 		<userOptions>
 			<serviceClassName>UserOptionsService</serviceClassName>

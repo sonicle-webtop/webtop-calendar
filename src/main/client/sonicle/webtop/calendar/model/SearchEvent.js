@@ -31,24 +31,26 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.TreeCal', {
-	extend: 'Ext.data.Model',
+Ext.define('Sonicle.webtop.calendar.model.SearchEvent', {
+	extend: 'WT.model.Base',
 	
 	fields: [
-		WTF.field('_nodeType', 'string', false),
-		WTF.field('_groupId', 'string', false),
-		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
-			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[1] : null;
-		}),
-		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
-			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[0] : null;
-		}),
-		WTF.roField('_builtIn', 'boolean'),
-		WTF.roField('_default', 'boolean'),
-		WTF.field('_visible', 'boolean', false), // Same as checked
-		WTF.roField('_color', 'string'),
-		WTF.roField('_isPrivate', 'boolean'),
-		WTF.roField('_busy', 'boolean'),
-		WTF.roField('_reminder', 'int')
+		WTF.roField('id', 'string'),
+		WTF.roField('eventId', 'int'),
+		//WTF.roField('originalEventId', 'int'),
+		//WTF.roField('calendarId', 'int'),
+		WTF.roField('calendarGroupId', 'string'),
+		WTF.roField('startDate', 'string', {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.roField('endDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.roField('timezone', 'string'),
+		//WTF.roField('isAllDay', 'boolean'),
+		WTF.roField('title', 'string'),
+		//WTF.roField('color', 'string'),
+		WTF.roField('location', 'string'),
+		//WTF.roField('isPrivate', 'boolean'),
+		//WTF.roField('reminder', 'int'),
+		//WTF.roField('isReadOnly', 'boolean'),
+		WTF.roField('isRecurring', 'boolean'),
+		WTF.roField('isBroken', 'boolean')
 	]
 });

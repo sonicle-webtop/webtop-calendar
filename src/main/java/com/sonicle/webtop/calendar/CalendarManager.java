@@ -65,6 +65,7 @@ import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ShareDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
+import com.sonicle.webtop.core.sdk.BaseServiceManager;
 import com.sonicle.webtop.core.sdk.ServiceManifest;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -74,7 +75,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -95,7 +95,7 @@ import org.slf4j.Logger;
  *
  * @author malbinola
  */
-public class CalendarManager {
+public class CalendarManager extends BaseServiceManager {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
 	private static final String SHARE_RESOURCE_CALENDARS = "CALENDARS";
 	private static final String EVENT_NORMAL = "normal";
@@ -104,11 +104,10 @@ public class CalendarManager {
 	public static final String TARGET_THIS = "this";
 	public static final String TARGET_SINCE = "since";
 	public static final String TARGET_ALL = "all";
-	private final ServiceManifest manifest;
 	private final String userLabel;
 
 	public CalendarManager(ServiceManifest manifest, String userLabel) {
-		this.manifest = manifest;
+		super(manifest);
 		this.userLabel = userLabel;
 	}
 	
@@ -320,7 +319,43 @@ public class CalendarManager {
 		return formatter.parseDateTime(dt);
 	}
 	
+	public List<GroupEvents> searchEvents(CalendarGroup group, Integer[] calendars, String query) throws Exception {
+		UserProfile.Id profileId = new UserProfile.Id(group.getDomainId(), group.getUserId());
+		return searchEvents(profileId, calendars, query);
+	}
 	
+	public List<GroupEvents> searchEvents(UserProfile.Id pid, Integer[] calendars, String query) throws Exception {
+		Connection con = null;
+		ArrayList<GroupEvents> grpEvts = new ArrayList<>();
+		CalendarDAO cdao = CalendarDAO.getInstance();
+		EventDAO edao = EventDAO.getInstance();
+		
+		try {
+			con = WT.getConnection(manifest);
+			
+			// Lists desired calendars (tipically visibles) coming from passed list
+			// Passed ids should belong to referenced group, this is ensured using 
+			// domainId and userId parameters in below query.
+			List<OCalendar> cals = cdao.selectByDomainUserIn(con, pid.getDomainId(), pid.getUserId(), calendars);
+			List<SchedulerEvent> sevs = null;
+			for(OCalendar cal : cals) {
+				sevs = new ArrayList<>();
+				for(VSchedulerEvent se : edao.searchByCalendarQuery(con, cal.getCalendarId(), query)) {
+					se.updateCalculatedFields();
+					sevs.add(new SchedulerEvent(se));
+				}
+				for(VSchedulerEvent se : edao.searchRecurringByCalendarQuery(con, cal.getCalendarId(), query)) {
+					se.updateCalculatedFields();
+					sevs.add(new SchedulerEvent(se));
+				}
+				grpEvts.add(new GroupEvents(cal, sevs));
+			}
+			return grpEvts;
+		
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
 	
 	public List<GroupEvents> viewEvents(CalendarGroup group, Integer[] calendars, DateTime fromDate, DateTime toDate) throws Exception {
 		UserProfile.Id profileId = new UserProfile.Id(group.getDomainId(), group.getUserId());
@@ -996,9 +1031,9 @@ public class CalendarManager {
 		try {
 			// Calculate event length in order to generate events like original one
 			int eventDays = calculateEventLengthInDays(event);
+			RRule rr = new RRule(rec.getRule());
 			
 			// Calcutate recurrence set for required dates range
-			RRule rr = new RRule(rec.getRule());
 			periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), rec.getStartDate(), rr, fromDate, toDate, userTz);
 			
 			// Recurrence start is useful to skip undesired dates at beginning.

@@ -378,6 +378,49 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VSchedulerEvent.class);
 	}
 	
+	public List<VSchedulerEvent> searchByCalendarQuery(Connection con, Integer calendarId, String query) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		Events eve = EVENTS.as("eve");
+		
+		Field<Integer> originalEventId = dsl
+			.select(eve.EVENT_ID)
+			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
+			.where(
+				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+			)
+			.asField("original_event_id");
+		
+		return dsl
+			.select(
+				EVENTS.fields()
+			)
+			.select(
+				originalEventId,
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.TITLE.likeIgnoreCase(query)
+					.or(EVENTS.LOCATION.likeIgnoreCase(query))
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+				.and(EVENTS.RECURRENCE_ID.isNull())
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VSchedulerEvent.class);
+	}
+	
 	public List<VSchedulerEvent> viewRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
@@ -446,6 +489,36 @@ public class EventDAO extends BaseDAO {
 					RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
 					.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
 					.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
+				)
+				.and(
+					EVENTS.STATUS.equal("N")
+					.or(EVENTS.STATUS.equal("M"))
+				)
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VSchedulerEvent.class);
+	}
+	
+	public List<VSchedulerEvent> searchRecurringByCalendarQuery(Connection con, Integer calendarId, String query) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		
+		return dsl
+			.select(EVENTS.fields())
+			.select(
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id"),
+				EVENTS.EVENT_ID.as("original_event_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID))
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.TITLE.likeIgnoreCase(query)
+					.or(EVENTS.LOCATION.likeIgnoreCase(query))
 				)
 				.and(
 					EVENTS.STATUS.equal("N")

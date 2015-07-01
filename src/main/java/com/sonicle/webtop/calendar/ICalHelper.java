@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
+import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import com.sonicle.webtop.core.sdk.WTException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,11 +54,13 @@ import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.Component;
 import net.fortuna.ical4j.model.Date;
+import net.fortuna.ical4j.model.NumberList;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.Property;
 import net.fortuna.ical4j.model.PropertyList;
 import net.fortuna.ical4j.model.Recur;
 import net.fortuna.ical4j.model.TimeZone;
+import net.fortuna.ical4j.model.WeekDay;
 import net.fortuna.ical4j.model.WeekDayList;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.Cn;
@@ -151,7 +154,7 @@ public class ICalHelper {
 		// Extract recurrence
 		RRule rr = (RRule)ve.getProperty(Property.RRULE);
 		if(rr != null) {
-			parseVEventRRule(rr, event);
+			event.setRecurrence(parseVEventRRule(rr, dtStart.getZone()));
 		}
 		
 		// Extracts attendees
@@ -167,31 +170,83 @@ public class ICalHelper {
 		return event;
 	}
 	
-	public static void parseVEventRRule(RRule rr, Event event) throws Exception {
-		//TODO: completare il parsing della RRule
+	public static Recurrence parseVEventRRule(RRule rr, org.joda.time.DateTimeZone etz) throws Exception {
+		Recurrence rec = new Recurrence();
+		
 		Recur recur = rr.getRecur();
 		String freq = recur.getFrequency();
 		if(freq.equals(Recur.DAILY)) {
 			WeekDayList dayList = recur.getDayList();
 			if(!dayList.isEmpty()) {
-				
+				rec.setType(Recurrence.TYPE_DAILY_FERIALI);
+			} else {
+				rec.setType(Recurrence.TYPE_DAILY);
+				int dfreq = (recur.getInterval() == -1) ? 1 : recur.getInterval();
+				rec.setDailyFreq(dfreq);
+			}
+		} else if(freq.equals(Recur.WEEKLY)) {
+			rec.setType(Recurrence.TYPE_WEEKLY);
+			
+			int wfreq = (recur.getInterval() == -1) ? 1 : recur.getInterval();
+			rec.setWeeklyFreq(wfreq);
+			rec.setWeeklyDay1(false);
+			rec.setWeeklyDay2(false);
+			rec.setWeeklyDay3(false);
+			rec.setWeeklyDay4(false);
+			rec.setWeeklyDay5(false);
+			rec.setWeeklyDay6(false);
+			rec.setWeeklyDay7(false);
+			
+			WeekDayList dayList = recur.getDayList();
+			if(!dayList.isEmpty()) {
+				for(Object o : dayList) {
+					WeekDay weekday = (WeekDay)o;
+					if(weekday.equals(WeekDay.MO)) rec.setWeeklyDay1(true);
+					if(weekday.equals(WeekDay.TU)) rec.setWeeklyDay2(true);
+					if(weekday.equals(WeekDay.WE)) rec.setWeeklyDay3(true);
+					if(weekday.equals(WeekDay.TH)) rec.setWeeklyDay4(true);
+					if(weekday.equals(WeekDay.FR)) rec.setWeeklyDay5(true);
+					if(weekday.equals(WeekDay.SA)) rec.setWeeklyDay6(true);
+					if(weekday.equals(WeekDay.SU)) rec.setWeeklyDay7(true);
+				}
+			}
+		} else if(freq.equals(Recur.MONTHLY)) {
+			rec.setType(Recurrence.TYPE_MONTHLY);
+			
+			int mfreq = recur.getInterval();
+			rec.setMonthlyFreq(mfreq);
+			
+			NumberList monthDayList = recur.getMonthDayList();
+			for(Object o : monthDayList) {
+				rec.setMonthlyDay((Integer)o);
+			}
+		} else if(freq.equals(Recur.YEARLY)) {
+			rec.setType(Recurrence.TYPE_YEARLY);
+			
+			NumberList monthList = recur.getMonthList();
+			for(Object o : monthList) {
+				rec.setYearlyFreq((Integer)o);
 			}
 			
-		} else if(freq.equals(Recur.WEEKLY)) {
-			
-			
-			
-		} else if(freq.equals(Recur.MONTHLY)) {
-			
-			
-			
-		} else if(freq.equals(Recur.YEARLY)) {
-			
-			
-			
+			NumberList monthDayList = recur.getMonthDayList();
+			for(Object o : monthDayList) {
+				rec.setYearlyDay((Integer)o);
+			}
 		} else { // Frequency type not yet supported...skip RR!
-			return;
+			return null;
 		}
+		
+		if(recur.getCount() != -1) {
+			rec.setEndsMode(Recurrence.ENDS_MODE_REPEAT);
+			rec.setRepeatTimes(recur.getCount());
+		} else if(recur.getUntil() == null) {
+			rec.setEndsMode(Recurrence.ENDS_MODE_NEVER);
+		} else {
+			org.joda.time.DateTime dt = new org.joda.time.DateTime(recur.getUntil(), etz);
+			rec.setUntilDate(dt.withTimeAtStartOfDay());
+		}
+		
+		return rec;
 		
 		/*
                 //ricorrenza
@@ -232,54 +287,13 @@ public class ICalHelper {
                     }
                     
                     if (recurr_type.equals("DAILY")){
-                        WeekDayList dayList = rrule.getRecur().getDayList();
-                        if (!dayList.isEmpty()){ //ricorrenza giornaliera feriale
-                            recurr_type="F";
-                            dayly1="true";
-                        }else{
-                            recurr_type="D"; //ricorrenza giornaliera con intervallo  
-                            dayly2="true";
-                            dayly_freq=String.valueOf(rrule.getRecur().getInterval());
-                            if (dayly_freq.equals("-1")) dayly_freq="1";
-                        }
-                        dayly_recurrence="true";
+                        
                     }else if (recurr_type.equals("WEEKLY")){
-                        recurr_type="W";
-                        weekly_freq=String.valueOf(rrule.getRecur().getInterval());
-                        if (weekly_freq.equals("-1")) weekly_freq="1";
-                        WeekDayList dayList = rrule.getRecur().getDayList();
-                        if (!dayList.isEmpty()){
-                            for (Object o:dayList){
-                                WeekDay weekday=(WeekDay)o;
-                                if (weekday.getDay().equals("MO")) weekly_day1="true";
-                                if (weekday.getDay().equals("TU")) weekly_day2="true"; 
-                                if (weekday.getDay().equals("WE")) weekly_day3="true";
-                                if (weekday.getDay().equals("TH")) weekly_day4="true";
-                                if (weekday.getDay().equals("FR")) weekly_day5="true";
-                                if (weekday.getDay().equals("SA")) weekly_day6="true";
-                                if (weekday.getDay().equals("SU")) weekly_day7="true";
-                            }
-                        }
-                        weekly_recurrence="true";
+
                     }else if (recurr_type.equals("MONTHLY")){
-                        recurr_type="M";
-                        monthly_month=String.valueOf(rrule.getRecur().getInterval());
-                        NumberList monthDayList = rrule.getRecur().getMonthDayList();
-                        for (Object o:monthDayList){
-                            monthly_day=String.valueOf((Integer)o);
-                        }
-                        monthly_recurrence="true";
+                        
                     }else if (recurr_type.equals("YEARLY")){
-                        recurr_type="Y";
-                        NumberList monthList = rrule.getRecur().getMonthList();
-                        for (Object o:monthList){
-                            yearly_month=String.valueOf((Integer)o);
-                        }
-                        NumberList monthDayList = rrule.getRecur().getMonthDayList();
-                        for (Object o:monthDayList){
-                            yearly_day=String.valueOf((Integer)o);
-                        }
-                        yearly_recurrence="true";
+                        
                     }
                     
                     if (rrule.getRecur().getCount()!=-1)
@@ -288,36 +302,6 @@ public class ICalHelper {
                    
                 }
                 //fine ricorrenza
-                boolean isplanning=false;
-                PropertyList pl=vevent.getProperties("ATTENDEE");
-                boolean attendees=false;
-                description=description.trim();
-                if (pl!=null) {
-                    for(Object op: pl) {
-                        Property p=(Property)op;
-                        Parameter pcn=p.getParameter("CN");
-                        if (pcn!=null) {
-                            String cn=pcn.getValue();
-                            String vcn[]=cn.split(":");
-                            if (vcn.length>0) {
-                                if (!attendees) {
-                                    if (description.length()>0) {
-                                        if (!description.endsWith("\n")) description+="\n";
-                                        description+="\n";
-                                    }
-                                }
-                                attendees=true;
-                                Planning partecipant=new Planning("false",vcn[0],"N","none","true");
-                                partecipantList.add(partecipant);
-                                isplanning=true;
-                            }
-                            
-                        }
-                    }
-                }
-                
-                
-            
                 
                 String recurr_id="";
                 String none_recurrence="true";
@@ -473,7 +457,7 @@ public class ICalHelper {
 		ve.getProperties().add(organizer);
 		
 		// Recerrence
-		if(Event.hasRecurrence(event)) {
+		if(event.hasRecurrence()) {
 			ve.getProperties().add(exportEventRecurrence(event));
 		}
 		
@@ -492,7 +476,7 @@ public class ICalHelper {
 	}
 	
 	public static RRule exportEventRecurrence(Event event) throws ParseException {
-		return new RRule(event.rrRule);
+		return new RRule(event.getRecurrence().getRRule());
 	}
 	
 	public static Attendee exportEventAttendee(EventAttendee attendee) throws Exception {

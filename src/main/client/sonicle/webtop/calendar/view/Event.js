@@ -959,7 +959,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						startDay: WT.getStartDay(),
 						width: 105,
 						listeners: {
-							change: function() {
+							select: function() {
 								me.getModel().set('rrEndsMode', 'until');
 							}
 						}
@@ -1091,7 +1091,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				rec = me.getModel();
 		
 		if(rec.get('_isRecurring') === true) {
-			WT.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid) {
+			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid) {
 				if(bid === 'ok') {
 					var target = WT.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']),
 						proxy = rec.getProxy();
@@ -1132,7 +1132,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		};
 		
 		if(rec.get('_isRecurring') === true) {
-			WT.confirmForRecurrence(me.mys.res('event.recurring.confirm.delete'), function(bid) {
+			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.delete'), function(bid) {
 				if(bid === 'ok') {
 					var target = WT.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
 					ajaxFn(target, rec.get('id'));

@@ -46,18 +46,6 @@ import org.joda.time.DateTime;
  * @author malbinola
  */
 public class Event {
-	public static final String TYPE_NONE = "_";
-	public static final String TYPE_DAILY = "D";
-	public static final String TYPE_DAILY_FERIALI = "F";
-	public static final String TYPE_WEEKLY = "W";
-	public static final String TYPE_MONTHLY = "M";
-	public static final String TYPE_YEARLY = "Y";
-	public static final String DAILY_TYPE_DAY = "1";
-	public static final String DAILY_TYPE_FERIALI = "2";
-	public static final String ENDS_MODE_NEVER = "never";
-	public static final String ENDS_MODE_REPEAT = "repeat";
-	public static final String ENDS_MODE_UNTIL = "until";
-	
 	protected String key;
 	protected RecurringInfo recurringInfo; // Readonly
 	protected String calendarProfileId; // Readonly
@@ -78,32 +66,11 @@ public class Event {
 	protected String customerId;
 	protected String statisticId;
 	protected Integer causalId;
-	//protected Recurrence recurrence;
+	protected Recurrence recurrence;
 	protected List<EventAttendee> attendees = new ArrayList<>();
-	public String rrEndsMode;
-	public Integer rrRepeatTimes;
-	public DateTime rrUntilDate;
-	public String rrType;
-	public String rrDailyType;
-	public Integer rrDailyFreq;
-	public Integer rrWeeklyFreq;
-	public Boolean rrWeeklyDay1;
-	public Boolean rrWeeklyDay2;
-	public Boolean rrWeeklyDay3;
-	public Boolean rrWeeklyDay4;
-	public Boolean rrWeeklyDay5;
-	public Boolean rrWeeklyDay6;
-	public Boolean rrWeeklyDay7;
-	public Integer rrMonthlyFreq;
-	public Integer rrMonthlyDay;
-	public Integer rrYearlyFreq;
-	public Integer rrYearlyDay;
-	public String rrRule;
 	
 	public Event() {
-		rrType = TYPE_NONE;
-		rrDailyType = DAILY_TYPE_DAY;
-		rrEndsMode = ENDS_MODE_NEVER;
+		
 	}
 	
 	public Event(String key, RecurringInfo recurringInfo, VSchedulerEvent sevent) {
@@ -265,7 +232,6 @@ public class Event {
 		this.causalId = causalId;
 	}
 	
-	/*
 	public Recurrence getRecurrence() {
 		return recurrence;
 	}
@@ -273,7 +239,6 @@ public class Event {
 	public void setRecurrence(Recurrence value) {
 		recurrence = value;
 	}
-	*/
 	
 	public List<EventAttendee> getAttendees() {
 		return attendees;
@@ -283,49 +248,8 @@ public class Event {
 		attendees = value;
 	}
 	
-	public void fillFrom(ORecurrence rec) {
-		rrUntilDate = rec.getUntilDate();
-		if(rec.getRepeat() != null) {
-			rrEndsMode = ENDS_MODE_REPEAT;
-			rrRepeatTimes = rec.getRepeat();
-		} else {
-			rrRepeatTimes = null;
-			if(rrUntilDate.compareTo(ICal4jUtils.ifiniteDate()) == 0) {
-				rrEndsMode = ENDS_MODE_NEVER;
-			} else {
-				rrEndsMode = ENDS_MODE_UNTIL;
-			}
-		}
-		if(rec.getType().equals(TYPE_DAILY_FERIALI)) {
-			rrType = TYPE_DAILY;
-			rrDailyType = DAILY_TYPE_FERIALI;
-		} else {
-			if(rec.getType().equals(TYPE_DAILY)) {
-				rrType = TYPE_DAILY;
-				rrDailyType = DAILY_TYPE_DAY;
-			} else {
-				rrType = rec.getType();
-				rrDailyType = null;
-			}
-		}
-		rrDailyFreq = rec.getDailyFreq();
-		rrWeeklyFreq = rec.getWeeklyFreq();
-		rrWeeklyDay1 = rec.getWeeklyDay_1();
-		rrWeeklyDay2 = rec.getWeeklyDay_2();
-		rrWeeklyDay3 = rec.getWeeklyDay_3();
-		rrWeeklyDay4 = rec.getWeeklyDay_4();
-		rrWeeklyDay5 = rec.getWeeklyDay_5();
-		rrWeeklyDay6 = rec.getWeeklyDay_6();
-		rrWeeklyDay7 = rec.getWeeklyDay_7();
-		rrMonthlyFreq = rec.getMonthlyFreq();
-		rrMonthlyDay = rec.getMonthlyDay();
-		rrYearlyFreq = rec.getYearlyFreq();
-		rrYearlyDay = rec.getYearlyDay();
-		rrRule = rec.getRule();
-	}
-	
-	public static boolean hasRecurrence(Event event) {
-		return !event.rrType.equals(Event.TYPE_NONE);
+	public boolean hasRecurrence() {
+		return (recurrence != null);
 	}
 	
 	public static enum RecurringInfo {

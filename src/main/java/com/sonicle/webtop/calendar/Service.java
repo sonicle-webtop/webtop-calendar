@@ -533,7 +533,7 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condividi)
+				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				manager.addEvent(evt);

@@ -37,6 +37,7 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
+import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import java.util.ArrayList;
 import java.util.TimeZone;
 import org.joda.time.DateTime;
@@ -49,6 +50,9 @@ import org.joda.time.format.DateTimeFormatter;
  * @author malbinola
  */
 public class JsEvent {
+	public static final String REC_TYPE_NONE = "_";
+	public static final String REC_DAILY_TYPE_DAY = "1";
+	public static final String REC_DAILY_TYPE_FERIALI = "2";
 	
 	public String id;
 	
@@ -117,24 +121,39 @@ public class JsEvent {
 		statisticId = event.getStatisticId();
 		causalId = event.getCausalId();
 		
-		rrEndsMode = event.rrEndsMode;
-		rrRepeatTimes = event.rrRepeatTimes;
-		rrUntilDate = ymdhmsZoneFmt.print(event.rrUntilDate);
-		rrType = event.rrType;
-		rrDailyType = event.rrDailyType;
-		rrDailyFreq = event.rrDailyFreq;
-		rrWeeklyFreq = event.rrWeeklyFreq;
-		rrWeeklyDay1 = event.rrWeeklyDay1;
-		rrWeeklyDay2 = event.rrWeeklyDay2;
-		rrWeeklyDay3 = event.rrWeeklyDay3;
-		rrWeeklyDay4 = event.rrWeeklyDay4;
-		rrWeeklyDay5 = event.rrWeeklyDay5;
-		rrWeeklyDay6 = event.rrWeeklyDay6;
-		rrWeeklyDay7 = event.rrWeeklyDay7;
-		rrMonthlyFreq = event.rrMonthlyFreq;
-		rrMonthlyDay = event.rrMonthlyDay;
-		rrYearlyFreq = event.rrYearlyFreq;
-		rrYearlyDay = event.rrYearlyDay;
+		Recurrence rec = event.getRecurrence();
+		if(rec == null) {
+			rrType = REC_TYPE_NONE;
+			rrDailyType = REC_DAILY_TYPE_DAY;
+			rrEndsMode = Recurrence.ENDS_MODE_NEVER;
+		} else {
+			if(rec.getType().equals(Recurrence.TYPE_DAILY) || rec.getType().equals(Recurrence.TYPE_DAILY_FERIALI)) {
+				rrType = Recurrence.TYPE_DAILY;
+				rrDailyType = REC_DAILY_TYPE_DAY;
+			} else if(rec.getType().equals(Recurrence.TYPE_DAILY_FERIALI)) {
+				rrType = Recurrence.TYPE_DAILY;
+				rrDailyType = REC_DAILY_TYPE_FERIALI;
+			} else {
+				rrType = rec.getType();
+				rrDailyType = REC_DAILY_TYPE_DAY;
+			}
+			rrDailyFreq = rec.getDailyFreq();
+			rrWeeklyFreq = rec.getWeeklyFreq();
+			rrWeeklyDay1 = rec.getWeeklyDay1();
+			rrWeeklyDay2 = rec.getWeeklyDay2();
+			rrWeeklyDay3 = rec.getWeeklyDay3();
+			rrWeeklyDay4 = rec.getWeeklyDay4();
+			rrWeeklyDay5 = rec.getWeeklyDay5();
+			rrWeeklyDay6 = rec.getWeeklyDay6();
+			rrWeeklyDay7 = rec.getWeeklyDay7();
+			rrMonthlyFreq = rec.getMonthlyFreq();
+			rrMonthlyDay = rec.getMonthlyDay();
+			rrYearlyFreq = rec.getYearlyFreq();
+			rrYearlyDay = rec.getYearlyDay();
+			rrEndsMode = rec.getEndsMode();
+			rrRepeatTimes = rec.getRepeatTimes();
+			rrUntilDate = ymdhmsZoneFmt.print(rec.getUntilDate());
+		}
 		
 		attendees = new ArrayList<>();
 		JsAttendee attendee = null;
@@ -181,24 +200,36 @@ public class JsEvent {
 		event.setStatisticId(jse.statisticId);
 		event.setCausalId(jse.causalId);
 		
-		event.rrEndsMode = jse.rrEndsMode;
-		event.rrRepeatTimes = jse.rrRepeatTimes;
-		event.rrUntilDate = (jse.rrUntilDate != null) ? CalendarManager.parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null;
-		event.rrType = jse.rrType;
-		event.rrDailyType = jse.rrDailyType;
-		event.rrDailyFreq = jse.rrDailyFreq;
-		event.rrWeeklyFreq = jse.rrWeeklyFreq;
-		event.rrWeeklyDay1 = jse.rrWeeklyDay1;
-		event.rrWeeklyDay2 = jse.rrWeeklyDay2;
-		event.rrWeeklyDay3 = jse.rrWeeklyDay3;
-		event.rrWeeklyDay4 = jse.rrWeeklyDay4;
-		event.rrWeeklyDay5 = jse.rrWeeklyDay5;
-		event.rrWeeklyDay6 = jse.rrWeeklyDay6;
-		event.rrWeeklyDay7 = jse.rrWeeklyDay7;
-		event.rrMonthlyFreq = jse.rrMonthlyFreq;
-		event.rrMonthlyDay = jse.rrMonthlyDay;
-		event.rrYearlyFreq = jse.rrYearlyFreq;
-		event.rrYearlyDay = jse.rrYearlyDay;
+		if(!jse.rrType.equals(REC_TYPE_NONE)) {
+			Recurrence rec = new Recurrence();
+			
+			if(jse.rrType.equals(Recurrence.TYPE_DAILY)) {
+				if(jse.rrDailyType.equals(REC_DAILY_TYPE_DAY)) {
+					rec.setType(Recurrence.TYPE_DAILY);
+				} else if(jse.rrDailyType.equals(REC_DAILY_TYPE_FERIALI)) {
+					rec.setType(Recurrence.TYPE_DAILY_FERIALI);
+				}
+			} else {
+				rec.setType(jse.rrType);
+			}
+			rec.setDailyFreq(jse.rrDailyFreq);
+			rec.setWeeklyFreq(jse.rrWeeklyFreq);
+			rec.setWeeklyDay1(jse.rrWeeklyDay1);
+			rec.setWeeklyDay2(jse.rrWeeklyDay2);
+			rec.setWeeklyDay3(jse.rrWeeklyDay3);
+			rec.setWeeklyDay4(jse.rrWeeklyDay4);
+			rec.setWeeklyDay5(jse.rrWeeklyDay5);
+			rec.setWeeklyDay6(jse.rrWeeklyDay6);
+			rec.setWeeklyDay7(jse.rrWeeklyDay7);
+			rec.setMonthlyFreq(jse.rrMonthlyFreq);
+			rec.setMonthlyDay(jse.rrMonthlyDay);
+			rec.setYearlyFreq(jse.rrYearlyFreq);
+			rec.setYearlyDay(jse.rrYearlyDay);
+			rec.setEndsMode(jse.rrEndsMode);
+			rec.setRepeatTimes(jse.rrRepeatTimes);
+			rec.setUntilDate((jse.rrUntilDate != null) ? CalendarManager.parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null);
+			event.setRecurrence(rec);
+		}
 		
 		EventAttendee attendee = null;
 		for(JsAttendee jsa : jse.attendees) {

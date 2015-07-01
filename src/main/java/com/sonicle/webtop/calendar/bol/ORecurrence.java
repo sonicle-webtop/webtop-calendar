@@ -33,8 +33,9 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.commons.LangUtils;
 import com.sonicle.webtop.calendar.ICal4jUtils;
+import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
 import com.sonicle.webtop.core.sdk.WTException;
 import net.fortuna.ical4j.model.Recur;
@@ -54,35 +55,31 @@ public class ORecurrence extends Recurrences {
 		super();
 	}
 	
-	public void fillFrom(Event event, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
+	public void fillFrom(Recurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimeZone);
 		
 		setStartDate(eventStartDate);
 		
-		if(StringUtils.equals(event.rrType, Event.TYPE_DAILY)) {
-			setType(event.rrType);
-			if(StringUtils.equals(event.rrDailyType, Event.DAILY_TYPE_DAY)) {
-				setDailyFreq(event.rrDailyFreq);
-			} else if(StringUtils.equals(event.rrDailyType, Event.DAILY_TYPE_FERIALI)) {
-				setType(Event.TYPE_DAILY_FERIALI);
-			} else {
-				setDailyFreq(null);
-			}
+		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_DAILY)) {
+			setType(rec.getType());
+			setDailyFreq(rec.getDailyFreq());
+		} else if(StringUtils.equals(rec.getType(), Recurrence.TYPE_DAILY_FERIALI)) {
+			setType(rec.getType());
 		} else {
 			// Reset fields...
 			setDailyFreq(null);
 		}
 			
-		if(StringUtils.equals(event.rrType, Event.TYPE_WEEKLY)) {
-			setType(event.rrType);
-			setWeeklyFreq(event.rrWeeklyFreq);
-			setWeeklyDay_1(event.rrWeeklyDay1);
-			setWeeklyDay_2(event.rrWeeklyDay2);
-			setWeeklyDay_3(event.rrWeeklyDay3);
-			setWeeklyDay_4(event.rrWeeklyDay4);
-			setWeeklyDay_5(event.rrWeeklyDay5);
-			setWeeklyDay_6(event.rrWeeklyDay6);
-			setWeeklyDay_7(event.rrWeeklyDay7);
+		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_WEEKLY)) {
+			setType(rec.getType());
+			setWeeklyFreq(rec.getWeeklyFreq());
+			setWeeklyDay_1(LangUtils.coalesce(rec.getWeeklyDay1(), false));
+			setWeeklyDay_2(LangUtils.coalesce(rec.getWeeklyDay2(), false));
+			setWeeklyDay_3(LangUtils.coalesce(rec.getWeeklyDay3(), false));
+			setWeeklyDay_4(LangUtils.coalesce(rec.getWeeklyDay4(), false));
+			setWeeklyDay_5(LangUtils.coalesce(rec.getWeeklyDay5(), false));
+			setWeeklyDay_6(LangUtils.coalesce(rec.getWeeklyDay6(), false));
+			setWeeklyDay_7(LangUtils.coalesce(rec.getWeeklyDay7(), false));
 		} else {
 			// Reset fields...
 			setWeeklyFreq(null);
@@ -95,10 +92,10 @@ public class ORecurrence extends Recurrences {
 			setWeeklyDay_7(null);
 		}
 		
-		if(StringUtils.equals(event.rrType, Event.TYPE_MONTHLY)) {
-			setType(event.rrType);
-			setMonthlyFreq(event.rrMonthlyFreq);
-			setMonthlyDay(event.rrMonthlyDay);
+		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_MONTHLY)) {
+			setType(rec.getType());
+			setMonthlyFreq(rec.getMonthlyFreq());
+			setMonthlyDay(rec.getMonthlyDay());
 			
 		} else {
 			// Reset fields...
@@ -106,11 +103,11 @@ public class ORecurrence extends Recurrences {
 			setMonthlyDay(null);
 		}
 		
-		if(StringUtils.equals(event.rrType, Event.TYPE_YEARLY)) {
-			setType(event.rrType);
-			setYearlyFreq(event.rrYearlyFreq);
-			setYearlyDay(event.rrYearlyDay);
-			setStartDate(eventStartDate.withMonthOfYear(event.rrYearlyFreq).withDayOfMonth(event.rrYearlyDay));
+		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_YEARLY)) {
+			setType(rec.getType());
+			setYearlyFreq(rec.getYearlyFreq());
+			setYearlyDay(rec.getYearlyDay());
+			setStartDate(eventStartDate.withMonthOfYear(rec.getYearlyFreq()).withDayOfMonth(rec.getYearlyDay()));
 			
 		} else {
 			// Reset fields...
@@ -119,23 +116,20 @@ public class ORecurrence extends Recurrences {
 		}
 		
 		RRule rr = null;
-		if(StringUtils.equals(event.rrEndsMode, Event.ENDS_MODE_NEVER)) {
+		if(StringUtils.equals(rec.getEndsMode(), Recurrence.ENDS_MODE_NEVER)) {
 			rr = applyEndNever(etz, false);
-			
-		} else if(StringUtils.equals(event.rrEndsMode, Event.ENDS_MODE_REPEAT)) {
-			rr = applyEndRepeat(event.rrRepeatTimes, eventStartDate, eventEndDate, etz, false);
-			//TODO: completare implementazione repeat
-			
-		} else if(StringUtils.equals(event.rrEndsMode, Event.ENDS_MODE_UNTIL)) {
-			rr = applyEndUntil(event.rrUntilDate, etz, false);
+		} else if(StringUtils.equals(rec.getEndsMode(), Recurrence.ENDS_MODE_REPEAT)) {
+			rr = applyEndRepeat(rec.getRepeatTimes(), eventStartDate, eventEndDate, etz, false);
+		} else if(StringUtils.equals(rec.getEndsMode(), Recurrence.ENDS_MODE_UNTIL)) {
+			rr = applyEndUntil(rec.getUntilDate(), etz, false);
 		}
-		
 		setRule(rr.getValue());
 	}
 	
 	public RRule applyEndNever(DateTimeZone etz, boolean setRule) {
 		RRule rr = null;
 		setRepeat(null);
+		setPermanent(true);
 		setUntilDate(ICal4jUtils.ifiniteDate(etz));
 		rr = buildRRule(etz);
 		if(setRule) setRule(rr.getValue());
@@ -145,6 +139,7 @@ public class ORecurrence extends Recurrences {
 	public RRule applyEndRepeat(int repeatTimes, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone etz, boolean setRule) {
 		RRule rr = null;
 		setRepeat(repeatTimes);
+		setPermanent(false);
 		rr = buildRRule(etz);
 		setUntilDate(ICal4jUtils.calculateRecurrenceEnd(eventStartDate, eventEndDate, rr, DateTimeZone.UTC));
 		rr = buildRRule(etz);
@@ -155,6 +150,7 @@ public class ORecurrence extends Recurrences {
 	public RRule applyEndUntil(DateTime untilDate, DateTimeZone etz, boolean setRule) {
 		RRule rr = null;
 		setRepeat(null);
+		setPermanent(false);
 		setUntilDate(untilDate.withTimeAtStartOfDay());
 		rr = buildRRule(etz);
 		if(setRule) setRule(rr.getValue());
@@ -171,11 +167,11 @@ public class ORecurrence extends Recurrences {
 		try {
 			rec = new Recur();
 			
-			if(StringUtils.equals(getType(), "D")) {
+			if(StringUtils.equals(getType(), Recurrence.TYPE_DAILY)) {
 				rec.setFrequency(Recur.DAILY);
 				rec.setInterval(getDailyFreq());
 			
-			} else if(StringUtils.equals(getType(), "F")) {
+			} else if(StringUtils.equals(getType(), Recurrence.TYPE_DAILY_FERIALI)) {
 				rec.setFrequency(Recur.WEEKLY);
 				rec.setInterval(1);
 				rec.getDayList().add(WeekDay.MO);
@@ -184,7 +180,7 @@ public class ORecurrence extends Recurrences {
 				rec.getDayList().add(WeekDay.TH);
 				rec.getDayList().add(WeekDay.FR);
 			
-			} else if(StringUtils.equals(getType(), "W")) {
+			} else if(StringUtils.equals(getType(), Recurrence.TYPE_WEEKLY)) {
 				rec.setFrequency(Recur.WEEKLY);
 				rec.setInterval(getWeeklyFreq());
 				if(getWeeklyDay_1()) rec.getDayList().add(WeekDay.MO);
@@ -195,20 +191,33 @@ public class ORecurrence extends Recurrences {
 				if(getWeeklyDay_6()) rec.getDayList().add(WeekDay.SA);
 				if(getWeeklyDay_7()) rec.getDayList().add(WeekDay.SU);
 				
-			} else if(StringUtils.equals(getType(), "M")) {
+			} else if(StringUtils.equals(getType(), Recurrence.TYPE_MONTHLY)) {
 				rec.setFrequency(Recur.MONTHLY);
-				rec.setInterval(getYearlyFreq());
+				rec.setInterval(getMonthlyFreq());
 				rec.getMonthDayList().add(getMonthlyDay());
 				
-			} else if(StringUtils.equals(getType(), "Y")) {
+			} else if(StringUtils.equals(getType(), Recurrence.TYPE_YEARLY)) {
 				rec.setFrequency(Recur.YEARLY);
 				rec.setInterval(1); // GUI is not currently able to handle different value
 				rec.getMonthList().add(getYearlyFreq());
+				rec.getMonthDayList().add(getYearlyDay());
 				
 			} else {
 				throw new WTException("Unknown recurrence type [{0}]", getType());
 			}
 			
+			if(isEndRepeat()) {
+				rec.setCount(getRepeat());
+			} else if(isEndUntil()) {
+				// We need to sum 1day to defined until date, for rrule untilDate is not inclusive!
+				rec.setUntil(ICal4jUtils.toICal4jDateTime(getUntilDate().plusDays(1), etz));
+			} else if(isEndNever()) {
+				rec.setUntil(ICal4jUtils.toICal4jDateTime(ICal4jUtils.ifiniteDate(etz), etz));
+			} else {
+				throw new WTException("Unknown ends mode combination");
+			}
+			
+			/*
 			if((getPermanent() != null) && getPermanent()) {
 				rec.setUntil(ICal4jUtils.toICal4jDateTime(ICal4jUtils.ifiniteDate(etz), etz));
 			} else {
@@ -219,10 +228,23 @@ public class ORecurrence extends Recurrences {
 					rec.setUntil(ICal4jUtils.toICal4jDateTime(getUntilDate().plusDays(1), etz));
 				}
 			}
+			*/
 			
 		} catch(Exception ex) {
 			ex.printStackTrace();
 		}
 		return new RRule(rec);
+	}
+	
+	public boolean isEndNever() {
+		return getPermanent() && (getRepeat() == null);
+	}
+	
+	public boolean isEndRepeat() {
+		return !getPermanent() && (getRepeat() > 0);
+	}
+	
+	public boolean isEndUntil() {
+		return !getPermanent() && (getRepeat() == null);
 	}
 }

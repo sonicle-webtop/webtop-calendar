@@ -40,15 +40,11 @@ import org.joda.time.DateTime;
  * @author malbinola
  */
 public class Recurrence {
-	
-	public static final String TYPE_NONE = "_";
 	public static final String TYPE_DAILY = "D";
 	public static final String TYPE_DAILY_FERIALI = "F";
 	public static final String TYPE_WEEKLY = "W";
 	public static final String TYPE_MONTHLY = "M";
 	public static final String TYPE_YEARLY = "Y";
-	public static final String DAILY_TYPE_DAY = "1";
-	public static final String DAILY_TYPE_FERIALI = "2";
 	public static final String ENDS_MODE_NEVER = "never";
 	public static final String ENDS_MODE_REPEAT = "repeat";
 	public static final String ENDS_MODE_UNTIL = "until";
@@ -57,7 +53,6 @@ public class Recurrence {
 	protected Integer repeatTimes;
 	protected DateTime untilDate;
 	protected String type;
-	protected String dailyType;
 	protected Integer dailyFreq;
 	protected Integer weeklyFreq;
 	protected Boolean weeklyDay1;
@@ -71,6 +66,7 @@ public class Recurrence {
 	protected Integer monthlyDay;
 	protected Integer yearlyFreq;
 	protected Integer yearlyDay;
+	protected String rrule;
 	
 	public Recurrence() {
 		
@@ -106,14 +102,6 @@ public class Recurrence {
 
 	public void setType(String value) {
 		type = value;
-	}
-
-	public String getDailyType() {
-		return dailyType;
-	}
-
-	public void setDailyType(String value) {
-		dailyType = value;
 	}
 
 	public Integer getDailyFreq() {
@@ -218,5 +206,13 @@ public class Recurrence {
 
 	public void setYearlyDay(Integer value) {
 		yearlyDay = value;
+	}
+	
+	public String getRRule() {
+		return rrule;
+	}
+	
+	public void setRRule(String value) {
+		rrule = value;
 	}
 }

@@ -678,7 +678,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		};
 		
 		if(rec.get('isRecurring')) {
-			WT.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid) {
+			me.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid) {
 				if(bid === 'ok') {
 					var target = WT.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
 					ajaxFn(target, rec.get('id'));
@@ -938,5 +938,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		htmlSrc += "</TABLE>";
 
 		//WT.app.print(htmlSrc);
+	},
+	
+	confirmForRecurrence: function(msg, cb, scope, opts) {
+		var me = this, html;
+		html = "</br></br>"
+				+ "<table width='70%' style='font-size: 12px'>"
+				+ "<tr><td><input type='radio' name='recurrence' id='this' checked='true' /></td><td width='95%'>"+me.res("confirm.recurrence.this")+"</td></tr>"
+				+ "<tr><td><input type='radio' name='recurrence' id='since' /></td><td width='95%'>"+me.res("confirm.recurrence.since")+"</td></tr>"
+				+ "<tr><td><input type='radio' name='recurrence' id='all' /></td><td width='95%'>"+me.res("confirm.recurrence.all")+"</td></tr>"
+				+ "</table>";
+		WT.confirm(msg + html, cb, scope, Ext.apply({
+			buttons: Ext.Msg.OKCANCEL
+		}, opts));
 	}
 });

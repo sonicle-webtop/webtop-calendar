@@ -69,6 +69,7 @@ import com.sonicle.webtop.core.sdk.BaseServiceManager;
 import com.sonicle.webtop.core.sdk.ServiceManifest;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
+import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -440,11 +441,6 @@ public class CalendarManager extends BaseServiceManager {
 			se.updateCalculatedFields(); //??????????????????????
 			if(se == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
 			
-			//Event event = new Event();
-			//event.fillFrom(evt);
-			//event.id = eventGid;
-			//event.eventId = evt.getEventId();
-			
 			Event event = null;
 			String type = guessEventType(ekey, original);
 			if(type.equals(EVENT_NORMAL)) {
@@ -459,7 +455,7 @@ public class CalendarManager extends BaseServiceManager {
 				int eventDays = calculateEventLengthInDays(se);
 				event.setStartDate(event.getStartDate().withDate(ekey.atDate));
 				event.setEndDate(event.getEndDate().withDate(event.getStartDate().plusDays(eventDays).toLocalDate()));
-				event.fillFrom(rec);
+				event.setRecurrence(createEventRecurrence(rec));
 				
 			} else if(type.equals(EVENT_BROKEN)) {
 				//TODO: recuperare il record ricorrenza per verifica?
@@ -564,8 +560,8 @@ public class CalendarManager extends BaseServiceManager {
 					// 2 - Updates revision of original event
 					edao.updateRevision(con, original.getEventId(), createRevisionInfo());
 					// 3 - Insert new event adjusting recurrence a bit
-					event.rrEndsMode = Event.ENDS_MODE_UNTIL;
-					event.rrUntilDate = until;
+					event.getRecurrence().setEndsMode(Recurrence.ENDS_MODE_UNTIL);
+					event.getRecurrence().setUntilDate(until);
 					doEventInsert(con, event, true, false);
 					
 				} else if(target.equals(TARGET_ALL)) {
@@ -579,7 +575,7 @@ public class CalendarManager extends BaseServiceManager {
 					doEventUpdate(con, original, event, false);
 					// 2 - Updates recurrence data
 					ORecurrence orec = rdao.select(con, original.getRecurrenceId());
-					orec.fillFrom(event, original.getStartDate(), original.getEndDate(), original.getTimezone());
+					orec.fillFrom(event.getRecurrence(), original.getStartDate(), original.getEndDate(), original.getTimezone());
 					rdao.update(con, orec);
 				}
 			}
@@ -965,7 +961,7 @@ public class CalendarManager extends BaseServiceManager {
 			ArrayList<Event> events = ICalHelper.parseICal(is, defaultTz);
 			for(Event event : events) {
 				event.setCalendarId(calendarId);
-				doEventInsert(con, event, false, true);
+				doEventInsert(con, event, true, true);
 			}
 			
 		} catch(Exception ex) {
@@ -1159,9 +1155,9 @@ public class CalendarManager extends BaseServiceManager {
 		}
 		
 		ORecurrence orec = null;
-		if(recurrence && Event.hasRecurrence(event)) {
+		if(recurrence && event.hasRecurrence()) {
 			orec = new ORecurrence();
-			orec.fillFrom(event, oevt.getStartDate(), oevt.getEndDate(), oevt.getTimezone());
+			orec.fillFrom(event.getRecurrence(), oevt.getStartDate(), oevt.getEndDate(), oevt.getTimezone());
 			orec.setRecurrenceId(rdao.getSequence(con).intValue());
 			rdao.insert(con, orec);
 		}
@@ -1207,30 +1203,7 @@ public class CalendarManager extends BaseServiceManager {
 	private Recurrence createEventRecurrence(ORecurrence recurrence) {
 		Recurrence rec = new Recurrence();
 		
-		rec.setUntilDate(recurrence.getUntilDate());
-		if(recurrence.getRepeat() != null) {
-			rec.setEndsMode(Recurrence.ENDS_MODE_REPEAT);
-			rec.setRepeatTimes(recurrence.getRepeat());
-		} else {
-			rec.setRepeatTimes(null);
-			if(rec.getUntilDate().compareTo(ICal4jUtils.ifiniteDate()) == 0) {
-				rec.setEndsMode(Recurrence.ENDS_MODE_NEVER);
-			} else {
-				rec.setEndsMode(Recurrence.ENDS_MODE_UNTIL);
-			}
-		}
-		if(recurrence.getType().equals(Recurrence.TYPE_DAILY_FERIALI)) {
-			rec.setType(Recurrence.TYPE_DAILY);
-			rec.setDailyType(Recurrence.DAILY_TYPE_FERIALI);
-		} else {
-			if(recurrence.getType().equals(Recurrence.TYPE_DAILY)) {
-				rec.setType(Recurrence.TYPE_DAILY);
-				rec.setDailyType(Recurrence.DAILY_TYPE_DAY);
-			} else {
-				rec.setType(recurrence.getType());
-				rec.setDailyType(null);
-			}
-		}
+		rec.setType(recurrence.getType());
 		rec.setDailyFreq(recurrence.getDailyFreq());
 		rec.setWeeklyFreq(recurrence.getWeeklyFreq());
 		rec.setWeeklyDay1(recurrence.getWeeklyDay_1());
@@ -1244,6 +1217,34 @@ public class CalendarManager extends BaseServiceManager {
 		rec.setMonthlyDay(recurrence.getMonthlyDay());
 		rec.setYearlyFreq(recurrence.getYearlyFreq());
 		rec.setYearlyDay(recurrence.getYearlyDay());
+		
+		/*
+		if(recurrence.getRepeat() != null) {
+			rec.setEndsMode(Recurrence.ENDS_MODE_REPEAT);
+			rec.setRepeatTimes(recurrence.getRepeat());
+		} else {
+			rec.setRepeatTimes(null);
+			if(rec.getUntilDate().compareTo(ICal4jUtils.ifiniteDate()) == 0) {
+				rec.setEndsMode(Recurrence.ENDS_MODE_NEVER);
+			} else {
+				rec.setEndsMode(Recurrence.ENDS_MODE_UNTIL);
+			}
+		}
+		*/
+		
+		rec.setUntilDate(recurrence.getUntilDate());
+		if(recurrence.isEndRepeat()) {
+			rec.setEndsMode(Recurrence.ENDS_MODE_REPEAT);
+			rec.setRepeatTimes(recurrence.getRepeat());
+		} else if(recurrence.isEndUntil()) {
+			rec.setEndsMode(Recurrence.ENDS_MODE_UNTIL);
+		} else if(recurrence.isEndNever()) {
+			rec.setEndsMode(Recurrence.ENDS_MODE_NEVER);
+		} else {
+			throw new WTRuntimeException("Unable to set a valid endMode");
+		}
+		
+		rec.setRRule(recurrence.getRule());
 		return rec;
 	}
 	

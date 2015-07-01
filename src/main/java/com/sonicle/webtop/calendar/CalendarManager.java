@@ -957,12 +957,12 @@ public class CalendarManager extends BaseServiceManager {
 	
 	
 	
-	public void importICal(Integer calendarId, InputStream is) throws Exception {
+	public void importICal(Integer calendarId, InputStream is, DateTimeZone defaultTz) throws Exception {
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(manifest);
-			ArrayList<Event> events = ICalHelper.parseICal(is);
+			ArrayList<Event> events = ICalHelper.parseICal(is, defaultTz);
 			for(Event event : events) {
 				event.setCalendarId(calendarId);
 				doEventInsert(con, event, false, true);

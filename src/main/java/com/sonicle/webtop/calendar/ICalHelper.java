@@ -58,6 +58,7 @@ import net.fortuna.ical4j.model.Property;
 import net.fortuna.ical4j.model.PropertyList;
 import net.fortuna.ical4j.model.Recur;
 import net.fortuna.ical4j.model.TimeZone;
+import net.fortuna.ical4j.model.WeekDayList;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.Cn;
 import net.fortuna.ical4j.model.parameter.PartStat;
@@ -76,7 +77,6 @@ import net.fortuna.ical4j.model.property.Transp;
 import net.fortuna.ical4j.model.property.Uid;
 import net.fortuna.ical4j.model.property.Version;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTimeZone;
 
 /**
  *
@@ -84,7 +84,7 @@ import org.joda.time.DateTimeZone;
  */
 public class ICalHelper {
 	
-	public static ArrayList<Event> parseICal(InputStream is) throws ParserException, IOException, Exception {
+	public static ArrayList<Event> parseICal(InputStream is, org.joda.time.DateTimeZone defaultTz) throws ParserException, IOException, Exception {
 		// See http://www.kanzaki.com/docs/ical/
 		ArrayList<Event> events = new ArrayList<>();
 		CalendarBuilder builder = new CalendarBuilder();
@@ -95,13 +95,13 @@ public class ICalHelper {
 			Component component = (Component) xi.next();
 			if (component instanceof VEvent) {
 				ve = (VEvent)component;
-				events.add(ICalHelper.parseVEvent(ve));
+				events.add(ICalHelper.parseVEvent(ve, defaultTz));
 			}
 		}
 		return events;
 	}
 	
-	public static Event parseVEvent(VEvent ve) throws Exception {
+	public static Event parseVEvent(VEvent ve, org.joda.time.DateTimeZone defaultTz) throws Exception {
 		Event event = new Event();
 		// See hhttp://www.kanzaki.com/docs/ical/vevent.html
 		
@@ -109,7 +109,7 @@ public class ICalHelper {
 		
 		// Extracts and converts date-times
 		DtStart start = ve.getStartDate();
-		TimeZone startTz = defaultTimeZone(start.getTimeZone());
+		TimeZone startTz = defaultTimeZone(start.getTimeZone(), defaultTz.getID());
 		org.joda.time.DateTime dtStart = ICal4jUtils.fromICal4jDate(start.getDate(), startTz);
 		
 		DtEnd end = ve.getEndDate();
@@ -119,17 +119,17 @@ public class ICalHelper {
 			endTz = startTz;
 			dtEnd = dtStart.toDateTime();
 		} else {
-			endTz = defaultTimeZone(end.getTimeZone());
+			endTz = startTz;
 			dtEnd = ICal4jUtils.fromICal4jDate(end.getDate(), endTz).withZone(dtStart.getZone());
 		}
 		if(dtStart.compareTo(dtEnd) > 0) throw new WTException("StartDate [{0}] is not before event EndDate [{1}]", start.toString(), end.toString());
 		
 		// Apply dates to event
 		event.setTimezone(dtStart.getZone().getID());
-		if(isAllDay(dtStart, dtEnd, ve.getTransparency())) {
+		if(isAllDay(dtStart, dtEnd)) {
 			// Tune-up endDate if we are reading an all-day event
 			event.setAllDay(true);
-			event.setStartDate(dtStart);
+			event.setStartDate(dtStart.withTime(0, 0, 0, 0));
 			event.setEndDate(dtStart.withTime(23, 59, 59, 999));
 		} else {
 			event.setAllDay(false);
@@ -141,7 +141,7 @@ public class ICalHelper {
 		event.setDescription(ve.getDescription().getValue());
 		event.setLocation(StringUtils.defaultString(ve.getLocation().getValue()));
 		event.setIsPrivate(false);
-		event.setBusy(false);
+		event.setBusy(ICalHelper.isBusy(ve.getTransparency()));
 		event.setReminder(null);
 		event.setActivityId(null);
 		event.setCustomerId(null);
@@ -169,11 +169,13 @@ public class ICalHelper {
 	
 	public static void parseVEventRRule(RRule rr, Event event) throws Exception {
 		//TODO: completare il parsing della RRule
-		
-		String freq = rr.getRecur().getFrequency();
+		Recur recur = rr.getRecur();
+		String freq = recur.getFrequency();
 		if(freq.equals(Recur.DAILY)) {
-			
-			
+			WeekDayList dayList = recur.getDayList();
+			if(!dayList.isEmpty()) {
+				
+			}
 			
 		} else if(freq.equals(Recur.WEEKLY)) {
 			
@@ -412,20 +414,24 @@ public class ICalHelper {
 		return attendee;
 	}
 	
-	private static TimeZone defaultTimeZone(TimeZone tz) {
-		return (tz == null) ? ICal4jUtils.getTimeZone("UTC") : tz;
+	private static TimeZone defaultTimeZone(TimeZone tz, String defaultTzId) {
+		return (tz != null) ? tz : ICal4jUtils.getTimeZone(defaultTzId);
 	}
 	
-	private static boolean isAllDay(org.joda.time.DateTime start, org.joda.time.DateTime end, Transp transparency) {
+	private static boolean isAllDay(org.joda.time.DateTime start, org.joda.time.DateTime end) {
 		// Checks if a date range can be considered as an all-day event.
 		
 		org.joda.time.DateTime dt = null;
-		dt = start.withZone(DateTimeZone.UTC);
+		dt = start.withZone(org.joda.time.DateTimeZone.UTC);
 		if(!dt.isEqual(dt.withTimeAtStartOfDay())) return false;
-		dt = end.withZone(DateTimeZone.UTC);
+		dt = end.withZone(org.joda.time.DateTimeZone.UTC);
 		if(!dt.isEqual(dt.withTimeAtStartOfDay())) return false;
-		if(!StringUtils.equals(transparency.getValue(), "TRANSP")) return false;
+		if(start.plusDays(1).getDayOfMonth() != end.getDayOfMonth()) return false;
 		return true;
+	}
+	
+	public static boolean isBusy(Transp transparency) {
+		return !StringUtils.equals(transparency.getValue(), "TRANSPARENT");
 	}
 	
 	public static void exportICal(OutputStream os, ArrayList<Event> events) throws Exception {

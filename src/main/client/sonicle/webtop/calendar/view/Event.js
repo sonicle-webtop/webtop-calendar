@@ -61,8 +61,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	confirm: 'yn',
 	autoToolbar: false,
 	
-	title: '@event.tit',
-	iconCls: 'wtcal-icon-event-xs',
+	dockableConfig: {
+		title: '@event.tit',
+		iconCls: 'wtcal-icon-event-xs',
+		width: 650,
+		height: 510
+	},
 	model: 'Sonicle.webtop.calendar.model.Event',
 	//session: true,
 	viewModel: {
@@ -421,7 +425,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.ActivityLkp',
-					proxy: WTF.proxy(WT.ID, 'LookupActivities', 'data'),
+					proxy: WTF.proxy(WT.ID, 'LookupActivities', 'activities'),
 					filters: [{
 						filterFn: function(rec) {
 							if(rec.get('readOnly')) {
@@ -444,7 +448,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.Simple',
-					proxy: WTF.proxy(WT.ID, 'LookupCustomers', 'data')
+					proxy: WTF.proxy(WT.ID, 'LookupCustomers', 'customers')
 				},
 				triggers: {
 					clear: WTF.clearTrigger()
@@ -457,7 +461,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.Simple',
-					proxy: WTF.proxy(WT.ID, 'LookupStatisticCustomers', 'data')
+					proxy: WTF.proxy(WT.ID, 'LookupStatisticCustomers', 'customers')
 				},
 				triggers: {
 					clear: WTF.clearTrigger()
@@ -470,7 +474,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WT.model.CausalLkp',
-					proxy: WTF.proxy(WT.ID, 'LookupCausals', 'data')
+					proxy: WTF.proxy(WT.ID, 'LookupCausals', 'causals')
 				},
 				triggers: {
 					clear: WTF.clearTrigger()

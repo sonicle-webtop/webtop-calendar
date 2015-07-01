@@ -40,8 +40,12 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		'Sonicle.webtop.calendar.store.Reminder'
 	],
 	
-	title: '@calendar.tit',
-	iconCls: 'wtcal-icon-calendar-xs',
+	dockableConfig: {
+		title: '@calendar.tit',
+		iconCls: 'wtcal-icon-calendar-xs',
+		width: 360,
+		height: 400
+	},
 	model: 'Sonicle.webtop.calendar.model.Calendar',
 	viewModel: {
 		formulas: {

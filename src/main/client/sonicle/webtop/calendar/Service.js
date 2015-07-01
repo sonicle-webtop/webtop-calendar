@@ -40,7 +40,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.model.TreeCal',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
-		'Sonicle.webtop.calendar.model.SearchEvent',
+		'Sonicle.webtop.calendar.model.GridEvent',
 		'Sonicle.calendar.data.Events',
 		'Sonicle.calendar.data.MemoryCalendarStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
 		'Sonicle.calendar.data.Calendars', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
@@ -244,7 +244,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					xtype: 'grid',
 					itemId: 'results',
 					store: {
-						model: 'Sonicle.webtop.calendar.model.SearchEvent',
+						model: 'Sonicle.webtop.calendar.model.GridEvent',
 						proxy: WTF.proxy(me.ID, 'ManageEventsScheduler', 'events', {
 							extraParams: {
 								crud: 'search',
@@ -255,7 +255,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					columns: [{
 						dataIndex: 'id',
 						renderer: WTF.iconColRenderer({
-							nameField: function(rec) {
+							iconField: function(rec) {
 								if(rec.get('isBroken')) return 'broken-event';
 								if(rec.get('isRecurring')) return 'recurring-event';
 								return 'single-event';
@@ -581,11 +581,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	addCalendar: function(domainId, userId) {
 		var me = this,
-				wnd = this._createCalendarView();
+				vwc = this._createCalendarView();
 		
-		wnd.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
-		wnd.show(false, function() {
-			wnd.getComponent(0).beginNew({
+		vwc.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		vwc.show(false, function() {
+			vwc.getComponent(0).beginNew({
 				data: {
 					domainId: domainId,
 					userId: userId
@@ -596,11 +596,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	editCalendar: function(calendarId) {
 		var me = this,
-				wnd = this._createCalendarView();
+				vwc = this._createCalendarView();
 		
-		wnd.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
-		wnd.show(false, function() {
-			wnd.getComponent(0).beginEdit({
+		vwc.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		vwc.show(false, function() {
+			vwc.getComponent(0).beginEdit({
 				data: {
 					calendarId: calendarId
 				}
@@ -622,13 +622,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEvent: function(groupId, calendarId, isPrivate, busy, reminder, start, end) {
 		var me = this,
 				EM = Sonicle.webtop.calendar.model.Event,
-				wnd = this._createEventView({
+				vwc = this._createEventView({
 					groupId: groupId
 				});
 		
-		wnd.getComponent(0).on('viewsave', me.onEventViewSave, me);
-		wnd.show(false, function() {
-			wnd.getComponent(0).beginNew({
+		vwc.getComponent(0).on('viewsave', me.onEventViewSave, me);
+		vwc.show(false, function() {
+			vwc.getComponent(0).beginNew({
 				data: {
 					calendarId: calendarId,
 					isPrivate: isPrivate,
@@ -644,13 +644,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	editEvent: function(rec) {
 		var me = this,
-				wnd = this._createEventView({
+				vwc = this._createEventView({
 					groupId: rec.get('calendarGroupId')
 				});
 		
-		wnd.getComponent(0).on('viewsave', me.onEventViewSave, me);
-		wnd.show(false, function() {
-			wnd.getComponent(0).beginEdit({
+		vwc.getComponent(0).on('viewsave', me.onEventViewSave, me);
+		vwc.show(false, function() {
+			vwc.getComponent(0).beginEdit({
 				data: {
 					id: rec.get('id')
 				}
@@ -758,20 +758,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	_createCalendarView: function(cfg) {
 		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.Calendar', {
-			containerCfg: {
-				width: 360,
-				height: 400
-			},
 			viewCfg: cfg
 		});
 	},
 	
 	_createEventView: function(cfg) {
 		return WT.createView(this.ID, 'Sonicle.webtop.calendar.view.Event', {
-			containerCfg: {
-				width: 650,
-				height: 510
-			},
 			viewCfg: cfg
 		});
 	},

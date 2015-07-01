@@ -655,8 +655,9 @@ public class Service extends BaseService {
 	}
 	
 	public void processICalImportUploadStream(HttpServletRequest request, InputStream uploadStream) throws Exception {
+		UserProfile up = env.getProfile();
 		Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
-		manager.importICal(calendarId, uploadStream);
+		manager.importICal(calendarId, uploadStream, DateTimeZone.forTimeZone(up.getTimeZone()));
 	}
 	
 	private List<CalendarGroup> getCheckedCalendarGroups() {

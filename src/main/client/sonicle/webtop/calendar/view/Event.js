@@ -58,16 +58,16 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.webtop.calendar.store.AttendeeRespStatus'
 	],
 	
-	confirm: 'yn',
-	autoToolbar: false,
-	
 	dockableConfig: {
 		title: '@event.tit',
 		iconCls: 'wtcal-icon-event-xs',
 		width: 650,
 		height: 510
 	},
+	confirm: 'yn',
+	autoToolbar: false,
 	model: 'Sonicle.webtop.calendar.model.Event',
+	
 	//session: true,
 	viewModel: {
 		formulas: {

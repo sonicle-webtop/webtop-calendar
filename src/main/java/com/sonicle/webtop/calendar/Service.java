@@ -59,8 +59,10 @@ import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.bol.js.JsEventCalendar;
+import com.sonicle.webtop.calendar.bol.js.JsExportStart;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendarEntry;
 import com.sonicle.webtop.calendar.bol.js.JsTreeCalendarEntry.JsTreeCalendarEntries;
+import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.core.WT;
@@ -71,10 +73,17 @@ import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BasicEnvironment;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
+import com.sonicle.webtop.core.util.LogEntries;
+import com.sonicle.webtop.core.util.LogEntry;
+import com.sonicle.webtop.core.util.MessageLogEntry;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -84,7 +93,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormatter;
@@ -101,12 +109,13 @@ public class Service extends BaseService {
 	private CalendarManager manager;
 	private CalendarUserSettings cus;
 	
-	
+	public static final String EVENTS_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
 	public final String DEFAULT_PERSONAL_CALENDAR_COLOR = "#FFFFFF";
 	
 	private final LinkedHashMap<String, CalendarGroup> calendarGroups = new LinkedHashMap<>();
 	private CheckedCalendarGroups checkedCalendarGroups = null;
 	private CheckedCalendars checkedCalendars = null;
+	private ExportWizard wizard = null;
 
 	@Override
 	public void initialize() {
@@ -163,13 +172,10 @@ public class Service extends BaseService {
 	}
 	
 	public void processManageCalendarsTree(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
 		ArrayList<ExtTreeNode> children = new ArrayList<>();
 		ExtTreeNode child = null;
 		
 		try {
-			con = getConnection();
-			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
 				String node = ServletUtils.getStringParameter(request, "node", true);
@@ -192,7 +198,7 @@ public class Service extends BaseService {
 
 				} else { // Node: group -> list group's calendars
 					UserProfile.Id upId = new UserProfile.Id(node);
-					List<OCalendar> cals = manager.getCalendars(upId);
+					List<OCalendar> cals = manager.listCalendars(upId);
 					
 					for(OCalendar cal : cals) children.add(createCalendarNode(node, cal));
 				}
@@ -216,7 +222,7 @@ public class Service extends BaseService {
 				CalendarDAO cdao = CalendarDAO.getInstance();
 				for(JsTreeCalendarEntry cal : pl.data) {
 					if(cal._nodeType.equals("calendar")) {
-						cdao.delete(con, Integer.valueOf(cal.id));
+						manager.deleteCalendar(Integer.valueOf(cal.id));
 					}
 				}
 				new JsonResult().printTo(out);
@@ -224,74 +230,43 @@ public class Service extends BaseService {
 			
 		} catch(Exception ex) {
 			logger.error("Error executing action ManageCalendarsTree", ex);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	public void processManageCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
 		OCalendar item = null;
 		
 		try {
-			CalendarDAO cdao = CalendarDAO.getInstance();
-			con = getConnection();
-			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
 				Integer id = ServletUtils.getIntParameter(request, "id", true);
 				
-				item = cdao.select(con, id);
+				item = manager.getCalendar(id);
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
-				try {
-					con.setAutoCommit(false);
-					pl.data.setCalendarId(cdao.getSequence(con).intValue());
-					pl.data.setBuiltIn(false);
-					if(pl.data.getIsDefault()) cdao.resetIsDefaultByDomainUser(con, pl.data.getDomainId(), pl.data.getUserId());
-					cdao.insert(con, pl.data);
-					toggleCheckedCalendar(pl.data.getCalendarId(), true);
-					DbUtils.commitQuietly(con);
-				} catch(Throwable t) {
-					DbUtils.rollbackQuietly(con);
-					throw t;
-				}
-				
+				item = manager.insertCalendar(pl.data);
+				toggleCheckedCalendar(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
-				try {
-					con.setAutoCommit(false);
-					if(pl.data.getIsDefault()) cdao.resetIsDefaultByDomainUser(con, pl.data.getDomainId(), pl.data.getUserId());
-					cdao.update(con, pl.data);
-					DbUtils.commitQuietly(con);
-				} catch(Throwable t) {
-					DbUtils.rollbackQuietly(con);
-					throw t;
-				}
-				
+				manager.updateCalendar(pl.data);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
-				cdao.delete(con, pl.data.getCalendarId());
-				//TODO: cancellare eventi collegati
+				manager.deleteCalendar(pl.data.getCalendarId());
 				new JsonResult().printTo(out);
 			}
 			
 		} catch(Exception ex) {
 			logger.error("Error executing action ManageCalendars", ex);
 			new JsonResult(false, "Error").printTo(out);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
 		}
 	}
 	
@@ -333,7 +308,7 @@ public class Service extends BaseService {
 			JsEventCalendar jsCal = null;
 			List<OCalendar> cals = null;
 			for(CalendarGroup group : calendarGroups.values()) {
-				cals = manager.getCalendars(new UserProfile.Id(group.getId()));
+				cals = manager.listCalendars(new UserProfile.Id(group.getId()));
 				for(OCalendar cal : cals) {
 					jsCal = new JsEventCalendar();
 					jsCal.fillFrom(cal);
@@ -358,14 +333,14 @@ public class Service extends BaseService {
 		try {
 			con = getConnection();
 			UserProfile up = env.getProfile();
-			DateTimeZone utz = DateTimeZone.forTimeZone(up.getTimeZone());
+			DateTimeZone utz = up.getTimeZone();
 			DateTimeFormatter ymdZoneFmt = DateTimeUtils.createYmdFormatter(utz);
 			
 			// Defines boundaries
 			String start = ServletUtils.getStringParameter(request, "startDate", true);
 			String end = ServletUtils.getStringParameter(request, "endDate", true);
-			DateTime fromDate = JsEvent.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
-			DateTime toDate = JsEvent.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
+			DateTime fromDate = CalendarManager.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
+			DateTime toDate = CalendarManager.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
 			// Get events for each visible group
 			Integer[] checked;
@@ -398,14 +373,14 @@ public class Service extends BaseService {
 		try {
 			con = getConnection();
 			UserProfile up = env.getProfile();
-			DateTimeZone utz = DateTimeZone.forTimeZone(up.getTimeZone());
+			DateTimeZone utz = up.getTimeZone();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
 				String from = ServletUtils.getStringParameter(request, "startDate", true);
 				String to = ServletUtils.getStringParameter(request, "endDate", true);
-				DateTime fromDate = JsEvent.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
-				DateTime toDate = JsEvent.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
+				DateTime fromDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+				DateTime toDate = CalendarManager.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
 				// Get events for each visible group
 				Integer[] checked = getCheckedCalendars();
@@ -429,32 +404,6 @@ public class Service extends BaseService {
 						}
 					}
 				}
-				/*
-				Integer[] checked;
-				JsSchedulerEvent jse = null;
-				List<SchedulerEvent> recInstances = null;
-				List<CalendarManager.GroupEvents> grpEvts = null;
-				for(CalendarGroup group : calendarGroups.values()) {
-					if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip group if not visible
-					
-					checked = checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
-					grpEvts = manager.viewEvents(group, checked, fromDate, toDate);
-					for(CalendarManager.GroupEvents ge : grpEvts) {
-						for(SchedulerEvent evt : ge.events) {
-							if(evt.getRecurrenceId() == null) {
-								jse = new JsSchedulerEvent(ge.calendar, evt, up.getId(), utz);
-								items.add(jse);
-							} else {
-								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
-								for(SchedulerEvent recInstance : recInstances) {
-									jse = new JsSchedulerEvent(ge.calendar, recInstance, up.getId(), utz);
-									items.add(jse);
-								}
-							}
-						}
-					}
-				}
-				*/
 				new JsonResult("events", items).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
@@ -536,24 +485,24 @@ public class Service extends BaseService {
 				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
+				// Adds an organizer if event doesn't have it
+				if(evt.hasAttendees()) {
+					EventAttendee org = evt.getOrganizer();
+					if(org == null) {
+						org = new EventAttendee();
+						org.setRecipient(up.getEmailAddress());
+						org.setRecipientType(EventAttendee.RECIPIENT_TYPE_ORGANIZER);
+						org.setResponseStatus(EventAttendee.RESPONSE_STATUS_ACCEPTED);
+						org.setNotify(false);
+						evt.getAttendees().add(org);
+					}
+				}
 				manager.addEvent(evt);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				String target = ServletUtils.getStringParameter(request, "target", "this");
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
-				
-				//logger.debug("getCalendarId: {}", pl.data.calendarId);
-				//logger.debug("attendees.size: {}", pl.data.attendees.size());
-				//System.out.println("TAERGET: "+target);
-				/*
-				logger.debug("contains attendees: {}", pl.map.containsKey("attendees"));
-				if(pl.map.attendees != null) {
-					logger.debug("updated: {}", pl.map.attendees.U.size());
-					
-					//logger.debug("attendees: {}", pl.map.get("attendees"));
-				}
-				*/
 				
 				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
 				manager.editEvent(target, evt, up.getTimeZone());
@@ -563,6 +512,63 @@ public class Service extends BaseService {
 		} catch(Exception ex) {
 			logger.error("Error executing action ManageEvents", ex);
 			new JsonResult(false, "Error").printTo(out);	
+		}
+	}
+	
+	public void processExportWizard(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		UserProfile up = env.getProfile();
+		
+		try {
+			String step = ServletUtils.getStringParameter(request, "step", true);
+			if(step.equals("start")) {
+				Payload<MapItem, JsExportStart> pl = ServletUtils.getPayload(request, JsExportStart.class);
+				DateTimeFormatter ymd = DateTimeUtils.createYmdFormatter(up.getTimeZone());
+				
+				wizard = new ExportWizard();
+				wizard.fromDate = ymd.parseDateTime(pl.data.fromDate).withTimeAtStartOfDay();
+				wizard.toDate = DateTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(pl.data.toDate));
+				
+				new JsonResult().printTo(out);
+				
+			} else if(step.equals("end")) {
+				File file = WT.createTempFile();
+				LogEntries log = new LogEntries();
+				DateTimeFormatter ymd = DateTimeUtils.createFormatter("yyyyMMdd", up.getTimeZone());
+				DateTimeFormatter ymdhms = DateTimeUtils.createFormatter("yyyy-MM-dd HH:mm:ss", up.getTimeZone());
+				
+				try (FileOutputStream fos = new FileOutputStream(file)) {
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started on {0}", ymdhms.print(new DateTime())));
+					manager.exportEvents(log, up.getDomainId(), wizard.fromDate, wizard.toDate, fos);
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended on {0}", ymdhms.print(new DateTime())));
+					wizard.file = file;
+					wizard.filename = MessageFormat.format(EVENTS_EXPORT_FILENAME, up.getDomainId(), ymd.print(wizard.fromDate), ymd.print(wizard.fromDate), "csv");
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "File ready: {0}", wizard.filename));
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Operation completed succesfully"));
+					new JsonResult(log.print()).printTo(out);
+					
+				} catch(Exception ex1) {
+					ex1.printStackTrace();
+					new JsonResult(log.print()).setSuccess(false).printTo(out);
+				}
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ExportWizard", ex);
+			new JsonResult(false, "Error").printTo(out);	
+		}
+	}
+	
+	public void processExportWizard(HttpServletRequest request, HttpServletResponse response) {
+		UserProfile up = env.getProfile();
+		try {
+			try(FileInputStream fis = new FileInputStream(wizard.file)) {
+				ServletUtils.writeFileStream(response, wizard.filename, fis, false);
+			}
+			
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		} finally {
+			wizard = null;
 		}
 	}
 	
@@ -582,7 +588,7 @@ public class Service extends BaseService {
 			DateTime eventEndDt = CalendarManager.parseYmdHmsWithZone(eventEndDate, eventTz);
 			
 			UserProfile up = env.getProfile();
-			DateTimeZone profileTz = DateTimeZone.forTimeZone(up.getTimeZone());
+			DateTimeZone profileTz = up.getTimeZone();
 			
 			LocalTime localStartTime = eventStartDt.toLocalTime();
 			LocalTime localEndTime = eventEndDt.toLocalTime();
@@ -657,7 +663,7 @@ public class Service extends BaseService {
 	public void processICalImportUploadStream(HttpServletRequest request, InputStream uploadStream) throws Exception {
 		UserProfile up = env.getProfile();
 		Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
-		manager.importICal(calendarId, uploadStream, DateTimeZone.forTimeZone(up.getTimeZone()));
+		manager.importICal(calendarId, uploadStream, up.getTimeZone());
 	}
 	
 	private List<CalendarGroup> getCheckedCalendarGroups() {
@@ -717,11 +723,11 @@ public class Service extends BaseService {
 	}
 	
 	private ExtTreeNode createCalendarGroupNode(MyCalendarGroup group, boolean leaf) {
-		return createCalendarGroupNode(group.getId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), leaf, "wtcal-icon-calendar-my");
+		return createCalendarGroupNode(group.getId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), leaf, "wtcal-icon-calendars-my");
 	}
 	
 	private ExtTreeNode createCalendarGroupNode(SharedCalendarGroup group, boolean leaf) {
-		return createCalendarGroupNode(group.getId(), group.getDisplayName(), leaf, "wtcal-icon-calendar-shared");
+		return createCalendarGroupNode(group.getId(), group.getDisplayName(), leaf, "wtcal-icon-calendars-shared");
 	}
 	
 	private ExtTreeNode createCalendarGroupNode(String id, String text, boolean leaf, String iconClass) {
@@ -751,5 +757,12 @@ public class Service extends BaseService {
 		node.setIconClass("wt-palette-" + cal.getHexColor());
 		node.setChecked(visible);
 		return node;
+	}
+	
+	private static class ExportWizard {
+		public DateTime fromDate;
+		public DateTime toDate;
+		public File file;
+		public String filename;
 	}
 }

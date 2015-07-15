@@ -66,6 +66,16 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<dependency>
+			<groupId>net.sf.supercsv</groupId>
+			<artifactId>super-csv</artifactId>
+			<version>2.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.supercsv</groupId>
+			<artifactId>super-csv-joda</artifactId>
+			<version>2.3.1</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<resources>
@@ -76,7 +86,6 @@
 				<directory>src/main/client</directory>
 			</resource>
 		</resources>
-                
 		<plugins>
 			<plugin>
 				<!-- Specify the maven code generator plugin -->
@@ -152,7 +161,5 @@
 				</executions>
 			</plugin>
 		</plugins>
-                
-                
 	</build>
 </project>

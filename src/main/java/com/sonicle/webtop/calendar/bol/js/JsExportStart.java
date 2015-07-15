@@ -31,15 +31,13 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
+package com.sonicle.webtop.calendar.bol.js;
 
-Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptType', {
-	extend: 'Ext.data.ArrayStore',
-	
-	model: 'WT.model.Simple',
-	data: [
-		['G', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.G')],
-		['N', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.N')],
-		['O', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.O')],
-		['R', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.R')]
-	]
-});
+/**
+ *
+ * @author malbinola
+ */
+public class JsExportStart {
+	public String fromDate;
+	public String toDate;
+}

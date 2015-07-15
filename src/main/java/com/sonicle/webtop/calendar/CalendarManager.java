@@ -37,6 +37,7 @@ import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.security.DomainAccount;
 import com.sonicle.webtop.calendar.bol.CalendarGroup;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
@@ -61,8 +62,14 @@ import com.sonicle.webtop.calendar.dal.PostponedReminderDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
 import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.bol.OActivity;
+import com.sonicle.webtop.core.bol.OCausal;
+import com.sonicle.webtop.core.bol.OCustomer;
 import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
+import com.sonicle.webtop.core.dal.ActivityDAO;
+import com.sonicle.webtop.core.dal.CausalDAO;
+import com.sonicle.webtop.core.dal.CustomerDAO;
 import com.sonicle.webtop.core.dal.ShareDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseServiceManager;
@@ -70,7 +77,13 @@ import com.sonicle.webtop.core.sdk.ServiceManifest;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
+import com.sonicle.webtop.core.util.LogEntries;
+import com.sonicle.webtop.core.util.LogEntry;
+import com.sonicle.webtop.core.util.MessageLogEntry;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -79,7 +92,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.TimeZone;
+import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.PeriodList;
 import net.fortuna.ical4j.model.property.RRule;
 import org.apache.commons.lang3.StringUtils;
@@ -88,9 +101,16 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+import org.joda.time.Minutes;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
+import org.supercsv.cellprocessor.constraint.NotNull;
+import org.supercsv.cellprocessor.ift.CellProcessor;
+import org.supercsv.cellprocessor.joda.FmtDateTime;
+import org.supercsv.io.CsvMapWriter;
+import org.supercsv.io.ICsvMapWriter;
+import org.supercsv.prefs.CsvPreference;
 
 /**
  *
@@ -168,13 +188,84 @@ public class CalendarManager extends BaseServiceManager {
 		return groups;
 	}
 	
-	public List<OCalendar> getCalendars(UserProfile.Id user) throws Exception {
+	public List<OCalendar> listCalendars(UserProfile.Id user) throws Exception {
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(manifest);
-			CalendarDAO cdao = CalendarDAO.getInstance();
-			return cdao.selectByDomainUser(con, user.getDomainId(), user.getUserId());
+			CalendarDAO calDao = CalendarDAO.getInstance();
+			return calDao.selectByDomainUser(con, user.getDomainId(), user.getUserId());
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public OCalendar getCalendar(int calendarId) throws Exception {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(manifest);
+			CalendarDAO calDao = CalendarDAO.getInstance();
+			return calDao.select(con, calendarId);
+			
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public OCalendar insertCalendar(OCalendar item) throws Exception {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(manifest);
+			con.setAutoCommit(false);
+			CalendarDAO calDao = CalendarDAO.getInstance();
+			
+			item.setCalendarId(calDao.getSequence(con).intValue());
+			item.setBuiltIn(false);
+			if(item.getIsDefault()) calDao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
+			calDao.insert(con, item);
+			DbUtils.commitQuietly(con);
+			return item;
+			
+		} catch(Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public OCalendar updateCalendar(OCalendar item) throws Exception {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(manifest);
+			con.setAutoCommit(false);
+			CalendarDAO calDao = CalendarDAO.getInstance();
+			
+			if(item.getIsDefault()) calDao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
+			calDao.update(con, item);
+			DbUtils.commitQuietly(con);
+			return item;
+			
+		} catch(Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public void deleteCalendar(int calendarId) throws Exception {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(manifest);
+			CalendarDAO calDao = CalendarDAO.getInstance();
+			calDao.delete(con, calendarId);
+			//TODO: cancellare eventi collegati
 			
 		} finally {
 			DbUtils.closeQuietly(con);
@@ -438,7 +529,7 @@ public class CalendarManager extends BaseServiceManager {
 			OEvent original = edao.select(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
 			VSchedulerEvent se = edao.view(con, ekey.eventId);
-			se.updateCalculatedFields(); //??????????????????????
+			se.updateCalculatedFields(); // TODO: Serve??????????????????????
 			if(se == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
 			
 			Event event = null;
@@ -490,7 +581,7 @@ public class CalendarManager extends BaseServiceManager {
 		}
 	}
 	
-	public void editEvent(String target, Event event, TimeZone userTz) throws Exception {
+	public void editEvent(String target, Event event, DateTimeZone userTz) throws Exception {
 		Connection con = null;
 		
 		try {
@@ -951,23 +1042,183 @@ public class CalendarManager extends BaseServiceManager {
 		}
 	}
 	
-	
-	
 	public void importICal(Integer calendarId, InputStream is, DateTimeZone defaultTz) throws Exception {
 		Connection con = null;
+		LogEntries log = new LogEntries();
+		log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started at {0}", new DateTime()));
 		
 		try {
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Parsing iCal file..."));
+			ArrayList<Event> events = null;
+			try {
+				events = ICalHelper.parseICal(log, is, defaultTz);
+			} catch(ParserException | IOException ex) {
+				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to complete parsing. Reason: {0}", ex.getMessage()));
+				throw ex;
+			}
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", events.size()));
+			
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Importing..."));
 			con = WT.getConnection(manifest);
-			ArrayList<Event> events = ICalHelper.parseICal(is, defaultTz);
+			int count = 0;
 			for(Event event : events) {
 				event.setCalendarId(calendarId);
-				doEventInsert(con, event, true, true);
+				try {
+					doEventInsert(con, event, true, true);
+					count++;
+				} catch(Exception ex) {
+					ex.printStackTrace();
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", event.getTitle(), event.getPublicUid(), ex.getMessage()));
+				}
 			}
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s imported!", count));
 			
 		} catch(Exception ex) {
 			throw ex;
 		} finally {
 			DbUtils.closeQuietly(con);
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended at {0}", new DateTime()));
+			
+			for(LogEntry entry : log) {
+				logger.debug("{}", ((MessageLogEntry)entry).getMessage());
+			}
+		}
+	}
+	
+	public void exportEvents(LogEntries log, String domainId, DateTime fromDate, DateTime toDate, OutputStream os) throws Exception {
+		Connection con = null, ccon = null;
+		ICsvMapWriter mapw = null;
+		UserDAO userDao = UserDAO.getInstance();
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		EventDAO edao = EventDAO.getInstance();
+		
+		try {
+			//TODO: Gestire campi visit_id e action_id provenienti dal servizio DRM
+			final String dateFmt = "yyyy-MM-dd";
+			final String timeFmt = "HH:mm:ss";
+			final String[] headers = new String[]{
+				"eventId", 
+				"userId", "userDescription", 
+				"startDate", "startTime", "endDate", "endTime", 
+				"timezone", "duration", 
+				"title", "description", 
+				"activityId", "activityDescription", "activityExternalId", 
+				"causalId", "causalDescription", "causalExternalId", 
+				"customerId", "customerDescription"
+			};
+			final CellProcessor[] processors = new CellProcessor[]{
+				new NotNull(), 
+				new NotNull(), null, 
+				new FmtDateTime(dateFmt), new FmtDateTime(timeFmt), new FmtDateTime(dateFmt), new FmtDateTime(timeFmt), 
+				new NotNull(), new NotNull(),
+				new NotNull(), null, 
+				null, null, null, 
+				null, null, null, 
+				null, null
+			};
+			
+			CsvPreference pref = new CsvPreference.Builder('"', ';', "\n").build();
+			mapw = new CsvMapWriter(new OutputStreamWriter(os), pref);
+			mapw.writeHeader(headers);
+			
+			con = WT.getConnection(manifest);
+			ccon = WT.getCoreConnection();
+			
+			HashMap<String, Object> map = null;
+			List<SchedulerEvent> instances = null;
+			SchedulerEvent se = null;
+			List<OCalendar> cals = calDao.selectByDomain(con, domainId);
+			for(OCalendar cal : cals) {
+				OUser user = userDao.selectByDomainUser(ccon, cal.getDomainId(), cal.getUserId());
+				if(user == null) throw new WTException("User [{0}] not found", DomainAccount.buildName(cal.getDomainId(), cal.getUserId()));
+				
+				for(VSchedulerEvent vse : edao.viewByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
+					vse.updateCalculatedFields();
+					se = new SchedulerEvent(vse);
+					try {
+						map = new HashMap<>();
+						map.put("userId", user.getUserId());
+						map.put("descriptionId", user.getDisplayName());
+						fillExportMapBasic(map, con, se);
+						fillExportMapDates(map, se);
+						mapw.write(map, headers, processors);
+						
+					} catch(Exception ex) {
+						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
+					}
+				}
+				for(VSchedulerEvent vse : edao.viewRecurringByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
+					vse.updateCalculatedFields();
+					se = new SchedulerEvent(vse);
+					instances = calculateRecurringInstances(se, fromDate, toDate, user.getTimeZone());
+					
+					try {
+						map = new HashMap<>();
+						map.put("userId", user.getUserId());
+						map.put("descriptionId", user.getDisplayName());
+						fillExportMapBasic(map, con, se);
+						for(SchedulerEvent inst : instances) {
+							fillExportMapDates(map, se);
+							mapw.write(map, headers, processors);
+						}	
+						
+					} catch(Exception ex) {
+						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
+					}
+				}
+			}
+			mapw.flush();
+			
+		} catch(Exception ex) {
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+			DbUtils.closeQuietly(ccon);
+			try { if(mapw != null) mapw.close(); } catch(Exception ex) { /* Do nothing... */ }
+		}
+	}
+	
+	private void fillExportMapDates(HashMap<String, Object> map, SchedulerEvent se) throws Exception {
+		DateTime startDt = se.getStartDate().withZone(DateTimeZone.UTC);
+		map.put("startDate", startDt);
+		map.put("startTime", startDt);
+		DateTime endDt = se.getEndDate().withZone(DateTimeZone.UTC);
+		map.put("endDate", endDt);
+		map.put("endTime", endDt);
+		map.put("timezone", se.getTimezone());
+		map.put("duration", Minutes.minutesBetween(se.getEndDate(), se.getStartDate()).size());
+	}
+	
+	private void fillExportMapBasic(HashMap<String, Object> map, Connection con, SchedulerEvent se) throws Exception {
+		map.put("eventId", se.getEventId());
+		map.put("title", se.getTitle());
+		map.put("description", se.getDescription());
+		
+		if(se.getActivityId() != null) {
+			ActivityDAO actDao = ActivityDAO.getInstance();
+			OActivity activity = actDao.select(con, se.getActivityId());
+			if(activity == null) throw new WTException("Activity [{0}] not found", se.getActivityId());
+
+			map.put("activityId", activity.getActivityId());
+			map.put("activityDescription", activity.getDescription());
+			map.put("activityExternalId", activity.getExternalId());
+		}
+		
+		if(se.getCustomerId() != null) {
+			CustomerDAO cusDao = CustomerDAO.getInstance();
+			OCustomer customer = cusDao.viewById(con, se.getCustomerId());
+			map.put("customerId", customer.getCustomerId());
+			map.put("customerDescription", customer.getDescription());
+		}
+		
+		if(se.getCausalId() != null) {
+			CausalDAO cauDao = CausalDAO.getInstance();
+			OCausal causal = cauDao.select(con, se.getCausalId());
+			if(causal == null) throw new WTException("Causal [{0}] not found", se.getCausalId());
+			
+			map.put("causalId", causal.getCausalId());
+			map.put("causalDescription", causal.getDescription());
+			map.put("causalExternalId", causal.getExternalId());
 		}
 	}
 	
@@ -1104,23 +1355,10 @@ public class CalendarManager extends BaseServiceManager {
 				oatt.fillFrom(att);
 				eadao.update(con, oatt);
 			}
-			for(EventAttendee att : changeSet.deleted) eadao.delete(con, att.getAttendeeId());
-		}
-		
-		
-		/*
-		eadao.deleteByEvent(con, oevt.getEventId());
-		if(attendees && (data.getAttendees() != null)) {
-			OEventAttendee oatt = null;
-			for(EventAttendee att : data.getAttendees()) {
-				oatt = new OEventAttendee();
-				oatt.fillFrom(att);
-				oatt.setAttendeeId(UUID.randomUUID().toString());
-				oatt.setEventId(oevt.getEventId());
-				eadao.insert(con, oatt);
+			for(EventAttendee att : changeSet.deleted) {
+				eadao.delete(con, att.getAttendeeId());
 			}
 		}
-		*/
 		
 		edao.update(con, oevt);
 		return oevt;
@@ -1143,7 +1381,7 @@ public class CalendarManager extends BaseServiceManager {
 		oevt.setStatus(OEvent.STATUS_NEW);
 		oevt.setRevisionInfo(createRevisionInfo());
 		
-		if(attendees && (event.getAttendees() != null)) {
+		if(attendees && event.hasAttendees()) {
 			OEventAttendee oatt = null;
 			for(EventAttendee att : event.getAttendees()) {
 				oatt = new OEventAttendee();

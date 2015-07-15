@@ -36,7 +36,7 @@ Ext.define('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 	
 	model: 'WT.model.Simple',
 	data: [
-		['needsAction', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.needsAction')],
+		['unknown', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.unknown')],
 		['declined', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.declined')],
 		['tentative', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.tentative')],
 		['accepted', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.accepted')]

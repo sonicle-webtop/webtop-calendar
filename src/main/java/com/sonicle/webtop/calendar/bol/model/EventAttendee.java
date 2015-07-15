@@ -33,7 +33,6 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import javax.mail.internet.InternetAddress;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -48,6 +47,7 @@ public class EventAttendee {
 	public static final String RECIPIENT_TYPE_NECESSARY = "N";
 	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
 	public static final String RECIPIENT_TYPE_RESOURCE = "R";
+	public static final String RECIPIENT_TYPE_ORGANIZER = "G";
 	public static final String RESPONSE_STATUS_UNKNOWN = "unknown";
 	public static final String RESPONSE_STATUS_DECLINED = "declined";
 	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";

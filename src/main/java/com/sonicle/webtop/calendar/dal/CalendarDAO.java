@@ -72,6 +72,21 @@ public class CalendarDAO extends BaseDAO {
 			.fetchOneInto(OCalendar.class);
 	}
 	
+	public List<OCalendar> selectByDomain(Connection con, String domainId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(CALENDARS)
+				.where(
+						CALENDARS.DOMAIN_ID.equal(domainId)
+				)
+				.orderBy(
+						CALENDARS.BUILT_IN.desc(),
+						CALENDARS.NAME.asc()
+				)
+				.fetchInto(OCalendar.class);
+	}
+	
 	public List<OCalendar> selectByDomainUser(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl

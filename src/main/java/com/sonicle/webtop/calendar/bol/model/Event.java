@@ -252,6 +252,18 @@ public class Event {
 		return (recurrence != null);
 	}
 	
+	public boolean hasAttendees() {
+		return ((attendees != null) && !attendees.isEmpty());
+	}
+	
+	public EventAttendee getOrganizer() {
+		if(!hasAttendees()) return null;
+		for(EventAttendee attendee : getAttendees()) {
+			if(attendee.getRecipientType().equals(EventAttendee.RECIPIENT_TYPE_ORGANIZER)) return attendee;
+		}
+		return null;
+	}
+	
 	public static enum RecurringInfo {
 		SINGLE {
 			@Override

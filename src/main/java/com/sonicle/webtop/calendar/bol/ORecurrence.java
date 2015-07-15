@@ -122,6 +122,8 @@ public class ORecurrence extends Recurrences {
 			rr = applyEndRepeat(rec.getRepeatTimes(), eventStartDate, eventEndDate, etz, false);
 		} else if(StringUtils.equals(rec.getEndsMode(), Recurrence.ENDS_MODE_UNTIL)) {
 			rr = applyEndUntil(rec.getUntilDate(), etz, false);
+		} else {
+			throw new RuntimeException("Recurrence end-mode unknown or undefined");
 		}
 		setRule(rr.getValue());
 	}
@@ -214,21 +216,8 @@ public class ORecurrence extends Recurrences {
 			} else if(isEndNever()) {
 				rec.setUntil(ICal4jUtils.toICal4jDateTime(ICal4jUtils.ifiniteDate(etz), etz));
 			} else {
-				throw new WTException("Unknown ends mode combination");
+				throw new WTException("Unknown ends-mode");
 			}
-			
-			/*
-			if((getPermanent() != null) && getPermanent()) {
-				rec.setUntil(ICal4jUtils.toICal4jDateTime(ICal4jUtils.ifiniteDate(etz), etz));
-			} else {
-				if((getRepeat() != null) && (getRepeat() > 0)) {
-					rec.setCount(getRepeat());
-				} else {
-					// We need to sum 1day to defined until date, for rrule untilDate is not inclusive!
-					rec.setUntil(ICal4jUtils.toICal4jDateTime(getUntilDate().plusDays(1), etz));
-				}
-			}
-			*/
 			
 		} catch(Exception ex) {
 			ex.printStackTrace();
@@ -241,7 +230,7 @@ public class ORecurrence extends Recurrences {
 	}
 	
 	public boolean isEndRepeat() {
-		return !getPermanent() && (getRepeat() > 0);
+		return !getPermanent() && ((getRepeat() != null) && (getRepeat() > 0));
 	}
 	
 	public boolean isEndUntil() {

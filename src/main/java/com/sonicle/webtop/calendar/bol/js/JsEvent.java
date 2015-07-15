@@ -258,8 +258,4 @@ public class JsEvent {
 			event.setEndDate(event.getEndDate().withTime(workdayEnd));
 		}
 	}
-	
-	public static DateTime parseYmdHmsWithZone(String date, String time, TimeZone tz) {
-		return CalendarManager.parseYmdHmsWithZone(date, time, DateTimeZone.forTimeZone(tz));
-	}
 }

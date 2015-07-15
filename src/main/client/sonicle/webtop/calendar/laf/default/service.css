@@ -11,28 +11,21 @@
 .wtcal-icon-weekagview-xs { background-image: url('week_16.png') !important; }
 .wtcal-icon-monthview-xs { background-image: url('month_16.png') !important; }
 .wtcal-icon-now-xs { background-image: url('now_16.png') !important; }
-.wtcal-icon-calendar-my { background-image: url('calendar-my_16.png') !important; }
-.wtcal-icon-calendar-shared { background-image: url('calendar-shared_16.png') !important; }
+.wtcal-icon-calendar-xs { background-image: url('calendar_16.png') !important; }
 .wtcal-icon-addCalendar-xs { background-image: url('calendar-add_16.png') !important; }
 .wtcal-icon-editCalendar-xs { background-image: url('calendar-edit_16.png') !important; }
 .wtcal-icon-deleteCalendar-xs { background-image: url('calendar-delete_16.png') !important; }
-.wtcal-icon-importEvents-xs { background-image: url('calendar-import_16.png') !important; }
-.wtcal-icon-addEvent-xs { background-image: url('event-add_16.png') !important; }
-.wtcal-icon-calendar-xs { background-image: url('calendar_16.png') !important; }
+.wtcal-icon-calendars-my { background-image: url('calendars-my_16.png') !important; }
+.wtcal-icon-calendars-shared { background-image: url('calendars-shared_16.png') !important; }
 .wtcal-icon-event-xs { background-image: url('calendar_16.png') !important; }
+.wtcal-icon-newEvent-xs { background-image: url('event-new_16.png') !important; }
+.wtcal-icon-addEvent-xs { background-image: url('event-add_16.png') !important; }
+.wtcal-icon-importEvents-xs { background-image: url('calendar-import_16.png') !important; }
+.wtcal-icon-exportEvents-xs { background-image: url('calendar-export_16.png') !important; }
 .wtcal-icon-single-event-xs { background-image: url('event-single_16.png') !important; }
 .wtcal-icon-recurring-event-xs { background-image: url('event-recurring_16.png') !important; }
 .wtcal-icon-broken-event-xs { background-image: url('event-broken_16.png') !important; }
 
-/*
-.wtcal-icon-cal-color {
-	width: 15px;
-	height: 15px;
-	border: 1px solid;
-	margin: 0;
-	background-image: none;
-}
-*/
 .wtcal-tree-default {
 	font-weight: bold;
 }

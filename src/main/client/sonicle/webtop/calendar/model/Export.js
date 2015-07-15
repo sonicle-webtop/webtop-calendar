@@ -31,15 +31,20 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-
-Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptType', {
-	extend: 'Ext.data.ArrayStore',
+Ext.define('Sonicle.webtop.calendar.model.Export', {
 	
-	model: 'WT.model.Simple',
-	data: [
-		['G', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.G')],
-		['N', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.N')],
-		['O', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.O')],
-		['R', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.R')]
+});
+
+Ext.define('Sonicle.webtop.calendar.model.ExportStart', {
+	extend: 'WT.model.Base',
+	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ExportWizard', 'data', {
+		extraParams: {
+			step: 'start'
+		}
+	}),
+	
+	fields: [
+		WTF.field('fromDate', 'date', false, {dateFormat: 'Y-m-d'}),
+		WTF.field('toDate', 'date', false, {dateFormat: 'Y-m-d'})
 	]
 });

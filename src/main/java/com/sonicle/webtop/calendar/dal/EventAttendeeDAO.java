@@ -34,6 +34,7 @@
 package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
+import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
@@ -54,6 +55,21 @@ public class EventAttendeeDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
+	public OEventAttendee selectOrganizerByEvent(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+				.select()
+				.from(EVENTS_ATTENDEES)
+				.where(
+						EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
+						.and(EVENTS_ATTENDEES.RECIPIENT_TYPE.equal(EventAttendee.RECIPIENT_TYPE_ORGANIZER))
+				)
+				.orderBy(
+						EVENTS_ATTENDEES.RECIPIENT.asc()
+				)
+				.fetchOneInto(OEventAttendee.class);
+	}
+	
 	public List<OEventAttendee> selectByEvent(Connection con, Integer eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
@@ -63,6 +79,7 @@ public class EventAttendeeDAO extends BaseDAO {
 						EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
 				)
 				.orderBy(
+						EVENTS_ATTENDEES.RECIPIENT_TYPE.asc(),
 						EVENTS_ATTENDEES.RECIPIENT.asc()
 				)
 				.fetchInto(OEventAttendee.class);
@@ -78,6 +95,7 @@ public class EventAttendeeDAO extends BaseDAO {
 						.and(EVENTS_ATTENDEES.NOTIFY.equal(notify))
 				)
 				.orderBy(
+						EVENTS_ATTENDEES.RECIPIENT_TYPE.asc(),
 						EVENTS_ATTENDEES.RECIPIENT.asc()
 				)
 				.fetchInto(OEventAttendee.class);

@@ -41,11 +41,11 @@ import net.fortuna.ical4j.model.PeriodList;
 import net.fortuna.ical4j.model.Recur;
 import net.fortuna.ical4j.model.TimeZone;
 import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import net.fortuna.ical4j.model.TimeZoneRegistryImpl;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.util.UidGenerator;
-import org.joda.time.DateTimeZone;
 
 /**
  *
@@ -53,7 +53,8 @@ import org.joda.time.DateTimeZone;
  */
 public class ICal4jUtils {
 	
-	private final static TimeZoneRegistry tzRegistry = new TimeZoneRegistryImpl();
+	//public final static TimeZoneRegistry tzRegistry = new TimeZoneRegistryImpl();
+	public final static TimeZoneRegistry tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry();
 	
 /*
                 if (invitate.isEmpty()) {
@@ -108,7 +109,7 @@ public class ICal4jUtils {
 		DateTimeZone tz = DateTimeZone.forID(timezone.getID());
 		return new org.joda.time.DateTime(tz).withDate(ld);
 		*/
-		DateTimeZone tz = DateTimeZone.forID(timezone.getID());
+		org.joda.time.DateTimeZone tz = org.joda.time.DateTimeZone.forID(timezone.getID());
 		return new org.joda.time.DateTime(date.getTime(), tz);
 	}
 	
@@ -148,7 +149,7 @@ public class ICal4jUtils {
 	}
 	
 	public static org.joda.time.DateTime toJodaDateTime(DateTime date) {
-		return new org.joda.time.DateTime(date, DateTimeZone.forID(date.getTimeZone().getID()));
+		return new org.joda.time.DateTime(date, org.joda.time.DateTimeZone.forID(date.getTimeZone().getID()));
 	}
 	
 	public static org.joda.time.DateTime toJodaDateTime(Date date, org.joda.time.DateTimeZone tz) {

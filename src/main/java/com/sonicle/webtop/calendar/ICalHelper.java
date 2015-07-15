@@ -33,10 +33,14 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import com.sonicle.webtop.core.sdk.WTException;
+import com.sonicle.webtop.core.util.LogEntries;
+import com.sonicle.webtop.core.util.LogEntry;
+import com.sonicle.webtop.core.util.MessageLogEntry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -87,34 +91,49 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class ICalHelper {
 	
-	public static ArrayList<Event> parseICal(InputStream is, org.joda.time.DateTimeZone defaultTz) throws ParserException, IOException, Exception {
+	public static ArrayList<Event> parseICal(LogEntries log, InputStream is, org.joda.time.DateTimeZone defaultTz) throws ParserException, IOException {
 		// See http://www.kanzaki.com/docs/ical/
 		ArrayList<Event> events = new ArrayList<>();
+		System.setProperty("ical4j.unfolding.relaxed", "true");
+		System.setProperty("ical4j.parsing.relaxed", "true");
+		System.setProperty("ical4j.validation.relaxed", "true");
+		//System.setProperty("ical4j.compatibility.outlook", "true");
+		//System.setProperty("ical4j.compatibility.notes", "true");
 		CalendarBuilder builder = new CalendarBuilder();
 		Calendar cal = builder.build(is);
 		VEvent ve = null;
+		LogEntries velog = null;
 
 		for (Iterator xi = cal.getComponents().iterator(); xi.hasNext();) {
 			Component component = (Component) xi.next();
 			if (component instanceof VEvent) {
 				ve = (VEvent)component;
-				events.add(ICalHelper.parseVEvent(ve, defaultTz));
+				velog = new LogEntries();
+				try {
+					events.add(ICalHelper.parseVEvent(velog, ve, defaultTz));
+					if(!velog.isEmpty()) {
+						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_WARN, "VEVENT ['{1}', {0}]", ve.getUid(), ve.getSummary()));
+						log.addAll(velog);
+					}
+				} catch(Throwable t) {
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "VEVENT ['{1}', {0}]. Reason: {3}", ve.getUid(), ve.getSummary(), t.getMessage()));
+				}
 			}
 		}
 		return events;
 	}
 	
-	public static Event parseVEvent(VEvent ve, org.joda.time.DateTimeZone defaultTz) throws Exception {
+	public static Event parseVEvent(LogEntries log, VEvent ve, org.joda.time.DateTimeZone defaultTz) throws Exception {
 		Event event = new Event();
-		// See hhttp://www.kanzaki.com/docs/ical/vevent.html
+		// See http://www.kanzaki.com/docs/ical/vevent.html
 		
 		event.setPublicUid(ve.getUid().getValue());
-		
+
 		// Extracts and converts date-times
 		DtStart start = ve.getStartDate();
-		TimeZone startTz = defaultTimeZone(start.getTimeZone(), defaultTz.getID());
+		TimeZone startTz = guessTimeZone(start.getTimeZone(), defaultTz);
 		org.joda.time.DateTime dtStart = ICal4jUtils.fromICal4jDate(start.getDate(), startTz);
-		
+
 		DtEnd end = ve.getEndDate();
 		TimeZone endTz = null;
 		org.joda.time.DateTime dtEnd = null;
@@ -126,51 +145,83 @@ public class ICalHelper {
 			dtEnd = ICal4jUtils.fromICal4jDate(end.getDate(), endTz).withZone(dtStart.getZone());
 		}
 		if(dtStart.compareTo(dtEnd) > 0) throw new WTException("StartDate [{0}] is not before event EndDate [{1}]", start.toString(), end.toString());
-		
+
 		// Apply dates to event
 		event.setTimezone(dtStart.getZone().getID());
 		if(isAllDay(dtStart, dtEnd)) {
 			// Tune-up endDate if we are reading an all-day event
 			event.setAllDay(true);
-			event.setStartDate(dtStart.withTime(0, 0, 0, 0));
-			event.setEndDate(dtStart.withTime(23, 59, 59, 999));
+			event.setStartDate(dtStart.withTimeAtStartOfDay());
+			event.setEndDate(DateTimeUtils.withTimeAtEndOfDay(dtStart));
 		} else {
 			event.setAllDay(false);
 			event.setStartDate(dtStart);
 			event.setEndDate(dtEnd);
 		}
-		
-		event.setTitle(StringUtils.defaultString(ve.getSummary().getValue()));
-		event.setDescription(ve.getDescription().getValue());
-		event.setLocation(StringUtils.defaultString(ve.getLocation().getValue()));
+
+		// Title
+		if(ve.getSummary() != null) {
+			event.setTitle(StringUtils.defaultString(ve.getSummary().getValue()));
+		} else {
+			event.setTitle("");
+			log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Event has no title"));
+		}
+
+		// Description
+		if(ve.getDescription() != null) {
+			event.setDescription(StringUtils.defaultString(ve.getDescription().getValue()));
+		} else {
+			event.setDescription(null);
+		}
+
+		// Location
+		if(ve.getLocation() != null) {
+			event.setLocation(StringUtils.defaultString(ve.getLocation().getValue()));
+		} else {
+			event.setLocation(null);
+		}
+
 		event.setIsPrivate(false);
-		event.setBusy(ICalHelper.isBusy(ve.getTransparency()));
+
+		// Busy flag
+		if(ve.getTransparency() != null) {
+			String transparency = ve.getTransparency().getValue();
+			event.setBusy(!StringUtils.equals(transparency, "TRANSPARENT"));
+		} else {
+			event.setBusy(false);
+		}
+
+		// Others...
 		event.setReminder(null);
 		event.setActivityId(null);
 		event.setCustomerId(null);
 		event.setStatisticId(null);
 		event.setCausalId(null);
-		
+
 		// Extract recurrence
 		RRule rr = (RRule)ve.getProperty(Property.RRULE);
 		if(rr != null) {
-			event.setRecurrence(parseVEventRRule(rr, dtStart.getZone()));
+			event.setRecurrence(parseVEventRRule(log, rr, dtStart.getZone()));
 		}
-		
-		// Extracts attendees
+
+		// Extracts partecipants
 		PropertyList atts = ve.getProperties(Property.ATTENDEE);
 		if(!atts.isEmpty()) {
 			ArrayList<EventAttendee> attendees = new ArrayList<>();
+			// Organizer
+			Organizer org = (Organizer)ve.getProperty(Property.ORGANIZER);
+			if(org != null) attendees.add(parseVEventOrganizer(log, org));
+			// Attendees
 			for(Object o: atts) {
-				attendees.add(parseVEventAttendee((Attendee)o));
+				attendees.add(parseVEventAttendee(log, (Attendee)o));
 			}
 			event.setAttendees(attendees);
 		}
-		
+
 		return event;
 	}
 	
-	public static Recurrence parseVEventRRule(RRule rr, org.joda.time.DateTimeZone etz) throws Exception {
+	public static Recurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) throws Exception {
 		Recurrence rec = new Recurrence();
 		
 		Recur recur = rr.getRecur();
@@ -243,111 +294,38 @@ public class ICalHelper {
 			rec.setEndsMode(Recurrence.ENDS_MODE_NEVER);
 		} else {
 			org.joda.time.DateTime dt = new org.joda.time.DateTime(recur.getUntil(), etz);
+			rec.setEndsMode(Recurrence.ENDS_MODE_UNTIL);
 			rec.setUntilDate(dt.withTimeAtStartOfDay());
 		}
 		
 		return rec;
-		
-		/*
-                //ricorrenza
-                boolean recurrence=false;
-                String recurr_type="";
-                String until_date_dd="";
-                String until_date_mm="";
-                String until_date_yyyy="";
-                String dayly_freq="";
-                String weekly_freq="";
-                String weekly_day1="false";
-                String weekly_day2="false"; 
-                String weekly_day3="false";
-                String weekly_day4="false";
-                String weekly_day5="false";
-                String weekly_day6="false";
-                String weekly_day7="false";
-                String monthly_month="";
-                String monthly_day="";
-                String yearly_day="";
-                String yearly_month="";
-                String repeat="0";
-                String permanent="";
-                RRule rrule = (RRule) vevent.getProperties().getProperty(Property.RRULE);
-                if (rrule!=null){
-                    recurrence=true;
-                    recurr_type=rrule.getRecur().getFrequency();    //frequenza
-                    
-                    java.util.Date until =rrule.getRecur().getUntil();  //data di fine
-                    if (until!=null){
-                        Calendar u=Calendar.getInstance();
-                        u.setTime(until);
-                        until_date_dd=u.get(Calendar.DAY_OF_MONTH)+"";
-                        until_date_mm=u.get(Calendar.MONTH)+1+"";
-                        until_date_yyyy=u.get(Calendar.YEAR)+"";
-                    }else{
-                        permanent="true";
-                    }
-                    
-                    if (recurr_type.equals("DAILY")){
-                        
-                    }else if (recurr_type.equals("WEEKLY")){
-
-                    }else if (recurr_type.equals("MONTHLY")){
-                        
-                    }else if (recurr_type.equals("YEARLY")){
-                        
-                    }
-                    
-                    if (rrule.getRecur().getCount()!=-1)
-                        repeat=String.valueOf(rrule.getRecur().getCount());
-                   
-                   
-                }
-                //fine ricorrenza
-                
-                String recurr_id="";
-                String none_recurrence="true";
-                if (recurrence){
-                    recurr_id=getRecurrId(con);
-                    if (permanent != null && permanent.equals("true")) { //se permanente fisso la data 31/12/2022
-                        until_date_dd = "31";
-                        until_date_mm = "12";
-                        until_date_yyyy = "2100";
-
-                    }
-                    saveRecurrence(recurr_id,
-                                dayly_recurrence,
-                                weekly_recurrence,
-                                monthly_recurrence,
-                                yearly_recurrence,
-                                dayly1,
-                                dayly_freq,
-                                dayly2,
-                                weekly_freq,
-                                weekly_day1,
-                                weekly_day2,
-                                weekly_day3,
-                                weekly_day4,
-                                weekly_day5,
-                                weekly_day6,
-                                weekly_day7,
-                                monthly_day,
-                                monthly_month,
-                                yearly_day,
-                                yearly_month,
-                                until_date_yyyy,
-                                until_date_mm,
-                                until_date_dd,
-                                permanent,
-                                Integer.parseInt(repeat),
-                                sdd+"",
-                                smm+"",
-                                syyyy+"");
-                    none_recurrence="false";
-                }
-                String repeat_times=repeat.equals("0")?"true":"false";
-			*/
 	}
 	
-	public static EventAttendee parseVEventAttendee(Attendee att) throws Exception {
+	public static EventAttendee parseVEventOrganizer(LogEntries log, Organizer org) throws Exception {
+		EventAttendee organizer = new EventAttendee();
+		// See http://www.kanzaki.com/docs/ical/organizer.html
+		
+		// Evaluates organizer details
+		// Extract email and common name (CN)
+		// Eg: CN=Henry Cabot:MAILTO:hcabot@host2.com -> drop ":MAILTO:"
+		URI uri = org.getCalAddress();
+		Cn cn = (Cn)org.getParameter(Parameter.CN);
+		/*if((uri != null) && (cn != null)) {
+			InternetAddress email = new InternetAddress(uri.getSchemeSpecificPart(), cn.getValue());
+			organizer.setRecipient(email.toString());
+		} else */if(uri != null) {
+			organizer.setRecipient(uri.getSchemeSpecificPart());
+		} else {
+			log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Organizer must have a valid address [{0}]", organizer.toString()));
+		}
+		
+		organizer.setRecipientType(EventAttendee.RECIPIENT_TYPE_ORGANIZER);
+		organizer.setResponseStatus(EventAttendee.RESPONSE_STATUS_ACCEPTED);
+		organizer.setNotify(false);
+		return organizer;
+	}
+	
+	public static EventAttendee parseVEventAttendee(LogEntries log, Attendee att) throws Exception {
 		EventAttendee attendee = new EventAttendee();
 		// See http://www.kanzaki.com/docs/ical/attendee.html
 		
@@ -356,13 +334,13 @@ public class ICalHelper {
 		// Eg: CN=Henry Cabot:MAILTO:hcabot@host2.com -> drop ":MAILTO:"
 		URI uri = att.getCalAddress();
 		Cn cn = (Cn)att.getParameter(Parameter.CN);
-		if((uri != null) && (cn != null)) {
+		/*if((uri != null) && (cn != null)) {
 			InternetAddress email = new InternetAddress(uri.getSchemeSpecificPart(), cn.getValue());
 			attendee.setRecipient(email.toString());
-		} else if(uri != null) {
+		} else */if(uri != null) {
 			attendee.setRecipient(uri.getSchemeSpecificPart());
 		} else {
-			throw new WTException("Attendee must have a valid address [{0}]", attendee.toString());
+			log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Attendee must have a valid address [{0}]", attendee.toString()));
 		}
 		
 		// Evaluates attendee role
@@ -394,12 +372,20 @@ public class ICalHelper {
 		}
 		
 		attendee.setNotify(false);
-		
 		return attendee;
 	}
 	
-	private static TimeZone defaultTimeZone(TimeZone tz, String defaultTzId) {
-		return (tz != null) ? tz : ICal4jUtils.getTimeZone(defaultTzId);
+	private static TimeZone guessTimeZone(TimeZone tz, org.joda.time.DateTimeZone defaultTz) {
+		if(tz == null) return ICal4jUtils.getTimeZone(defaultTz.getID());
+		
+		// During iCal import we can found non standard timezones coming from
+		// custom/private timezone database implementation.
+		// If we make a call to registry.getTimeZone() it ensures that a 
+		// cleared timezone will be returned.
+		// Calling .getTimeZone() using "/inverse.ca/20091015_1/Europe/Rome" 
+		// we get back "Europe/Rome"; thats we are looking for.
+		TimeZone guessedTz = ICal4jUtils.getTimeZone(tz.getID());
+		return (guessedTz != null) ? guessedTz : ICal4jUtils.getTimeZone(defaultTz.getID());
 	}
 	
 	private static boolean isAllDay(org.joda.time.DateTime start, org.joda.time.DateTime end) {
@@ -452,6 +438,7 @@ public class ICalHelper {
 		}
 		
 		// Organizer
+		//TODO: valutare export organizer
 		Organizer organizer = new Organizer(URI.create("mailto:dev1@mycompany.com"));
 		organizer.getParameters().add(new Cn("Organizer Name"));
 		ve.getProperties().add(organizer);

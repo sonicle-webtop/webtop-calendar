@@ -97,9 +97,9 @@ public class JsEvent {
 	
 	// Read-only fields
 	public String _recurringInfo;
-	public String _groupId;
+	public String _profileId;
 	
-	public JsEvent(Event event, String calendarGroupId) {
+	public JsEvent(Event event, String profileId) {
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(eventTz);
 		
@@ -171,7 +171,7 @@ public class JsEvent {
 		
 		// Read-only fields
 		_recurringInfo = event.getRecurringInfo().toString();
-		_groupId = calendarGroupId;
+		_profileId = profileId;
 	}
 	
 	public static Event buildEvent(JsEvent jse, LocalTime workdayStart, LocalTime workdayEnd) {

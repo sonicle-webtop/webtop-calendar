@@ -31,24 +31,26 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
-
-/**
- *
- * @author malbinola
- */
-public abstract class CalendarGroup {
+Ext.define('Sonicle.webtop.calendar.model.CalendarLkp', {
+	extend: 'WT.model.Base',
 	
-	protected final String id;
-	
-	public CalendarGroup(String id) {
-		this.id = id;
-	}
-	
-	public String getId() {
-		return id;
-	}
-	
-	abstract public String getDomainId();
-	abstract public String getUserId();
-}
+	idProperty: 'calendarId',
+	fields: [
+		WTF.field('calendarId', 'int', false),
+		WTF.field('domainId', 'string', false),
+		WTF.field('userId', 'string', false),
+		WTF.field('name', 'string', false),
+		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
+		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
+		WTF.field('busy', 'boolean', false, {defaultValue: false}),
+		WTF.field('reminder', 'int', true),
+		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
+		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
+		WTF.calcField('colorCls', 'string', 'color', function(v, rec) {
+			return (rec.get('color')) ? 'wt-palette-' + rec.get('color').replace('#', '') : v;
+		}),
+		WTF.calcField('_profileId', 'string', ['domainId', 'userId'], function(v, rec) {
+			return rec.get('userId') + '@' + rec.get('domainId');
+		})
+	]
+});

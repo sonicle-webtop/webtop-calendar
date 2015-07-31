@@ -54,7 +54,6 @@ public class JsSchedulerEvent {
 	public Integer eventId;
 	public Integer originalEventId;
 	public Integer calendarId;
-	public String calendarGroupId;
 	public String startDate;
 	public String endDate;
 	public String timezone;
@@ -67,6 +66,7 @@ public class JsSchedulerEvent {
 	public Boolean isReadOnly;
 	public Boolean isRecurring;
 	public Boolean isBroken;
+	public String _profileId;
 	
 	public String notes = "";
 	public String url = "";
@@ -90,7 +90,6 @@ public class JsSchedulerEvent {
 		eventId = event.getEventId();
 		originalEventId = event.getEventId();
 		calendarId = event.getCalendarId();
-		calendarGroupId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();
 		
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
@@ -110,5 +109,7 @@ public class JsSchedulerEvent {
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
 		isRecurring = event.getIsRecurring();
 		isBroken = event.getIsBroken();
+		
+		_profileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();
 	}
 }

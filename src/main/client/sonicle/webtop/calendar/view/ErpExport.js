@@ -31,20 +31,20 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.view.Export', {
+Ext.define('Sonicle.webtop.calendar.view.ErpExport', {
 	extend: 'WT.sdk.WizardView',
 	requires: [
-		'Sonicle.webtop.calendar.model.Export'
+		'Sonicle.webtop.calendar.model.ErpExport'
 	],
 	
 	dockableConfig: {
-		title: '@exportEvents.tit',
+		title: '@erpExport.tit',
 		iconCls: 'wtcal-icon-exportEvents-xs',
 		width: 450,
 		height: 250
 	},
 	useTrail: true,
-	doAction: 'ExportWizard',
+	doAction: 'ErpExportWizard',
 	pages: ['start','end'],
 	
 	initComponent: function() {
@@ -56,7 +56,7 @@ Ext.define('Sonicle.webtop.calendar.view.Export', {
 			//Sonicle.URLManager.download("service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true");
 			//window.open("service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true");
 			//Sonicle.URLManager.download('service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true');
-			Sonicle.URLManager.download(WTF.processUrl(me.mys.ID, 'ExportWizard', true));
+			Sonicle.URLManager.download(WTF.processBinUrl(me.mys.ID, 'ErpExportWizard'));
 		});
 	},
 	
@@ -68,7 +68,7 @@ Ext.define('Sonicle.webtop.calendar.view.Export', {
 			viewModel: {
 				links: {
 					record: {
-						type: 'Sonicle.webtop.calendar.model.ExportStart',
+						type: 'Sonicle.webtop.calendar.model.ErpExportStart',
 						create: true
 					}
 				}
@@ -82,12 +82,12 @@ Ext.define('Sonicle.webtop.calendar.view.Export', {
 				xtype: 'datefield',
 				bind: '{record.fromDate}',
 				width: 200,
-				fieldLabel: me.mys.res('exportEvents.start.fld-fromDate.lbl')
+				fieldLabel: me.mys.res('erpExport.start.fld-fromDate.lbl')
 			}, {
 				xtype: 'datefield',
 				bind: '{record.toDate}',
 				width: 200,
-				fieldLabel: me.mys.res('exportEvents.start.fld-toDate.lbl')
+				fieldLabel: me.mys.res('erpExport.start.fld-toDate.lbl')
 			}]
 		}].concat(me.callParent(arguments));
 	},

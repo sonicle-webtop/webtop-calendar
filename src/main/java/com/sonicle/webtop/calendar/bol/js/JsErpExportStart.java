@@ -31,24 +31,13 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.TreeCal', {
-	extend: 'Ext.data.Model',
-	
-	fields: [
-		WTF.field('_nodeType', 'string', false),
-		WTF.field('_groupId', 'string', false),
-		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
-			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[1] : null;
-		}),
-		WTF.calcField('_domainId', 'string', '_groupId', function(v, rec) {
-			return (rec.get('_groupId')) ? rec.get('_groupId').split('@')[0] : null;
-		}),
-		WTF.roField('_builtIn', 'boolean'),
-		WTF.roField('_default', 'boolean'),
-		WTF.field('_visible', 'boolean', false), // Same as checked
-		WTF.roField('_color', 'string'),
-		WTF.roField('_isPrivate', 'boolean'),
-		WTF.roField('_busy', 'boolean'),
-		WTF.roField('_reminder', 'int')
-	]
-});
+package com.sonicle.webtop.calendar.bol.js;
+
+/**
+ *
+ * @author malbinola
+ */
+public class JsErpExportStart {
+	public String fromDate;
+	public String toDate;
+}

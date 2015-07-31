@@ -36,9 +36,9 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
+import com.sonicle.webtop.core.RunContext;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.sdk.BaseController;
-import com.sonicle.webtop.core.sdk.ServiceManifest;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.sql.Connection;
 
@@ -48,8 +48,8 @@ import java.sql.Connection;
  */
 public class Controller extends BaseController {
 	
-	public Controller(ServiceManifest manifest) {
-		super(manifest);
+	public Controller(String serviceId, RunContext context) {
+		super(serviceId, context);
 	}
 	
 	@Override
@@ -57,7 +57,7 @@ public class Controller extends BaseController {
 		Connection con = null;
 		
 		try {
-			con = WT.getConnection(manifest);
+			con = WT.getConnection(getServiceId());
 			CalendarDAO cdao = CalendarDAO.getInstance();
 			
 			// Adds built-in calendar

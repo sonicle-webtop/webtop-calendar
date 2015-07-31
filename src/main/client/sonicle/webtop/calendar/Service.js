@@ -37,7 +37,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		//'Sonicle.webtop.calendar.Tool',
 		'Sonicle.calendar.Panel',
 		'Sonicle.MultiCalendar',
-		'Sonicle.webtop.calendar.model.TreeCal',
+		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.GridEvent',
@@ -72,7 +72,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('dayview'),
 				me.getAction('week5view'),
 				me.getAction('weekview'),
-				me.getAction('weekagview'),
+				me.getAction('dweekview'),
 				me.getAction('monthview'),
 				'->',
 				Ext.create({
@@ -99,7 +99,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					iconCls: 'wt-menu-tools',
 					tooltip: WT.res('menu.tools.lbl'),
 					menu: [
-						me.getAction('exportEvents')
+						me.getAction('erpExport')
 					]
 				}
 			]
@@ -136,7 +136,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}))
 					]
 				},
-				me.addRef('treecal', Ext.create({
+				me.addRef('folderstree', Ext.create({
 					region: 'center',
 					xtype: 'treepanel',
 					border: false,
@@ -145,8 +145,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					store: {
 						autoLoad: true,
 						autoSync: true,
-						model: 'Sonicle.webtop.calendar.model.TreeCal',
-						proxy: WTF.apiProxy(me.ID, 'ManageCalendarsTree', 'children', {
+						model: 'Sonicle.webtop.calendar.model.FolderNode',
+						proxy: WTF.apiProxy(me.ID, 'ManageFoldersTree', 'children', {
 							writer: {
 								allowSingle: false // Make update/delete using array payload
 							}
@@ -166,11 +166,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						checkchange: function(n, ck) {
 							me._showHideCal(n, ck);
 						},
-						itemcontextmenu: function(vw, rec, itm, i, e) {
-							if(rec.get('_nodeType') === 'group') {
-								WT.showContextMenu(e, me.getRef('cxmCalGroup'), {treecal: rec});
+						itemcontextmenu: function(s, rec, itm, i, e) {
+							if(rec.get('_type') === 'root') {
+								WT.showContextMenu(e, me.getRef('cxmRootFolder'), {folder: rec});
 							} else {
-								WT.showContextMenu(e, me.getRef('cxmCal'), {treecal: rec});
+								WT.showContextMenu(e, me.getRef('cxmFolder'), {folder: rec});
 							}
 						}
 					}
@@ -221,27 +221,25 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					listeners: {
 						rangeselect: function(s,dates,onComplete) {
 							onComplete();
-							var cal = me.getSelectedCalendar();
-							if(cal) me.addEvent(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate);
+							var cal = me.getSelectedFolder();
+							if(cal) me.addEvent(cal.get('_rootId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
 						},
 						eventdblclick: function(s, rec) {
 							if(me.isEventEditable(rec)) me.editEvent(rec);
 						},
 						daydblclick: function(s, dt, ad) {
-							var cal = me.getSelectedCalendar(),
+							var cal = me.getSelectedFolder(),
 									soDate = Sonicle.Date,
-									wd, start, end;
+									start, end;
 							if(cal) {
 								if(ad) {
-									wd = Ext.Date.parse(me.getOption('workdayStart'), 'H:i');
-									start = soDate.copyTime(wd, dt);
-									wd = Ext.Date.parse(me.getOption('workdayEnd'), 'H:i');
-									end = soDate.copyTime(wd, dt);
+									start = soDate.copyTime(me.getOption('workdayStart'), dt);
+									end = soDate.copyTime(me.getOption('workdayEnd'), dt);
 								} else {
 									start = dt;
 									end = soDate.add(dt, {minutes: 30});
 								}
-								me.addEvent(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end);
+								me.addEvent(cal.get('_rootId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end, ad);
 							}
 						},
 						eventcontextmenu: function(s, rec, el, evt) {
@@ -254,9 +252,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					itemId: 'results',
 					store: {
 						model: 'Sonicle.webtop.calendar.model.GridEvent',
-						proxy: WTF.proxy(me.ID, 'ManageEventsScheduler', 'events', {
+						proxy: WTF.apiProxy(me.ID, 'ManageGridEvents', 'events', {
 							extraParams: {
-								crud: 'search',
 								query: null
 							}
 						})
@@ -361,12 +358,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.changeView('w');
 			}
 		});
-		me.addAction('weekagview', {
-			itemId: 'wa',
-			pressed: view === 'wa',
+		me.addAction('dweekview', {
+			itemId: 'dw',
+			pressed: view === 'dw',
 			toggleGroup: 'view',
 			handler: function() {
-				me.changeView('wa');
+				me.changeView('dw');
 			}
 		});
 		me.addAction('monthview', {
@@ -379,23 +376,19 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAction('addCalendar', {
 			handler: function() {
-				var node = me._getSelectedNode(),
-						tokens;
-				if(node) {
-					tokens = node.get('_groupId').split('@', 2);
-					me.addCalendar(tokens[1], tokens[0]);
-				}
+				var node = me.getSelectedFolder();
+				if(node) me.addCalendar(node.get('_domainId'), node.get('_userId'));
 			}
 		});
 		me.addAction('editCalendar', {
 			handler: function() {
-				var node = me._getSelectedNode();
+				var node = me.getSelectedFolder();
 				if(node) me.editCalendar(node.getId());
 			}
 		});
 		me.addAction('deleteCalendar', {
 			handler: function() {
-				var node = me._getSelectedNode();
+				var node = me.getSelectedFolder();
 				if(node) me.deleteCalendar(node);
 			}
 		});
@@ -412,7 +405,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				]
 			}),
 			handler: function(s) {
-				var node = me._getSelectedNode();
+				var node = me.getSelectedFolder();
 				if(node) {
 					s.uploader.mergeExtraParams({
 						calendarId: node.getId()
@@ -423,19 +416,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('viewAllCalendars', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				me._showHideAllCals(me._getSelectedCalGroupNode(), true);
+				me._showHideAllCals(me.getSelectedRootFolder(), true);
 			}
 		});
 		me.addAction('viewNoneCalendars', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				me._showHideAllCals(me._getSelectedCalGroupNode(), false);
+				me._showHideAllCals(me.getSelectedRootFolder(), false);
 			}
 		});
 		me.addAction('addEvent', {
 			handler: function() {
-				var cal = me.getSelectedCalendar();
-				if(cal) me.addEventAtNow(cal.get('_groupId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'));
+				var cal = me.getSelectedFolder(),
+						day = me.getRef('multical').getValue();
+				if(cal) me.addEventAtNow(cal.get('_rootId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), day);
 			}
 		});
 		me.addAction('openEvent', {
@@ -469,9 +463,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				WT.warn('TODO');
 			}
 		});
-		me.addAction('exportEvents', {
+		me.addAction('erpExport', {
+			iconCls: 'wtcal-icon-exportEvents-xs',
 			handler: function() {
-				me.exportEvents();
+				me.erpExport();
 			}
 		});
 	},
@@ -479,17 +474,25 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	initCxm: function() {
 		var me = this;
 		
-		me.addRef('cxmCalGroup', Ext.create({
+		me.addRef('cxmRootFolder', Ext.create({
 			xtype: 'menu',
 			items: [
 				me.getAction('addCalendar'),
 				'-',
 				me.getAction('addEvent')
 				//TODO: azioni altri servizi?
-			]
+			],
+			listeners: {
+				beforeshow: function() {
+					var rec = WT.getContextMenuData().folder,
+							my = (rec.get('_rootId') === WT.getOption('principal'));
+					me.getAction('addCalendar').setDisabled(!my);
+					me.getAction('addEvent').setDisabled(!my);
+				}
+			}
 		}));
 		
-		me.addRef('cxmCal', Ext.create({
+		me.addRef('cxmFolder', Ext.create({
 			xtype: 'menu',
 			items: [
 				me.getAction('editCalendar'),
@@ -506,8 +509,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			],
 			listeners: {
 				beforeshow: function() {
-					var rec = WT.getContextMenuData().treecal;
-					me.getAction('deleteCalendar').setDisabled(rec.get('_builtIn'));
+					var rec = WT.getContextMenuData().folder,
+							my = (rec.get('_rootId') === WT.getOption('principal'));
+					me.getAction('editCalendar').setDisabled(!my);
+					me.getAction('deleteCalendar').setDisabled(!my);
+					me.getAction('addCalendar').setDisabled(!my);
+					me.getAction('deleteCalendar').setDisabled(!my || rec.get('_builtIn'));
+					me.getAction('addEvent').enable();
 					//TODO: disabilitare azioni se readonly
 				}
 			}
@@ -553,12 +561,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	onCalendarViewSave: function(s, success, model) {
 		if(!success) return;
 		var me = this,
-				nodeId = me._buildGroupNodeId(model),
-				store = me.getRef('treecal').getStore(),
+				store = me.getRef('folderstree').getStore(),
 				node;
 		
-		// Look for group node and reload it!
-		node = store.getNodeById(nodeId);
+		// Look for root folder and reload it!
+		node = store.getNodeById(model.get('_profileId'));
 		if(node) store.load({node: node});
 	},
 	
@@ -627,17 +634,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, this);
 	},
 	
-	addEventAtNow: function(groupId, calendarId, isPrivate, busy, reminder) {
-		var now = new Date();
-		this.addEvent(groupId, calendarId, isPrivate, busy, reminder, now, now);
+	addEventAtNow: function(profileId, calendarId, isPrivate, busy, reminder, day) {
+		if(day === undefined) day = new Date();
+		var date = Sonicle.Date.copyTime(new Date(), day);
+		this.addEvent(profileId, calendarId, isPrivate, busy, reminder, date, date, false);
 	},
 	
-	addEvent: function(groupId, calendarId, isPrivate, busy, reminder, start, end) {
+	addEvent: function(profileId, calendarId, isPrivate, busy, reminder, start, end, allDay) {
 		var me = this,
 				EM = Sonicle.webtop.calendar.model.Event,
 				vwc = WT.createView(me.ID, 'view.Event', {
 					viewCfg: {
-						groupId: groupId
+						profileId: profileId
 					}
 				});
 		
@@ -651,7 +659,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					reminder: reminder,
 					startDate: start,
 					endDate: end,
-					timezone: WT.getOption('timezone')
+					timezone: WT.getOption('timezone'),
+					allDay: allDay
 				}
 			});
 		});
@@ -661,13 +670,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				vwc = WT.createView(me.ID, 'view.Event', {
 					viewCfg: {
-						groupId: rec.get('calendarGroupId')
+						profileId: rec.get('_profileId')
 					}
 				});
 		
-		vwc.getComponent(0).on('viewsave', me.onEventViewSave, me);
+		vwc.getView().on('viewsave', me.onEventViewSave, me);
 		vwc.show(false, function() {
-			vwc.getComponent(0).beginEdit({
+			vwc.getView().beginEdit({
 				data: {
 					id: rec.get('id')
 				}
@@ -729,9 +738,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, me);
 	},
 	
-	exportEvents: function() {
+	erpExport: function() {
 		var me = this,
-				vwc = WT.createView(me.ID, 'view.Export');
+				vwc = WT.createView(me.ID, 'view.ErpExport');
 		vwc.show(false);
 	},
 	
@@ -748,6 +757,76 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	isEventEditable: function(rec) {
 		return !(rec.get('isReadOnly') === true);
+	},
+	
+	/**
+	 * @private
+	 * Returns selected root folder. If force param is 'true', this method 
+	 * returns a default value if no selection is available.
+	 * @param {Boolean} [force=false] 'true' to always return a value.
+	 * @returns {Ext.data.NodeInterface}
+	 */
+	getSelectedRootFolder: function(force) {
+		var tree = this.getRef('folderstree'),
+				sel = tree.getSelection();
+		
+		if(sel.length === 0) {
+			if(!force) return null;
+			// As default returns myFolder, which have id equals to principal option
+			return tree.getStore().getNodeById(WT.getOption('principal'));
+		}
+		return (sel[0].get('_type') === 'root') ? sel[0] : sel[0].parentNode;
+	},
+	
+	/*
+	 * @private
+	 * Returns selected folder (calendar). If no selection is available, 
+	 * this method tries to return the default folder and then the built-in one.
+	 * @returns {Ext.data.NodeInterface}
+	 */
+	getSelectedFolder: function() {
+		var me = this,
+				tree = me.getRef('folderstree'),
+				sel = tree.getSelection(),
+				node;
+		
+		if(sel.length > 0) {
+			if(sel[0].get('_type') === 'root') {
+				return me.getFolderByRoot(sel[0]);
+			} else {
+				return sel[0];
+			}
+		} else {
+			node = tree.getStore().getNodeById(WT.getOption('principal'));
+			if(node) return me.getFolderByRoot(node);
+		}
+		return null;
+	},
+	
+	/*
+	 * @private
+	 */
+	getFolderByRoot: function(rootNode) {
+		var cal = this.getDefaultFolder(rootNode);
+		return (cal) ? cal : this.getBuiltInFolder(rootNode);
+	},
+	
+	/*
+	 * @private
+	 */
+	getDefaultFolder: function(rootNode) {
+		return rootNode.findChildBy(function(n) {
+			return (n.get('_default') === true);
+		});
+	},
+	
+	/*
+	 * @private
+	 */
+	getBuiltInFolder: function(rootNode) {
+		return rootNode.findChildBy(function(n) {
+			return (n.get('_builtIn') === true);
+		});
 	},
 	
 	_activateMain: function(id) {
@@ -777,85 +856,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		store.resumeAutoSync();
 		store.sync();
-	},
-	
-	_buildGroupNodeId: function(calendar) {
-		return calendar.get('userId')+'@'+calendar.get('domainId');
-	},
-	
-	_getSelectedNode: function() {
-		var sel = this.getRef('treecal').getSelection();
-		return (sel.length > 0) ? sel[0] : null;
-	},
-	
-	/**
-	 * Returns selected calendar node.
-	 * @returns {Ext.data.NodeInterface}
-	 */
-	_getSelectedCalNode: function() {
-		var sel = this.getRef('treecal').getSelection();
-		
-		if(sel.length === 0) return null;
-		return (sel[0].get('_nodeType') === 'group') ? null : sel[0];
-	},
-	
-	/**
-	 * Returns selected calendar group node.
-	 * @param {Boolean} force True to return a default (my group) if selection is not available.
-	 * @returns {Ext.data.NodeInterface}
-	 */
-	_getSelectedCalGroupNode: function(force) {
-		var tree = this.getRef('treecal'),
-				sel = tree.getSelection();
-		
-		if(sel.length === 0) {
-			if(!force) return null;
-			// As default returns my group, which have id equals to principal option
-			return tree.getStore().getNodeById(WT.getOption('principal'));
-		}
-		return (sel[0].get('_nodeType') === 'group') ? sel[0] : sel[0].parentNode;
-	},
-	
-	
-	
-	
-	
-	
-	
-	getSelectedCalendar: function() {
-		var me = this,
-				tree = me.getRef('treecal'),
-				sel = tree.getSelection(),
-				group;
-		
-		if(sel.length > 0) {
-			if(sel[0].get('_nodeType') === 'group') {
-				return me.getCalendarByGroup(sel[0]);
-			} else {
-				return sel[0];
-			}
-		} else {
-			group = tree.getStore().getNodeById(WT.getOption('principal'));
-			if(group) return me.getCalendarByGroup(group);
-		}
-		return null;
-	},
-	
-	getCalendarByGroup: function(groupNode) {
-		var cal = this.getDefaultCalendar(groupNode);
-		return (cal) ? cal : this.getBuiltInCalendar(groupNode);
-	},
-	
-	getDefaultCalendar: function(groupNode) {
-		return groupNode.findChildBy(function(n) {
-			return (n.get('_default') === true);
-		});
-	},
-	
-	getBuiltInCalendar: function(groupNode) {
-		return groupNode.findChildBy(function(n) {
-			return (n.get('_builtIn') === true);
-		});
 	},
 	
 	print: function() {

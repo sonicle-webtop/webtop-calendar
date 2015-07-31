@@ -37,7 +37,7 @@ package com.sonicle.webtop.calendar;
  *
  * @author sergio
  */
-public class CalendarLocaleKey {
+public class CalendarLocale {
 	
 	public static final String MY_CALENDARS = "mycalendars";
 	

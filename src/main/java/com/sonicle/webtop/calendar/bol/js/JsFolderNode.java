@@ -33,11 +33,28 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author malbinola
  */
-public class JsExportStart {
-	public String fromDate;
-	public String toDate;
+public class JsFolderNode {
+	public static final String TYPE_ROOT = "root";
+	public static final String TYPE_FOLDER = "folder";
+	
+	public String id;
+	public String _type;
+	public String _rootId;
+	public Boolean _visible;
+	
+	public JsFolderNode() {
+		
+	}
+	
+	public static class JsFolderNodeList extends ArrayList<JsFolderNode> {
+		public JsFolderNodeList() {
+			super();
+		}
+	}
 }

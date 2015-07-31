@@ -35,22 +35,8 @@ Ext.define('Sonicle.webtop.calendar.model.ClientOptions', {
 	extend: 'WT.sdk.model.ClientOptions',
 	
 	fields: [
-		'view',
-		{name: 'startDay', type: 'int'},
-		'workdayStart',
-		{name: 'workdayStartDate', type: 'date', 
-			depends: 'workdayStart',
-			convert: function(v, rec) {
-				//console.log('convert');
-				return Ext.Date.parse(rec.get('workdayStart'), 'H:i');
-			}
-		},
-		'workdayEnd',
-		{name: 'workdayEndDate', type: 'date', 
-			depends: 'workdayEnd',
-			convert: function(v, rec) {
-				return Ext.Date.parse(rec.get('workdayEnd'), 'H:i');
-			}
-		}
+		WTF.field('view', 'string', true),
+		WTF.field('workdayStart', 'date', true, {dateFormat: 'H:i'}),
+		WTF.field('workdayEnd', 'date', true, {dateFormat: 'H:i'})
 	]
 });

@@ -31,37 +31,24 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
-
-import com.sonicle.webtop.core.bol.OUser;
-import com.sonicle.webtop.core.sdk.UserProfile;
-
-/**
- *
- * @author malbinola
- */
-public class SharedCalendarGroup extends CalendarGroup {
+Ext.define('Sonicle.webtop.calendar.model.FolderNode', {
+	extend: 'Ext.data.Model',
 	
-	private final UserProfile.Id profileId;
-	private final String displayName;
-	
-	public SharedCalendarGroup(OUser user) {
-		super(new UserProfile.Id(user.getDomainId(), user.getUserId()).toString());
-		profileId = new UserProfile.Id(user.getDomainId(), user.getUserId());
-		displayName = user.getDisplayName();
-	}
-
-	@Override
-	public String getDomainId() {
-		return profileId.getDomainId();
-	}
-
-	@Override
-	public String getUserId() {
-		return profileId.getUserId();
-	}
-	
-	public String getDisplayName() {
-		return displayName;
-	}
-}
+	fields: [
+		WTF.field('_type', 'string', false),
+		WTF.field('_rootId', 'string', false),
+		WTF.roField('_builtIn', 'boolean'),
+		WTF.roField('_default', 'boolean'),
+		WTF.field('_visible', 'boolean', false), // Same as checked
+		WTF.roField('_color', 'string'),
+		WTF.roField('_isPrivate', 'boolean'),
+		WTF.roField('_busy', 'boolean'),
+		WTF.roField('_reminder', 'int'),
+		WTF.calcField('_domainId', 'string', '_rootId', function(v, rec) {
+			return (rec.get('_rootId')) ? rec.get('_rootId').split('@')[1] : null;
+		}),
+		WTF.calcField('_userId', 'string', '_rootId', function(v, rec) {
+			return (rec.get('_rootId')) ? rec.get('_rootId').split('@')[0] : null;
+		})
+	]
+});

@@ -45,32 +45,31 @@ import com.sonicle.commons.web.json.extjs.ExtFieldMeta;
 import com.sonicle.commons.web.json.extjs.ExtGridColumnMeta;
 import com.sonicle.commons.web.json.extjs.ExtGridMetaData;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
-import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendarGroups;
-import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedCalendars;
-import com.sonicle.webtop.calendar.bol.CalendarGroup;
+import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
+import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
+import com.sonicle.webtop.core.bol.model.FolderBase;
+import com.sonicle.webtop.core.bol.model.IncomingFolder;
+import com.sonicle.webtop.core.bol.model.MyFolder;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
-import com.sonicle.webtop.calendar.bol.MyCalendarGroup;
 import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.calendar.bol.SharedCalendarGroup;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
-import com.sonicle.webtop.calendar.bol.js.JsEventCalendar;
-import com.sonicle.webtop.calendar.bol.js.JsExportStart;
-import com.sonicle.webtop.calendar.bol.js.JsTreeCalendarEntry;
-import com.sonicle.webtop.calendar.bol.js.JsTreeCalendarEntry.JsTreeCalendarEntries;
+import com.sonicle.webtop.calendar.bol.js.JsCalendarLkp;
+import com.sonicle.webtop.calendar.bol.js.JsErpExportStart;
+import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
+import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
-import com.sonicle.webtop.calendar.dal.CalendarDAO;
+import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.bol.js.JsSimple;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseService;
-import com.sonicle.webtop.core.sdk.BasicEnvironment;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import com.sonicle.webtop.core.util.LogEntries;
@@ -82,7 +81,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -105,73 +103,70 @@ import org.slf4j.Logger;
 public class Service extends BaseService {
 	public static final Logger logger = WT.getLogger(Service.class);
 	
-	private BasicEnvironment env = null;
 	private CalendarManager manager;
-	private CalendarUserSettings cus;
+	private CalendarUserSettings us;
 	
-	public static final String EVENTS_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
+	public static final String ERP_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
 	public final String DEFAULT_PERSONAL_CALENDAR_COLOR = "#FFFFFF";
 	
-	private final LinkedHashMap<String, CalendarGroup> calendarGroups = new LinkedHashMap<>();
-	private CheckedCalendarGroups checkedCalendarGroups = null;
-	private CheckedCalendars checkedCalendars = null;
-	private ExportWizard wizard = null;
+	private final LinkedHashMap<String, FolderBase> roots = new LinkedHashMap<>();
+	private CheckedRoots checkedRoots = null;
+	private CheckedFolders checkedFolders = null;
+	private ErpExportWizard erpWizard = null;
 
 	@Override
 	public void initialize() {
-		env = getEnv();
-		UserProfile profile = env.getProfile();
-		manager = new CalendarManager(getManifest(), profile.getStringId());
-		cus = new CalendarUserSettings(profile.getDomainId(), profile.getUserId(), getId());
+		UserProfile profile = getEnv().getProfile();
+		manager = new CalendarManager(getId(), getRunContext());
+		us = new CalendarUserSettings(profile.getDomainId(), profile.getUserId(), getId());
 		
-		// Loads available groups
-		initCalendarGroups();
+		try {
+			initFolders();
+		} catch(Exception ex) {
+			logger.error("initFolders", ex);
+		}
 	}
 	
 	@Override
 	public void cleanup() {
-		
+		checkedFolders.clear();
+		checkedFolders = null;
+		checkedRoots.clear();
+		checkedRoots = null;
+		us = null;
+		manager = null;
 	}
 	
 	@Override
 	public HashMap<String, Object> returnClientOptions() {
-		UserProfile profile = env.getProfile();
-		HashMap<String, Object> hm = new HashMap<>();
-		hm.put("view", cus.getCalendarView());
-		hm.put("workdayStart", cus.getWorkdayStart());
-		hm.put("workdayEnd", cus.getWorkdayEnd());
-		return hm;
+		UserProfile profile = getEnv().getProfile();
+		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
+		
+		HashMap<String, Object> co = new HashMap<>();
+		co.put("view", us.getCalendarView());
+		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
+		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));
+		return co;
 	}
 	
-	private void initCalendarGroups() {
-		Connection con = null;
-		
-		try {
-			con = getConnection();
-			UserProfile.Id pid = env.getProfile().getId();
-			synchronized(calendarGroups) {
-				calendarGroups.clear();
-				calendarGroups.putAll(manager.getCalendarGroups(con, pid));
-				
-				checkedCalendarGroups = cus.getCheckedCalendarGroups();
-				if(checkedCalendarGroups.isEmpty()) {
-					// If empty, adds MyGroup checked by default!
-					checkedCalendarGroups.add(pid.toString());
-					cus.setCheckedCalendarGroups(checkedCalendarGroups);
-				}
-				
-				checkedCalendars = cus.getCheckedCalendars();
+	private void initFolders() throws Exception {
+		UserProfile.Id pid = getEnv().getProfile().getId();
+		synchronized(roots) {
+			roots.clear();
+			roots.putAll(manager.listRootFolders(pid));
+
+			checkedRoots = us.getCheckedRoots();
+			if(checkedRoots.isEmpty()) {
+				// If empty, adds MyNode checked by default!
+				checkedRoots.add(pid.toString());
+				us.setCheckedRoots(checkedRoots);
 			}
-			
-		} catch(SQLException ex) {
-			logger.error("Error initializing calendar groups", ex);
-			//TODO: gestire errore
-		} finally {
-			DbUtils.closeQuietly(con);
+
+			checkedFolders = us.getCheckedFolders();
 		}
 	}
 	
-	public void processManageCalendarsTree(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	public void processManageFoldersTree(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		ArrayList<ExtTreeNode> children = new ArrayList<>();
 		ExtTreeNode child = null;
 		
@@ -179,57 +174,104 @@ public class Service extends BaseService {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
 				String node = ServletUtils.getStringParameter(request, "node", true);
-				if(node.equals("root")) { // Node: root -> list groups
-					
-					MyCalendarGroup myGroup = null;
-					SharedCalendarGroup sharedGroup = null;
-					for(CalendarGroup group : calendarGroups.values()) {
-						if(group instanceof MyCalendarGroup) { // Adds group as Mine
-							myGroup = (MyCalendarGroup)group;
-							child = createCalendarGroupNode(myGroup, false);
+				if(node.equals("root")) { // Node: root -> list folder roots
+					MyFolder myFolder = null;
+					IncomingFolder incFolder = null;
+					for(FolderBase folder : roots.values()) {
+						if(folder instanceof MyFolder) { // Adds folder as Mine
+							myFolder = (MyFolder)folder;
+							child = createFolderNode(myFolder, false);
 							children.add(child.setExpanded(true));
 							
-						} else if(group instanceof SharedCalendarGroup) { // Adds group as Shared
-							sharedGroup = (SharedCalendarGroup)group;
-							child = createCalendarGroupNode(sharedGroup, false);
+						} else if(folder instanceof IncomingFolder) { // Adds folder as Shared
+							incFolder = (IncomingFolder)folder;
+							child = createFolderNode(incFolder, false);
 							children.add(child);
 						}
 					}
 
-				} else { // Node: group -> list group's calendars
+				} else { // Node: folder -> list contained folders (event calendar)
 					UserProfile.Id upId = new UserProfile.Id(node);
 					List<OCalendar> cals = manager.listCalendars(upId);
 					
-					for(OCalendar cal : cals) children.add(createCalendarNode(node, cal));
+					for(OCalendar cal : cals) children.add(createFolderNode(node, cal));
 				}
 				new JsonResult("children", children).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				JsListPayload<JsTreeCalendarEntries> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarEntries.class);
+				JsListPayload<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
-				for(JsTreeCalendarEntry cal : pl.data) {
-					if(cal._nodeType.equals(JsTreeCalendarEntry.TYPE_GROUP)) {
-						toggleCheckedCalendarGroup(cal._groupId, cal._visible);
-					} else if(cal._nodeType.equals(JsTreeCalendarEntry.TYPE_CALENDAR)) {
-						toggleCheckedCalendar(Integer.valueOf(cal.id), cal._visible);
+				for(JsFolderNode folder : pl.data) {
+					if(folder._type.equals(JsFolderNode.TYPE_ROOT)) {
+						toggleCheckedRoot(folder._rootId, folder._visible);
+					} else if(folder._type.equals(JsFolderNode.TYPE_FOLDER)) {
+						toggleCheckedFolder(Integer.valueOf(folder.id), folder._visible);
 					}
 				}
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
-				JsListPayload<JsTreeCalendarEntries> pl = ServletUtils.getPayloadAsList(request, JsTreeCalendarEntries.class);
+				JsListPayload<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
-				CalendarDAO cdao = CalendarDAO.getInstance();
-				for(JsTreeCalendarEntry cal : pl.data) {
-					if(cal._nodeType.equals("calendar")) {
-						manager.deleteCalendar(Integer.valueOf(cal.id));
+				for(JsFolderNode share : pl.data) {
+					if(share._type.equals(JsFolderNode.TYPE_FOLDER)) {
+						manager.deleteCalendar(Integer.valueOf(share.id));
 					}
 				}
 				new JsonResult().printTo(out);
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageCalendarsTree", ex);
+			logger.error("Error executing action ManageFoldersTree", ex);
+		}
+	}
+	
+	public void processLookupRootFolders(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		List<JsSimple> items = new ArrayList<>();
+		
+		try {
+			Boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", true);
+			UserProfile up = getEnv().getProfile();
+			IncomingFolder incFolder = null;
+			for(FolderBase folder : roots.values()) {
+				if(folder instanceof MyFolder) {
+					items.add(new JsSimple(up.getStringId(), up.getDisplayName()));
+					
+				} else if(folder instanceof IncomingFolder) {
+					//TODO: se writableOnly verificare che il gruppo condiviso sia scrivibile
+					//if(writableOnly)
+					incFolder = (IncomingFolder)folder;
+					items.add(new JsSimple(incFolder.getId(), incFolder.getDescription()));
+				}
+			}
+			
+			new JsonResult("folders", items, items.size()).printTo(out);
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action LookupRootFolders", ex);
+			new JsonResult(false, "Error").printTo(out);	
+		}
+	}
+	
+	public void processLookupCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		List<JsCalendarLkp> items = new ArrayList<>();
+		
+		try {
+			JsCalendarLkp jsCal = null;
+			List<OCalendar> cals = null;
+			for(FolderBase folder : roots.values()) {
+				cals = manager.listCalendars(new UserProfile.Id(folder.getId()));
+				for(OCalendar cal : cals) {
+					jsCal = new JsCalendarLkp();
+					jsCal.fillFrom(cal);
+					items.add(jsCal);
+				}
+			}
+			new JsonResult("calendars", items, items.size()).printTo(out);
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action LookupCalendars", ex);
+			new JsonResult(false, "Error").printTo(out);
 		}
 	}
 	
@@ -248,7 +290,7 @@ public class Service extends BaseService {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
 				item = manager.insertCalendar(pl.data);
-				toggleCheckedCalendar(item.getCalendarId(), true);
+				toggleCheckedFolder(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
@@ -270,69 +312,13 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processGetCalendarGroups(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
-		List<JsSimple> items = new ArrayList<>();
-		
-		try {
-			Boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", true);
-			UserProfile up = env.getProfile();
-			SharedCalendarGroup sharedGroup = null;
-			for(CalendarGroup group : calendarGroups.values()) {
-				if(group instanceof MyCalendarGroup) { // Adds group as Mine
-					items.add(new JsSimple(up.getStringId(), up.getDisplayName()));
-				} else if(group instanceof SharedCalendarGroup) { // Adds group as Shared
-					//TODO: se writableOnly verificare che il gruppo condiviso sia scrivibile
-					//if(writableOnly)
-					sharedGroup = (SharedCalendarGroup)group;
-					items.add(new JsSimple(sharedGroup.getId(), sharedGroup.getDisplayName()));
-				}
-			}
-			
-			new JsonResult("groups", items, items.size()).printTo(out);
-			
-		} catch(Exception ex) {
-			logger.error("Error executing action GetCalendarGroups", ex);
-			new JsonResult(false, "Error").printTo(out);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	public void processGetCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
-		List<JsEventCalendar> items = new ArrayList<>();
-		
-		try {
-			JsEventCalendar jsCal = null;
-			List<OCalendar> cals = null;
-			for(CalendarGroup group : calendarGroups.values()) {
-				cals = manager.listCalendars(new UserProfile.Id(group.getId()));
-				for(OCalendar cal : cals) {
-					jsCal = new JsEventCalendar();
-					jsCal.fillFrom(cal);
-					items.add(jsCal);
-				}
-			}
-			new JsonResult("calendars", items, items.size()).printTo(out);
-			
-		} catch(Exception ex) {
-			logger.error("Error executing action GetCalendars", ex);
-			new JsonResult(false, "Error").printTo(out);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
 	public void processGetSchedulerDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		ArrayList<JsSchedulerEventDate> items = new ArrayList<>();
 		
 		try {
 			con = getConnection();
-			UserProfile up = env.getProfile();
+			UserProfile up = getEnv().getProfile();
 			DateTimeZone utz = up.getTimeZone();
 			DateTimeFormatter ymdZoneFmt = DateTimeUtils.createYmdFormatter(utz);
 			
@@ -343,13 +329,10 @@ public class Service extends BaseService {
 			DateTime toDate = CalendarManager.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
 			// Get events for each visible group
-			Integer[] checked;
+			Integer[] checked = getCheckedFolders();
 			List<DateTime> dates = null;
-			for(CalendarGroup group : calendarGroups.values()) {
-				if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip if not visible
-				
-				checked = checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
-				dates = manager.getEventsDates(group, checked, fromDate, toDate, utz);
+			for(FolderBase folder : getCheckedRoots()) {
+				dates = manager.getEventsDates(folder, checked, fromDate, toDate, utz);
 				for(DateTime dt : dates) {
 					items.add(new JsSchedulerEventDate(ymdZoneFmt.print(dt)));
 					//items.add(new JsSchedulerEventDate(CalendarManager.toYmdWithZone(dt, utz)));
@@ -372,7 +355,7 @@ public class Service extends BaseService {
 		
 		try {
 			con = getConnection();
-			UserProfile up = env.getProfile();
+			UserProfile up = getEnv().getProfile();
 			DateTimeZone utz = up.getTimeZone();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
@@ -382,22 +365,22 @@ public class Service extends BaseService {
 				DateTime fromDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
 				DateTime toDate = CalendarManager.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
-				// Get events for each visible group
-				Integer[] checked = getCheckedCalendars();
+				// Get events for each visible folder
+				Integer[] checked = getCheckedFolders();
 				JsSchedulerEvent jse = null;
 				List<SchedulerEvent> recInstances = null;
-				List<CalendarManager.GroupEvents> grpEvts = null;
-				for(CalendarGroup group : getCheckedCalendarGroups()) {
-					grpEvts = manager.viewEvents(group, checked, fromDate, toDate);
-					for(CalendarManager.GroupEvents ge : grpEvts) {
-						for(SchedulerEvent evt : ge.events) {
+				List<CalendarManager.CalendarEvents> calEvts = null;
+				for(FolderBase folder : getCheckedRoots()) {
+					calEvts = manager.viewEvents(folder, checked, fromDate, toDate);
+					for(CalendarManager.CalendarEvents ce : calEvts) {
+						for(SchedulerEvent evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
-								jse = new JsSchedulerEvent(ge.calendar, evt, up.getId(), utz);
+								jse = new JsSchedulerEvent(ce.calendar, evt, up.getId(), utz);
 								items.add(jse);
 							} else {
 								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
 								for(SchedulerEvent recInstance : recInstances) {
-									jse = new JsSchedulerEvent(ge.calendar, recInstance, up.getId(), utz);
+									jse = new JsSchedulerEvent(ce.calendar, recInstance, up.getId(), utz);
 									items.add(jse);
 								}
 							}
@@ -441,14 +424,14 @@ public class Service extends BaseService {
 			} else if(crud.equals("search")) {
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
-				Integer[] checked = getCheckedCalendars();
-				List<CalendarManager.GroupEvents> grpEvts = null;
-				for(CalendarGroup group : getCheckedCalendarGroups()) {
-					grpEvts = manager.searchEvents(group, checked, "%"+query+"%");
-					for(CalendarManager.GroupEvents ge : grpEvts) {
-						for(SchedulerEvent evt : ge.events) {
+				Integer[] checked = getCheckedFolders();
+				List<CalendarManager.CalendarEvents> calEvts = null;
+				for(FolderBase root : getCheckedRoots()) {
+					calEvts = manager.searchEvents(root, checked, "%"+query+"%");
+					for(CalendarManager.CalendarEvents ce : calEvts) {
+						for(SchedulerEvent evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
-								items.add(new JsSchedulerEvent(ge.calendar, evt, up.getId(), utz));
+								items.add(new JsSchedulerEvent(ce.calendar, evt, up.getId(), utz));
 							}
 						}
 					}
@@ -469,7 +452,7 @@ public class Service extends BaseService {
 		JsEvent item = null;
 		
 		try {
-			UserProfile up = env.getProfile();
+			UserProfile up = getEnv().getProfile();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
@@ -484,7 +467,7 @@ public class Service extends BaseService {
 				
 				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
-				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
+				Event evt = JsEvent.buildEvent(pl.data, us.getWorkdayStart(), us.getWorkdayEnd());
 				// Adds an organizer if event doesn't have it
 				if(evt.hasAttendees()) {
 					EventAttendee org = evt.getOrganizer();
@@ -504,7 +487,7 @@ public class Service extends BaseService {
 				String target = ServletUtils.getStringParameter(request, "target", "this");
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				Event evt = JsEvent.buildEvent(pl.data, cus.getWorkdayStart(), cus.getWorkdayEnd());
+				Event evt = JsEvent.buildEvent(pl.data, us.getWorkdayStart(), us.getWorkdayEnd());
 				manager.editEvent(target, evt, up.getTimeZone());
 				new JsonResult().printTo(out);
 			}
@@ -515,18 +498,51 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processExportWizard(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		UserProfile up = env.getProfile();
+	public void processManageGridEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		ArrayList<JsSchedulerEvent> items = new ArrayList<>();
+		
+		try {
+			UserProfile up = getEnv().getProfile();
+			DateTimeZone utz = up.getTimeZone();
+			
+			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			if(crud.equals(Crud.READ)) {
+				String query = ServletUtils.getStringParameter(request, "query", true);
+				
+				Integer[] checked = getCheckedFolders();
+				List<CalendarManager.CalendarEvents> calEvts = null;
+				for(FolderBase root : getCheckedRoots()) {
+					calEvts = manager.searchEvents(root, checked, "%"+query+"%");
+					for(CalendarManager.CalendarEvents ce : calEvts) {
+						for(SchedulerEvent evt : ce.events) {
+							if(evt.getRecurrenceId() == null) {
+								items.add(new JsSchedulerEvent(ce.calendar, evt, up.getId(), utz));
+							}
+						}
+					}
+				}
+				new JsonResult("events", items).printTo(out);
+			}
+		
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageGridEvents", ex);
+			new JsonResult(false, "Error").printTo(out);
+			
+		}
+	}
+	
+	public void processErpExportWizard(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		UserProfile up = getEnv().getProfile();
 		
 		try {
 			String step = ServletUtils.getStringParameter(request, "step", true);
 			if(step.equals("start")) {
-				Payload<MapItem, JsExportStart> pl = ServletUtils.getPayload(request, JsExportStart.class);
+				Payload<MapItem, JsErpExportStart> pl = ServletUtils.getPayload(request, JsErpExportStart.class);
 				DateTimeFormatter ymd = DateTimeUtils.createYmdFormatter(up.getTimeZone());
 				
-				wizard = new ExportWizard();
-				wizard.fromDate = ymd.parseDateTime(pl.data.fromDate).withTimeAtStartOfDay();
-				wizard.toDate = DateTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(pl.data.toDate));
+				erpWizard = new ErpExportWizard();
+				erpWizard.fromDate = ymd.parseDateTime(pl.data.fromDate).withTimeAtStartOfDay();
+				erpWizard.toDate = DateTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(pl.data.toDate));
 				
 				new JsonResult().printTo(out);
 				
@@ -538,11 +554,11 @@ public class Service extends BaseService {
 				
 				try (FileOutputStream fos = new FileOutputStream(file)) {
 					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started on {0}", ymdhms.print(new DateTime())));
-					manager.exportEvents(log, up.getDomainId(), wizard.fromDate, wizard.toDate, fos);
+					manager.exportEvents(log, up.getDomainId(), erpWizard.fromDate, erpWizard.toDate, fos);
 					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended on {0}", ymdhms.print(new DateTime())));
-					wizard.file = file;
-					wizard.filename = MessageFormat.format(EVENTS_EXPORT_FILENAME, up.getDomainId(), ymd.print(wizard.fromDate), ymd.print(wizard.fromDate), "csv");
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "File ready: {0}", wizard.filename));
+					erpWizard.file = file;
+					erpWizard.filename = MessageFormat.format(ERP_EXPORT_FILENAME, up.getDomainId(), ymd.print(erpWizard.fromDate), ymd.print(erpWizard.fromDate), "csv");
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "File ready: {0}", erpWizard.filename));
 					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Operation completed succesfully"));
 					new JsonResult(log.print()).printTo(out);
 					
@@ -553,28 +569,30 @@ public class Service extends BaseService {
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ExportWizard", ex);
+			logger.error("Error executing action ErpExportWizard", ex);
 			new JsonResult(false, "Error").printTo(out);	
 		}
 	}
 	
-	public void processExportWizard(HttpServletRequest request, HttpServletResponse response) {
-		UserProfile up = env.getProfile();
+	public void processErpExportWizard(HttpServletRequest request, HttpServletResponse response) {
+		UserProfile up = getEnv().getProfile();
 		try {
-			try(FileInputStream fis = new FileInputStream(wizard.file)) {
-				ServletUtils.writeFileStream(response, wizard.filename, fis, false);
+			try(FileInputStream fis = new FileInputStream(erpWizard.file)) {
+				ServletUtils.writeFileStream(response, erpWizard.filename, fis, false);
 			}
 			
 		} catch(Exception ex) {
+			//TODO: logging
 			ex.printStackTrace();
 		} finally {
-			wizard = null;
+			erpWizard = null;
 		}
 	}
 	
 	public void processGetPlanning(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		ArrayList<MapItem> items = new ArrayList<>();
+		CoreUserSettings cus = new CoreUserSettings(getEnv().getProfileId());
 		
 		try {
 			String eventStartDate = ServletUtils.getStringParameter(request, "startDate", true);
@@ -587,21 +605,22 @@ public class Service extends BaseService {
 			DateTime eventStartDt = CalendarManager.parseYmdHmsWithZone(eventStartDate, eventTz);
 			DateTime eventEndDt = CalendarManager.parseYmdHmsWithZone(eventEndDate, eventTz);
 			
-			UserProfile up = env.getProfile();
+			UserProfile up = getEnv().getProfile();
 			DateTimeZone profileTz = up.getTimeZone();
 			
 			LocalTime localStartTime = eventStartDt.toLocalTime();
 			LocalTime localEndTime = eventEndDt.toLocalTime();
-			LocalTime fromTime = DateTimeUtils.min(localStartTime, cus.getWorkdayStart());
-			LocalTime toTime = DateTimeUtils.max(localEndTime, cus.getWorkdayEnd());
+			LocalTime fromTime = DateTimeUtils.min(localStartTime, us.getWorkdayStart());
+			LocalTime toTime = DateTimeUtils.max(localEndTime, us.getWorkdayEnd());
 			
 			// Defines useful date/time formatters
 			DateTimeFormatter ymdhmFmt = DateTimeUtils.createYmdHmFormatter();
-			DateTimeFormatter tFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getShortTimeFormat());
-			DateTimeFormatter dFmt = DateTimeUtils.createFormatter(env.getCoreUserSettings().getShortDateFormat());
+			DateTimeFormatter tFmt = DateTimeUtils.createFormatter(cus.getShortTimeFormat());
+			DateTimeFormatter dFmt = DateTimeUtils.createFormatter(cus.getShortDateFormat());
+			
+			ArrayList<String> hours = manager.generateTimeSpans(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), us.getWorkdayStart(), us.getWorkdayEnd(), profileTz);
 			
 			// Generates fields and columnsInfo dynamically
-			ArrayList<String> hours = manager.generateTimeSpans(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), cus.getWorkdayStart(), cus.getWorkdayEnd(), profileTz);
 			ArrayList<ExtFieldMeta> fields = new ArrayList<>();
 			ArrayList<ExtGridColumnMeta> colsInfo = new ArrayList<>();
 			
@@ -661,22 +680,9 @@ public class Service extends BaseService {
 	}
 	
 	public void processICalImportUploadStream(HttpServletRequest request, InputStream uploadStream) throws Exception {
-		UserProfile up = env.getProfile();
+		UserProfile up = getEnv().getProfile();
 		Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
 		manager.importICal(calendarId, uploadStream, up.getTimeZone());
-	}
-	
-	private List<CalendarGroup> getCheckedCalendarGroups() {
-		ArrayList<CalendarGroup> groups = new ArrayList<>();
-		for(CalendarGroup group : calendarGroups.values()) {
-			if(!checkedCalendarGroups.contains(group.getId())) continue; // Skip group if not visible
-			groups.add(group);
-		}
-		return groups;
-	}
-	
-	private Integer[] getCheckedCalendars() {
-		return checkedCalendars.toArray(new Integer[checkedCalendars.size()]);
 	}
 	
 	private OUser guessUserByAttendee(String recipient) {
@@ -700,52 +706,65 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private void toggleCheckedCalendarGroup(String groupId, boolean checked) {
-		synchronized(calendarGroups) {
+	private List<FolderBase> getCheckedRoots() {
+		ArrayList<FolderBase> folders = new ArrayList<>();
+		for(FolderBase folder : roots.values()) {
+			if(!checkedRoots.contains(folder.getId())) continue; // Skip folder if not visible
+			folders.add(folder);
+		}
+		return folders;
+	}
+	
+	private Integer[] getCheckedFolders() {
+		return checkedFolders.toArray(new Integer[checkedFolders.size()]);
+	}
+	
+	private void toggleCheckedRoot(String folderId, boolean checked) {
+		synchronized(roots) {
 			if(checked) {
-				checkedCalendarGroups.add(groupId);
+				checkedRoots.add(folderId);
 			} else {
-				checkedCalendarGroups.remove(groupId);
+				checkedRoots.remove(folderId);
 			}
-			cus.setCheckedCalendarGroups(checkedCalendarGroups);
+			us.setCheckedRoots(checkedRoots);
 		}
 	}
 	
-	private void toggleCheckedCalendar(int calendarId, boolean checked) {
-		synchronized(calendarGroups) {
+	private void toggleCheckedFolder(int folderId, boolean checked) {
+		synchronized(roots) {
 			if(checked) {
-				checkedCalendars.add(calendarId);
+				checkedFolders.add(folderId);
 			} else {
-				checkedCalendars.remove(calendarId);
+				checkedFolders.remove(folderId);
 			}
-			cus.setCheckedCalendars(checkedCalendars);
+			us.setCheckedFolders(checkedFolders);
 		}
 	}
 	
-	private ExtTreeNode createCalendarGroupNode(MyCalendarGroup group, boolean leaf) {
-		return createCalendarGroupNode(group.getId(), lookupResource(CalendarLocaleKey.MY_CALENDARS), leaf, "wtcal-icon-calendars-my");
+	private ExtTreeNode createFolderNode(MyFolder folder, boolean leaf) {
+		return createFolderNode(folder.getId(), lookupResource(CalendarLocale.MY_CALENDARS), leaf, "wtcal-icon-root-my-xs");
 	}
 	
-	private ExtTreeNode createCalendarGroupNode(SharedCalendarGroup group, boolean leaf) {
-		return createCalendarGroupNode(group.getId(), group.getDisplayName(), leaf, "wtcal-icon-calendars-shared");
+	private ExtTreeNode createFolderNode(IncomingFolder folder, boolean leaf) {
+		return createFolderNode(folder.getId(), folder.getDescription(), leaf, "wtcal-icon-root-incoming-xs");
 	}
 	
-	private ExtTreeNode createCalendarGroupNode(String id, String text, boolean leaf, String iconClass) {
-		boolean visible = checkedCalendarGroups.contains(id);
-		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
-		node.put("_nodeType", "group");
-		node.put("_groupId", id);
+	private ExtTreeNode createFolderNode(String rootId, String text, boolean leaf, String iconClass) {
+		boolean visible = checkedRoots.contains(rootId);
+		ExtTreeNode node = new ExtTreeNode(rootId, text, leaf);
+		node.put("_type", JsFolderNode.TYPE_ROOT);
+		node.put("_rootId", rootId);
 		node.put("_visible", visible);
 		node.setIconClass(iconClass);
 		node.setChecked(visible);
 		return node;
 	}
 	
-	private ExtTreeNode createCalendarNode(String groupId, OCalendar cal) {
-		boolean visible = checkedCalendars.contains(cal.getCalendarId());
+	private ExtTreeNode createFolderNode(String rootId, OCalendar cal) {
+		boolean visible = checkedFolders.contains(cal.getCalendarId());
 		ExtTreeNode node = new ExtTreeNode(cal.getCalendarId(), cal.getName(), true);
-		node.put("_nodeType", "calendar");
-		node.put("_groupId", groupId);
+		node.put("_type", JsFolderNode.TYPE_FOLDER);
+		node.put("_rootId", rootId);
 		node.put("_builtIn", cal.getBuiltIn());
 		node.put("_default", cal.getIsDefault());
 		node.put("_color", cal.getColor());
@@ -759,7 +778,7 @@ public class Service extends BaseService {
 		return node;
 	}
 	
-	private static class ExportWizard {
+	private static class ErpExportWizard {
 		public DateTime fromDate;
 		public DateTime toDate;
 		public File file;

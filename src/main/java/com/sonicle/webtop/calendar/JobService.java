@@ -65,7 +65,7 @@ public class JobService extends BaseJobService {
 	@Override
 	public void initialize() {
 		cus = new CalendarUserSettings("*", "*", getId());
-		manager = new CalendarManager(getManifest(), "*");
+		manager = new CalendarManager(getId(), getRunContext());
 	}
 	
 	@Override

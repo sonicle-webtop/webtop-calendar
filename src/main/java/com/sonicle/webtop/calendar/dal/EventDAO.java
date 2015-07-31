@@ -35,7 +35,6 @@ package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
-import com.sonicle.webtop.calendar.bol.OEvent.RevisionInfo;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
@@ -149,8 +148,8 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.updateDevice)
-			.set(EVENTS.UPDATE_USER, updateInfo.updateUser)
+			.set(EVENTS.UPDATE_DEVICE, updateInfo.lastDevice)
+			.set(EVENTS.UPDATE_USER, updateInfo.lastUser)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
@@ -163,8 +162,8 @@ public class EventDAO extends BaseDAO {
 			.update(EVENTS)
 			.set(EVENTS.STATUS, status)
 			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.updateDevice)
-			.set(EVENTS.UPDATE_USER, updateInfo.updateUser)
+			.set(EVENTS.UPDATE_DEVICE, updateInfo.lastDevice)
+			.set(EVENTS.UPDATE_USER, updateInfo.lastUser)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
@@ -177,8 +176,8 @@ public class EventDAO extends BaseDAO {
 			.update(EVENTS)
 			.set(EVENTS.STATUS, OEvent.STATUS_DELETED)
 			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_USER, updateInfo.updateUser)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.updateDevice)
+			.set(EVENTS.UPDATE_DEVICE, updateInfo.lastDevice)
+			.set(EVENTS.UPDATE_USER, updateInfo.lastUser)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)

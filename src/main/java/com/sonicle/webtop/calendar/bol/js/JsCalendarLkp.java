@@ -31,30 +31,36 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.calendar.bol.OCalendar;
 
 /**
  *
  * @author malbinola
  */
-public class MyCalendarGroup extends CalendarGroup {
+public class JsCalendarLkp {
+	public Integer calendarId;
+	public String domainId;
+	public String userId;
+	public String name;
+	public Boolean isDefault;
+	public Boolean isPrivate;
+	public Boolean busy;
+	public Integer reminder;
+	public String color;
+	public Boolean invitation;
 	
-	private final UserProfile.Id profileId;
-	
-	public MyCalendarGroup(UserProfile.Id profileId) {
-		super(profileId.toString());
-		this.profileId = profileId;
-	}
-	
-	@Override
-	public String getDomainId() {
-		return profileId.getDomainId();
-	}
-
-	@Override
-	public String getUserId() {
-		return profileId.getUserId();
+	public void fillFrom(OCalendar calendar) {
+		calendarId = calendar.getCalendarId();
+		domainId = calendar.getDomainId();
+		userId = calendar.getUserId();
+		name = calendar.getName();
+		isDefault = calendar.getIsDefault();
+		isPrivate = calendar.getIsPrivate();
+		busy = calendar.getBusy();
+		reminder = calendar.getReminder();
+		color = calendar.getHexColor();
+		invitation = calendar.getInvitation();
 	}
 }

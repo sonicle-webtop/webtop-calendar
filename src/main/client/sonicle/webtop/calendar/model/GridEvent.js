@@ -37,20 +37,13 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 	fields: [
 		WTF.roField('id', 'string'),
 		WTF.roField('eventId', 'int'),
-		//WTF.roField('originalEventId', 'int'),
-		//WTF.roField('calendarId', 'int'),
-		WTF.roField('calendarGroupId', 'string'),
 		WTF.roField('startDate', 'string', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('endDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('timezone', 'string'),
-		//WTF.roField('isAllDay', 'boolean'),
 		WTF.roField('title', 'string'),
-		//WTF.roField('color', 'string'),
 		WTF.roField('location', 'string'),
-		//WTF.roField('isPrivate', 'boolean'),
-		//WTF.roField('reminder', 'int'),
-		//WTF.roField('isReadOnly', 'boolean'),
 		WTF.roField('isRecurring', 'boolean'),
 		WTF.roField('isBroken', 'boolean')
+		//TODO: unire i campi isRecurring e isBroken nel campo recurringInfo... vedi JsEvent
 	]
 });

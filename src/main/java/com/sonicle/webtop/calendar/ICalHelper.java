@@ -50,6 +50,7 @@ import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import net.fortuna.ical4j.data.CalendarBuilder;
@@ -75,15 +76,18 @@ import net.fortuna.ical4j.model.property.CalScale;
 import net.fortuna.ical4j.model.property.Description;
 import net.fortuna.ical4j.model.property.DtEnd;
 import net.fortuna.ical4j.model.property.DtStart;
+import net.fortuna.ical4j.model.property.ExDate;
 import net.fortuna.ical4j.model.property.Location;
 import net.fortuna.ical4j.model.property.Method;
 import net.fortuna.ical4j.model.property.Organizer;
 import net.fortuna.ical4j.model.property.ProdId;
 import net.fortuna.ical4j.model.property.RRule;
+import net.fortuna.ical4j.model.property.RecurrenceId;
 import net.fortuna.ical4j.model.property.Transp;
 import net.fortuna.ical4j.model.property.Uid;
 import net.fortuna.ical4j.model.property.Version;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.LocalDate;
 
 /**
  *
@@ -91,9 +95,9 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class ICalHelper {
 	
-	public static ArrayList<Event> parseICal(LogEntries log, InputStream is, org.joda.time.DateTimeZone defaultTz) throws ParserException, IOException {
+	public static ArrayList<ParseResult> parseICal(LogEntries log, InputStream is, org.joda.time.DateTimeZone defaultTz) throws ParserException, IOException {
 		// See http://www.kanzaki.com/docs/ical/
-		ArrayList<Event> events = new ArrayList<>();
+		ArrayList<ParseResult> retults = new ArrayList<>();
 		System.setProperty("ical4j.unfolding.relaxed", "true");
 		System.setProperty("ical4j.parsing.relaxed", "true");
 		System.setProperty("ical4j.validation.relaxed", "true");
@@ -110,7 +114,7 @@ public class ICalHelper {
 				ve = (VEvent)component;
 				velog = new LogEntries();
 				try {
-					events.add(ICalHelper.parseVEvent(velog, ve, defaultTz));
+					retults.add(ICalHelper.parseVEvent(velog, ve, defaultTz));
 					if(!velog.isEmpty()) {
 						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_WARN, "VEVENT ['{1}', {0}]", ve.getUid(), ve.getSummary()));
 						log.addAll(velog);
@@ -120,11 +124,13 @@ public class ICalHelper {
 				}
 			}
 		}
-		return events;
+		return retults;
 	}
 	
-	public static Event parseVEvent(LogEntries log, VEvent ve, org.joda.time.DateTimeZone defaultTz) throws Exception {
+	public static ParseResult parseVEvent(LogEntries log, VEvent ve, org.joda.time.DateTimeZone defaultTz) throws Exception {
 		Event event = new Event();
+		ArrayList<LocalDate> excludedDates = null;
+		LocalDate overwritesRecurringInstance = null;
 		// See http://www.kanzaki.com/docs/ical/vevent.html
 		
 		event.setPublicUid(ve.getUid().getValue());
@@ -198,10 +204,24 @@ public class ICalHelper {
 		event.setStatisticId(null);
 		event.setCausalId(null);
 
-		// Extract recurrence
+		// Extract recurrence (real definition or reference to a previous instance)
 		RRule rr = (RRule)ve.getProperty(Property.RRULE);
 		if(rr != null) {
 			event.setRecurrence(parseVEventRRule(log, rr, dtStart.getZone()));
+		} else {
+			RecurrenceId recurrenceId = (RecurrenceId)ve.getProperty(Property.RECURRENCE_ID);
+			if(recurrenceId != null) {
+				overwritesRecurringInstance = new LocalDate(recurrenceId.getDate());
+			}
+		}
+		
+		// Extract exDates
+		PropertyList exDates = ve.getProperties(Property.EXDATE);
+		if(!exDates.isEmpty()) {
+			excludedDates = new ArrayList<>();
+			for(Object o: exDates) {
+				excludedDates.addAll(parseVEventExDate(log, (ExDate)o));
+			}
 		}
 
 		// Extracts partecipants
@@ -210,15 +230,25 @@ public class ICalHelper {
 			ArrayList<EventAttendee> attendees = new ArrayList<>();
 			// Organizer
 			Organizer org = (Organizer)ve.getProperty(Property.ORGANIZER);
-			if(org != null) attendees.add(parseVEventOrganizer(log, org));
+			if(org != null) {
+				try {
+					attendees.add(parseVEventOrganizer(log, org));
+				} catch(Exception ex) {
+					log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, ex.getMessage()));
+				}
+			}
 			// Attendees
 			for(Object o: atts) {
-				attendees.add(parseVEventAttendee(log, (Attendee)o));
+				try {
+					attendees.add(parseVEventAttendee(log, (Attendee)o));
+				} catch(Exception ex) {
+					log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, ex.getMessage()));
+				}
 			}
 			event.setAttendees(attendees);
 		}
 
-		return event;
+		return new ParseResult(event, excludedDates, overwritesRecurringInstance);
 	}
 	
 	public static Recurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) throws Exception {
@@ -301,6 +331,15 @@ public class ICalHelper {
 		return rec;
 	}
 	
+	public static List<LocalDate> parseVEventExDate(LogEntries log, ExDate ex) throws Exception {
+		ArrayList<LocalDate> dates = new ArrayList<>();
+		Iterator it = ex.getDates().iterator();
+		while(it.hasNext()) {
+			dates.add(new LocalDate(it.next()));
+		}
+		return dates;
+	}
+	
 	public static EventAttendee parseVEventOrganizer(LogEntries log, Organizer org) throws Exception {
 		EventAttendee organizer = new EventAttendee();
 		// See http://www.kanzaki.com/docs/ical/organizer.html
@@ -316,7 +355,8 @@ public class ICalHelper {
 		} else */if(uri != null) {
 			organizer.setRecipient(uri.getSchemeSpecificPart());
 		} else {
-			log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Organizer must have a valid address [{0}]", organizer.toString()));
+			throw new WTException("Organizer must have a valid address [{0}]", organizer.toString());
+			//log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Organizer must have a valid address [{0}]", organizer.toString()));
 		}
 		
 		organizer.setRecipientType(EventAttendee.RECIPIENT_TYPE_ORGANIZER);
@@ -340,7 +380,8 @@ public class ICalHelper {
 		} else */if(uri != null) {
 			attendee.setRecipient(uri.getSchemeSpecificPart());
 		} else {
-			log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Attendee must have a valid address [{0}]", attendee.toString()));
+			throw new WTException("Attendee must have a valid address [{0}]", attendee.toString());
+			//log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Attendee must have a valid address [{0}]", attendee.toString()));
 		}
 		
 		// Evaluates attendee role
@@ -498,5 +539,17 @@ public class ICalHelper {
 		}
 		
 		return att;
+	}
+	
+	public static class ParseResult {
+		Event event;
+		ArrayList<LocalDate> excludedDates;
+		LocalDate overwritesRecurringInstance;
+		
+		public ParseResult(Event event, ArrayList<LocalDate> excludedDates, LocalDate overwritesRecurringInstance) {
+			this.event = event;
+			this.excludedDates = excludedDates;
+			this.overwritesRecurringInstance = overwritesRecurringInstance;
+		}
 	}
 }

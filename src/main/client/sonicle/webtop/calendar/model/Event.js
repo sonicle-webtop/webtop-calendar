@@ -85,7 +85,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('rrYearlyFreq', 'int', true),//false, {defaultValue: 1}),
 		WTF.field('rrYearlyDay', 'int', true),//false, {defaultValue: 1}),
 		// Read-only fields
-		WTF.roField('_groupId', 'string'),
+		WTF.roField('_profileId', 'string'),
 		WTF.roField('_recurringInfo', 'string', {defaultValue: 'single'}),
 		WTF.calcField('_isSingle', 'boolean', '_recurringInfo', function(v, rec) {
 			return (rec.get('_recurringInfo') === 'single');

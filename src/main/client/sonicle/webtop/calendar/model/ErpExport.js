@@ -31,13 +31,13 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.Export', {
+Ext.define('Sonicle.webtop.calendar.model.ErpExport', {
 	
 });
 
-Ext.define('Sonicle.webtop.calendar.model.ExportStart', {
+Ext.define('Sonicle.webtop.calendar.model.ErpExportStart', {
 	extend: 'WT.model.Base',
-	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ExportWizard', 'data', {
+	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ErpExportWizard', 'data', {
 		extraParams: {
 			step: 'start'
 		}

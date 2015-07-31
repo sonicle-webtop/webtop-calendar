@@ -34,14 +34,9 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.bol.model.Event;
-import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
-import java.util.TimeZone;
+import com.sonicle.webtop.core.dal.BaseDAO.RevisionInfo;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.jooq.tools.StringUtils;
 
 /**
  *
@@ -59,10 +54,10 @@ public class OEvent extends Events {
 		setStatus(STATUS_NEW);
 	}
 	
-	public void setRevisionInfo(RevisionInfo info) {
-		setLastModified(info.lastModified);
-		setUpdateDevice(info.updateDevice);
-		setUpdateUser(info.updateUser);
+	public void setRevisionInfo(RevisionInfo revision) {
+		setLastModified(revision.lastModified);
+		setUpdateDevice(revision.lastDevice);
+		setUpdateUser(revision.lastUser);
 	}
 	
 	public void fillFrom(Event event) {
@@ -96,26 +91,6 @@ public class OEvent extends Events {
 			DateTime dt = event.getEndDate();
 			event.setEndDate(event.getStartDate());
 			event.setStartDate(dt);
-		}
-	}
-	
-	public static class RevisionInfo {
-		public DateTime lastModified;
-		public String updateDevice;
-		public String updateUser;
-		
-		public RevisionInfo() {
-			
-		}
-		
-		public RevisionInfo(String updateDevice, String updateUser) {
-			this(DateTime.now(DateTimeZone.UTC), updateDevice, updateUser);
-		}
-		
-		public RevisionInfo(DateTime lastModified, String updateDevice, String updateUser) {
-			this.lastModified = lastModified;
-			this.updateDevice = updateDevice;
-			this.updateUser = updateUser;
 		}
 	}
 }

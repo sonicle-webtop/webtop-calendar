@@ -39,7 +39,6 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OUser;
@@ -74,7 +73,7 @@ public class PublicService extends BasePublicService {
 
 	@Override
 	public void initialize() {
-		manager = new CalendarManager(getManifest(), "*");
+		manager = new CalendarManager(getId(), getRunContext());
 	}
 
 	@Override
@@ -128,14 +127,14 @@ public class PublicService extends BasePublicService {
 				tplMap.put("reply", reply);
 				tplMap.put("event", buildEventReplyMap(event));
 				Map i18n = buildStringsMap(locale, new String[]{
-					CalendarLocaleKey.PUB_WHEN,
-					CalendarLocaleKey.PUB_LOCATION,
-					CalendarLocaleKey.PUB_MAP,
-					CalendarLocaleKey.PUB_ORGANIZER,
-					CalendarLocaleKey.PUB_CONFIRM_YES,
-					CalendarLocaleKey.PUB_CONFIRM_NO,
-					CalendarLocaleKey.PUB_CONFIRM_MAYBE,
-					CalendarLocaleKey.PUB_SIGNATURE
+					CalendarLocale.PUB_WHEN,
+					CalendarLocale.PUB_LOCATION,
+					CalendarLocale.PUB_MAP,
+					CalendarLocale.PUB_ORGANIZER,
+					CalendarLocale.PUB_CONFIRM_YES,
+					CalendarLocale.PUB_CONFIRM_NO,
+					CalendarLocale.PUB_CONFIRM_MAYBE,
+					CalendarLocale.PUB_SIGNATURE
 				});
 				tplMap.put("i18n", i18n);
 
@@ -150,26 +149,26 @@ public class PublicService extends BasePublicService {
 				tplMap.put("event", buildEventViewMap(event));
 				tplMap.put("attendees", buildEventAttendeesMap(atts));
 				Map i18n = buildStringsMap(locale, new String[]{
-					CalendarLocaleKey.PUB_SUMMARY,
-					CalendarLocaleKey.PUB_WHEN,
-					CalendarLocaleKey.PUB_LOCATION,
-					CalendarLocaleKey.PUB_MAP,
-					CalendarLocaleKey.PUB_ATTENDEES,
-					CalendarLocaleKey.PUB_ORGANIZER,
-					CalendarLocaleKey.PUB_RESPONSE_UNKNOWN,
-					CalendarLocaleKey.PUB_RESPONSE_DECLINED,
-					CalendarLocaleKey.PUB_RESPONSE_TENTATIVE,
-					CalendarLocaleKey.PUB_RESPONSE_ACCEPTED,
-					CalendarLocaleKey.PUB_SIGNATURE
+					CalendarLocale.PUB_SUMMARY,
+					CalendarLocale.PUB_WHEN,
+					CalendarLocale.PUB_LOCATION,
+					CalendarLocale.PUB_MAP,
+					CalendarLocale.PUB_ATTENDEES,
+					CalendarLocale.PUB_ORGANIZER,
+					CalendarLocale.PUB_RESPONSE_UNKNOWN,
+					CalendarLocale.PUB_RESPONSE_DECLINED,
+					CalendarLocale.PUB_RESPONSE_TENTATIVE,
+					CalendarLocale.PUB_RESPONSE_ACCEPTED,
+					CalendarLocale.PUB_SIGNATURE
 				});
 				tplMap.put("i18n", i18n);
 			}
 		} catch(EventNotFoundException ex) {
 			template = "event_notfound.html";
 			Map i18n = buildStringsMap(locale, new String[]{
-				CalendarLocaleKey.PUB_NOTFOUND_TITLE,
-				CalendarLocaleKey.PUB_NOTFOUND_MESSAGE,
-				CalendarLocaleKey.PUB_SIGNATURE
+				CalendarLocale.PUB_NOTFOUND_TITLE,
+				CalendarLocale.PUB_NOTFOUND_MESSAGE,
+				CalendarLocale.PUB_SIGNATURE
 			});
 			tplMap.put("i18n", i18n);
 		}

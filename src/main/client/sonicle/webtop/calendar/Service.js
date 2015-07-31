@@ -37,6 +37,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		//'Sonicle.webtop.calendar.Tool',
 		'Sonicle.calendar.Panel',
 		'Sonicle.MultiCalendar',
+		'Sonicle.grid.column.Icon',
+		'Sonicle.grid.column.Color',
 		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
@@ -259,18 +261,22 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						})
 					},
 					columns: [{
-						dataIndex: 'id',
-						renderer: WTF.iconColRenderer({
-							iconField: function(rec) {
-								if(rec.get('isBroken')) return 'broken-event';
-								if(rec.get('isRecurring')) return 'recurring-event';
-								return 'single-event';
-							},
-							xid: me.XID,
-							size: 'xs'
-						}),
-						header: '',
+						xtype: 'soiconcolumn',
+						iconField: function(rec) {
+							var ico = 'single-event';
+							if(rec.get('isBroken')) ico = 'broken-event';
+							if(rec.get('isRecurring')) ico = 'recurring-event';
+							return WTF.cssIconCls(me.XID, ico, 'xs');
+						},
+						iconSize: WTU.imgSizeToPx('xs'),
 						width: 40
+					}, {
+						xtype: 'socolorcolumn',
+						dataIndex: 'folderName',
+						colorField: 'color',
+						displayField: 'folderName',
+						header: me.res('event.fld-calendar.lbl'),
+						width: 100
 					}, {
 						dataIndex: 'startDate',
 						xtype: 'datecolumn',

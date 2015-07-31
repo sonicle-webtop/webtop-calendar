@@ -42,6 +42,8 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 		WTF.roField('timezone', 'string'),
 		WTF.roField('title', 'string'),
 		WTF.roField('location', 'string'),
+		WTF.roField('color', 'string'),
+		WTF.roField('folderName', 'string'),
 		WTF.roField('isRecurring', 'boolean'),
 		WTF.roField('isBroken', 'boolean')
 		//TODO: unire i campi isRecurring e isBroken nel campo recurringInfo... vedi JsEvent

@@ -66,6 +66,7 @@ public class JsSchedulerEvent {
 	public Boolean isReadOnly;
 	public Boolean isRecurring;
 	public Boolean isBroken;
+	public String folderName;
 	public String _profileId;
 	
 	public String notes = "";
@@ -110,6 +111,7 @@ public class JsSchedulerEvent {
 		isRecurring = event.getIsRecurring();
 		isBroken = event.getIsBroken();
 		
+		folderName = calendar.getName();
 		_profileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();
 	}
 }

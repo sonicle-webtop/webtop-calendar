@@ -245,12 +245,17 @@ public class JsEvent {
 	}
 	
 	private static void adjustTimes(Event event, LocalTime workdayStart, LocalTime workdayEnd) {
+		event.setEndDate(DateTimeUtils.ceilTimeAtEndOfDay(event.getEndDate()));
 		// Ensure start < end
 		if(event.getEndDate().compareTo(event.getStartDate()) < 0) {
 			// Swap dates...
 			DateTime dt = event.getEndDate();
 			event.setEndDate(event.getStartDate());
 			event.setStartDate(dt);
+		}
+		// Correct midnight end time
+		if(DateTimeUtils.isMidnight(event.getEndDate()) && DateTimeUtils.isDayBefore(event.getStartDate(), event.getEndDate())) {
+			event.setEndDate(DateTimeUtils.withTimeAtEndOfDay(event.getStartDate()));
 		}
 		// Force allDay hours
 		if(event.getAllDay()) {

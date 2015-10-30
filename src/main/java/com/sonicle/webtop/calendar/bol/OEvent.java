@@ -82,6 +82,7 @@ public class OEvent extends Events {
 		setCustomerId(event.getCustomerId());
 		setStatisticId(event.getStatisticId());
 		setCausalId(event.getCausalId());
+		setOrganizer(event.getOrganizer());
 	}
 	
 	public static void ensureTimesCoherence(OEvent event) {

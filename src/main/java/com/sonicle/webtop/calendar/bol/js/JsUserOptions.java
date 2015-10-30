@@ -33,18 +33,22 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.webtop.core.sdk.JsUserOptionsBase;
+
 /**
  *
  * @author malbinola
  */
-public class JsUserOptions {
-	
+public class JsUserOptions extends JsUserOptionsBase {
 	public String view;
-	public Integer startDay;
 	public String workdayStart;
 	public String workdayEnd;
 	
 	public JsUserOptions() {
 		
+	}
+	
+	public JsUserOptions(String id) {
+		super(id);
 	}
 }

@@ -76,10 +76,11 @@ import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseServiceManager;
 import com.sonicle.webtop.core.RunContext;
 import com.sonicle.webtop.core.bol.IncomingShare;
-import com.sonicle.webtop.core.bol.model.AuthResourceShareInstance;
+import com.sonicle.webtop.core.bol.model.AuthResourceShareElement;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
+import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
@@ -120,17 +121,28 @@ import org.supercsv.prefs.CsvPreference;
  */
 public class CalendarManager extends BaseServiceManager {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
-	private static final String RESOURCE_CALENDARS_SHARE = "CALENDARS";
-	private static final String RESOURCE_CALENDAR_SHARE = "CALENDAR";
+	private static final String RESOURCE_CALENDARS = "CALENDARS";
+	private static final String RESOURCE_CALENDAR = "CALENDAR";
 	private static final String EVENT_NORMAL = "normal";
 	private static final String EVENT_BROKEN = "broken";
 	private static final String EVENT_RECURRING = "recurring";
 	public static final String TARGET_THIS = "this";
 	public static final String TARGET_SINCE = "since";
 	public static final String TARGET_ALL = "all";
+	
+	private String host;
 
 	public CalendarManager(String serviceId, RunContext context) {
 		super(serviceId, context);
+		host = "unknown";
+	}
+	
+	public String getHost() {
+		return host;
+	}
+	
+	public void setHost(String value) {
+		host = value;
 	}
 	
 	private RevisionInfo createRevisionInfo() {
@@ -152,35 +164,62 @@ public class CalendarManager extends BaseServiceManager {
 		}
 	}
 	
-	public LinkedHashMap<String, FolderBase> listRootFolders(UserProfile.Id pid) throws Exception {
+	public LinkedHashMap<String, FolderBase> rootFolderList(UserProfile.Id pid) throws Exception {
 		LinkedHashMap<String, FolderBase> folders = new LinkedHashMap();
 		MyFolder myFolder = null;
 		IncomingFolder incFolder = null;
 		CoreManager core = WT.getCoreManager(getRunContext());
 		
-		// Defines personal folders
+		// Defines personal folder
 		myFolder = new MyFolder(pid);
 		folders.put(myFolder.getId(), myFolder);
 		
-		// Reads incoming folders
+		// Reads incoming folders (from sharing)
 		try {
-			List<IncomingShare> shares = core.listIncomingSharesForUser(getServiceId(), pid, RESOURCE_CALENDARS_SHARE);
-			String resource = AuthResourceShareInstance.buildName(RESOURCE_CALENDARS_SHARE);
-			for(IncomingShare share : shares) {
+			List<OShare> shares = core.shareListIncoming(getServiceId(), pid, RESOURCE_CALENDARS);
+			for(OShare share : shares) {
 				incFolder = new IncomingFolder(share);
 				if(folders.containsKey(incFolder.getId())) continue;
-				if(!WT.isPermitted(getServiceId(), resource, AuthResourceShareInstance.ACTION_READ, share.getShareId())) continue;
 				folders.put(incFolder.getId(), incFolder);
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Unable to build root folders", ex);
+			logger.error("Unable list root folders", ex);
 			throw ex;
 		}
 		return folders;
 	}
 	
-	public List<OCalendar> listCalendars(UserProfile.Id user) throws Exception {
+	public List<OCalendar> folderList(UserProfile.Id pid, String rootId) throws Exception {
+		try {
+			if(rootId.equals(pid.toString())) {
+				// Passed root references mine root folder
+				return calendarList(pid);
+				
+			} else {
+				ArrayList<OCalendar> cals = new ArrayList<>();
+				OCalendar cal;
+				CoreManager core = WT.getCoreManager(getRunContext());
+				
+				// Passed root references an incoming root folder (from sharing)
+				String resource = AuthResourceShareElement.buildName(RESOURCE_CALENDAR);
+				List<OShare> shares = core.shareListIncoming(getServiceId(), pid, RESOURCE_CALENDAR);
+				for(OShare share : shares) {
+					cal = calendarGet(Integer.valueOf(share.getInstance()));
+					if(core.shareIsPermitted(share, pid, getServiceId(), resource, AuthResourceShareElement.ACTION_READ)) {
+						cals.add(cal);
+					}
+				}
+				return cals;
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Unable list folders", ex);
+			throw ex;
+		}
+	}
+	
+	public List<OCalendar> calendarList(UserProfile.Id user) throws Exception {
 		Connection con = null;
 		
 		try {
@@ -193,7 +232,7 @@ public class CalendarManager extends BaseServiceManager {
 		}
 	}
 	
-	public OCalendar getCalendar(int calendarId) throws Exception {
+	public OCalendar calendarGet(int calendarId) throws Exception {
 		Connection con = null;
 		
 		try {
@@ -206,7 +245,7 @@ public class CalendarManager extends BaseServiceManager {
 		}
 	}
 	
-	public OCalendar insertCalendar(OCalendar item) throws Exception {
+	public OCalendar calendarAdd(OCalendar item) throws Exception {
 		Connection con = null;
 		
 		try {
@@ -1389,6 +1428,10 @@ public class CalendarManager extends BaseServiceManager {
 		return oevt;
 	}
 	
+	private String generateEventUid() {
+		return ICalendarUtils.buildUid(WT.generateUUID(), host);
+	}
+	
 	private InsertResult doEventInsert(Connection con, Event event, boolean recurrence, boolean attendees) throws Exception {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
@@ -1436,8 +1479,6 @@ public class CalendarManager extends BaseServiceManager {
 		
 		return new InsertResult(oevt, orec, oatts);
 	}
-	
-	
 	
 	private ORecurrenceBroken doExcludeRecurrenceDate(Connection con, OEvent recurringEvent, LocalDate instanceDate) throws Exception {
 		return doExcludeRecurrenceDate(con, recurringEvent, instanceDate, null);

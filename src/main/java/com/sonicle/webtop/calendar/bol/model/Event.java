@@ -39,6 +39,8 @@ import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.util.ArrayList;
 import java.util.List;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import org.joda.time.DateTime;
 
 /**
@@ -67,6 +69,7 @@ public class Event {
 	protected String statisticId;
 	protected Integer causalId;
 	protected Recurrence recurrence;
+	protected String organizer;
 	protected List<EventAttendee> attendees = new ArrayList<>();
 	
 	public Event() {
@@ -240,6 +243,22 @@ public class Event {
 		recurrence = value;
 	}
 	
+	public String getOrganizer() {
+		return organizer;
+	}
+	
+	public String getOrganizerAddress() throws AddressException {
+		return new InternetAddress(organizer).getAddress();
+	}
+	
+	public String getOrganizerCN() throws AddressException {
+		return new InternetAddress(organizer).getPersonal();
+	}
+	
+	public void setOrganizer(String value) {
+		organizer = value;
+	}
+	
 	public List<EventAttendee> getAttendees() {
 		return attendees;
 	}
@@ -256,6 +275,7 @@ public class Event {
 		return ((attendees != null) && !attendees.isEmpty());
 	}
 	
+	/*
 	public EventAttendee getOrganizer() {
 		if(!hasAttendees()) return null;
 		for(EventAttendee attendee : getAttendees()) {
@@ -263,6 +283,7 @@ public class Event {
 		}
 		return null;
 	}
+	*/
 	
 	public static enum RecurringInfo {
 		SINGLE {

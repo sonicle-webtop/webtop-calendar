@@ -40,4 +40,13 @@ Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
 		WTF.field('workdayStart', 'date', false, {dateFormat: 'H:i'}),
 		WTF.field('workdayEnd', 'date', false, {dateFormat: 'H:i'})
 	]
+	/*
+	validators: {
+		workdayStart: function(val, rec) {
+			console.log('validate workdayStart');
+			return val < rec.get('workdayEnd');
+			//return true;
+		}
+	}
+	*/
 });

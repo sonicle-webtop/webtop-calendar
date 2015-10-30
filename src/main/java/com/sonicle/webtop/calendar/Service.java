@@ -36,7 +36,7 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
-import com.sonicle.commons.web.json.JsListPayload;
+import com.sonicle.commons.web.json.PayloadAsList;
 import com.sonicle.commons.web.json.Payload;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
@@ -62,8 +62,8 @@ import com.sonicle.webtop.calendar.bol.js.JsCalendarLkp;
 import com.sonicle.webtop.calendar.bol.js.JsErpExportStart;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
+import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OUser;
@@ -153,7 +153,7 @@ public class Service extends BaseService {
 		UserProfile.Id pid = getEnv().getProfile().getId();
 		synchronized(roots) {
 			roots.clear();
-			roots.putAll(manager.listRootFolders(pid));
+			roots.putAll(manager.rootFolderList(pid));
 
 			checkedRoots = us.getCheckedRoots();
 			if(checkedRoots.isEmpty()) {
@@ -169,6 +169,7 @@ public class Service extends BaseService {
 	public void processManageFoldersTree(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		ArrayList<ExtTreeNode> children = new ArrayList<>();
 		ExtTreeNode child = null;
+		UserProfile.Id pid = getEnv().getProfile().getId();
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
@@ -190,16 +191,14 @@ public class Service extends BaseService {
 						}
 					}
 
-				} else { // Node: folder -> list contained folders (event calendar)
-					UserProfile.Id upId = new UserProfile.Id(node);
-					List<OCalendar> cals = manager.listCalendars(upId);
-					
-					for(OCalendar cal : cals) children.add(createFolderNode(node, cal));
+				} else { // Node: folder -> list contained folders (calendars)
+					List<OCalendar> folds = manager.folderList(pid, node);
+					for(OCalendar fold : folds) children.add(createFolderNode(node, fold));
 				}
 				new JsonResult("children", children).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				JsListPayload<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
+				PayloadAsList<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
 				for(JsFolderNode folder : pl.data) {
 					if(folder._type.equals(JsFolderNode.TYPE_ROOT)) {
@@ -211,7 +210,7 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
-				JsListPayload<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
+				PayloadAsList<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
 				for(JsFolderNode share : pl.data) {
 					if(share._type.equals(JsFolderNode.TYPE_FOLDER)) {
@@ -253,6 +252,46 @@ public class Service extends BaseService {
 		}
 	}
 	
+	/*
+	public void processManageShares(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		
+		try {
+			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			if(crud.equals(Crud.READ)) {
+				String id = ServletUtils.getStringParameter(request, "id", true);
+				
+				if(roots.containsKey(id)) {
+					
+					core.shareGet(null, crud, id, crud, id)
+					
+					
+					
+				} else {
+					
+					
+				}
+				
+				
+				new JsonResult(item).printTo(out);
+				
+			} else if(crud.equals(Crud.CREATE)) {
+				
+				
+			} else if(crud.equals(Crud.UPDATE)) {
+				
+				
+			} else if(crud.equals(Crud.DELETE)) {
+				
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Error executing action ManageCalendars", ex);
+			new JsonResult(false, "Error").printTo(out);
+		}
+	}
+	*/
+	
 	public void processLookupCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		List<JsCalendarLkp> items = new ArrayList<>();
 		
@@ -260,7 +299,7 @@ public class Service extends BaseService {
 			JsCalendarLkp jsCal = null;
 			List<OCalendar> cals = null;
 			for(FolderBase folder : roots.values()) {
-				cals = manager.listCalendars(new UserProfile.Id(folder.getId()));
+				cals = manager.calendarList(new UserProfile.Id(folder.getId()));
 				for(OCalendar cal : cals) {
 					jsCal = new JsCalendarLkp();
 					jsCal.fillFrom(cal);
@@ -283,13 +322,13 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				Integer id = ServletUtils.getIntParameter(request, "id", true);
 				
-				item = manager.getCalendar(id);
+				item = manager.calendarGet(id);
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
-				item = manager.insertCalendar(pl.data);
+				item = manager.calendarAdd(pl.data);
 				toggleCheckedFolder(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
@@ -468,18 +507,10 @@ public class Service extends BaseService {
 				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
 				Event evt = JsEvent.buildEvent(pl.data, us.getWorkdayStart(), us.getWorkdayEnd());
-				// Adds an organizer if event doesn't have it
-				if(evt.hasAttendees()) {
-					EventAttendee org = evt.getOrganizer();
-					if(org == null) {
-						org = new EventAttendee();
-						org.setRecipient(up.getEmailAddress());
-						org.setRecipientType(EventAttendee.RECIPIENT_TYPE_ORGANIZER);
-						org.setResponseStatus(EventAttendee.RESPONSE_STATUS_ACCEPTED);
-						org.setNotify(false);
-						evt.getAttendees().add(org);
-					}
-				}
+				
+				CoreManager core = WT.getCoreManager(getRunContext());
+				evt.setOrganizer(core.getUserCompleteEmailAddress(up.getId()));
+				
 				manager.addEvent(evt);
 				new JsonResult().printTo(out);
 				

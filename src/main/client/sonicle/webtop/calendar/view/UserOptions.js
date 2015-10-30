@@ -36,70 +36,68 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 	requires: [
 		'Sonicle.webtop.calendar.store.View'
 	],
-	controller: Ext.create('Sonicle.webtop.calendar.view.UserOptionsC'),
-	//idField: 'id',
-	listeners: {
-		save: 'onFormSave'
-	},
-	
+		
 	initComponent: function() {
 		var me = this;
 		me.callParent(arguments);
 		
 		me.add({
-			xtype: 'hiddenfield',
-			name: 'id'
-		}, {
 			xtype: 'wtopttabsection',
 			title: WT.res(me.ID, 'opts.main.tit'),
-			items: [{
-				xtype: 'combo',
-				name: 'view',
-				allowBlank: false,
-				editable: false,
+			items: [
+			WTF.lookupCombo('id', 'desc', {
+				bind: '{record.view}',
 				store: Ext.create('Sonicle.webtop.calendar.store.View', {
 					autoLoad: true
 				}),
-				valueField: 'id',
-				displayField: 'desc',
 				fieldLabel: WT.res(me.ID, 'opts.main.fld-view.lbl'),
+				width: 280,
 				listeners: {
-					blur: 'onBlurAutoSave'
+					blur: {
+						fn: me.onBlurAutoSave,
+						scope: me
+					}
 				}
-			}, {
+			}), {
 				xtype: 'timefield',
-				name: 'workdayStart',
-				allowBlank: false,
+				bind: '{record.workdayStart}',
 				format: 'H:i',
 				increment : 60,
 				fieldLabel: WT.res(me.ID, 'opts.main.fld-workdayStart.lbl'),
+				width: 220,
 				listeners: {
-					blur: 'onBlurAutoSave'
-				},
+					blur: {
+						fn: me.onBlurAutoSave,
+						scope: me
+					}
+				}/*,
 				validator: function(value) {
 					var end = me.getFieldValue('workdayEnd');
 					//if(!end) return true;
 					//if(value <= end) return true; 
 					//return Ext.String.format(WT.res('error.fieldlweqthan'), WT.res(me.ID, 'opts.main.fld-workdayEnd.lbl'));
 					return true;
-				}
+				}*/
 			}, {
 				xtype: 'timefield',
-				name: 'workdayEnd',
-				allowBlank: false,
+				bind: '{record.workdayEnd}',
 				format: 'H:i',
 				increment : 60,
 				fieldLabel: WT.res(me.ID, 'opts.main.fld-workdayEnd.lbl'),
+				width: 220,
 				listeners: {
-					blur: 'onBlurAutoSave'
-				},
+					blur: {
+						fn: me.onBlurAutoSave,
+						scope: me
+					}
+				}/*,
 				validator: function(value) {
 					var start = me.getFieldValue('workdayStart');
 					//if(!start) return true;
 					//if(value >= start) return true; 
 					//return Ext.String.format(WT.res('error.fieldgteqthan'), WT.res(me.ID, 'opts.main.fld-workdayStart.lbl'));
 					return true;
-				}
+				}*/
 			}]
 		});
 	}

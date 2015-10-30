@@ -37,6 +37,7 @@ Ext.define('Sonicle.webtop.calendar.model.FolderNode', {
 	fields: [
 		WTF.field('_type', 'string', false),
 		WTF.field('_rootId', 'string', false),
+		WTF.roField('_shareId', 'string'),
 		WTF.roField('_builtIn', 'boolean'),
 		WTF.roField('_default', 'boolean'),
 		WTF.field('_visible', 'boolean', false), // Same as checked

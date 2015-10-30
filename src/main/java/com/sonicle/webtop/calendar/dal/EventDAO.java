@@ -114,6 +114,7 @@ public class EventDAO extends BaseDAO {
 			.set(EVENTS.CUSTOMER_ID, item.getCustomerId())
 			.set(EVENTS.STATISTIC_ID, item.getStatisticId())
 			.set(EVENTS.CAUSAL_ID, item.getCausalId())
+			.set(EVENTS.ORGANIZER, item.getOrganizer())
 			.where(
 				EVENTS.EVENT_ID.equal(item.getEventId())
 			)

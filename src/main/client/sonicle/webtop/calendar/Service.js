@@ -84,7 +84,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						search: {
 							cls: Ext.baseCSSPrefix + 'form-search-trigger',
 							handler: function(s) {
-								e.searchEvents(s.getValue());
+								me.searchEvents(s.getValue());
 							}
 						}
 					},
@@ -95,15 +95,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							}
 						}
 					}
-				}),
-				{
-					xtype: 'button',
-					iconCls: 'wt-menu-tools',
-					tooltip: WT.res('menu.tools.lbl'),
-					menu: [
-						me.getAction('erpExport')
-					]
-				}
+				})
 			]
 		}));
 		
@@ -227,7 +219,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							if(cal) me.addEvent(cal.get('_rootId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
 						},
 						eventdblclick: function(s, rec) {
-							if(me.isEventEditable(rec)) me.editEvent(rec);
+							if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
 						},
 						daydblclick: function(s, dt, ad) {
 							var cal = me.getSelectedFolder(),
@@ -306,7 +298,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}],
 					listeners: {
 						rowdblclick: function(s, rec) {
-							if(me.isEventEditable(rec)) me.editEvent(rec);
+							//TODO: handle edit permission
+							if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
 						}
 					}
 				}))
@@ -323,6 +316,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('addEvent').execute();
 			}
 		});
+		me.addAction('toolbox', 'erpExport', {
+			iconCls: 'wtcal-icon-exportEvents-xs',
+			handler: function() {
+				me.erpExport();
+			}
+		});
+		
 		me.addAction('today', {
 			handler: function() {
 				me.moveDate(0);
@@ -442,7 +442,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-open.lbl'),
 			handler: function() {
 				var rec = WT.getContextMenuData().event;
-				if(me.isEventEditable(rec)) me.editEvent(rec);
+				if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
 			}
 		});
 		me.addAction('deleteEvent', {
@@ -469,12 +469,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				WT.warn('TODO');
 			}
 		});
-		me.addAction('erpExport', {
-			iconCls: 'wtcal-icon-exportEvents-xs',
-			handler: function() {
-				me.erpExport();
-			}
-		});
 	},
 	
 	initCxm: function() {
@@ -483,15 +477,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addRef('cxmRootFolder', Ext.create({
 			xtype: 'menu',
 			items: [
-				me.getAction('addCalendar'),
-				'-',
-				me.getAction('addEvent')
+				me.getAction('addCalendar')
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
-							my = (rec.get('_rootId') === WT.getOption('principal'));
+							my = (rec.get('_rootId') === WT.getOption('profileId'));
 					me.getAction('addCalendar').setDisabled(!my);
 					me.getAction('addEvent').setDisabled(!my);
 				}
@@ -516,7 +508,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
-							my = (rec.get('_rootId') === WT.getOption('principal'));
+							my = (rec.get('_rootId') === WT.getOption('profileId'));
 					me.getAction('editCalendar').setDisabled(!my);
 					me.getAction('deleteCalendar').setDisabled(!my);
 					me.getAction('addCalendar').setDisabled(!my);
@@ -607,11 +599,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	addCalendar: function(domainId, userId) {
 		var me = this,
-				vwc = WT.createView(me.ID, 'view.Calendar');
+				vw = WT.createView(me.ID, 'view.Calendar');
 		
-		vwc.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
-		vwc.show(false, function() {
-			vwc.getComponent(0).beginNew({
+		vw.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		vw.show(false, function() {
+			vw.getComponent(0).beginNew({
 				data: {
 					domainId: domainId,
 					userId: userId
@@ -622,11 +614,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	editCalendar: function(calendarId) {
 		var me = this,
-				vwc = WT.createView(me.ID, 'view.Calendar');
+				vw = WT.createView(me.ID, 'view.Calendar');
 		
-		vwc.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
-		vwc.show(false, function() {
-			vwc.getComponent(0).beginEdit({
+		vw.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		vw.show(false, function() {
+			vw.getComponent(0).beginEdit({
 				data: {
 					calendarId: calendarId
 				}
@@ -649,15 +641,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEvent: function(profileId, calendarId, isPrivate, busy, reminder, start, end, allDay) {
 		var me = this,
 				EM = Sonicle.webtop.calendar.model.Event,
-				vwc = WT.createView(me.ID, 'view.Event', {
+				vw = WT.createView(me.ID, 'view.Event', {
 					viewCfg: {
 						profileId: profileId
 					}
 				});
 		
-		vwc.getComponent(0).on('viewsave', me.onEventViewSave, me);
-		vwc.show(false, function() {
-			vwc.getComponent(0).beginNew({
+		vw.getComponent(0).on('viewsave', me.onEventViewSave, me);
+		vw.show(false, function() {
+			vw.getComponent(0).beginNew({
 				data: {
 					calendarId: calendarId,
 					isPrivate: isPrivate,
@@ -672,19 +664,19 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	editEvent: function(rec) {
+	editEvent: function(profileId, id) {
 		var me = this,
-				vwc = WT.createView(me.ID, 'view.Event', {
+				vw = WT.createView(me.ID, 'view.Event', {
 					viewCfg: {
-						profileId: rec.get('_profileId')
+						profileId: profileId
 					}
 				});
 		
-		vwc.getView().on('viewsave', me.onEventViewSave, me);
-		vwc.show(false, function() {
-			vwc.getView().beginEdit({
+		vw.getView().on('viewsave', me.onEventViewSave, me);
+		vw.show(false, function() {
+			vw.getView().beginEdit({
 				data: {
-					id: rec.get('id')
+					id: id
 				}
 			});
 		});
@@ -746,8 +738,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	erpExport: function() {
 		var me = this,
-				vwc = WT.createView(me.ID, 'view.ErpExport');
-		vwc.show(false);
+				vw = WT.createView(me.ID, 'view.ErpExport');
+		vw.show(false);
 	},
 	
 	searchEvents: function(query) {
@@ -778,8 +770,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		if(sel.length === 0) {
 			if(!force) return null;
-			// As default returns myFolder, which have id equals to principal option
-			return tree.getStore().getNodeById(WT.getOption('principal'));
+			// As default returns myFolder, which have id equals to profileId option
+			return tree.getStore().getNodeById(WT.getOption('profileId'));
 		}
 		return (sel[0].get('_type') === 'root') ? sel[0] : sel[0].parentNode;
 	},
@@ -803,7 +795,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				return sel[0];
 			}
 		} else {
-			node = tree.getStore().getNodeById(WT.getOption('principal'));
+			node = tree.getStore().getNodeById(WT.getOption('profileId'));
 			if(node) return me.getFolderByRoot(node);
 		}
 		return null;

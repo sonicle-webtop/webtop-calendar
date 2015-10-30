@@ -38,6 +38,7 @@ import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import com.sonicle.webtop.core.sdk.WTException;
+import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
@@ -53,7 +54,6 @@ import java.util.Iterator;
 import java.util.List;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
@@ -98,13 +98,7 @@ public class ICalHelper {
 	public static ArrayList<ParseResult> parseICal(LogEntries log, InputStream is, org.joda.time.DateTimeZone defaultTz) throws ParserException, IOException {
 		// See http://www.kanzaki.com/docs/ical/
 		ArrayList<ParseResult> retults = new ArrayList<>();
-		System.setProperty("ical4j.unfolding.relaxed", "true");
-		System.setProperty("ical4j.parsing.relaxed", "true");
-		System.setProperty("ical4j.validation.relaxed", "true");
-		//System.setProperty("ical4j.compatibility.outlook", "true");
-		//System.setProperty("ical4j.compatibility.notes", "true");
-		CalendarBuilder builder = new CalendarBuilder();
-		Calendar cal = builder.build(is);
+		Calendar cal = ICalendarUtils.parseRelaxed(is);
 		VEvent ve = null;
 		LogEntries velog = null;
 
@@ -223,21 +217,21 @@ public class ICalHelper {
 				excludedDates.addAll(parseVEventExDate(log, (ExDate)o));
 			}
 		}
+		
+		// Extracts organizer
+		Organizer org = (Organizer)ve.getProperty(Property.ORGANIZER);
+		if(org != null) {
+			try {
+				event.setOrganizer(parseVEventOrganizer(log, org));
+			} catch(Exception ex) {
+				log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, ex.getMessage()));
+			}
+		}
 
 		// Extracts partecipants
 		PropertyList atts = ve.getProperties(Property.ATTENDEE);
 		if(!atts.isEmpty()) {
 			ArrayList<EventAttendee> attendees = new ArrayList<>();
-			// Organizer
-			Organizer org = (Organizer)ve.getProperty(Property.ORGANIZER);
-			if(org != null) {
-				try {
-					attendees.add(parseVEventOrganizer(log, org));
-				} catch(Exception ex) {
-					log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, ex.getMessage()));
-				}
-			}
-			// Attendees
 			for(Object o: atts) {
 				try {
 					attendees.add(parseVEventAttendee(log, (Attendee)o));
@@ -340,8 +334,8 @@ public class ICalHelper {
 		return dates;
 	}
 	
-	public static EventAttendee parseVEventOrganizer(LogEntries log, Organizer org) throws Exception {
-		EventAttendee organizer = new EventAttendee();
+	public static String parseVEventOrganizer(LogEntries log, Organizer org) throws Exception {
+		InternetAddress ia = null;
 		// See http://www.kanzaki.com/docs/ical/organizer.html
 		
 		// Evaluates organizer details
@@ -349,20 +343,15 @@ public class ICalHelper {
 		// Eg: CN=Henry Cabot:MAILTO:hcabot@host2.com -> drop ":MAILTO:"
 		URI uri = org.getCalAddress();
 		Cn cn = (Cn)org.getParameter(Parameter.CN);
-		/*if((uri != null) && (cn != null)) {
-			InternetAddress email = new InternetAddress(uri.getSchemeSpecificPart(), cn.getValue());
-			organizer.setRecipient(email.toString());
-		} else */if(uri != null) {
-			organizer.setRecipient(uri.getSchemeSpecificPart());
+		if(uri != null) {
+			String address = uri.getSchemeSpecificPart();
+			ia = new InternetAddress(address, (cn == null) ? address : cn.getValue());
 		} else {
-			throw new WTException("Organizer must have a valid address [{0}]", organizer.toString());
+			throw new WTException("Organizer must be valid [{0}]", org.toString());
 			//log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Organizer must have a valid address [{0}]", organizer.toString()));
 		}
 		
-		organizer.setRecipientType(EventAttendee.RECIPIENT_TYPE_ORGANIZER);
-		organizer.setResponseStatus(EventAttendee.RESPONSE_STATUS_ACCEPTED);
-		organizer.setNotify(false);
-		return organizer;
+		return ia.toString();
 	}
 	
 	public static EventAttendee parseVEventAttendee(LogEntries log, Attendee att) throws Exception {
@@ -374,13 +363,11 @@ public class ICalHelper {
 		// Eg: CN=Henry Cabot:MAILTO:hcabot@host2.com -> drop ":MAILTO:"
 		URI uri = att.getCalAddress();
 		Cn cn = (Cn)att.getParameter(Parameter.CN);
-		/*if((uri != null) && (cn != null)) {
-			InternetAddress email = new InternetAddress(uri.getSchemeSpecificPart(), cn.getValue());
-			attendee.setRecipient(email.toString());
-		} else */if(uri != null) {
-			attendee.setRecipient(uri.getSchemeSpecificPart());
+		if(uri != null) {
+			String address = uri.getSchemeSpecificPart();
+			attendee.setRecipient(new InternetAddress(address, (cn == null) ? address : cn.getValue()).toString());
 		} else {
-			throw new WTException("Attendee must have a valid address [{0}]", attendee.toString());
+			throw new WTException("Attendee must be valid [{0}]", att.toString());
 			//log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Attendee must have a valid address [{0}]", attendee.toString()));
 		}
 		

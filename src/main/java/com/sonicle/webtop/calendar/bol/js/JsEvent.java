@@ -39,10 +39,7 @@ import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import java.util.ArrayList;
-import java.util.TimeZone;
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormatter;
 
 /**
@@ -99,17 +96,19 @@ public class JsEvent {
 	public String _recurringInfo;
 	public String _profileId;
 	
-	public JsEvent(Event event, String profileId) {
+	public JsEvent(Event event, String ownerPid) {
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(eventTz);
 		
 		id = event.getKey();
 		eventId = event.getEventId();
 		calendarId = event.getCalendarId();
+		
 		startDate = ymdhmsZoneFmt.print(event.getStartDate());
 		endDate = ymdhmsZoneFmt.print(event.getEndDate());
 		timezone = event.getTimezone();
 		allDay = event.getAllDay();
+		
 		title = event.getTitle();
 		description = event.getDescription();
 		location = event.getLocation();
@@ -167,28 +166,30 @@ public class JsEvent {
 			attendee.notify = att.getNotify();
 			attendees.add(attendee);
 		}
-		//attendees.addAll(event.getAttendees());
 		
 		// Read-only fields
 		_recurringInfo = event.getRecurringInfo().toString();
-		_profileId = profileId;
+		_profileId = ownerPid;
 	}
 	
-	public static Event buildEvent(JsEvent jse, LocalTime workdayStart, LocalTime workdayEnd) {
+	public static Event buildEvent(JsEvent jse) {
 		Event event = new Event();
 		
 		event.setKey(jse.id);
 		event.setEventId(jse.eventId);
 		event.setCalendarId(jse.calendarId);
+		
 		// Incoming fields are in a precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
 		DateTimeZone eventTz = DateTimeZone.forID(jse.timezone);
-		event.setStartDate(CalendarManager.parseYmdHmsWithZone(jse.startDate, eventTz));
-		event.setEndDate(CalendarManager.parseYmdHmsWithZone(jse.endDate, eventTz));
-		event.setTimezone(jse.timezone);
-		event.setAllDay(jse.allDay);
-		adjustTimes(event, workdayStart, workdayEnd);
+		event.setDatesAndTimes(
+				jse.allDay,
+				jse.timezone,
+				CalendarManager.parseYmdHmsWithZone(jse.startDate, eventTz),
+				CalendarManager.parseYmdHmsWithZone(jse.endDate, eventTz)
+		);
+		
 		event.setTitle(jse.title);
 		event.setDescription(jse.description);
 		event.setLocation(jse.location);
@@ -244,6 +245,7 @@ public class JsEvent {
 		return event;
 	}
 	
+	/*
 	private static void adjustTimes(Event event, LocalTime workdayStart, LocalTime workdayEnd) {
 		event.setEndDate(DateTimeUtils.ceilTimeAtEndOfDay(event.getEndDate()));
 		// Ensure start < end
@@ -263,4 +265,5 @@ public class JsEvent {
 			event.setEndDate(event.getEndDate().withTime(workdayEnd));
 		}
 	}
+	*/
 }

@@ -75,7 +75,6 @@ import com.sonicle.webtop.core.dal.CustomerDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseServiceManager;
 import com.sonicle.webtop.core.RunContext;
-import com.sonicle.webtop.core.bol.IncomingShare;
 import com.sonicle.webtop.core.bol.model.AuthResourceShareElement;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -274,10 +273,10 @@ public class CalendarManager extends BaseServiceManager {
 		try {
 			con = WT.getConnection(getManifest());
 			con.setAutoCommit(false);
-			CalendarDAO calDao = CalendarDAO.getInstance();
+			CalendarDAO dao = CalendarDAO.getInstance();
 			
-			if(item.getIsDefault()) calDao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
-			calDao.update(con, item);
+			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
+			dao.update(con, item);
 			DbUtils.commitQuietly(con);
 			return item;
 			
@@ -294,8 +293,8 @@ public class CalendarManager extends BaseServiceManager {
 		
 		try {
 			con = WT.getConnection(getManifest());
-			CalendarDAO calDao = CalendarDAO.getInstance();
-			calDao.delete(con, calendarId);
+			CalendarDAO dao = CalendarDAO.getInstance();
+			dao.delete(con, calendarId);
 			//TODO: cancellare eventi collegati
 			
 		} finally {
@@ -388,15 +387,38 @@ public class CalendarManager extends BaseServiceManager {
 			DateTime startDt, endDt;
 			List<SchedulerEvent> recInstances = null;
 			for(SchedulerEvent se : sevs) {
-				if(se.getBusy() != busy) continue; // Ignore unwanted events...
+				// Ignore events that are not marked as busy!
+				if(se.getBusy() != busy) continue;
 				
 				if(se.getRecurrenceId() == null) {
+					/*
+					if(se.getAllDay()) {
+						startDt = se.getStartDate().withTimeAtStartOfDay();
+						endDt = DateTimeUtils.withTimeAtEndOfDay(se.getEndDate());
+						//startDt = se.getStartDate().withTimeAtStartOfDay().withZone(userTz);
+						//endDt = DateTimeUtils.withTimeAtEndOfDay(se.getEndDate()).withZone(userTz);
+					} else {
+						startDt = se.getStartDate().withZone(userTz);
+						endDt = se.getEndDate().withZone(userTz);
+					}
+					*/
 					startDt = se.getStartDate().withZone(userTz);
 					endDt = se.getEndDate().withZone(userTz);
 					hours.addAll(generateTimeSpans(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
 				} else {
 					recInstances = calculateRecurringInstances(se, fromDate, toDate, userTz);
 					for(SchedulerEvent recInstance : recInstances) {
+						/*
+						if(recInstance.getAllDay()) {
+							startDt = recInstance.getStartDate().withTimeAtStartOfDay();
+							endDt = DateTimeUtils.withTimeAtEndOfDay(recInstance.getEndDate());
+							//startDt = recInstance.getStartDate().withTimeAtStartOfDay().withZone(userTz);
+							//endDt = DateTimeUtils.withTimeAtEndOfDay(recInstance.getEndDate()).withZone(userTz);
+						} else {
+							startDt = recInstance.getStartDate().withZone(userTz);
+							endDt = recInstance.getEndDate().withZone(userTz);
+						}
+						*/
 						startDt = recInstance.getStartDate().withZone(userTz);
 						endDt = recInstance.getEndDate().withZone(userTz);
 						hours.addAll(generateTimeSpans(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
@@ -414,13 +436,19 @@ public class CalendarManager extends BaseServiceManager {
 		ArrayList<String> hours = new ArrayList<>();
 		DateTimeFormatter ymdhmZoneFmt = DateTimeUtils.createYmdHmFormatter(tz);
 		
+		DateTime instant = new DateTime(tz).withDate(fromDate).withTime(fromTime).withSecondOfMinute(0).withMillisOfSecond(0);
+		DateTime boundaryInstant = new DateTime(tz).withDate(toDate).withTime(toTime).withSecondOfMinute(0).withMillisOfSecond(0);
+		while(instant.compareTo(boundaryInstant) < 0) {
+			hours.add(ymdhmZoneFmt.print(instant));
+			instant = instant.plusMinutes(minRange);
+		}
+		
+		/*
 		LocalDate date = fromDate;
 		DateTime instant = null, boundaryInstant = null;
 		while(date.compareTo(toDate) <= 0) {
-			instant = new DateTime(tz).withDate(date).withTime(fromTime).withMinuteOfHour(0);
-			instant = instant.withSecondOfMinute(0).withMillisOfSecond(0);
-			boundaryInstant = new DateTime(tz).withDate(date).withTime(toTime);
-			boundaryInstant = boundaryInstant.withSecondOfMinute(0).withMillisOfSecond(0);
+			instant = new DateTime(tz).withDate(date).withTime(fromTime).withSecondOfMinute(0).withMillisOfSecond(0);
+			boundaryInstant = new DateTime(tz).withDate(date).withTime(toTime).withSecondOfMinute(0).withMillisOfSecond(0);
 			
 			while(instant.compareTo(boundaryInstant) < 0) {
 				hours.add(ymdhmZoneFmt.print(instant));
@@ -428,6 +456,7 @@ public class CalendarManager extends BaseServiceManager {
 			}
 			date = date.plusDays(1);
 		}
+		*/
 		
 		return hours;
 	}
@@ -636,10 +665,6 @@ public class CalendarManager extends BaseServiceManager {
 			if(type.equals(EVENT_NORMAL)) {
 				if(target.equals(TARGET_THIS)) {
 					// 1 - Updates the event with new data
-					//--original.fillFrom(event);
-					//--original.setStatus(OEvent.STATUS_MODIFIED);
-					//--original.setRevisionInfo(createRevisionInfo());
-					//--edao.update(con, original);
 					doEventUpdate(con, original, event, true);
 				}
 				
@@ -648,32 +673,14 @@ public class CalendarManager extends BaseServiceManager {
 					// 1 - Updates broken event (follow eventId) with new data
 					OEvent oevt = edao.select(con, ekey.eventId);
 					if(oevt == null) throw new WTException("Unable to retrieve broken event [{}]", ekey.eventId);
-					//--oevt.fillFrom(event);
-					//--oevt.setStatus(OEvent.STATUS_MODIFIED);
-					//--oevt.setRevisionInfo(createRevisionInfo());
-					//--edao.update(con, oevt);
 					doEventUpdate(con, oevt, event, true);
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
 				if(target.equals(TARGET_THIS)) {
 					// 1 - Inserts new broken event
-					//--OEvent oevt = new OEvent();
-					//--oevt.fillFrom(event);
-					//--oevt.setRecurrenceId(null);
-					//--oevt.setStatus(OEvent.STATUS_NEW);
-					//--oevt.setRevisionInfo(createRevisionInfo());
-					//--oevt.setEventId(edao.getSequence(con).intValue());
-					//--edao.insert(con, oevt);
 					InsertResult insert = doEventInsert(con, event, false, false);
-					
 					// 2 - Marks recurring event date inserting a broken record
-					//--ORecurrenceBroken orb = new ORecurrenceBroken();
-					//--orb.setEventId(original.getEventId());
-					//--orb.setRecurrenceId(original.getRecurrenceId());
-					//--orb.setEventDate(ekey.atDate);
-					//--orb.setNewEventId(oevt.getEventId());
-					//--rbdao.insert(con, orb);
 					doExcludeRecurrenceDate(con, original, ekey.atDate, insert.event.getEventId());
 					// 3 - Updates revision of original event
 					edao.updateRevision(con, original.getEventId(), createRevisionInfo());
@@ -696,10 +703,6 @@ public class CalendarManager extends BaseServiceManager {
 					// 1 - Updates recurring event data (dates must be preserved) (+revision)
 					event.setStartDate(event.getStartDate().withDate(original.getStartDate().toLocalDate()));
 					event.setEndDate(event.getEndDate().withDate(original.getEndDate().toLocalDate()));
-					//--original.fillFrom(event);
-					//--original.setStatus(OEvent.STATUS_MODIFIED);
-					//--original.setRevisionInfo(createRevisionInfo());
-					//--edao.update(con, original);
 					doEventUpdate(con, original, event, false);
 					// 2 - Updates recurrence data
 					ORecurrence orec = rdao.select(con, original.getRecurrenceId());

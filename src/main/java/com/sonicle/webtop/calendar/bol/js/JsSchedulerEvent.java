@@ -41,6 +41,7 @@ import com.sonicle.webtop.core.sdk.UserProfile;
 import java.util.TimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -76,13 +77,14 @@ public class JsSchedulerEvent {
 		
 	}
 	
-	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id currentProfileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		
+		// Determine if keep event data private
 		boolean keepDataPrivate = false;
 		if(event.getIsPrivate()) {
-			UserProfile.Id calProfileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId());
-			if(!calProfileId.equals(currentProfileId)) {
+			UserProfile.Id ownerProfileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId());
+			if(!ownerProfileId.equals(profileId)) {
 				keepDataPrivate = true;
 			}
 		}

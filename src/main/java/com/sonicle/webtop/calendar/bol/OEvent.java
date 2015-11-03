@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import com.sonicle.webtop.core.dal.BaseDAO.RevisionInfo;
@@ -61,17 +62,14 @@ public class OEvent extends Events {
 	}
 	
 	public void fillFrom(Event event) {
-		fillFrom(event, true);
-	}
-	
-	public void fillFrom(Event event, boolean setDates) {
 		setCalendarId(event.getCalendarId());
-		if(setDates) {
-			setStartDate(event.getStartDate());
-			setEndDate(event.getEndDate());
-		}
+		
+		setStartDate(event.getStartDate());
+		setEndDate(event.getEndDate());
 		setTimezone(event.getTimezone());
 		setAllDay(event.getAllDay());
+		ensureCoherence(this);
+		
 		setTitle(event.getTitle());
 		setDescription(event.getDescription());
 		setLocation(event.getLocation());
@@ -85,13 +83,19 @@ public class OEvent extends Events {
 		setOrganizer(event.getOrganizer());
 	}
 	
-	public static void ensureTimesCoherence(OEvent event) {
+	public static void ensureCoherence(OEvent event) {
 		// Ensure start < end
-		if(event.getEndDate().compareTo(event.getStartDate()) < 0) {
+		if(event.getStartDate().compareTo(event.getEndDate()) > 0) {
 			// Swap dates...
 			DateTime dt = event.getEndDate();
 			event.setEndDate(event.getStartDate());
 			event.setStartDate(dt);
+		}
+		
+		// If event is all day, take max time as possible
+		if(event.getAllDay()) {
+			event.setStartDate(event.getStartDate().withTimeAtStartOfDay());
+			event.setEndDate(DateTimeUtils.withTimeAtEndOfDay(event.getEndDate()));
 		}
 	}
 }

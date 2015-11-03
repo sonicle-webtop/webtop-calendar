@@ -374,7 +374,6 @@ public class Service extends BaseService {
 				dates = manager.getEventsDates(folder, checked, fromDate, toDate, utz);
 				for(DateTime dt : dates) {
 					items.add(new JsSchedulerEventDate(ymdZoneFmt.print(dt)));
-					//items.add(new JsSchedulerEventDate(CalendarManager.toYmdWithZone(dt, utz)));
 				}
 			}
 			new JsonResult("dates", items).printTo(out);
@@ -401,16 +400,19 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				String from = ServletUtils.getStringParameter(request, "startDate", true);
 				String to = ServletUtils.getStringParameter(request, "endDate", true);
+				
+				// Defines view boundary 
 				DateTime fromDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
 				DateTime toDate = CalendarManager.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
 				// Get events for each visible folder
-				Integer[] checked = getCheckedFolders();
 				JsSchedulerEvent jse = null;
 				List<SchedulerEvent> recInstances = null;
 				List<CalendarManager.CalendarEvents> calEvts = null;
+				Integer[] checked = getCheckedFolders();
 				for(FolderBase folder : getCheckedRoots()) {
 					calEvts = manager.viewEvents(folder, checked, fromDate, toDate);
+					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
 						for(SchedulerEvent evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
@@ -463,10 +465,11 @@ public class Service extends BaseService {
 			} else if(crud.equals("search")) {
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
-				Integer[] checked = getCheckedFolders();
 				List<CalendarManager.CalendarEvents> calEvts = null;
+				Integer[] checked = getCheckedFolders();
 				for(FolderBase root : getCheckedRoots()) {
 					calEvts = manager.searchEvents(root, checked, "%"+query+"%");
+					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
 						for(SchedulerEvent evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
@@ -498,7 +501,8 @@ public class Service extends BaseService {
 				String id = ServletUtils.getStringParameter(request, "id", true);
 				
 				Event evt = manager.readEvent(id);
-				item = new JsEvent(evt, manager.getCalendarGroupId(evt.getCalendarId()));
+				String ownerId = manager.getCalendarGroupId(evt.getCalendarId());
+				item = new JsEvent(evt, ownerId);
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
@@ -506,8 +510,7 @@ public class Service extends BaseService {
 				
 				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
-				Event evt = JsEvent.buildEvent(pl.data, us.getWorkdayStart(), us.getWorkdayEnd());
-				
+				Event evt = JsEvent.buildEvent(pl.data);
 				CoreManager core = WT.getCoreManager(getRunContext());
 				evt.setOrganizer(core.getUserCompleteEmailAddress(up.getId()));
 				
@@ -518,7 +521,7 @@ public class Service extends BaseService {
 				String target = ServletUtils.getStringParameter(request, "target", "this");
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				Event evt = JsEvent.buildEvent(pl.data, us.getWorkdayStart(), us.getWorkdayEnd());
+				Event evt = JsEvent.buildEvent(pl.data);
 				manager.editEvent(target, evt, up.getTimeZone());
 				new JsonResult().printTo(out);
 			}
@@ -540,10 +543,11 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
-				Integer[] checked = getCheckedFolders();
 				List<CalendarManager.CalendarEvents> calEvts = null;
+				Integer[] checked = getCheckedFolders();
 				for(FolderBase root : getCheckedRoots()) {
 					calEvts = manager.searchEvents(root, checked, "%"+query+"%");
+					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
 						for(SchedulerEvent evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {

@@ -33,8 +33,6 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.calendar.ICal4jUtils;
-import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.util.ArrayList;
@@ -121,6 +119,14 @@ public class Event {
 	
 	public String getCalendarProfileId() {
 		return calendarProfileId;
+	}
+	
+	public void setDatesAndTimes(boolean allDay, String timezone, DateTime startDate, DateTime endDate) {
+		this.allDay = allDay;
+		this.timezone = timezone;
+		this.startDate = startDate;
+		this.endDate = endDate;
+		ensureCoherence(this);
 	}
 
 	public DateTime getStartDate() {
@@ -275,15 +281,15 @@ public class Event {
 		return ((attendees != null) && !attendees.isEmpty());
 	}
 	
-	/*
-	public EventAttendee getOrganizer() {
-		if(!hasAttendees()) return null;
-		for(EventAttendee attendee : getAttendees()) {
-			if(attendee.getRecipientType().equals(EventAttendee.RECIPIENT_TYPE_ORGANIZER)) return attendee;
+	public static void ensureCoherence(Event event) {
+		// Ensure start < end
+		if(event.getStartDate().compareTo(event.getEndDate()) > 0) {
+			// Swap dates...
+			DateTime dt = event.getEndDate();
+			event.setEndDate(event.getStartDate());
+			event.setStartDate(dt);
 		}
-		return null;
 	}
-	*/
 	
 	public static enum RecurringInfo {
 		SINGLE {

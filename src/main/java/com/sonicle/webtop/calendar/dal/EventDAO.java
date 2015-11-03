@@ -81,7 +81,7 @@ public class EventDAO extends BaseDAO {
 	
 	public int insert(Connection con, OEvent item) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		OEvent.ensureTimesCoherence(item);
+		OEvent.ensureCoherence(item);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)
@@ -91,7 +91,7 @@ public class EventDAO extends BaseDAO {
 	
 	public int update(Connection con, OEvent item) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		OEvent.ensureTimesCoherence(item);
+		OEvent.ensureCoherence(item);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())

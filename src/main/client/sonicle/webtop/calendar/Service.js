@@ -216,7 +216,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						rangeselect: function(s,dates,onComplete) {
 							onComplete();
 							var cal = me.getSelectedFolder();
-							if(cal) me.addEvent(cal.get('_rootId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
+							if(cal) me.addEvent(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
 						},
 						eventdblclick: function(s, rec) {
 							if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
@@ -233,7 +233,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 									start = dt;
 									end = soDate.add(dt, {minutes: 30});
 								}
-								me.addEvent(cal.get('_rootId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end, ad);
+								me.addEvent(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end, ad);
 							}
 						},
 						eventcontextmenu: function(s, rec, el, evt) {
@@ -389,7 +389,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('editCalendar', {
 			handler: function() {
 				var node = me.getSelectedFolder();
-				if(node) me.editCalendar(node.getId());
+				if(node) me.editCalendar(node.get('_calId'));
 			}
 		});
 		me.addAction('deleteCalendar', {
@@ -414,7 +414,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				var node = me.getSelectedFolder();
 				if(node) {
 					s.uploader.mergeExtraParams({
-						calendarId: node.getId()
+						calendarId: node.get('_calId')
 					});
 				}
 			}
@@ -435,7 +435,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			handler: function() {
 				var cal = me.getSelectedFolder(),
 						day = me.getRef('multical').getValue();
-				if(cal) me.addEventAtNow(cal.get('_rootId'), cal.getId(), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), day);
+				if(cal) me.addEventAtNow(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), day);
 			}
 		});
 		me.addAction('openEvent', {
@@ -483,7 +483,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
-							my = (rec.get('_rootId') === WT.getOption('profileId'));
+							my = (rec.get('_pid') === WT.getOption('profileId'));
 					me.getAction('addCalendar').setDisabled(!my);
 					me.getAction('addEvent').setDisabled(!my);
 				}
@@ -508,7 +508,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
-							my = (rec.get('_rootId') === WT.getOption('profileId'));
+							my = (rec.get('_pid') === WT.getOption('profileId'));
 					me.getAction('editCalendar').setDisabled(!my);
 					me.getAction('deleteCalendar').setDisabled(!my);
 					me.getAction('addCalendar').setDisabled(!my);

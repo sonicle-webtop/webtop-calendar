@@ -45,12 +45,10 @@ public class JsFolderNode {
 	
 	public String id;
 	public String _type;
-	public String _rootId;
+	public String _pid;
 	public Boolean _visible;
 	
-	public JsFolderNode() {
-		
-	}
+	public JsFolderNode() {}
 	
 	public static class JsFolderNodeList extends ArrayList<JsFolderNode> {
 		public JsFolderNodeList() {

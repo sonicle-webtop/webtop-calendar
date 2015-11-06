@@ -39,17 +39,18 @@ import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.PayloadAsList;
 import com.sonicle.commons.web.json.Payload;
 import com.sonicle.commons.web.ServletUtils;
+import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.extjs.ExtFieldMeta;
 import com.sonicle.commons.web.json.extjs.ExtGridColumnMeta;
 import com.sonicle.commons.web.json.extjs.ExtGridMetaData;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
-import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
+import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedLeafs;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
-import com.sonicle.webtop.core.bol.model.FolderBase;
-import com.sonicle.webtop.core.bol.model.IncomingFolder;
-import com.sonicle.webtop.core.bol.model.MyFolder;
+import com.sonicle.webtop.core.bol.model.RootBase;
+import com.sonicle.webtop.core.bol.model.IncomingRoot;
+import com.sonicle.webtop.core.bol.model.MyRoot;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OCalendar;
@@ -68,6 +69,7 @@ import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.bol.js.JsSimple;
+import com.sonicle.webtop.core.bol.model.IncomingLeaf;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.UserProfile;
@@ -109,9 +111,9 @@ public class Service extends BaseService {
 	public static final String ERP_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
 	public final String DEFAULT_PERSONAL_CALENDAR_COLOR = "#FFFFFF";
 	
-	private final LinkedHashMap<String, FolderBase> roots = new LinkedHashMap<>();
+	private final LinkedHashMap<String, RootBase> roots = new LinkedHashMap<>();
 	private CheckedRoots checkedRoots = null;
-	private CheckedFolders checkedFolders = null;
+	private CheckedLeafs checkedLeafs = null;
 	private ErpExportWizard erpWizard = null;
 
 	@Override
@@ -129,8 +131,8 @@ public class Service extends BaseService {
 	
 	@Override
 	public void cleanup() {
-		checkedFolders.clear();
-		checkedFolders = null;
+		checkedLeafs.clear();
+		checkedLeafs = null;
 		checkedRoots.clear();
 		checkedRoots = null;
 		us = null;
@@ -139,7 +141,6 @@ public class Service extends BaseService {
 	
 	@Override
 	public HashMap<String, Object> returnClientOptions() {
-		UserProfile profile = getEnv().getProfile();
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 		
 		HashMap<String, Object> co = new HashMap<>();
@@ -153,16 +154,17 @@ public class Service extends BaseService {
 		UserProfile.Id pid = getEnv().getProfile().getId();
 		synchronized(roots) {
 			roots.clear();
-			roots.putAll(manager.rootFolderList(pid));
-
-			checkedRoots = us.getCheckedRoots();
-			if(checkedRoots.isEmpty()) {
-				// If empty, adds MyNode checked by default!
-				checkedRoots.add(pid.toString());
-				us.setCheckedRoots(checkedRoots);
+			for(RootBase root : manager.listCalendarRoots(pid)) {
+				roots.put(root.getId(), root);
 			}
 
-			checkedFolders = us.getCheckedFolders();
+			checkedRoots = us.getCheckedCalendarRoots();
+			// If empty, adds MyNode checked by default!
+			if(checkedRoots.isEmpty()) {
+				checkedRoots.add(MyRoot.ID);
+				us.setCheckedCalendarRoots(checkedRoots);
+			}
+			checkedLeafs = us.getCheckedCalendarLeafs();
 		}
 	}
 	
@@ -175,36 +177,41 @@ public class Service extends BaseService {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
 				String node = ServletUtils.getStringParameter(request, "node", true);
+				
 				if(node.equals("root")) { // Node: root -> list folder roots
-					MyFolder myFolder = null;
-					IncomingFolder incFolder = null;
-					for(FolderBase folder : roots.values()) {
-						if(folder instanceof MyFolder) { // Adds folder as Mine
-							myFolder = (MyFolder)folder;
-							child = createFolderNode(myFolder, false);
+					MyRoot myRoot = null;
+					IncomingRoot incRoot = null;
+					for(RootBase root : roots.values()) {
+						if(root instanceof MyRoot) { // Adds folder as Mine
+							myRoot = (MyRoot)root;
+							child = createFolderNode(myRoot, false);
 							children.add(child.setExpanded(true));
 							
-						} else if(folder instanceof IncomingFolder) { // Adds folder as Shared
-							incFolder = (IncomingFolder)folder;
-							child = createFolderNode(incFolder, false);
+						} else if(root instanceof IncomingRoot) { // Adds folder as Shared
+							incRoot = (IncomingRoot)root;
+							child = createFolderNode(incRoot, false);
 							children.add(child);
 						}
 					}
 
 				} else { // Node: folder -> list contained folders (calendars)
-					List<OCalendar> folds = manager.folderList(pid, node);
-					for(OCalendar fold : folds) children.add(createFolderNode(node, fold));
+					List<IncomingLeaf> leafs = manager.listCalendarLeafs(pid, node);
+					for(IncomingLeaf leaf : leafs) {
+						
+						children.add(createFolderNode(node, leaf));
+					}
 				}
 				new JsonResult("children", children).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				PayloadAsList<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
-				for(JsFolderNode folder : pl.data) {
-					if(folder._type.equals(JsFolderNode.TYPE_ROOT)) {
-						toggleCheckedRoot(folder._rootId, folder._visible);
-					} else if(folder._type.equals(JsFolderNode.TYPE_FOLDER)) {
-						toggleCheckedFolder(Integer.valueOf(folder.id), folder._visible);
+				for(JsFolderNode node : pl.data) {
+					if(node._type.equals(JsFolderNode.TYPE_ROOT)) {
+						toggleCheckedRoot(node.id, node._visible);
+					} else if(node._type.equals(JsFolderNode.TYPE_FOLDER)) {
+						CompositeId cid = new CompositeId().parse(node.id);
+						toggleCheckedLeaf(Integer.valueOf(cid.getToken(1)), node._visible);
 					}
 				}
 				new JsonResult().printTo(out);
@@ -212,16 +219,17 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.DELETE)) {
 				PayloadAsList<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
-				for(JsFolderNode share : pl.data) {
-					if(share._type.equals(JsFolderNode.TYPE_FOLDER)) {
-						manager.deleteCalendar(Integer.valueOf(share.id));
+				for(JsFolderNode node : pl.data) {
+					if(node._type.equals(JsFolderNode.TYPE_FOLDER)) {
+						CompositeId cid = new CompositeId().parse(node.id);
+						manager.deleteCalendar(Integer.valueOf(cid.getToken(1)));
 					}
 				}
 				new JsonResult().printTo(out);
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageFoldersTree", ex);
+			logger.error("Error in action ManageFoldersTree", ex);
 		}
 	}
 	
@@ -231,15 +239,15 @@ public class Service extends BaseService {
 		try {
 			Boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", true);
 			UserProfile up = getEnv().getProfile();
-			IncomingFolder incFolder = null;
-			for(FolderBase folder : roots.values()) {
-				if(folder instanceof MyFolder) {
+			IncomingRoot incFolder = null;
+			for(RootBase folder : roots.values()) {
+				if(folder instanceof MyRoot) {
 					items.add(new JsSimple(up.getStringId(), up.getDisplayName()));
 					
-				} else if(folder instanceof IncomingFolder) {
+				} else if(folder instanceof IncomingRoot) {
 					//TODO: se writableOnly verificare che il gruppo condiviso sia scrivibile
 					//if(writableOnly)
-					incFolder = (IncomingFolder)folder;
+					incFolder = (IncomingRoot)folder;
 					items.add(new JsSimple(incFolder.getId(), incFolder.getDescription()));
 				}
 			}
@@ -247,8 +255,8 @@ public class Service extends BaseService {
 			new JsonResult("folders", items, items.size()).printTo(out);
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action LookupRootFolders", ex);
-			new JsonResult(false, "Error").printTo(out);	
+			logger.error("Error in action LookupRootFolders", ex);
+			new JsonResult(false, "Error").printTo(out);
 		}
 	}
 	
@@ -298,8 +306,8 @@ public class Service extends BaseService {
 		try {
 			JsCalendarLkp jsCal = null;
 			List<OCalendar> cals = null;
-			for(FolderBase folder : roots.values()) {
-				cals = manager.calendarList(new UserProfile.Id(folder.getId()));
+			for(RootBase folder : roots.values()) {
+				cals = manager.listCalendars(new UserProfile.Id(folder.getId()));
 				for(OCalendar cal : cals) {
 					jsCal = new JsCalendarLkp();
 					jsCal.fillFrom(cal);
@@ -309,7 +317,7 @@ public class Service extends BaseService {
 			new JsonResult("calendars", items, items.size()).printTo(out);
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action LookupCalendars", ex);
+			logger.error("Error in action LookupCalendars", ex);
 			new JsonResult(false, "Error").printTo(out);
 		}
 	}
@@ -322,14 +330,14 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				Integer id = ServletUtils.getIntParameter(request, "id", true);
 				
-				item = manager.calendarGet(id);
+				item = manager.getCalendar(id);
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
-				item = manager.calendarAdd(pl.data);
-				toggleCheckedFolder(item.getCalendarId(), true);
+				item = manager.addCalendar(pl.data);
+				toggleCheckedLeaf(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
@@ -346,7 +354,7 @@ public class Service extends BaseService {
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageCalendars", ex);
+			logger.error("Error in action ManageCalendars", ex);
 			new JsonResult(false, "Error").printTo(out);
 		}
 	}
@@ -368,10 +376,10 @@ public class Service extends BaseService {
 			DateTime toDate = CalendarManager.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
 			// Get events for each visible group
-			Integer[] checked = getCheckedFolders();
+			Integer[] checked = getCheckedLeafs();
 			List<DateTime> dates = null;
-			for(FolderBase folder : getCheckedRoots()) {
-				dates = manager.getEventsDates(folder, checked, fromDate, toDate, utz);
+			for(RootBase folder : getCheckedRoots()) {
+				dates = manager.listEventsDates(folder, checked, fromDate, toDate, utz);
 				for(DateTime dt : dates) {
 					items.add(new JsSchedulerEventDate(ymdZoneFmt.print(dt)));
 				}
@@ -379,7 +387,7 @@ public class Service extends BaseService {
 			new JsonResult("dates", items).printTo(out);
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action GetSchedulerDates", ex);
+			logger.error("Error in action GetSchedulerDates", ex);
 			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {
@@ -409,8 +417,8 @@ public class Service extends BaseService {
 				JsSchedulerEvent jse = null;
 				List<SchedulerEvent> recInstances = null;
 				List<CalendarManager.CalendarEvents> calEvts = null;
-				Integer[] checked = getCheckedFolders();
-				for(FolderBase folder : getCheckedRoots()) {
+				Integer[] checked = getCheckedLeafs();
+				for(RootBase folder : getCheckedRoots()) {
 					calEvts = manager.viewEvents(folder, checked, fromDate, toDate);
 					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
@@ -466,9 +474,9 @@ public class Service extends BaseService {
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
 				List<CalendarManager.CalendarEvents> calEvts = null;
-				Integer[] checked = getCheckedFolders();
-				for(FolderBase root : getCheckedRoots()) {
-					calEvts = manager.searchEvents(root, checked, "%"+query+"%");
+				Integer[] checked = getCheckedLeafs();
+				for(RootBase root : getCheckedRoots()) {
+					calEvts = manager.searchEvents(root.getProfileId(), checked, "%"+query+"%");
 					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
 						for(SchedulerEvent evt : ce.events) {
@@ -482,7 +490,7 @@ public class Service extends BaseService {
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageEventsScheduler", ex);
+			logger.error("Error in action ManageEventsScheduler", ex);
 			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {
@@ -527,7 +535,7 @@ public class Service extends BaseService {
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageEvents", ex);
+			logger.error("Error in action ManageEvents", ex);
 			new JsonResult(false, "Error").printTo(out);	
 		}
 	}
@@ -544,9 +552,9 @@ public class Service extends BaseService {
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
 				List<CalendarManager.CalendarEvents> calEvts = null;
-				Integer[] checked = getCheckedFolders();
-				for(FolderBase root : getCheckedRoots()) {
-					calEvts = manager.searchEvents(root, checked, "%"+query+"%");
+				Integer[] checked = getCheckedLeafs();
+				for(RootBase root : getCheckedRoots()) {
+					calEvts = manager.searchEvents(root.getProfileId(), checked, "%"+query+"%");
 					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
 						for(SchedulerEvent evt : ce.events) {
@@ -560,7 +568,7 @@ public class Service extends BaseService {
 			}
 		
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageGridEvents", ex);
+			logger.error("Error in action ManageGridEvents", ex);
 			new JsonResult(false, "Error").printTo(out);
 			
 		}
@@ -604,7 +612,7 @@ public class Service extends BaseService {
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ErpExportWizard", ex);
+			logger.error("Error in action ErpExportWizard", ex);
 			new JsonResult(false, "Error").printTo(out);	
 		}
 	}
@@ -706,7 +714,7 @@ public class Service extends BaseService {
 			new JsonResult(items, meta, items.size()).printTo(out);
 			
 		} catch(Exception ex) {
-			logger.error("Error executing action ManageEvents", ex);
+			logger.error("Error in action ManageEvents", ex);
 			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {
@@ -741,65 +749,67 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private List<FolderBase> getCheckedRoots() {
-		ArrayList<FolderBase> folders = new ArrayList<>();
-		for(FolderBase folder : roots.values()) {
+	private List<RootBase> getCheckedRoots() {
+		ArrayList<RootBase> folders = new ArrayList<>();
+		for(RootBase folder : roots.values()) {
 			if(!checkedRoots.contains(folder.getId())) continue; // Skip folder if not visible
 			folders.add(folder);
 		}
 		return folders;
 	}
 	
-	private Integer[] getCheckedFolders() {
-		return checkedFolders.toArray(new Integer[checkedFolders.size()]);
+	private Integer[] getCheckedLeafs() {
+		return checkedLeafs.toArray(new Integer[checkedLeafs.size()]);
 	}
 	
-	private void toggleCheckedRoot(String folderId, boolean checked) {
+	private void toggleCheckedRoot(String shareId, boolean checked) {
 		synchronized(roots) {
 			if(checked) {
-				checkedRoots.add(folderId);
+				checkedRoots.add(shareId);
 			} else {
-				checkedRoots.remove(folderId);
+				checkedRoots.remove(shareId);
 			}
-			us.setCheckedRoots(checkedRoots);
+			us.setCheckedCalendarRoots(checkedRoots);
 		}
 	}
 	
-	private void toggleCheckedFolder(int folderId, boolean checked) {
+	private void toggleCheckedLeaf(int folderId, boolean checked) {
 		synchronized(roots) {
 			if(checked) {
-				checkedFolders.add(folderId);
+				checkedLeafs.add(folderId);
 			} else {
-				checkedFolders.remove(folderId);
+				checkedLeafs.remove(folderId);
 			}
-			us.setCheckedFolders(checkedFolders);
+			us.setCheckedCalendarCalendars(checkedLeafs);
 		}
 	}
 	
-	private ExtTreeNode createFolderNode(MyFolder folder, boolean leaf) {
-		return createFolderNode(folder.getId(), lookupResource(CalendarLocale.MY_CALENDARS), leaf, "wtcal-icon-root-my-xs");
+	private ExtTreeNode createFolderNode(MyRoot root, boolean leaf) {
+		return createFolderNode(root.getId(), root.getProfileId().toString(), lookupResource(CalendarLocale.MY_CALENDARS), leaf, "wtcal-icon-root-my-xs");
 	}
 	
-	private ExtTreeNode createFolderNode(IncomingFolder folder, boolean leaf) {
-		return createFolderNode(folder.getId(), folder.getDescription(), leaf, "wtcal-icon-root-incoming-xs");
+	private ExtTreeNode createFolderNode(IncomingRoot root, boolean leaf) {
+		return createFolderNode(root.getId(), root.getProfileId().toString(), root.getDescription(), leaf, "wtcal-icon-root-incoming-xs");
 	}
 	
-	private ExtTreeNode createFolderNode(String rootId, String text, boolean leaf, String iconClass) {
-		boolean visible = checkedRoots.contains(rootId);
-		ExtTreeNode node = new ExtTreeNode(rootId, text, leaf);
+	private ExtTreeNode createFolderNode(String id, String pid, String text, boolean leaf, String iconClass) {
+		boolean visible = checkedRoots.contains(id);
+		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
 		node.put("_type", JsFolderNode.TYPE_ROOT);
-		node.put("_rootId", rootId);
+		node.put("_pid", pid);
 		node.put("_visible", visible);
 		node.setIconClass(iconClass);
 		node.setChecked(visible);
 		return node;
 	}
 	
-	private ExtTreeNode createFolderNode(String rootId, OCalendar cal) {
-		boolean visible = checkedFolders.contains(cal.getCalendarId());
-		ExtTreeNode node = new ExtTreeNode(cal.getCalendarId(), cal.getName(), true);
+	private ExtTreeNode createFolderNode(String rootId, IncomingLeaf folder) {
+		OCalendar cal = (OCalendar)folder.getData();
+		boolean visible = checkedLeafs.contains(cal.getCalendarId());
+		ExtTreeNode node = new ExtTreeNode(folder.getId(), cal.getName(), true);
 		node.put("_type", JsFolderNode.TYPE_FOLDER);
-		node.put("_rootId", rootId);
+		node.put("_pid", cal.getProfileId().toString());
+		node.put("_calId", cal.getCalendarId());
 		node.put("_builtIn", cal.getBuiltIn());
 		node.put("_default", cal.getIsDefault());
 		node.put("_color", cal.getColor());

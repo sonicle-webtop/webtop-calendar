@@ -36,8 +36,8 @@ Ext.define('Sonicle.webtop.calendar.model.FolderNode', {
 	
 	fields: [
 		WTF.field('_type', 'string', false),
-		WTF.field('_rootId', 'string', false),
-		WTF.roField('_shareId', 'string'),
+		WTF.field('_pid', 'string', false),
+		WTF.roField('_calId', 'string'),
 		WTF.roField('_builtIn', 'boolean'),
 		WTF.roField('_default', 'boolean'),
 		WTF.field('_visible', 'boolean', false), // Same as checked
@@ -45,11 +45,11 @@ Ext.define('Sonicle.webtop.calendar.model.FolderNode', {
 		WTF.roField('_isPrivate', 'boolean'),
 		WTF.roField('_busy', 'boolean'),
 		WTF.roField('_reminder', 'int'),
-		WTF.calcField('_domainId', 'string', '_rootId', function(v, rec) {
-			return (rec.get('_rootId')) ? rec.get('_rootId').split('@')[1] : null;
+		WTF.calcField('_domainId', 'string', '_pid', function(v, rec) {
+			return (rec.get('_pid')) ? rec.get('_pid').split('@')[1] : null;
 		}),
-		WTF.calcField('_userId', 'string', '_rootId', function(v, rec) {
-			return (rec.get('_rootId')) ? rec.get('_rootId').split('@')[0] : null;
+		WTF.calcField('_userId', 'string', '_pid', function(v, rec) {
+			return (rec.get('_pid')) ? rec.get('_pid').split('@')[0] : null;
 		})
 	]
 });

@@ -85,19 +85,19 @@ public class CalendarUserSettings extends BaseUserSettings {
 	 * [string]
 	 * Selected folder root node.
 	 */
-	public static final String SELECTED_ROOT = "roots.selected";
+	public static final String SELECTED_CALENDAR_ROOTS = "calendar.roots.selected";
 	
 	/**
 	 * [string[]]
 	 * List of checked (or visible) folder root nodes.
 	 */
-	public static final String CHECKED_ROOTS = "roots.checked";
+	public static final String CHECKED_CALENDAR_ROOTS = "calendar.roots.checked";
 	
 	/**
 	 * [int[]]
 	 * List of checked (or visible) calendars.
 	 */
-	public static final String CHECKED_CALENDARS = "calendars.checked";
+	public static final String CHECKED_CALENDAR_LEAFS = "calendar.leafs.checked";
 	
 	
 	public String getCalendarView() {
@@ -132,28 +132,30 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setBoolean(REMINDER_BY_EMAIL, value);
 	}
 	
+	/*
 	public String getSelectedRoot() {
-		return getString(SELECTED_ROOT, null);
+		return getString(SELECTED_CALENDAR_ROOTS, null);
 	}
 	
 	public boolean setSelectedRoot(String value) {
-		return setString(SELECTED_ROOT, value);
+		return setString(SELECTED_CALENDAR_ROOTS, value);
+	}
+	*/
+	
+	public CheckedRoots getCheckedCalendarRoots() {
+		return getObject(CHECKED_CALENDAR_ROOTS, new CheckedRoots(), CheckedRoots.class);
 	}
 	
-	public CheckedRoots getCheckedRoots() {
-		return getObject(CHECKED_ROOTS, new CheckedRoots(), CheckedRoots.class);
+	public boolean setCheckedCalendarRoots(CheckedRoots value) {
+		return setObject(CHECKED_CALENDAR_ROOTS, value, CheckedRoots.class);
 	}
 	
-	public boolean setCheckedRoots(CheckedRoots value) {
-		return setObject(CHECKED_ROOTS, value, CheckedRoots.class);
+	public CheckedLeafs getCheckedCalendarLeafs() {
+		return getObject(CHECKED_CALENDAR_LEAFS, new CheckedLeafs(), CheckedLeafs.class);
 	}
 	
-	public CheckedFolders getCheckedFolders() {
-		return getObject(CHECKED_CALENDARS, new CheckedFolders(), CheckedFolders.class);
-	}
-	
-	public boolean setCheckedFolders(CheckedFolders value) {
-		return setObject(CHECKED_CALENDARS, value, CheckedFolders.class);
+	public boolean setCheckedCalendarCalendars(CheckedLeafs value) {
+		return setObject(CHECKED_CALENDAR_LEAFS, value, CheckedLeafs.class);
 	}
 	
 	public static class CheckedRoots extends HashSet<String> {
@@ -170,17 +172,17 @@ public class CalendarUserSettings extends BaseUserSettings {
 		}
 	}
 	
-	public static class CheckedFolders extends HashSet<Integer> {
-		public CheckedFolders() {
+	public static class CheckedLeafs extends HashSet<Integer> {
+		public CheckedLeafs() {
 			super();
 		}
 		
-		public static CheckedFolders fromJson(String value) {
-			return JsonResult.gson.fromJson(value, CheckedFolders.class);
+		public static CheckedLeafs fromJson(String value) {
+			return JsonResult.gson.fromJson(value, CheckedLeafs.class);
 		}
 		
-		public static String toJson(CheckedFolders value) {
-			return JsonResult.gson.toJson(value, CheckedFolders.class);
+		public static String toJson(CheckedLeafs value) {
+			return JsonResult.gson.toJson(value, CheckedLeafs.class);
 		}
 	}
 }

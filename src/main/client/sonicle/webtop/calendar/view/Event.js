@@ -189,7 +189,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					store: {
 						autoLoad: true,
 						model: 'WT.model.Simple',
-						proxy: WTF.proxy(me.mys.ID, 'LookupRootFolders', 'folders')
+						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarRoots', 'roots')
 					},
 					fieldLabel: me.mys.res('event.fld-owner.lbl'),
 					labelWidth: 75,
@@ -300,7 +300,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					store: {
 						autoLoad: true,
 						model: 'Sonicle.webtop.calendar.model.CalendarLkp',
-						proxy: WTF.proxy(me.mys.ID, 'LookupCalendars', 'calendars')
+						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
 					},
 					valueField: 'calendarId',
 					displayField: 'name',

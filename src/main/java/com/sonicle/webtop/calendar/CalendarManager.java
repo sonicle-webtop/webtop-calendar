@@ -37,7 +37,6 @@ import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.security.DomainAccount;
 import com.sonicle.webtop.calendar.ICalHelper.ParseResult;
 import com.sonicle.webtop.calendar.bol.model.Event;
@@ -49,6 +48,8 @@ import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.OPostponedReminder;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
+import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
+import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
@@ -66,9 +67,6 @@ import com.sonicle.webtop.core.bol.OCausal;
 import com.sonicle.webtop.core.bol.OCustomer;
 import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
-import com.sonicle.webtop.core.bol.model.RootBase;
-import com.sonicle.webtop.core.bol.model.IncomingRoot;
-import com.sonicle.webtop.core.bol.model.MyRoot;
 import com.sonicle.webtop.core.dal.ActivityDAO;
 import com.sonicle.webtop.core.dal.BaseDAO.RevisionInfo;
 import com.sonicle.webtop.core.dal.CausalDAO;
@@ -76,8 +74,10 @@ import com.sonicle.webtop.core.dal.CustomerDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseServiceManager;
 import com.sonicle.webtop.core.RunContext;
-import com.sonicle.webtop.core.bol.model.IncomingLeaf;
+import com.sonicle.webtop.core.bol.Owner;
 import com.sonicle.webtop.core.bol.model.RootShare;
+import com.sonicle.webtop.core.dal.DAOException;
+import com.sonicle.webtop.core.sdk.AuthException;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
@@ -90,6 +90,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -130,10 +131,61 @@ public class CalendarManager extends BaseServiceManager {
 	public static final String TARGET_ALL = "all";
 	
 	private String host;
+	private final HashMap<Integer, UserProfile.Id> calendarToOwnerCache = new HashMap<>();
+	private final Object shareCacheLock = new Object();
+	private final HashMap<UserProfile.Id, String> ownerToRootShareCache = new HashMap<>();
+	private final HashMap<Integer, String> calendarToFolderShareCache = new HashMap<>();
 
 	public CalendarManager(String serviceId, RunContext context) {
 		super(serviceId, context);
 		host = "unknown";
+	}
+	
+	private void buildShareCache() {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		UserProfile.Id pid = getTargetProfileId();
+		try {
+			ownerToRootShareCache.clear();
+			calendarToFolderShareCache.clear();
+			for(CalendarRoot root : listIncomingCalendarRoots()) {
+				ownerToRootShareCache.put(pid, root.getShareId());
+				for(OShare leafShare : core.listIncomingShareFolders(pid, root.getShareId(), getServiceId(), RESOURCE_CALENDAR)) {
+					calendarToFolderShareCache.put(Integer.valueOf(leafShare.getInstance()), leafShare.getShareId().toString());
+				}
+			}
+		} catch(WTException ex) {
+			throw new WTRuntimeException(ex.getMessage());
+		}
+	}
+	
+	private String ownerToRootShareId(UserProfile.Id owner) {
+		synchronized(shareCacheLock) {
+			if(!ownerToRootShareCache.containsKey(owner)) buildShareCache();
+			return ownerToRootShareCache.get(owner);
+		}
+	}
+	
+	private String calendarToFolderShareId(int calendarId) {
+		synchronized(shareCacheLock) {
+			if(!calendarToFolderShareCache.containsKey(calendarId)) buildShareCache();
+			return calendarToFolderShareCache.get(calendarId);
+		}
+	}
+	
+	private UserProfile.Id calendarToOwner(int calendarId) {
+		synchronized(calendarToOwnerCache) {
+			if(calendarToOwnerCache.containsKey(calendarId)) {
+				return calendarToOwnerCache.get(calendarId);
+			} else {
+				try {
+					UserProfile.Id owner = getCalendarOwner(calendarId);
+					calendarToOwnerCache.put(calendarId, owner);
+					return owner;
+				} catch(WTException ex) {
+					throw new WTRuntimeException(ex.getMessage());
+				}
+			}
+		}
 	}
 	
 	public String getHost() {
@@ -145,111 +197,138 @@ public class CalendarManager extends BaseServiceManager {
 	}
 	
 	private RevisionInfo createRevisionInfo() {
-		return new RevisionInfo("WT", getRunContext().getProfileId().toString());
+		return new RevisionInfo("WT", getRunProfileId().toString());
 	}
 	
-	public String getCalendarGroupId(int calendarId) throws Exception {
-		Connection con = null;
+	
+	//supernet
+	
+	private void ensureRightsOnCalendarLeaf(int calendarId, String action) throws WTException {
+		if(WT.isWebTopAdmin(getRunProfileId())) return;
 		
-		try {
-			con = WT.getConnection(getManifest());
-			CalendarDAO cdao = CalendarDAO.getInstance();
-			OCalendar cal = cdao.select(con, calendarId);
-			if(cal == null) throw new WTException("Unable to retrieve calendar [{}]", calendarId);
-			return new UserProfile.Id(cal.getDomainId(), cal.getUserId()).toString();
-			
-		} finally {
-			DbUtils.closeQuietly(con);
+		UserProfile.Id ownerPid = calendarToOwner(calendarId);
+		if(ownerPid.equals(getTargetProfileId())) return;
+		
+		String shareId = calendarToFolderShareId(calendarId);
+		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
+		CoreManager core = WT.getCoreManager(getRunContext());
+		if(!core.isPermittedOnFolderShare(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) {
+			throw new AuthException("");
 		}
 	}
-	//supernet
-	public ArrayList<RootBase> listCalendarRoots(UserProfile.Id pid) throws Exception {
-		ArrayList<RootBase> folders = new ArrayList();
-		HashSet<String> hs = new HashSet<>();
+	
+	private void ensureRightsOnCalendarRoot(UserProfile.Id ownerPid, String action) throws WTException {
+		if(WT.isWebTopAdmin(getRunProfileId())) return;
+		if(ownerPid.equals(getTargetProfileId())) return;
+		
+		String shareId = ownerToRootShareId(ownerPid);
+		if(shareId == null) throw new WTException("ownerToRootShareId({0}) -> null", ownerPid);
 		CoreManager core = WT.getCoreManager(getRunContext());
+		if(!core.isPermittedOnRootShare(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) {
+			throw new AuthException("");
+		}
+	}
+	
+	private String permsToString(boolean[] perms) {
+		String s = "";
+		if(perms[0]) s += "c";
+		if(perms[1]) s += "r";
+		if(perms[2]) s += "u";
+		if(perms[3]) s += "d";
+		return s;
+	}
+	
+	public List<CalendarRoot> listIncomingCalendarRoots() throws WTException {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		ArrayList<CalendarRoot> roots = new ArrayList();
+		HashSet<String> hs = new HashSet<>();
 		
-		// Defines personal root
-		MyRoot myRoot = new MyRoot(pid);
-		hs.add(myRoot.getId());
-		folders.add(myRoot);
+		List<RootShare> shares = core.listIncomingShareRoots(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR);
+		CalendarRoot root = null;
+		for(RootShare share : shares) {
+			boolean[] perms = core.getRootSharePermissions(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, share.getShareId());
+			root = new CalendarRoot(share, permsToString(perms));
+			if(hs.contains(root.getShareId())) continue; // Avoid duplicates ??????????????????????
+			hs.add(root.getShareId());
+			roots.add(root);
+		}
+		return roots;
+	}
+	
+	public List<CalendarFolder> listIncomingCalendarFolders(String rootShareId) throws WTException {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		ArrayList<CalendarFolder> folders = new ArrayList<>();
+		UserProfile.Id pid = getTargetProfileId();
 		
-		// Reads incoming roots (from sharing)
-		try {
-			List<RootShare> shares = core.listIncomingShareRoots(pid, getServiceId(), RESOURCE_CALENDAR);
-			IncomingRoot incRoot = null;
-			for(RootShare share : shares) {
-				incRoot = new IncomingRoot(share);
-				if(hs.contains(incRoot.getId())) continue; // Avoid duplicates ??????????????????????
-				hs.add(incRoot.getId());
-				folders.add(incRoot);
-			}
-			
-		} catch(Exception ex) {
-			logger.error("Unable to list root shares", ex);
-			throw ex;
+		// Retrieves incoming leafs (from sharing). This lookup already 
+		// returns readable shares (we don't need to test READ permission)
+		List<OShare> shares = core.listIncomingShareFolders(pid, rootShareId, getServiceId(), RESOURCE_CALENDAR);
+		OCalendar cal;
+		for(OShare share : shares) {
+			cal = getCalendar(Integer.valueOf(share.getInstance()));
+			boolean[] perms = core.getFolderSharePermissions(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, share.getShareId().toString());
+			folders.add(new CalendarFolder(share.getShareId().toString(), permsToString(perms), cal));
 		}
 		return folders;
 	}
 	
-	public String getShareLeafRights(UserProfile.Id pid, String shareId) throws Exception {
-		CoreManager core = WT.getCoreManager(getRunContext());
-		return core.getShareLeafRights(pid, shareId, getServiceId(), RESOURCE_CALENDAR);
-	}
-	
-	public List<IncomingLeaf> listCalendarLeafs(UserProfile.Id pid, String rootShareId) throws Exception {
-		ArrayList<IncomingLeaf> leafs = new ArrayList<>();
-		
-		try {
-			if(rootShareId.equals(MyRoot.ID)) {
-				// Passed root references mine root
-				List<OCalendar> cals = listCalendars(pid);
-				for(OCalendar cal : cals) {
-					leafs.add(new IncomingLeaf(new CompositeId(MyRoot.ID, cal.getCalendarId()).toString(), "rw", cal));
-				}
-				
-			} else {
-				CoreManager core = WT.getCoreManager(getRunContext());
-				
-				// Retrieves incoming leafs (from sharing). This lookup already 
-				// returns readable shares (we don't need to test READ permission)
-				List<OShare> shares = core.listIncomingShareLeafs(pid, rootShareId, getServiceId(), RESOURCE_CALENDAR);
-				OCalendar cal;
-				for(OShare share : shares) {
-					cal = getCalendar(Integer.valueOf(share.getInstance()));
-					String rights = core.getShareLeafRights(pid, share.getShareId().toString(), getServiceId(), RESOURCE_CALENDAR);
-					leafs.add(new IncomingLeaf(new CompositeId(share.getShareId(), cal.getCalendarId()).toString(), rights, cal));
-				}
-			}
-			
-			return leafs;
-			
-		} catch(Exception ex) {
-			logger.error("Unable list leaf shares", ex);
-			throw ex;
-		}
-	}
-	
-	public List<OCalendar> listCalendars(UserProfile.Id pid) throws Exception {
+	public List<OCalendar> listCalendars() throws WTException {
 		Connection con = null;
+		UserProfile.Id pid = getTargetProfileId();
 		
 		try {
 			con = WT.getConnection(getManifest());
-			CalendarDAO calDao = CalendarDAO.getInstance();
-			return calDao.selectByDomainUser(con, pid.getDomainId(), pid.getUserId());
+			CalendarDAO dao = CalendarDAO.getInstance();
+			return dao.selectByDomainUser(con, pid.getDomainId(), pid.getUserId());
 			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "Unable to list calendars for {0}", pid.toString());
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
-	public OCalendar getCalendar(int calendarId) throws Exception {
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	public UserProfile.Id getCalendarOwner(int calendarId) throws WTException {
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(getManifest());
-			CalendarDAO calDao = CalendarDAO.getInstance();
-			return calDao.select(con, calendarId);
+			CalendarDAO dao = CalendarDAO.getInstance();
+			Owner owner = dao.selectOwnerById(con, calendarId);
+			if(owner == null) throw new WTException("Calendar not found [{0}]", calendarId);
+			return new UserProfile.Id(owner.getDomainId(), owner.getUserId());
 			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "Unable to get calendar's owner [{0}]", calendarId);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public OCalendar getCalendar(int calendarId) throws WTException {
+		Connection con = null;
+		
+		try {
+			ensureRightsOnCalendarLeaf(calendarId, "READ");
+			con = WT.getConnection(getManifest());
+			CalendarDAO dao = CalendarDAO.getInstance();
+			return dao.selectById(con, calendarId);
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "Unable to get calendar [{0}]", calendarId);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -259,14 +338,15 @@ public class CalendarManager extends BaseServiceManager {
 		Connection con = null;
 		
 		try {
+			ensureRightsOnCalendarRoot(item.getProfileId(), "WRITE");
 			con = WT.getConnection(getManifest());
 			con.setAutoCommit(false);
-			CalendarDAO calDao = CalendarDAO.getInstance();
+			CalendarDAO dao = CalendarDAO.getInstance();
 			
-			item.setCalendarId(calDao.getSequence(con).intValue());
+			item.setCalendarId(dao.getSequence(con).intValue());
 			item.setBuiltIn(false);
-			if(item.getIsDefault()) calDao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
-			calDao.insert(con, item);
+			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
+			dao.insert(con, item);
 			DbUtils.commitQuietly(con);
 			return item;
 			
@@ -282,6 +362,7 @@ public class CalendarManager extends BaseServiceManager {
 		Connection con = null;
 		
 		try {
+			ensureRightsOnCalendarLeaf(item.getCalendarId(), "WRITE");
 			con = WT.getConnection(getManifest());
 			con.setAutoCommit(false);
 			CalendarDAO dao = CalendarDAO.getInstance();
@@ -303,6 +384,7 @@ public class CalendarManager extends BaseServiceManager {
 		Connection con = null;
 		
 		try {
+			ensureRightsOnCalendarLeaf(calendarId, "WRITE");
 			con = WT.getConnection(getManifest());
 			CalendarDAO dao = CalendarDAO.getInstance();
 			dao.delete(con, calendarId);
@@ -313,9 +395,8 @@ public class CalendarManager extends BaseServiceManager {
 		}
 	}
 	
-	public List<DateTime> listEventsDates(RootBase folder, Integer[] calendars, DateTime fromDate, DateTime toDate, DateTimeZone userTz) throws Exception {
-		UserProfile.Id profileId = new UserProfile.Id(folder.getDomainId(), folder.getUserId());
-		return listEventsDates(profileId, calendars, fromDate, toDate, userTz);
+	public List<DateTime> listEventsDates(CalendarRoot root, Integer[] calendars, DateTime fromDate, DateTime toDate, DateTimeZone userTz) throws Exception {
+		return listEventsDates(root.getOwnerProfileId(), calendars, fromDate, toDate, userTz);
 	}
 	
 	public List<DateTime> listEventsDates(UserProfile.Id pid, Integer[] calendars, DateTime fromDate, DateTime toDate, DateTimeZone userTz) throws Exception {
@@ -520,9 +601,8 @@ public class CalendarManager extends BaseServiceManager {
 		}
 	}
 	
-	public List<CalendarEvents> viewEvents(RootBase folder, Integer[] calendars, DateTime fromDate, DateTime toDate) throws Exception {
-		UserProfile.Id profileId = new UserProfile.Id(folder.getDomainId(), folder.getUserId());
-		return viewEvents(profileId, calendars, fromDate, toDate);
+	public List<CalendarEvents> viewEvents(CalendarRoot root, Integer[] calendars, DateTime fromDate, DateTime toDate) throws Exception {
+		return viewEvents(root.getOwnerProfileId(), calendars, fromDate, toDate);
 	}
 	
 	public List<CalendarEvents> viewEvents(UserProfile.Id pid, Integer[] calendars, DateTime fromDate, DateTime toDate) throws Exception {

@@ -483,9 +483,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
-							my = (rec.get('_pid') === WT.getOption('profileId'));
-					me.getAction('addCalendar').setDisabled(!my);
-					me.getAction('addEvent').setDisabled(!my);
+							rr = me.toRightsObj(rec.get('_rrights'));
+					me.getAction('addCalendar').setDisabled(!rr.c);
 				}
 			}
 		}));
@@ -508,13 +507,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
-							my = (rec.get('_pid') === WT.getOption('profileId'));
-					me.getAction('editCalendar').setDisabled(!my);
-					me.getAction('deleteCalendar').setDisabled(!my);
-					me.getAction('addCalendar').setDisabled(!my);
-					me.getAction('deleteCalendar').setDisabled(!my || rec.get('_builtIn'));
-					me.getAction('addEvent').enable();
-					//TODO: disabilitare azioni se readonly
+							rr = me.toRightsObj(rec.get('_rrights')),
+							fr = me.toRightsObj(rec.get('_rights'));
+					me.getAction('editCalendar').setDisabled(!rr.u);
+					me.getAction('deleteCalendar').setDisabled(!rr.d || rec.get('_builtIn'));
+					me.getAction('addCalendar').setDisabled(!rr.c);
+					me.getRef('uploaders', 'importEvents').setDisabled(!fr.c);
+					me.getAction('addEvent').setDisabled(!fr.c);
 				}
 			}
 		}));
@@ -546,6 +545,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}));
 	},
 	
+	toRightsObj: function(rights) {
+		var iof = function(s,v) { return s.indexOf(v)!==-1; };
+		return {
+			c: iof(rights, 'c'),
+			r: iof(rights, 'r'),
+			u: iof(rights, 'u'),
+			d: iof(rights, 'd')
+		};
+	},
+	
 	onActivate: function() {
 		var me = this,
 				scheduler = me.getRef('scheduler');
@@ -563,7 +572,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				node;
 		
 		// Look for root folder and reload it!
-		node = store.getNodeById(model.get('_profileId'));
+		node = store.findRecord('_pid', model.get('_profileId'));
 		if(node) store.load({node: node});
 	},
 	

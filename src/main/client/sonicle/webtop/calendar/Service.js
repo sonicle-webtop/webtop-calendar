@@ -508,7 +508,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
 							rr = me.toRightsObj(rec.get('_rrights')),
-							fr = me.toRightsObj(rec.get('_rights'));
+							fr = me.toRightsObj(rec.get('_frights'));
 					me.getAction('editCalendar').setDisabled(!rr.u);
 					me.getAction('deleteCalendar').setDisabled(!rr.d || rec.get('_builtIn'));
 					me.getAction('addCalendar').setDisabled(!rr.c);

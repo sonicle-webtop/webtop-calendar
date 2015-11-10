@@ -29,6 +29,9 @@
 .wtcal-tree-default {
 	font-weight: bold;
 }
+.wtcal-tree-readonly {
+	color: grey;
+}
 .wtcal-planning-free {
 	background-color: #F3E4B1;
 }

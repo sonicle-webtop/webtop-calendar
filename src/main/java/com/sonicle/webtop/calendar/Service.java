@@ -766,17 +766,17 @@ public class Service extends BaseService {
 	}
 	
 	private ExtTreeNode createFolderNode(CalendarFolder folder, String rootRights) {
-		return createFolderNode(folder.getShareId(), folder.getCalendar(), rootRights, folder.getRights());
+		return createFolderNode(folder.getShareId(), rootRights, folder.getRights(), folder.getCalendar());
 	}
 	
-	private ExtTreeNode createFolderNode(String shareId, OCalendar cal, String rootRights, String rights) {
+	private ExtTreeNode createFolderNode(String shareId, String rootRights, String folderRights, OCalendar cal) {
 		String id = new CompositeId(shareId, cal.getCalendarId()).toString();
 		boolean visible = checkedFolders.contains(cal.getCalendarId());
 		ExtTreeNode node = new ExtTreeNode(id, cal.getName(), true);
 		node.put("_type", JsFolderNode.TYPE_FOLDER);
 		node.put("_pid", cal.getProfileId().toString());
 		node.put("_rrights", rootRights);
-		node.put("_rights", rights);
+		node.put("_frights", folderRights);
 		node.put("_calId", cal.getCalendarId());
 		node.put("_builtIn", cal.getBuiltIn());
 		node.put("_default", cal.getIsDefault());
@@ -785,7 +785,14 @@ public class Service extends BaseService {
 		node.put("_isPrivate", cal.getIsPrivate());
 		node.put("_busy", cal.getBusy());
 		node.put("_reminder", cal.getReminder());
-		if(cal.getIsDefault()) node.setCls("wtcal-tree-default");
+		
+		List<String> classes = new ArrayList<>();
+		if(cal.getIsDefault()) classes.add("wtcal-tree-default");
+		if(!StringUtils.contains(folderRights, "c") 
+				|| !StringUtils.contains(folderRights, "u") 
+				|| !StringUtils.contains(folderRights, "d")) classes.add("wtcal-tree-readonly");
+		node.setCls(StringUtils.join(classes, " "));
+		
 		node.setIconClass("wt-palette-" + cal.getHexColor());
 		node.setChecked(visible);
 		return node;

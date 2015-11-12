@@ -56,7 +56,6 @@ import org.jooq.Field;
  * @author malbinola
  */
 public class EventDAO extends BaseDAO {
-	
 	private final static EventDAO INSTANCE = new EventDAO();
 	public static EventDAO getInstance() {
 		return INSTANCE;
@@ -68,7 +67,7 @@ public class EventDAO extends BaseDAO {
 		return nextID;
 	}
 	
-	public OEvent select(Connection con, Integer eventId) throws DAOException {
+	public OEvent selectById(Connection con, Integer eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -171,7 +170,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int logicDelete(Connection con, Integer eventId, RevisionInfo updateInfo) throws DAOException {
+	public int logicDeleteById(Connection con, Integer eventId, RevisionInfo updateInfo) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)

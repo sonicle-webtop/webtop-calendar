@@ -33,43 +33,22 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.core.bol.model.RootShare;
+import com.sonicle.webtop.core.bol.model.IncomingRootShare;
+import com.sonicle.webtop.core.bol.model.SharePermsRoot;
+import com.sonicle.webtop.core.bol.model.ShareRoot;
 import com.sonicle.webtop.core.sdk.UserProfile;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarRoot {
-	private final String shareId;
-	private final String rights;
-	private final UserProfile.Id ownerProfileId;
-	private final String description;
+public class CalendarRoot extends ShareRoot {
 	
-	public CalendarRoot(String shareId, String rights, UserProfile.Id ownerProfileId, String description) {
-		this.shareId = shareId;
-		this.rights = rights;
-		this.ownerProfileId = ownerProfileId;
-		this.description = description;
+	public CalendarRoot(String shareId, SharePermsRoot perms, UserProfile.Id ownerProfileId, String description) {
+		super(shareId, perms, ownerProfileId, description);
 	}
 	
-	public CalendarRoot(RootShare share, String rights) {
-		this(share.getShareId(), rights, share.getOriginPid(), share.getDescription());
-	}
-	
-	public String getShareId() {
-		return shareId;
-	}
-	
-	public String getRights() {
-		return rights;
-	}
-	
-	public UserProfile.Id getOwnerProfileId() {
-		return ownerProfileId;
-	}
-	
-	public String getDescription() {
-		return description;
+	public CalendarRoot(IncomingRootShare share, SharePermsRoot perms) {
+		super(share, perms);
 	}
 }

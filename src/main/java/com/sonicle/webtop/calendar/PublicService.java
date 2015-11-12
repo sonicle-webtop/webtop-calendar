@@ -141,7 +141,7 @@ public class PublicService extends BasePublicService {
 			} else if(action.equals("view")) {
 				String eid = ServletUtils.getStringParameter(request, "eid", true);
 				
-				Event event = manager.readEventByPublicUid(eid);
+				Event event = manager.getEventByPublicUid(eid);
 				if(event == null) throw new EventNotFoundException();
 				List<EventAttendee> atts = manager.getAttendees(event.getEventId(), true);
 				

@@ -50,7 +50,6 @@ import org.jooq.DSLContext;
  */
 public class CalendarDAO extends BaseDAO {
 	private final static CalendarDAO INSTANCE = new CalendarDAO();
-
 	public static CalendarDAO getInstance() {
 		return INSTANCE;
 	}
@@ -222,7 +221,7 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int delete(Connection con, Integer calendarId) throws DAOException {
+	public int deleteById(Connection con, Integer calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 				.delete(CALENDARS)

@@ -34,6 +34,8 @@
 package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.core.bol.model.SharePermsFolder;
+import com.sonicle.webtop.core.bol.model.SharePermsFolderEls;
 
 /**
  *
@@ -43,6 +45,6 @@ public class MyCalendarFolder extends CalendarFolder {
 	public static final String RIGHTS = "crud";
 
 	public MyCalendarFolder(String shareId, OCalendar calendar) {
-		super(shareId, RIGHTS, calendar);
+		super(shareId, SharePermsFolder.full(), SharePermsFolderEls.full(), calendar);
 	}
 }

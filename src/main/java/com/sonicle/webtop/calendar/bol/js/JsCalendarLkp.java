@@ -51,16 +51,16 @@ public class JsCalendarLkp {
 	public String color;
 	public Boolean invitation;
 	
-	public void fillFrom(OCalendar calendar) {
-		calendarId = calendar.getCalendarId();
-		domainId = calendar.getDomainId();
-		userId = calendar.getUserId();
-		name = calendar.getName();
-		isDefault = calendar.getIsDefault();
-		isPrivate = calendar.getIsPrivate();
-		busy = calendar.getBusy();
-		reminder = calendar.getReminder();
-		color = calendar.getHexColor();
-		invitation = calendar.getInvitation();
+	public JsCalendarLkp(OCalendar bean) {
+		calendarId = bean.getCalendarId();
+		domainId = bean.getDomainId();
+		userId = bean.getUserId();
+		name = bean.getName();
+		isDefault = bean.getIsDefault();
+		isPrivate = bean.getIsPrivate();
+		busy = bean.getBusy();
+		reminder = bean.getReminder();
+		color = bean.getHexColor();
+		invitation = bean.getInvitation();
 	}
 }

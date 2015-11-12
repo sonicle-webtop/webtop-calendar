@@ -34,31 +34,21 @@
 package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.core.bol.model.ShareFolder;
+import com.sonicle.webtop.core.bol.model.SharePermsFolder;
+import com.sonicle.webtop.core.bol.model.SharePermsFolderEls;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarFolder {
-	private final String shareId;
-	private final String rights;
-	private final OCalendar calendar;
+public class CalendarFolder extends ShareFolder {
 	
-	public CalendarFolder(String shareId, String rights, OCalendar calendar) {
-		this.shareId = shareId;
-		this.rights = rights;
-		this.calendar = calendar;
-	}
-
-	public String getShareId() {
-		return shareId;
-	}
-	
-	public String getRights() {
-		return rights;
+	public CalendarFolder(String shareId, SharePermsFolder perms, SharePermsFolderEls elsPerms, OCalendar calendar) {
+		super(shareId, perms, elsPerms, calendar);
 	}
 
 	public OCalendar getCalendar() {
-		return calendar;
+		return (OCalendar)object;
 	}
 }

@@ -48,9 +48,7 @@ import org.jooq.DSLContext;
  * @author malbinola
  */
 public class EventAttendeeDAO extends BaseDAO {
-	
 	private final static EventAttendeeDAO INSTANCE = new EventAttendeeDAO();
-
 	public static EventAttendeeDAO getInstance() {
 		return INSTANCE;
 	}

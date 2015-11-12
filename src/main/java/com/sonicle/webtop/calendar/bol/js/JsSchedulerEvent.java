@@ -63,7 +63,7 @@ public class JsSchedulerEvent {
 	public String color;
 	public String location;
 	public Boolean isPrivate;
-	public String reminder;
+	public Integer reminder;
 	public Boolean isReadOnly;
 	public Boolean isRecurring;
 	public Boolean isBroken;
@@ -102,12 +102,11 @@ public class JsSchedulerEvent {
 		timezone = event.getTimezone();
 		isAllDay = event.getAllDay();
 		
-		//title = (!event.getIsPrivate()) ? event.getTitle() : "***";
 		title = (keepDataPrivate) ? "***" : event.getTitle();
 		color = calendar.getColor();
-		location = event.getLocation();
 		location = (keepDataPrivate) ? "" : event.getLocation();
 		isPrivate = event.getIsPrivate();
+		reminder = event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
 		isRecurring = event.getIsRecurring();

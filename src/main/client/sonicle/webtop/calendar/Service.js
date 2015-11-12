@@ -484,7 +484,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
 							rr = me.toRightsObj(rec.get('_rrights'));
-					me.getAction('addCalendar').setDisabled(!rr.c);
+					me.getAction('addCalendar').setDisabled(!rr.MANAGE);
 				}
 			}
 		}));
@@ -508,12 +508,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().folder,
 							rr = me.toRightsObj(rec.get('_rrights')),
-							fr = me.toRightsObj(rec.get('_frights'));
-					me.getAction('editCalendar').setDisabled(!rr.u);
-					me.getAction('deleteCalendar').setDisabled(!rr.d || rec.get('_builtIn'));
-					me.getAction('addCalendar').setDisabled(!rr.c);
-					me.getRef('uploaders', 'importEvents').setDisabled(!fr.c);
-					me.getAction('addEvent').setDisabled(!fr.c);
+							fr = me.toRightsObj(rec.get('_frights')),
+							er = me.toRightsObj(rec.get('_erights'));
+					me.getAction('editCalendar').setDisabled(!fr.UPDATE);
+					me.getAction('deleteCalendar').setDisabled(!fr.DELETE || rec.get('_builtIn'));
+					me.getAction('addCalendar').setDisabled(!rr.MANAGE);
+					me.getRef('uploaders', 'importEvents').setDisabled(!er.CREATE);
+					me.getAction('addEvent').setDisabled(!er.CREATE);
 				}
 			}
 		}));
@@ -533,12 +534,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function() {
 					var rec = WT.getContextMenuData().event,
+							er = me.toRightsObj(rec.get('rights')),
 							readOnly = (rec.get('isReadOnly') === true),
 							broken = (rec.get('isBroken') === true);
 					
-					me.getAction('openEvent').setDisabled(readOnly);
-					me.getAction('deleteEvent').setDisabled(readOnly);
-					me.getAction('restoreEvent').setDisabled(readOnly || !broken);
+					me.getAction('openEvent').setDisabled(!er.UPDATE || readOnly);
+					me.getAction('deleteEvent').setDisabled(!er.DELETE || readOnly);
+					me.getAction('restoreEvent').setDisabled(!er.UPDATE || readOnly || !broken);
 					//me.getAction('restoreEvent').setDisabled(rec.get('isBroken') === false);
 				}
 			}
@@ -546,13 +548,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	toRightsObj: function(rights) {
-		var iof = function(s,v) { return s.indexOf(v)!==-1; };
-		return {
-			c: iof(rights, 'c'),
-			r: iof(rights, 'r'),
-			u: iof(rights, 'u'),
-			d: iof(rights, 'd')
-		};
+		var iof = function(s,v) { return s.indexOf(v)!==-1; },
+				obj = {};
+		obj['CREATE'] = iof(rights, 'c');
+		obj['READ'] = iof(rights, 'r');
+		obj['UPDATE'] = iof(rights, 'u');
+		obj['DELETE'] = iof(rights, 'd');
+		obj['MANAGE'] = iof(rights, 'm');
+		return obj;
 	},
 	
 	onActivate: function() {
@@ -572,7 +575,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				node;
 		
 		// Look for root folder and reload it!
-		node = store.findRecord('_pid', model.get('_profileId'));
+		node = store.findNode('_pid', model.get('_profileId'), false);
 		if(node) store.load({node: node});
 	},
 	
@@ -780,7 +783,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		if(sel.length === 0) {
 			if(!force) return null;
 			// As default returns myFolder, which have id equals to profileId option
-			return tree.getStore().getNodeById(WT.getOption('profileId'));
+			return tree.getStore().findNode('_pid', WT.getOption('profileId'), false);
 		}
 		return (sel[0].get('_type') === 'root') ? sel[0] : sel[0].parentNode;
 	},
@@ -804,7 +807,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				return sel[0];
 			}
 		} else {
-			node = tree.getStore().getNodeById(WT.getOption('profileId'));
+			node = tree.getStore().findNode('_pid', WT.getOption('profileId'), false);
 			if(node) return me.getFolderByRoot(node);
 		}
 		return null;

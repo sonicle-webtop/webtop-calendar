@@ -88,7 +88,6 @@ public class JobService extends BaseJobService {
 	}
 	
 	public static class CalendarJob extends BaseJobServiceTask {
-		
 		private JobService jobService = null;
 		private final HashMap<String, Boolean> notifyByEmailCache = new HashMap<>();
 		
@@ -113,7 +112,7 @@ public class JobService extends BaseJobService {
 				
 				try {
 					DateTime remindOn = null;
-					List<SchedulerEvent> events = jobService.manager.viewExpiredEvents(con, from, from.plusDays(7));
+					List<SchedulerEvent> events = jobService.manager.listExpiredSchedulerEvents(con, from, from.plusDays(7));
 					for(SchedulerEvent event : events) {
 						//TODO: implementare gestione reminder anche per le ricorrenze
 						remindOn = event.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(event.getReminder());
@@ -130,7 +129,7 @@ public class JobService extends BaseJobService {
 					SchedulerEvent prevent = null;
 					List<OPostponedReminder> prems = jobService.manager.getExpiredPostponedReminders(con, now);
 					for(OPostponedReminder prem : prems) {
-						prevent = jobService.manager.viewEvent(prem.getEventId());
+						prevent = jobService.manager.getSchedulerEvent(prem.getEventId());
 						handleReminder(con, prevent, now, prem.getRemindOn());
 						jobService.manager.deletePostponedReminder(con, prem.getEventId(), prem.getRemindOn());
 					}

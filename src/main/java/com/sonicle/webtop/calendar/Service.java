@@ -256,7 +256,6 @@ public class Service extends BaseService {
 		List<JsCalendarLkp> items = new ArrayList<>();
 		
 		try {
-			JsCalendarLkp jsCal = null;
 			for(CalendarRoot root : roots.values()) {
 				if(root instanceof MyCalendarRoot) {
 					for(OCalendar cal : manager.listCalendars()) {
@@ -266,7 +265,6 @@ public class Service extends BaseService {
 					for(CalendarFolder folder : manager.listIncomingCalendarFolders(root.getShareId())) {
 						if(!folder.getElsPerms().implies("CREATE")) continue;
 						items.add(new JsCalendarLkp(folder.getCalendar()));
-						items.add(jsCal);
 					}
 				}
 			}
@@ -405,7 +403,7 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
+				Payload<MapItem, JsSchedulerEvent.Update> pl = ServletUtils.getPayload(request, JsSchedulerEvent.Update.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
 				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);

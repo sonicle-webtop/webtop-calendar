@@ -191,7 +191,7 @@ public class CalendarManager extends BaseServiceManager {
 			ownerToWildcardFolderShareCache.clear();
 			calendarToFolderShareCache.clear();
 			for(CalendarRoot root : listIncomingCalendarRoots()) {
-				ownerToRootShareCache.put(pid, root.getShareId());
+				ownerToRootShareCache.put(root.getOwnerProfileId(), root.getShareId());
 				for(OShare folder : core.listIncomingShareFolders(pid, root.getShareId(), getServiceId(), RESOURCE_CALENDAR)) {
 					if(folder.hasWildcard()) {
 						UserProfile.Id ownerId = core.userUidToProfileId(folder.getUserUid());
@@ -272,9 +272,9 @@ public class CalendarManager extends BaseServiceManager {
 		String shareId = ownerToRootShareId(ownerPid);
 		if(shareId == null) throw new WTException("ownerToRootShareId({0}) -> null", ownerPid);
 		CoreManager core = WT.getCoreManager(getRunContext());
-		if(!core.isPermittedOnShareRoot(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) {
-			throw new AuthException("");
-		}
+		if(core.isPermittedOnShareRoot(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
+		
+		throw new AuthException("Action not allowed on root share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
 	}
 	
 	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
@@ -296,7 +296,7 @@ public class CalendarManager extends BaseServiceManager {
 		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
 		if(core.isPermittedOnShareFolder(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
 		
-		throw new AuthException("");
+		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
 	}
 	
 	private void checkRightsOnCalendarFolderEls(int calendarId, String action) throws WTException {
@@ -317,7 +317,8 @@ public class CalendarManager extends BaseServiceManager {
 		String shareId = calendarToFolderShareId(calendarId);
 		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
 		if(core.isPermittedOnShareFolderEls(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
-		throw new AuthException("");
+		
+		throw new AuthException("Action not allowed on folderEls share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
 	}
 	
 	private UserProfile.Id findCalendarOwner(int calendarId) throws WTException {
@@ -430,7 +431,7 @@ public class CalendarManager extends BaseServiceManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarRoot(item.getProfileId(), "CREATE");
+			checkRightsOnCalendarRoot(item.getProfileId(), "MANAGE");
 			con = WT.getConnection(getManifest());
 			con.setAutoCommit(false);
 			CalendarDAO dao = CalendarDAO.getInstance();
@@ -490,10 +491,8 @@ public class CalendarManager extends BaseServiceManager {
 			//TODO: cancellare eventi collegati
 			
 		} catch(SQLException | DAOException ex) {
-			DbUtils.rollbackQuietly(con);
 			throw new WTException(ex, "DB error");
 		} catch(Exception ex) {
-			DbUtils.rollbackQuietly(con);
 			throw ex;
 		} finally {
 			DbUtils.closeQuietly(con);

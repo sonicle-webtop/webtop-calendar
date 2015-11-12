@@ -494,14 +494,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			items: [
 				me.getAction('editCalendar'),
 				me.getAction('deleteCalendar'),
-				'-',
 				me.getAction('addCalendar'),
-				me.getRef('uploaders', 'importEvents'),
 				'-',
 				me.getAction('viewAllCalendars'),
 				me.getAction('viewNoneCalendars'),
 				'-',
-				me.getAction('addEvent')
+				me.getAction('addEvent'),
+				me.getRef('uploaders', 'importEvents')
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
@@ -513,8 +512,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					me.getAction('editCalendar').setDisabled(!fr.UPDATE);
 					me.getAction('deleteCalendar').setDisabled(!fr.DELETE || rec.get('_builtIn'));
 					me.getAction('addCalendar').setDisabled(!rr.MANAGE);
-					me.getRef('uploaders', 'importEvents').setDisabled(!er.CREATE);
 					me.getAction('addEvent').setDisabled(!er.CREATE);
+					me.getRef('uploaders', 'importEvents').setDisabled(!er.CREATE);
 				}
 			}
 		}));
@@ -526,8 +525,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				'-',
 				me.getAction('deleteEvent'),
 				me.getAction('restoreEvent'),
-				'-',
 				me.getAction('addEvent'),
+				'-',
 				me.getAction('printEvents')
 				//TODO: azioni altri servizi?
 			],

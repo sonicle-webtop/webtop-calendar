@@ -73,9 +73,7 @@ public class JsSchedulerEvent {
 	public String notes = "";
 	public String url = "";
 	
-	public JsSchedulerEvent() {
-		
-	}
+	public JsSchedulerEvent() {}
 	
 	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
@@ -114,5 +112,13 @@ public class JsSchedulerEvent {
 		
 		folderName = calendar.getName();
 		_profileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();
+	}
+	
+	public static class Update {
+		public String id;
+		public String startDate;
+		public String endDate;
+		public String timezone;
+		public String title;
 	}
 }

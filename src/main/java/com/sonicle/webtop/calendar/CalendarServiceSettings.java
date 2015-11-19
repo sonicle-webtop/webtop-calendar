@@ -47,14 +47,18 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 	}
 	
 	public String getDefaultView() {
-		return getString(DEFAULT_PREFIX + CalendarUserSettings.VIEW, CalendarUserSettings.DEFAULT_VIEW);
+		return getString(DEFAULT_PREFIX + CalendarUserSettings.VIEW, "w5");
 	}
 	
 	public LocalTime getDefaultWorkdayStart() {
-		return getTime(DEFAULT_PREFIX + CalendarUserSettings.WORKDAY_START, CalendarUserSettings.DEFAULT_WORKDAY_START, "HH:mm");
+		return getTime(DEFAULT_PREFIX + CalendarUserSettings.WORKDAY_START, "09:00", "HH:mm");
 	}
 	
 	public LocalTime getDefaultWorkdayEnd() {
-		return getTime(DEFAULT_PREFIX + CalendarUserSettings.WORKDAY_END, CalendarUserSettings.DEFAULT_WORKDAY_END, "HH:mm");
+		return getTime(DEFAULT_PREFIX + CalendarUserSettings.WORKDAY_END, "18:00", "HH:mm");
+	}
+	
+	public boolean getDefaultReminderByEmail() {
+		return false;
 	}
 }

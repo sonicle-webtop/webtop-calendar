@@ -56,28 +56,24 @@ public class CalendarUserSettings extends BaseUserSettings {
 	 * Calendar view (d:day, w:week, w5:workweek, m:month)
 	 */
 	public static final String VIEW = "view";
-	public static final String DEFAULT_VIEW = "w5";
 	
 	/**
 	 * [string][default]
 	 * Workday hours start time
 	 */
 	public static final String WORKDAY_START = "workday.start";
-	public static final String DEFAULT_WORKDAY_START = "09:00";
 	
 	/**
 	 * [string][default]
 	 * Workday hours end time
 	 */
 	public static final String WORKDAY_END = "workday.end";
-	public static final String DEFAULT_WORKDAY_END = "18:00";
 	
 	/**
 	 * [boolean]
 	 * Workday hours end time
 	 */
 	public static final String REMINDER_BY_EMAIL = "reminder.byemail";
-	public static final Boolean DEFAULT_REMINDER_BY_EMAIL = false;
 	
 	/**
 	 * [string]
@@ -132,7 +128,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	}
 	
 	public Boolean getReminderByEmail() {
-		return getBoolean(REMINDER_BY_EMAIL, DEFAULT_REMINDER_BY_EMAIL);
+		return getBoolean(REMINDER_BY_EMAIL, css.getDefaultReminderByEmail());
 	}
 	
 	public boolean setReminderByEmail(Boolean value) {

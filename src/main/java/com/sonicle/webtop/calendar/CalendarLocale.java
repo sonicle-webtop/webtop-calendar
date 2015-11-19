@@ -38,9 +38,7 @@ package com.sonicle.webtop.calendar;
  * @author sergio
  */
 public class CalendarLocale {
-	
-	public static final String MY_CALENDARS = "mycalendars";
-	
+	public static final String CALENDARS_MY = "calendars.my";
     public static final String REMINDER_MINUTES = "reminder.minutes";
     public static final String REMINDER_HOURS = "reminder.hours";
 	public static final String PUB_SUMMARY = "pub.summary";
@@ -66,5 +64,4 @@ public class CalendarLocale {
 	public static final String PUB_DISCLAIMER = "pub.disclaimer";
 	public static final String PUB_NOTFOUND_TITLE = "pub.notfound.title";
 	public static final String PUB_NOTFOUND_MESSAGE = "pub.notfound.message";
-	
 }

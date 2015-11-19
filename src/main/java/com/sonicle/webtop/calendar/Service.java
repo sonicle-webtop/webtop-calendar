@@ -60,6 +60,7 @@ import com.sonicle.webtop.calendar.bol.js.JsCalendarLkp;
 import com.sonicle.webtop.calendar.bol.js.JsErpExportStart;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
+import com.sonicle.webtop.calendar.bol.js.JsSharing;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
@@ -70,10 +71,12 @@ import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.bol.js.JsSimple;
+import com.sonicle.webtop.core.bol.model.Sharing;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
@@ -108,6 +111,7 @@ public class Service extends BaseService {
 	public static final Logger logger = WT.getLogger(Service.class);
 	
 	private CalendarManager manager;
+	private CalendarServiceSettings ss;
 	private CalendarUserSettings us;
 	
 	public static final String ERP_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
@@ -121,7 +125,8 @@ public class Service extends BaseService {
 	public void initialize() {
 		UserProfile profile = getEnv().getProfile();
 		manager = new CalendarManager(getId(), getRunContext());
-		us = new CalendarUserSettings(profile.getDomainId(), profile.getUserId(), getId());
+		ss = new CalendarServiceSettings(getId());
+		us = new CalendarUserSettings(getId(), profile.getId(), ss);
 		
 		try {
 			initFolders();
@@ -137,6 +142,7 @@ public class Service extends BaseService {
 		checkedRoots.clear();
 		checkedRoots = null;
 		us = null;
+		ss = null;
 		manager = null;
 	}
 	
@@ -263,7 +269,7 @@ public class Service extends BaseService {
 					}
 				} else {
 					for(CalendarFolder folder : manager.listIncomingCalendarFolders(root.getShareId())) {
-						if(!folder.getElsPerms().implies("CREATE")) continue;
+						if(!folder.getElementsPerms().implies("CREATE")) continue;
 						items.add(new JsCalendarLkp(folder.getCalendar()));
 					}
 				}
@@ -272,6 +278,30 @@ public class Service extends BaseService {
 			
 		} catch(Exception ex) {
 			logger.error("Error in action LookupCalendarFolders", ex);
+			new JsonResult(false, "Error").printTo(out);
+		}
+	}
+	
+	public void processManageSharing(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		
+		try {
+			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			if(crud.equals(Crud.READ)) {
+				String id = ServletUtils.getStringParameter(request, "id", true);
+				
+				Sharing sharing = manager.getSharing(id);
+				String description = buildSharingPath(sharing);
+				new JsonResult(new JsSharing(sharing, description)).printTo(out);
+				
+			} else if(crud.equals(Crud.UPDATE)) {
+				Payload<MapItem, Sharing> pl = ServletUtils.getPayload(request, Sharing.class);
+				
+				manager.updateSharing(pl.data);
+				new JsonResult().printTo(out);
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Error in action ManageSharing", ex);
 			new JsonResult(false, "Error").printTo(out);
 		}
 	}
@@ -703,6 +733,31 @@ public class Service extends BaseService {
 		}
 	}
 	
+	private String buildSharingPath(Sharing sharing) throws WTException {
+		StringBuilder sb = new StringBuilder();
+		
+		// Root description part
+		CompositeId cid = new CompositeId().parse(sharing.getId());
+		if(roots.containsKey(cid.getToken(0))) {
+			CalendarRoot root = roots.get(cid.getToken(0));
+			if(root instanceof MyCalendarRoot) {
+				sb.append(lookupResource(CalendarLocale.CALENDARS_MY));
+			} else {
+				sb.append(root.getDescription());
+			}
+		}
+		
+		// Folder description part
+		if(sharing.getLevel() == 1) {
+			int calId = Integer.valueOf(cid.getToken(1));
+			OCalendar calendar = manager.getCalendar(calId);
+			sb.append("/");
+			sb.append((calendar != null) ? calendar.getName() : cid.getToken(1));
+		}
+		
+		return sb.toString();
+	}
+	
 	private List<CalendarRoot> getCheckedRoots() {
 		ArrayList<CalendarRoot> checked = new ArrayList<>();
 		for(CalendarRoot root : roots.values()) {
@@ -740,7 +795,7 @@ public class Service extends BaseService {
 	
 	private ExtTreeNode createRootNode(CalendarRoot root) {
 		if(root instanceof MyCalendarRoot) {
-			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.MY_CALENDARS), false, "wtcal-icon-root-my-xs").setExpanded(true);
+			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.CALENDARS_MY), false, "wtcal-icon-root-my-xs").setExpanded(true);
 		} else {
 			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), root.getDescription(), false, "wtcal-icon-root-incoming-xs");
 		}
@@ -767,7 +822,7 @@ public class Service extends BaseService {
 		node.put("_pid", cal.getProfileId().toString());
 		node.put("_rrights", rootPerms.toString());
 		node.put("_frights", folder.getPerms().toString());
-		node.put("_erights", folder.getElsPerms().toString());
+		node.put("_erights", folder.getElementsPerms().toString());
 		node.put("_calId", cal.getCalendarId());
 		node.put("_builtIn", cal.getBuiltIn());
 		node.put("_default", cal.getIsDefault());
@@ -779,9 +834,9 @@ public class Service extends BaseService {
 		
 		List<String> classes = new ArrayList<>();
 		if(cal.getIsDefault()) classes.add("wtcal-tree-default");
-		if(!folder.getElsPerms().implies("CREATE") 
-				&& !folder.getElsPerms().implies("UPDATE")
-				&& !folder.getElsPerms().implies("DELETE")) classes.add("wtcal-tree-readonly");
+		if(!folder.getElementsPerms().implies("CREATE") 
+				&& !folder.getElementsPerms().implies("UPDATE")
+				&& !folder.getElementsPerms().implies("DELETE")) classes.add("wtcal-tree-readonly");
 		node.setCls(StringUtils.join(classes, " "));
 		
 		node.setIconClass("wt-palette-" + cal.getHexColor());

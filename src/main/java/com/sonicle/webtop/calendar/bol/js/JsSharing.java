@@ -31,20 +31,54 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol.model;
+package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.core.bol.model.SharePermsFolder;
-import com.sonicle.webtop.core.bol.model.SharePermsElements;
+import com.sonicle.webtop.core.bol.model.Sharing;
+import java.util.ArrayList;
 
 /**
  *
  * @author malbinola
  */
-public class MyCalendarFolder extends CalendarFolder {
-	public static final String RIGHTS = "crud";
-
-	public MyCalendarFolder(String shareId, OCalendar calendar) {
-		super(shareId, SharePermsFolder.full(), SharePermsElements.full(), calendar);
+public class JsSharing {
+	public String id;
+	public int level;
+	public String description;
+	public ArrayList<RoleRights> rights;
+	
+	public JsSharing() {}
+	
+	public JsSharing(Sharing sharing, String description) {
+		id = sharing.getId();
+		level = sharing.getLevel();
+		this.description = description;
+		rights = new ArrayList<>();
+		for(Sharing.RoleRights rr : sharing.getRights()) {
+			rights.add(new RoleRights(rr));
+		}
+	}
+	
+	public static class RoleRights {
+		public String roleUid;
+		public Boolean rootManage;
+		public Boolean folderRead;
+		public Boolean folderUpdate;
+		public Boolean folderDelete;
+		public Boolean elementsCreate;
+		public Boolean elementsUpdate;
+		public Boolean elementsDelete;
+		
+		public RoleRights() {}
+		
+		public RoleRights(Sharing.RoleRights perms) {
+			roleUid = perms.roleUid;
+			rootManage = perms.rootManage;
+			folderRead = perms.folderRead;
+			folderUpdate = perms.folderUpdate;
+			folderDelete = perms.folderDelete;
+			elementsCreate = perms.elementsCreate;
+			elementsUpdate = perms.elementsUpdate;
+			elementsDelete = perms.elementsDelete;
+		}
 	}
 }

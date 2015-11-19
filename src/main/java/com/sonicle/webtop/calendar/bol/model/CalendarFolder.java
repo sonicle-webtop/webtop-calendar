@@ -36,7 +36,7 @@ package com.sonicle.webtop.calendar.bol.model;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.core.bol.model.ShareFolder;
 import com.sonicle.webtop.core.bol.model.SharePermsFolder;
-import com.sonicle.webtop.core.bol.model.SharePermsFolderEls;
+import com.sonicle.webtop.core.bol.model.SharePermsElements;
 
 /**
  *
@@ -44,7 +44,7 @@ import com.sonicle.webtop.core.bol.model.SharePermsFolderEls;
  */
 public class CalendarFolder extends ShareFolder {
 	
-	public CalendarFolder(String shareId, SharePermsFolder perms, SharePermsFolderEls elsPerms, OCalendar calendar) {
+	public CalendarFolder(String shareId, SharePermsFolder perms, SharePermsElements elsPerms, OCalendar calendar) {
 		super(shareId, perms, elsPerms, calendar);
 	}
 

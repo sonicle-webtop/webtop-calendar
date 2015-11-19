@@ -56,7 +56,6 @@ import org.slf4j.Logger;
  * @author malbinola
  */
 public class UserOptionsService extends BaseUserOptionsService {
-	
 	public static final Logger logger = WT.getLogger(UserOptionsService.class);
 	
 	public void processUserOptions(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
@@ -64,7 +63,8 @@ public class UserOptionsService extends BaseUserOptionsService {
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			CalendarUserSettings cus = new CalendarUserSettings(getTargetDomainId(), getTargetUserId(), getServiceId());
+			CalendarServiceSettings css = new CalendarServiceSettings(getServiceId());
+			CalendarUserSettings cus = new CalendarUserSettings(getServiceId(), getTargetProfileId(), css);
 			DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 			
 			if(crud.equals(Crud.READ)) {

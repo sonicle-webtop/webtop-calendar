@@ -44,31 +44,29 @@ import org.joda.time.LocalTime;
  * @author malbinola
  */
 public class CalendarUserSettings extends BaseUserSettings {
+	private CalendarServiceSettings css;
 	
-	public CalendarUserSettings(UserProfile.Id profileId, String serviceId) {
-		super(profileId, serviceId);
+	public CalendarUserSettings(String serviceId, UserProfile.Id profileId, CalendarServiceSettings css) {
+		super(serviceId, profileId);
+		this.css = css;
 	}
 	
-	public CalendarUserSettings(String domainId, String userId, String serviceId) {
-        super(domainId, userId, serviceId);
-    }
-	
 	/**
-	 * [string]
+	 * [string][default]
 	 * Calendar view (d:day, w:week, w5:workweek, m:month)
 	 */
 	public static final String VIEW = "view";
 	public static final String DEFAULT_VIEW = "w5";
 	
 	/**
-	 * [string]
+	 * [string][default]
 	 * Workday hours start time
 	 */
 	public static final String WORKDAY_START = "workday.start";
 	public static final String DEFAULT_WORKDAY_START = "09:00";
 	
 	/**
-	 * [string]
+	 * [string][default]
 	 * Workday hours end time
 	 */
 	public static final String WORKDAY_END = "workday.end";
@@ -101,7 +99,10 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	
 	public String getCalendarView() {
-		return getString(VIEW, DEFAULT_VIEW);
+		String value = getString(VIEW, null);
+		if(value != null) return value;
+		return css.getDefaultView();
+		//return getString(VIEW, DEFAULT_VIEW);
 	}
 	
 	public boolean setCalendarView(String value) {
@@ -109,7 +110,10 @@ public class CalendarUserSettings extends BaseUserSettings {
 	}
 	
 	public LocalTime getWorkdayStart() {
-		return getTime(WORKDAY_START, DEFAULT_WORKDAY_START, "HH:mm");
+		LocalTime value = getTime(WORKDAY_START, (LocalTime)null, "HH:mm");
+		if(value != null) return value;
+		return css.getDefaultWorkdayStart();
+		//return getTime(WORKDAY_START, DEFAULT_WORKDAY_START, "HH:mm");
 	}
 	
 	public boolean setWorkdayStart(LocalTime value) {
@@ -117,7 +121,10 @@ public class CalendarUserSettings extends BaseUserSettings {
 	}
 	
 	public LocalTime getWorkdayEnd() {
-		return getTime(WORKDAY_END, DEFAULT_WORKDAY_END, "HH:mm");
+		LocalTime value = getTime(WORKDAY_END, (LocalTime)null, "HH:mm");
+		if(value != null) return value;
+		return css.getDefaultWorkdayEnd();
+		//return getTime(WORKDAY_END, DEFAULT_WORKDAY_END, "HH:mm");
 	}
 	
 	public boolean setWorkdayEnd(LocalTime value) {

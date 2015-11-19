@@ -31,20 +31,30 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol.model;
+package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.core.bol.model.SharePermsFolder;
-import com.sonicle.webtop.core.bol.model.SharePermsElements;
+import com.sonicle.webtop.core.sdk.BaseServiceSettings;
+import org.joda.time.LocalTime;
 
 /**
  *
  * @author malbinola
  */
-public class MyCalendarFolder extends CalendarFolder {
-	public static final String RIGHTS = "crud";
+public class CalendarServiceSettings extends BaseServiceSettings {
 
-	public MyCalendarFolder(String shareId, OCalendar calendar) {
-		super(shareId, SharePermsFolder.full(), SharePermsElements.full(), calendar);
+	public CalendarServiceSettings(String serviceId) {
+		super(serviceId, "*");
+	}
+	
+	public String getDefaultView() {
+		return getString(DEFAULT_PREFIX + CalendarUserSettings.VIEW, CalendarUserSettings.DEFAULT_VIEW);
+	}
+	
+	public LocalTime getDefaultWorkdayStart() {
+		return getTime(DEFAULT_PREFIX + CalendarUserSettings.WORKDAY_START, CalendarUserSettings.DEFAULT_WORKDAY_START, "HH:mm");
+	}
+	
+	public LocalTime getDefaultWorkdayEnd() {
+		return getTime(DEFAULT_PREFIX + CalendarUserSettings.WORKDAY_END, CalendarUserSettings.DEFAULT_WORKDAY_END, "HH:mm");
 	}
 }

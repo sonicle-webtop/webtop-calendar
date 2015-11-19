@@ -53,7 +53,7 @@ public class Controller extends BaseController {
 	}
 	
 	@Override
-	public void initializeUser(UserProfile.Id profileId) throws Exception {
+	public void initializeProfile(UserProfile.Id profileId) throws Exception {
 		Connection con = null;
 		
 		try {
@@ -87,7 +87,7 @@ public class Controller extends BaseController {
 	}
 	
 	@Override
-	public void cleanupUser(UserProfile.Id profileId, boolean deep) {
+	public void cleanupProfile(UserProfile.Id profileId, boolean deep) {
 		//TODO: implementare cleanup utente
 	}
 }

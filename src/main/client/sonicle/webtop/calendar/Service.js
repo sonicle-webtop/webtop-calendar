@@ -34,7 +34,6 @@
 Ext.define('Sonicle.webtop.calendar.Service', {
 	extend: 'WT.sdk.Service',
 	requires: [
-		//'Sonicle.webtop.calendar.Tool',
 		'Sonicle.calendar.Panel',
 		'Sonicle.MultiCalendar',
 		'Sonicle.grid.column.Icon',
@@ -46,8 +45,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.calendar.data.Events',
 		'Sonicle.calendar.data.MemoryCalendarStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
 		'Sonicle.calendar.data.Calendars', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
-		'Sonicle.calendar.data.MemoryEventStore',
-		'Sonicle.webtop.calendar.view.Calendar'
+		'Sonicle.calendar.data.MemoryEventStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
+		'Sonicle.webtop.calendar.view.Calendar',
+		'Sonicle.webtop.calendar.view.Sharing'
 	],
 	
 	init: function() {
@@ -158,7 +158,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					hideHeaders: true,
 					listeners: {
 						checkchange: function(n, ck) {
-							me._showHideCal(n, ck);
+							me._showHideFolder(n, ck);
 						},
 						itemcontextmenu: function(s, rec, itm, i, e) {
 							if(rec.get('_type') === 'root') {
@@ -380,6 +380,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.changeView('m');
 			}
 		});
+		me.addAction('editSharing', {
+			text: WT.res('sharing.tit'),
+			iconCls: WTF.cssIconCls(WT.XID, 'sharing', 'xs'),
+			handler: function() {
+				var node = me.getSelectedNode();
+				if(node) me.editShare(node.getId());
+			}
+		});
 		me.addAction('addCalendar', {
 			handler: function() {
 				var node = me.getSelectedFolder();
@@ -422,13 +430,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('viewAllCalendars', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				me._showHideAllCals(me.getSelectedRootFolder(), true);
+				me._showHideAllFolders(me.getSelectedRootFolder(), true);
 			}
 		});
 		me.addAction('viewNoneCalendars', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				me._showHideAllCals(me.getSelectedRootFolder(), false);
+				me._showHideAllFolders(me.getSelectedRootFolder(), false);
 			}
 		});
 		me.addAction('addEvent', {
@@ -477,7 +485,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addRef('cxmRootFolder', Ext.create({
 			xtype: 'menu',
 			items: [
-				me.getAction('addCalendar')
+				me.getAction('addCalendar'),
+				'-',
+				me.getAction('editSharing')
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
@@ -485,6 +495,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					var rec = WT.getContextMenuData().folder,
 							rr = me.toRightsObj(rec.get('_rrights'));
 					me.getAction('addCalendar').setDisabled(!rr.MANAGE);
+					me.getAction('editSharing').setDisabled(!rr.MANAGE);
 				}
 			}
 		}));
@@ -495,6 +506,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('editCalendar'),
 				me.getAction('deleteCalendar'),
 				me.getAction('addCalendar'),
+				'-',
+				me.getAction('editSharing'),
 				'-',
 				me.getAction('viewAllCalendars'),
 				me.getAction('viewNoneCalendars'),
@@ -512,6 +525,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					me.getAction('editCalendar').setDisabled(!fr.UPDATE);
 					me.getAction('deleteCalendar').setDisabled(!fr.DELETE || rec.get('_builtIn'));
 					me.getAction('addCalendar').setDisabled(!rr.MANAGE);
+					me.getAction('editSharing').setDisabled(!rr.MANAGE);
 					me.getAction('addEvent').setDisabled(!er.CREATE);
 					me.getRef('uploaders', 'importEvents').setDisabled(!er.CREATE);
 				}
@@ -546,6 +560,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}));
 	},
 	
+	/**
+	 * @private
+	 */
 	toRightsObj: function(rights) {
 		var iof = function(s,v) { return s.indexOf(v)!==-1; },
 				obj = {};
@@ -606,6 +623,19 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		} else if(direction === 1) {
 			mc.setNextDay();
 		}
+	},
+	
+	editShare: function(id) {
+		var me = this,
+				vw = WT.createView(me.ID, 'view.Sharing');
+		
+		vw.show(false, function() {
+			vw.getComponent(0).beginEdit({
+				data: {
+					id: id
+				}
+			});
+		});
 	},
 	
 	addCalendar: function(domainId, userId) {
@@ -770,6 +800,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	/**
 	 * @private
+	 * Returns selected tree node.
+	 */
+	getSelectedNode: function() {
+		var tree = this.getRef('folderstree'),
+				sel = tree.getSelection();
+		return (sel.length === 0) ? null : sel[0];
+	},
+	
+	/**
+	 * @private
 	 * Returns selected root folder. If force param is 'true', this method 
 	 * returns a default value if no selection is available.
 	 * @param {Boolean} [force=false] 'true' to always return a value.
@@ -838,21 +878,33 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
+	/*
+	 * @private
+	 */
 	_activateMain: function(id) {
 		this.getMainComponent().getLayout().setActiveItem(id);
 	},
 	
+	/*
+	 * @private
+	 */
 	_isMainActive: function(id) {
 		return (this.getMainComponent().getLayout().getActiveItem() === id);
 	},
 	
-	_showHideCal: function(node, show) {
+	/*
+	 * @private
+	 */
+	_showHideFolder: function(node, show) {
 		node.beginEdit();
 		node.set('_visible', show);
 		node.endEdit();
 	},
 	
-	_showHideAllCals: function(parent, show) {
+	/*
+	 * @private
+	 */
+	_showHideAllFolders: function(parent, show) {
 		var me = this,
 				store = parent.getTreeStore();
 		
@@ -860,7 +912,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		parent.cascadeBy(function(n) {
 			if(n !== parent) {
 				n.set('checked', show);
-				me._showHideCal(n, show);
+				me._showHideFolder(n, show);
 			}
 		});
 		store.resumeAutoSync();
@@ -868,7 +920,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	print: function() {
-		
+		//TODO: completare stampa
 		Ext.create('Ext.XTemplate',
 			'<table border="0" cellspacing="0" width="100%">',
 			

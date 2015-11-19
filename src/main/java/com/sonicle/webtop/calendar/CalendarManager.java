@@ -75,9 +75,10 @@ import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseServiceManager;
 import com.sonicle.webtop.core.RunContext;
 import com.sonicle.webtop.core.bol.Owner;
-import com.sonicle.webtop.core.bol.model.IncomingRootShare;
+import com.sonicle.webtop.core.bol.model.IncomingShareRoot;
+import com.sonicle.webtop.core.bol.model.Sharing;
 import com.sonicle.webtop.core.bol.model.SharePermsFolder;
-import com.sonicle.webtop.core.bol.model.SharePermsFolderEls;
+import com.sonicle.webtop.core.bol.model.SharePermsElements;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.DAOException;
 import com.sonicle.webtop.core.sdk.AuthException;
@@ -272,7 +273,7 @@ public class CalendarManager extends BaseServiceManager {
 		String shareId = ownerToRootShareId(ownerPid);
 		if(shareId == null) throw new WTException("ownerToRootShareId({0}) -> null", ownerPid);
 		CoreManager core = WT.getCoreManager(getRunContext());
-		if(core.isPermittedOnShareRoot(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
+		if(core.isShareRootPermitted(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
 		
 		throw new AuthException("Action not allowed on root share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
 	}
@@ -288,18 +289,18 @@ public class CalendarManager extends BaseServiceManager {
 		CoreManager core = WT.getCoreManager(getRunContext());
 		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
 		if(wildcardShareId != null) {
-			if(core.isPermittedOnShareFolder(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, wildcardShareId)) return;
+			if(core.isShareFolderPermitted(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, wildcardShareId)) return;
 		}
 		
 		// Checks rights on calendar instance
 		String shareId = calendarToFolderShareId(calendarId);
 		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if(core.isPermittedOnShareFolder(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
+		if(core.isShareFolderPermitted(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
 		
 		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
 	}
 	
-	private void checkRightsOnCalendarFolderEls(int calendarId, String action) throws WTException {
+	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
 		if(WT.isWebTopAdmin(getRunProfileId())) return;
 		
 		// Skip rights check if running user is resource's owner
@@ -310,15 +311,15 @@ public class CalendarManager extends BaseServiceManager {
 		CoreManager core = WT.getCoreManager(getRunContext());
 		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
 		if(wildcardShareId != null) {
-			if(core.isPermittedOnShareFolderEls(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, wildcardShareId)) return;
+			if(core.isShareElementsPermitted(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, wildcardShareId)) return;
 		}
 		
 		// Checks rights on calendar instance
 		String shareId = calendarToFolderShareId(calendarId);
 		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if(core.isPermittedOnShareFolderEls(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
+		if(core.isShareElementsPermitted(getRunProfileId(), getServiceId(), RESOURCE_CALENDAR, action, shareId)) return;
 		
-		throw new AuthException("Action not allowed on folderEls share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
+		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
 	}
 	
 	private UserProfile.Id findCalendarOwner(int calendarId) throws WTException {
@@ -343,8 +344,8 @@ public class CalendarManager extends BaseServiceManager {
 		ArrayList<CalendarRoot> roots = new ArrayList();
 		HashSet<String> hs = new HashSet<>();
 		
-		List<IncomingRootShare> shares = core.listIncomingShareRoots(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR);
-		for(IncomingRootShare share : shares) {
+		List<IncomingShareRoot> shares = core.listIncomingShareRoots(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR);
+		for(IncomingShareRoot share : shares) {
 			SharePermsRoot perms = core.getShareRootPermissions(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, share.getShareId());
 			CalendarRoot root = new CalendarRoot(share, perms);
 			if(hs.contains(root.getShareId())) continue; // Avoid duplicates ??????????????????????
@@ -374,12 +375,12 @@ public class CalendarManager extends BaseServiceManager {
 			
 			for(OCalendar cal : cals) {
 				SharePermsFolder fperms = core.getShareFolderPermissions(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, share.getShareId().toString());
-				SharePermsFolderEls eperms = core.getShareFolderElsPermissions(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, share.getShareId().toString());
+				SharePermsElements eperms = core.getShareElementsPermissions(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, share.getShareId().toString());
 				
 				if(folders.containsKey(cal.getCalendarId())) {
 					CalendarFolder folder = folders.get(cal.getCalendarId());
 					folder.getPerms().merge(fperms);
-					folder.getElsPerms().merge(eperms);
+					folder.getElementsPerms().merge(eperms);
 				} else {
 					folders.put(cal.getCalendarId(), new CalendarFolder(share.getShareId().toString(), fperms, eperms, cal));
 				}
@@ -387,6 +388,72 @@ public class CalendarManager extends BaseServiceManager {
 		}
 		return folders.values();
 	}
+	
+	public Sharing getSharing(String shareId) throws WTException {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		return core.getSharing(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, shareId);
+	}
+	
+	public void updateSharing(Sharing sharing) throws WTException {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		core.updateSharing(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, sharing);
+	}
+	
+	/*
+	public Object getCalendarRootShare() throws WTException {
+		return getCalendarShare(0);
+	}
+	
+	public Object getCalendarShare(int calendarId) throws WTException {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		
+		OShare root = core.getShare(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, null);
+		List<String> roleUids = null;
+		if(root != null) {
+			String permRes = AuthResourceShare.buildFolderPermissionResource(RESOURCE_CALENDAR);
+			roleUids = core.listRolesByPermission(getServiceId(), permRes);
+		} else {
+			roleUids = new ArrayList<>();
+		}
+		
+		for(String roleUid : roleUids) {
+			List<ORolePermission> ddd = core.getS
+			core.listP
+			
+			
+			
+			UserProfile.Id pid = core.userUidToProfileId(roleUid);
+			core.getShareRootPermissions(null, roleUid, roleUid, roleUid)
+			
+			core.getShareRootPermissions()
+			
+			
+		}
+				
+		
+		
+		
+		
+		if(calendarId == 0) {
+			
+		
+		} else {
+			OShare folder = core.getShare(getTargetProfileId(), getServiceId(), RESOURCE_CALENDAR, String.valueOf(calendarId));
+			if(folder != null) {
+				
+				
+			} else {
+				
+				
+			}
+		}
+	}
+	*/
+	
+	
+	
+	
+	
 	
 	public UserProfile.Id getCalendarOwner(int calendarId) throws WTException {
 		return calendarToOwner(calendarId);
@@ -695,7 +762,7 @@ public class CalendarManager extends BaseServiceManager {
 			
 			OEvent original = edao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarFolderEls(original.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarElements(original.getCalendarId(), "UPDATE");
 			
 			VSchedulerEvent se = edao.view(con, ekey.eventId);
 			se.updateCalculatedFields(); // TODO: Serve??????????????????????
@@ -736,7 +803,7 @@ public class CalendarManager extends BaseServiceManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarFolderEls(event.getCalendarId(), "CREATE");
+			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
 			con = WT.getConnection(getManifest());
 			con.setAutoCommit(false);
 			
@@ -767,7 +834,7 @@ public class CalendarManager extends BaseServiceManager {
 			
 			OEvent original = edao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarFolderEls(original.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarElements(original.getCalendarId(), "UPDATE");
 			
 			String type = guessEventType(ekey, original);
 			if(type.equals(EVENT_NORMAL)) {
@@ -838,7 +905,7 @@ public class CalendarManager extends BaseServiceManager {
 			EventKey ekey = new EventKey(eventKey);
 			Event event = getEvent(eventKey);
 			if(event == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarFolderEls(event.getCalendarId(), "CREATE");
+			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
 			
 			event.setStartDate(startDate);
 			event.setEndDate(endDate);
@@ -871,7 +938,7 @@ public class CalendarManager extends BaseServiceManager {
 			
 			OEvent original = evtdao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarFolderEls(original.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarElements(original.getCalendarId(), "UPDATE");
 			
 			String type = guessEventType(ekey, original);
 			if(type.equals(EVENT_NORMAL) || type.equals(EVENT_BROKEN)) {
@@ -914,7 +981,7 @@ public class CalendarManager extends BaseServiceManager {
 			
 			OEvent original = evtdao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarFolderEls(original.getCalendarId(), "DELETE");
+			checkRightsOnCalendarElements(original.getCalendarId(), "DELETE");
 			
 			String type = guessEventType(ekey, original);
 			if(type.equals(EVENT_NORMAL)) {

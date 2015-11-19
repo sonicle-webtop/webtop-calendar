@@ -41,12 +41,15 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	],
 	
 	dockableConfig: {
-		title: '@calendar.tit',
+		title: '{calendar.tit}',
 		iconCls: 'wtcal-icon-calendar-xs',
 		width: 360,
 		height: 400
 	},
-	model: 'Sonicle.webtop.calendar.model.Calendar',
+	fieldTitle: 'name',
+	modelName: 'Sonicle.webtop.calendar.model.Calendar',
+	
+	/*
 	viewModel: {
 		formulas: {
 			visibility: WTF.radioGroupBind('record', 'isPrivate', 'visibility'),
@@ -56,23 +59,28 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 			sync: WTF.checkboxBind('record', 'sync')
 		}
 	},
+	*/
+	
+	constructor: function(config) {
+		var me = this;
+		me.callParent([config]);
+		
+	},
 	
 	initComponent: function() {
 		var me = this;
 		me.callParent(arguments);
 		
-		me.add(me.addRef('main', Ext.create({
+		me.add({
 			region: 'center',
-			xtype: 'form',
-			layout: 'anchor',
+			xtype: 'wtfieldspanel',
 			modelValidation: true,
-			bodyPadding: 5,
 			defaults: {
 				labelWidth: 100
 			},
 			items: [{
 				xtype: 'textfield',
-				itemId: 'fldname',
+				reference: 'fldname',
 				bind: '{record.name}',
 				fieldLabel: me.mys.res('calendar.fld-name.lbl'),
 				anchor: '100%'
@@ -153,16 +161,14 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 				hideEmptyLabel: false,
 				boxLabel: me.mys.res('calendar.fld-sync.lbl')
 			}]
-		})));
+		});
 		me.on('viewload', me.onViewLoad);
 	},
 	
 	onViewLoad: function(s, success) {
 		if(!success) return;
-		var me = this,
-				main = me.getRef('main');
-		
-		main.getComponent('fldname').focus(true);
+		var me = this;
+		me.lref('fldname').focus(true);
 	}
 });
 

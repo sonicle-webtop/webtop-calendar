@@ -33,7 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.core.bol.model.IncomingRootShare;
+import com.sonicle.webtop.core.bol.model.IncomingShareRoot;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.bol.model.ShareRoot;
 import com.sonicle.webtop.core.sdk.UserProfile;
@@ -48,7 +48,7 @@ public class CalendarRoot extends ShareRoot {
 		super(shareId, perms, ownerProfileId, description);
 	}
 	
-	public CalendarRoot(IncomingRootShare share, SharePermsRoot perms) {
+	public CalendarRoot(IncomingShareRoot share, SharePermsRoot perms) {
 		super(share, perms);
 	}
 }

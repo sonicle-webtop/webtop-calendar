@@ -195,7 +195,7 @@ public class PublicService extends BasePublicService {
 	
 	private String buildWhenString(Event se) {
 		UserProfile.Id profileId = new UserProfile.Id(se.getCalendarProfileId());
-		CoreUserSettings cus = new CoreUserSettings(profileId.getDomainId(), profileId.getUserId());
+		CoreUserSettings cus = new CoreUserSettings(profileId);
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
 		DateTimeZone etz = DateTimeZone.forID(se.getTimezone());
 		DateTimeFormatter dtFmt = DateTimeUtils.createFormatter(pattern, etz);

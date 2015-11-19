@@ -1,5 +1,5 @@
 /*
- * WebTop Services is a Web Application framework developed by Sonicle S.r.l.
+ * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -27,10 +27,24 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
- * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2014 Sonicle S.r.l.".
+ * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
+ * feasible for technical reasons, the Appropriate Legal Notices must display
+ * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.view.UserOptionsC', {
-	extend: 'WT.sdk.UserOptionsController'
+Ext.define('Sonicle.webtop.calendar.model.Sharing', {
+	extend: 'WT.sdk.model.Sharing',
+	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageSharing', 'data', {
+		writer: {
+			type: 'sojson',
+			writeAssociations: true
+		}
+	}),
+	
+	field:[
+		WTF.roField('description', 'string')
+	],
+	hasMany: [{
+		name: 'rights',
+		model: 'Sonicle.webtop.core.sdk.model.SharingRoleRights'
+	}]
 });

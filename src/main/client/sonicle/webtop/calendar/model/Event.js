@@ -45,7 +45,6 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	}),
 	
 	identifier: 'negativestring',
-	//identifier: 'negative',
 	idProperty: 'id',
 	fields: [
 		WTF.field('id', 'string', false),
@@ -122,8 +121,8 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
 	extend: 'WT.model.Base',
 	
-	idProperty: 'attendeeId',
 	identifier: 'negativestring',
+	idProperty: 'attendeeId',
 	fields: [
 		WTF.field('_fk', 'string', true, {
 			reference: {

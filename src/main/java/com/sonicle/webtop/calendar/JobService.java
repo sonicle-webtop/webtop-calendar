@@ -59,12 +59,14 @@ import org.slf4j.Logger;
 public class JobService extends BaseJobService {
 	private static final Logger logger = WT.getLogger(JobService.class);
 	
+	CalendarServiceSettings css;
 	CalendarUserSettings cus;
 	CalendarManager manager;
 	
 	@Override
 	public void initialize() {
-		cus = new CalendarUserSettings("*", "*", getId());
+		css = new CalendarServiceSettings(getId());
+		cus = new CalendarUserSettings(getId(), new UserProfile.Id("*", "*"), css);
 		manager = new CalendarManager(getId(), getRunContext());
 	}
 	
@@ -155,7 +157,7 @@ public class JobService extends BaseJobService {
 				if(notifyByEmailCache.containsKey(profileId.toString())) {
 					notifyByEmail = notifyByEmailCache.get(profileId.toString());
 				} else {
-					CalendarUserSettings cus = new CalendarUserSettings(profileId, jobService.getId());
+					CalendarUserSettings cus = new CalendarUserSettings(jobService.getId(), profileId, jobService.css);
 					notifyByEmail = cus.getReminderByEmail();
 					notifyByEmailCache.put(profileId.toString(), notifyByEmail);
 				}

@@ -60,16 +60,16 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	],
 	
 	dockableConfig: {
-		title: '@event.tit',
+		title: '{event.tit}',
 		iconCls: 'wtcal-icon-event-xs',
 		width: 650,
 		height: 510
 	},
 	confirm: 'yn',
 	autoToolbar: false,
-	model: 'Sonicle.webtop.calendar.model.Event',
+	fieldTitle: 'title',
+	modelName: 'Sonicle.webtop.calendar.model.Event',
 	
-	//session: true,
 	viewModel: {
 		formulas: {
 			startDate: {
@@ -1107,11 +1107,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					proxy.setExtraParams(Ext.apply(proxy.getExtraParams(), {
 						target: target
 					}));
-					me.doSave(true);
+					me.saveView(true);
 				}
 			}, me);
 		} else {
-			me.doSave(true);
+			me.saveView(true);
 		}
 	},
 	

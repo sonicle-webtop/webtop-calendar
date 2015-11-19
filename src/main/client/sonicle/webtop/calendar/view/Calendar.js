@@ -49,22 +49,21 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	fieldTitle: 'name',
 	modelName: 'Sonicle.webtop.calendar.model.Calendar',
 	
-	/*
-	viewModel: {
-		formulas: {
-			visibility: WTF.radioGroupBind('record', 'isPrivate', 'visibility'),
-			showme: WTF.radioGroupBind('record', 'busy', 'showme'),
-			isDefault: WTF.checkboxBind('record', 'isDefault'),
-			invitation: WTF.checkboxBind('record', 'invitation'),
-			sync: WTF.checkboxBind('record', 'sync')
-		}
-	},
-	*/
-	
 	constructor: function(config) {
 		var me = this;
-		me.callParent([config]);
+		me.visibilityName = Ext.id(null, 'visibility-');
+		me.showmeName = Ext.id(null, 'showme-');
 		
+		me.config.viewModel = {
+			formulas: {
+				visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
+				showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
+				isDefault: WTF.checkboxBind('record', 'isDefault'),
+				invitation: WTF.checkboxBind('record', 'invitation'),
+				sync: WTF.checkboxBind('record', 'sync')
+			}
+		};
+		me.callParent([config]);
 	},
 	
 	initComponent: function() {
@@ -107,17 +106,17 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 				},
 				layout: 'hbox',
 				defaults: {
-					name: 'visibility',
+					name: me.visibilityName,
 					margin: '0 20 0 0'
 				},
-				fieldLabel: me.mys.res('calendar.fld-visibility.lbl'),
 				items: [{
 					inputValue: false,
 					boxLabel: me.mys.res('calendar.fld-visibility.default')
 				}, {
 					inputValue: true,
 					boxLabel: me.mys.res('calendar.fld-visibility.private')
-				}]
+				}],
+				fieldLabel: me.mys.res('calendar.fld-visibility.lbl')
 			}, {
 				xtype: 'radiogroup',
 				bind: {
@@ -125,17 +124,17 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 				},
 				layout: 'hbox',
 				defaults: {
-					name: 'showme',
+					name: me.showmeName,
 					margin: '0 20 0 0'
 				},
-				fieldLabel: me.mys.res('calendar.fld-showme.lbl'),
 				items: [{
 					inputValue: false,
 					boxLabel: me.mys.res('calendar.fld-showme.available')
 				}, {
 					inputValue: true,
 					boxLabel: me.mys.res('calendar.fld-showme.busy')
-				}]
+				}],
+				fieldLabel: me.mys.res('calendar.fld-showme.lbl')
 			}, {
 				xtype: 'combo',
 				bind: '{record.reminder}',

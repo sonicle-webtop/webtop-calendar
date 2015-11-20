@@ -41,7 +41,6 @@ import java.util.ArrayList;
  * @author malbinola
  */
 public class JsAttendee {
-	
 	public String _fk;
 	public String attendeeId;
 	public String recipient;

@@ -98,7 +98,6 @@ public class CalendarUserSettings extends BaseUserSettings {
 		String value = getString(VIEW, null);
 		if(value != null) return value;
 		return css.getDefaultView();
-		//return getString(VIEW, DEFAULT_VIEW);
 	}
 	
 	public boolean setCalendarView(String value) {
@@ -109,7 +108,6 @@ public class CalendarUserSettings extends BaseUserSettings {
 		LocalTime value = getTime(WORKDAY_START, (LocalTime)null, "HH:mm");
 		if(value != null) return value;
 		return css.getDefaultWorkdayStart();
-		//return getTime(WORKDAY_START, DEFAULT_WORKDAY_START, "HH:mm");
 	}
 	
 	public boolean setWorkdayStart(LocalTime value) {
@@ -120,7 +118,6 @@ public class CalendarUserSettings extends BaseUserSettings {
 		LocalTime value = getTime(WORKDAY_END, (LocalTime)null, "HH:mm");
 		if(value != null) return value;
 		return css.getDefaultWorkdayEnd();
-		//return getTime(WORKDAY_END, DEFAULT_WORKDAY_END, "HH:mm");
 	}
 	
 	public boolean setWorkdayEnd(LocalTime value) {

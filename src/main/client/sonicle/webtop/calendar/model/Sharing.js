@@ -42,9 +42,17 @@ Ext.define('Sonicle.webtop.calendar.model.Sharing', {
 	
 	field:[
 		WTF.roField('description', 'string')
-	],
-	hasMany: [{
-		name: 'rights',
-		model: 'Sonicle.webtop.core.sdk.model.SharingRoleRights'
-	}]
+	]
+});
+Ext.define('Sonicle.webtop.calendar.model.SharingRights', {
+	extend: 'WT.sdk.model.SharingRights',
+	
+	fields: [
+		WTF.field('_fk', 'string', true, {
+			reference: {
+				parent: 'Sonicle.webtop.calendar.model.Sharing',
+				inverse: 'rights'
+			}
+		})
+	]
 });

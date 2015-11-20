@@ -54,11 +54,12 @@ public class JsSharing {
 		this.description = description;
 		rights = new ArrayList<>();
 		for(Sharing.RoleRights rr : sharing.getRights()) {
-			rights.add(new RoleRights(rr));
+			rights.add(new RoleRights(id, rr));
 		}
 	}
 	
 	public static class RoleRights {
+		public String _fk;
 		public String roleUid;
 		public Boolean rootManage;
 		public Boolean folderRead;
@@ -70,7 +71,8 @@ public class JsSharing {
 		
 		public RoleRights() {}
 		
-		public RoleRights(Sharing.RoleRights perms) {
+		public RoleRights(String _fk, Sharing.RoleRights perms) {
+			this._fk = _fk;
 			roleUid = perms.roleUid;
 			rootManage = perms.rootManage;
 			folderRead = perms.folderRead;

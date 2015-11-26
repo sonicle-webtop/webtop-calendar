@@ -124,9 +124,9 @@ public class Service extends BaseService {
 	@Override
 	public void initialize() {
 		UserProfile profile = getEnv().getProfile();
-		manager = new CalendarManager(getId(), getRunContext());
-		ss = new CalendarServiceSettings(getId());
-		us = new CalendarUserSettings(getId(), profile.getId(), ss);
+		manager = new CalendarManager(getRunContext());
+		ss = new CalendarServiceSettings(SERVICE_ID);
+		us = new CalendarUserSettings(SERVICE_ID, profile.getId(), ss);
 		
 		try {
 			initFolders();
@@ -344,11 +344,9 @@ public class Service extends BaseService {
 	}
 	
 	public void processGetSchedulerDates(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
 		ArrayList<JsSchedulerEventDate> items = new ArrayList<>();
 		
 		try {
-			con = getConnection();
 			UserProfile up = getEnv().getProfile();
 			DateTimeZone utz = up.getTimeZone();
 			DateTimeFormatter ymdZoneFmt = DateTimeUtils.createYmdFormatter(utz);
@@ -374,17 +372,13 @@ public class Service extends BaseService {
 			logger.error("Error in action GetSchedulerDates", ex);
 			new JsonResult(false, "Error").printTo(out);
 			
-		} finally {
-			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	public void processManageEventsScheduler(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
 		ArrayList<JsSchedulerEvent> items = new ArrayList<>();
 		
 		try {
-			con = getConnection();
 			UserProfile up = getEnv().getProfile();
 			DateTimeZone utz = up.getTimeZone();
 			
@@ -475,10 +469,7 @@ public class Service extends BaseService {
 			
 		} catch(Exception ex) {
 			logger.error("Error in action ManageEventsScheduler", ex);
-			new JsonResult(false, "Error").printTo(out);
-			
-		} finally {
-			DbUtils.closeQuietly(con);
+			new JsonResult(false, "Error").printTo(out);	
 		}
 	}
 	

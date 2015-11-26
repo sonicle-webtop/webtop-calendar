@@ -38,18 +38,20 @@ import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.core.RunContext;
 import com.sonicle.webtop.core.WT;
-import com.sonicle.webtop.core.sdk.BaseController;
+import com.sonicle.webtop.core.sdk.BaseBridge;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.sql.Connection;
+import org.slf4j.Logger;
 
 /**
  *
  * @author malbinola
  */
-public class Controller extends BaseController {
+public class CalendarBridge extends BaseBridge {
+	public static final Logger logger = WT.getLogger(CalendarBridge.class);
 	
-	public Controller(String serviceId, RunContext context) {
-		super(serviceId, context);
+	public CalendarBridge(RunContext context) {
+		super(context);
 	}
 	
 	@Override
@@ -57,7 +59,7 @@ public class Controller extends BaseController {
 		Connection con = null;
 		
 		try {
-			con = WT.getConnection(getServiceId());
+			con = WT.getConnection(SERVICE_ID);
 			CalendarDAO cdao = CalendarDAO.getInstance();
 			
 			// Adds built-in calendar

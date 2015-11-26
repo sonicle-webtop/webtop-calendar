@@ -551,6 +551,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.START_DATE,
 				EVENTS.END_DATE,
 				EVENTS.TIMEZONE,
+				EVENTS.TITLE,
 				EVENTS.REMINDER,
 				originalEventId,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),

@@ -33,6 +33,8 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.webtop.core.sdk.UserProfile;
+
 /**
  *
  * @author malbinola
@@ -71,6 +73,10 @@ public class VSchedulerEvent extends OEvent {
 
 	public void setCalendarUserId(String value) {
 		calendarUserId = value;
+	}
+	
+	public UserProfile.Id getCalendarProfileId() {
+		return new UserProfile.Id(calendarDomainId, calendarUserId);
 	}
 	
 	public Boolean getIsRecurring() {

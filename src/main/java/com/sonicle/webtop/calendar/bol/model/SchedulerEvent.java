@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.bol.model;
 
 import com.rits.cloning.Cloner;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
+import org.joda.time.DateTimeZone;
 
 /**
  *
@@ -59,5 +60,9 @@ public class SchedulerEvent extends VSchedulerEvent {
 	
 	public void setKey(String value) {
 		key = value;
+	}
+	
+	public DateTimeZone getDateTimeZone() {
+		return DateTimeZone.forID(getTimezone());
 	}
 }

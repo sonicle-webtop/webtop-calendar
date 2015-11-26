@@ -73,7 +73,7 @@ public class PublicService extends BasePublicService {
 
 	@Override
 	public void initialize() {
-		manager = new CalendarManager(getId(), getRunContext());
+		manager = new CalendarManager(getRunContext());
 	}
 
 	@Override
@@ -118,7 +118,7 @@ public class PublicService extends BasePublicService {
 					throw new WTException("Invalid reply provided. Valid options are: 'yes', 'no' and 'maybe'.");
 				}
 
-				Event event = manager.updateAttendeeReply(eid, aid, resp);
+				Event event = manager.updateEventAttendeeReply(eid, aid, resp);
 				if(event == null) throw new EventNotFoundException();
 				
 				//TODO: inviare email all'organizzatore con la notifica della risposta
@@ -143,7 +143,7 @@ public class PublicService extends BasePublicService {
 				
 				Event event = manager.getEventByPublicUid(eid);
 				if(event == null) throw new EventNotFoundException();
-				List<EventAttendee> atts = manager.getAttendees(event.getEventId(), true);
+				List<EventAttendee> atts = manager.listEventAttendees(event.getEventId(), true);
 				
 				template = "event_view.html";
 				tplMap.put("event", buildEventViewMap(event));
@@ -173,7 +173,7 @@ public class PublicService extends BasePublicService {
 			tplMap.put("i18n", i18n);
 		}
 		
-		Template tpl = WT.loadTemplate(getId(), template);
+		Template tpl = WT.loadTemplate(SERVICE_ID, template);
 		tpl.process(tplMap, response.getWriter());
 	}
 	

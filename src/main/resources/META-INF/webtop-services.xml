@@ -58,9 +58,11 @@
 		<shortName>wtcal</shortName>
 		<version>2.0.0</version>
 		<buildDate>03/11/2014</buildDate>
+		<bridgeClassName>CalendarBridge</bridgeClassName>
+		<managerClassName>CalendarManager</managerClassName>
 		<serviceClassName>Service</serviceClassName>
 		<publicServiceClassName>PublicService</publicServiceClassName>
-		<jobServiceClassName>JobService</jobServiceClassName>
+		<!--<jobServiceClassName>JobService</jobServiceClassName>-->
 		<clientOptionsModelJsClassName>model.ClientOptions</clientOptionsModelJsClassName>
 		<userOptions>
 			<serviceClassName>UserOptionsService</serviceClassName>

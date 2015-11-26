@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.db.DbUtils;
 import com.sonicle.webtop.calendar.bol.OPostponedReminder;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.dal.EventDAO;
@@ -65,9 +66,9 @@ public class JobService extends BaseJobService {
 	
 	@Override
 	public void initialize() {
-		css = new CalendarServiceSettings(getId());
-		cus = new CalendarUserSettings(getId(), new UserProfile.Id("*", "*"), css);
-		manager = new CalendarManager(getId(), getRunContext());
+		css = new CalendarServiceSettings(SERVICE_ID);
+		cus = new CalendarUserSettings(SERVICE_ID, new UserProfile.Id("*", "*"), css);
+		manager = new CalendarManager(getRunContext());
 	}
 	
 	@Override
@@ -104,12 +105,12 @@ public class JobService extends BaseJobService {
 		public void executeWork() {
 			Connection con = null;
 			notifyByEmailCache.clear();
-			
+			/*
 			try {
 				DateTime now = DateTime.now(DateTimeZone.UTC);
 				DateTime from = now.withTimeAtStartOfDay();
 				
-				con = WT.getConnection(jobService.getId());
+				con = WT.getConnection(jobService.SERVICE_ID);
 				con.setAutoCommit(false);
 				
 				try {
@@ -120,11 +121,11 @@ public class JobService extends BaseJobService {
 						remindOn = event.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(event.getReminder());
 						if(now.compareTo(remindOn) >= 0) handleReminder(con, event, now, remindOn);
 					}
-					con.commit();
+					DbUtils.commitQuietly(con);
 					
 				} catch(Exception ex1) {
 					logger.error("[ReminderTask] Error handling expiredEvents", ex1);
-					con.rollback();
+					DbUtils.rollbackQuietly(con);
 				}
 				
 				try {
@@ -135,16 +136,19 @@ public class JobService extends BaseJobService {
 						handleReminder(con, prevent, now, prem.getRemindOn());
 						jobService.manager.deletePostponedReminder(con, prem.getEventId(), prem.getRemindOn());
 					}
-					con.commit();
+					DbUtils.commitQuietly(con);
 					
 				} catch(Exception ex1) {
 					logger.error("[ReminderTask] Error handling expiredPostponed", ex1);
-					con.rollback();
+					DbUtils.rollbackQuietly(con);
 				}
 				
 			} catch(Exception ex) {
 				logger.error("[ReminderTask] Error executing work", ex);
+			} finally {
+				DbUtils.closeQuietly(con);
 			}
+			*/
 		}
 		
 		public void handleReminder(Connection con, SchedulerEvent event, DateTime now, DateTime remindOn) {
@@ -157,7 +161,7 @@ public class JobService extends BaseJobService {
 				if(notifyByEmailCache.containsKey(profileId.toString())) {
 					notifyByEmail = notifyByEmailCache.get(profileId.toString());
 				} else {
-					CalendarUserSettings cus = new CalendarUserSettings(jobService.getId(), profileId, jobService.css);
+					CalendarUserSettings cus = new CalendarUserSettings(jobService.SERVICE_ID, profileId, jobService.css);
 					notifyByEmail = cus.getReminderByEmail();
 					notifyByEmailCache.put(profileId.toString(), notifyByEmail);
 				}
@@ -165,7 +169,7 @@ public class JobService extends BaseJobService {
 				if(notifyByEmail) {
 					//TODO: notifica tramite email
 				} else {
-					WT.nofity(profileId, new ReminderMessage(jobService.getId(), remindOn, event, DateTimeZone.UTC), true);
+					WT.nofity(profileId, new ReminderMessage(jobService.SERVICE_ID, remindOn, event, DateTimeZone.UTC), true);
 				}
 			}
 		}

@@ -126,7 +126,7 @@ public class Service extends BaseService {
 		UserProfile profile = getEnv().getProfile();
 		manager = new CalendarManager(getRunContext());
 		ss = new CalendarServiceSettings(SERVICE_ID);
-		us = new CalendarUserSettings(SERVICE_ID, profile.getId(), ss);
+		us = new CalendarUserSettings(SERVICE_ID, profile.getId());
 		
 		try {
 			initFolders();

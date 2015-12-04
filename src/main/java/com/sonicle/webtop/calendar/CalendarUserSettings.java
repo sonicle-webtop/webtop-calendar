@@ -46,7 +46,7 @@ import org.joda.time.LocalTime;
 public class CalendarUserSettings extends BaseUserSettings {
 	private CalendarServiceSettings css;
 	
-	public CalendarUserSettings(String serviceId, UserProfile.Id profileId, CalendarServiceSettings css) {
+	public CalendarUserSettings(String serviceId, UserProfile.Id profileId) {
 		super(serviceId, profileId);
 		css = new CalendarServiceSettings(serviceId);
 	}

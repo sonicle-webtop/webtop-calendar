@@ -63,8 +63,7 @@ public class UserOptionsService extends BaseUserOptionsService {
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			CalendarServiceSettings css = new CalendarServiceSettings(getServiceId());
-			CalendarUserSettings cus = new CalendarUserSettings(getServiceId(), getTargetProfileId(), css);
+			CalendarUserSettings cus = new CalendarUserSettings(getServiceId(), getTargetProfileId());
 			DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 			
 			if(crud.equals(Crud.READ)) {

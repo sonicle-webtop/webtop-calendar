@@ -189,8 +189,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 				remindOn = event.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(event.getReminder());
 				if(now.compareTo(remindOn) >= 0) {
 					if(!byEmailCache.containsKey(event.getCalendarProfileId())) {
-						CalendarServiceSettings css = new CalendarServiceSettings(SERVICE_ID);
-						CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, event.getCalendarProfileId(), css);
+						CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, event.getCalendarProfileId());
 						byEmailCache.put(event.getCalendarProfileId(), cus.getReminderByEmail());
 					}
 					

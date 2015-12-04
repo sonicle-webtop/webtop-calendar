@@ -35,7 +35,7 @@ Ext.define('Sonicle.webtop.calendar.store.Reminder', {
 	extend: 'WT.ux.data.ArrayStore',
 	
 	sid: 'com.sonicle.webtop.calendar',
-	keyPrefix: 'store.reminder.',
+	resKeyPrefix: 'store.reminder.',
 	
 	model: 'WT.ux.data.SimpleModel',
 	data: [

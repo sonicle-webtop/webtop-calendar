@@ -147,9 +147,9 @@ public class Service extends BaseService {
 	}
 	
 	@Override
-	public HashMap<String, Object> returnClientOptions() {
+	public ClientOptions returnClientOptions() {
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
-		HashMap<String, Object> co = new HashMap<>();
+		ClientOptions co = new ClientOptions();
 		co.put("view", us.getCalendarView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));

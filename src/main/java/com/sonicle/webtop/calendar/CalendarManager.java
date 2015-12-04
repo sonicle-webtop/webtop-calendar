@@ -79,7 +79,7 @@ import com.sonicle.webtop.core.bol.model.SharePermsElements;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.DAOException;
 import com.sonicle.webtop.core.sdk.AuthException;
-import com.sonicle.webtop.core.sdk.IManagerHandleReminders;
+import com.sonicle.webtop.core.sdk.interfaces.IManagerUsesReminders;
 import com.sonicle.webtop.core.sdk.ReminderAlert;
 import com.sonicle.webtop.core.sdk.ReminderAlertEmail;
 import com.sonicle.webtop.core.sdk.ReminderAlertWeb;
@@ -129,7 +129,7 @@ import org.supercsv.prefs.CsvPreference;
  *
  * @author malbinola
  */
-public class CalendarManager extends BaseManager implements IManagerHandleReminders {
+public class CalendarManager extends BaseManager implements IManagerUsesReminders {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
 	private static final String RESOURCE_CALENDAR = "CALENDAR";
 	private static final String EVENT_NORMAL = "normal";
@@ -158,6 +158,16 @@ public class CalendarManager extends BaseManager implements IManagerHandleRemind
 	
 	public void setHost(String value) {
 		host = value;
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
+		return parseYmdHmsWithZone(date + " " + time, tz);
+	}
+	
+	public static DateTime parseYmdHmsWithZone(String dateTime, DateTimeZone tz) {
+		String dt = StringUtils.replace(dateTime, "T", " ");
+		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
+		return formatter.parseDateTime(dt);
 	}
 	
 	@Override
@@ -204,16 +214,6 @@ public class CalendarManager extends BaseManager implements IManagerHandleRemind
 		return alerts;
 	}
 	
-	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
-		return parseYmdHmsWithZone(date + " " + time, tz);
-	}
-	
-	public static DateTime parseYmdHmsWithZone(String dateTime, DateTimeZone tz) {
-		String dt = StringUtils.replace(dateTime, "T", " ");
-		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
-		return formatter.parseDateTime(dt);
-	}
-	
 	private void checkRightsOnCalendarRoot(UserProfile.Id ownerPid, String action) throws WTException {
 		if(WT.isWebTopAdmin(getRunProfileId())) return;
 		if(ownerPid.equals(getTargetProfileId())) return;
@@ -224,67 +224,6 @@ public class CalendarManager extends BaseManager implements IManagerHandleRemind
 		if(core.isShareRootPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
 		
 		throw new AuthException("Action not allowed on root share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
-	}
-	
-	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
-		if(WT.isWebTopAdmin(getRunProfileId())) return;
-		
-		// Skip rights check if running user is resource's owner
-		UserProfile.Id ownerPid = calendarToOwner(calendarId);
-		if(ownerPid.equals(getTargetProfileId())) return;
-		
-		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(getRunContext());
-		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
-		if(wildcardShareId != null) {
-			if(core.isShareFolderPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
-		}
-		
-		// Checks rights on calendar instance
-		String shareId = calendarToFolderShareId(calendarId);
-		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if(core.isShareFolderPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
-		
-		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
-	}
-	
-	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
-		if(WT.isWebTopAdmin(getRunProfileId())) return;
-		
-		// Skip rights check if running user is resource's owner
-		UserProfile.Id ownerPid = calendarToOwner(calendarId);
-		if(ownerPid.equals(getTargetProfileId())) return;
-		
-		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(getRunContext());
-		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
-		if(wildcardShareId != null) {
-			if(core.isShareElementsPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
-		}
-		
-		// Checks rights on calendar instance
-		String shareId = calendarToFolderShareId(calendarId);
-		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if(core.isShareElementsPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
-		
-		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
-	}
-	
-	private UserProfile.Id findCalendarOwner(int calendarId) throws WTException {
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			CalendarDAO dao = CalendarDAO.getInstance();
-			Owner owner = dao.selectOwnerById(con, calendarId);
-			if(owner == null) throw new WTException("Calendar not found [{0}]", calendarId);
-			return new UserProfile.Id(owner.getDomainId(), owner.getUserId());
-			
-		} catch(SQLException | DAOException ex) {
-			throw new WTException(ex, "DB error");
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
 	}
 	
 	public List<CalendarRoot> listIncomingCalendarRoots() throws WTException {
@@ -534,7 +473,7 @@ public class CalendarManager extends BaseManager implements IManagerHandleRemind
 	
 	public List<CalendarEvents> listSchedulerEvents(UserProfile.Id pid, Integer[] calendars, DateTime fromDate, DateTime toDate) throws WTException {
 		Connection con = null;
-		ArrayList<CalendarEvents> grpEvts = new ArrayList<>();
+		ArrayList<CalendarEvents> calEvts = new ArrayList<>();
 		CalendarDAO cdao = CalendarDAO.getInstance();
 		EventDAO edao = EventDAO.getInstance();
 		
@@ -558,9 +497,9 @@ public class CalendarManager extends BaseManager implements IManagerHandleRemind
 					se.updateCalculatedFields();
 					sevs.add(new SchedulerEvent(se));
 				}
-				grpEvts.add(new CalendarEvents(cal, sevs));
+				calEvts.add(new CalendarEvents(cal, sevs));
 			}
-			return grpEvts;
+			return calEvts;
 		
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -1660,6 +1599,67 @@ public class CalendarManager extends BaseManager implements IManagerHandleRemind
 					throw new WTRuntimeException(ex.getMessage());
 				}
 			}
+		}
+	}
+	
+	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
+		if(WT.isWebTopAdmin(getRunProfileId())) return;
+		
+		// Skip rights check if running user is resource's owner
+		UserProfile.Id ownerPid = calendarToOwner(calendarId);
+		if(ownerPid.equals(getTargetProfileId())) return;
+		
+		// Checks rights on the wildcard instance (if present)
+		CoreManager core = WT.getCoreManager(getRunContext());
+		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
+		if(wildcardShareId != null) {
+			if(core.isShareFolderPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
+		}
+		
+		// Checks rights on calendar instance
+		String shareId = calendarToFolderShareId(calendarId);
+		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
+		if(core.isShareFolderPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
+		
+		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
+	}
+	
+	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
+		if(WT.isWebTopAdmin(getRunProfileId())) return;
+		
+		// Skip rights check if running user is resource's owner
+		UserProfile.Id ownerPid = calendarToOwner(calendarId);
+		if(ownerPid.equals(getTargetProfileId())) return;
+		
+		// Checks rights on the wildcard instance (if present)
+		CoreManager core = WT.getCoreManager(getRunContext());
+		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
+		if(wildcardShareId != null) {
+			if(core.isShareElementsPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
+		}
+		
+		// Checks rights on calendar instance
+		String shareId = calendarToFolderShareId(calendarId);
+		if(shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
+		if(core.isShareElementsPermitted(getRunProfileId(), SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
+		
+		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, getRunProfileId().toString());
+	}
+	
+	private UserProfile.Id findCalendarOwner(int calendarId) throws WTException {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			CalendarDAO dao = CalendarDAO.getInstance();
+			Owner owner = dao.selectOwnerById(con, calendarId);
+			if(owner == null) throw new WTException("Calendar not found [{0}]", calendarId);
+			return new UserProfile.Id(owner.getDomainId(), owner.getUserId());
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
 		}
 	}
 	

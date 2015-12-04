@@ -70,9 +70,7 @@ public class Event {
 	protected String organizer;
 	protected List<EventAttendee> attendees = new ArrayList<>();
 	
-	public Event() {
-		
-	}
+	public Event() {}
 	
 	public Event(String key, RecurringInfo recurringInfo, VSchedulerEvent sevent) {
 		this();

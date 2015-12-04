@@ -44,7 +44,6 @@ import org.joda.time.DateTime;
  * @author malbinola
  */
 public class OEvent extends Events {
-	
 	public final static String STATUS_NEW = "N";
 	public final static String STATUS_MODIFIED = "M";
 	public final static String STATUS_DELETED = "D";

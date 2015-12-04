@@ -40,7 +40,6 @@ import com.sonicle.webtop.core.sdk.UserProfile;
  * @author malbinola
  */
 public class VSchedulerEvent extends OEvent {
-	
 	private Integer originalEventId;
 	private String calendarDomainId;
 	private String calendarUserId;

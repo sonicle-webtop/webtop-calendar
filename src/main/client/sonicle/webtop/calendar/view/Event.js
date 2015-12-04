@@ -1181,10 +1181,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this,
 				grid = me.lref('tabinvitation.gpattendees'),
 				sto = grid.getStore(),
-				rowEditing = grid.getPlugin('rowediting'),
+				re = grid.getPlugin('rowediting'),
 				cal = me.lref('fldcalendar').getSelection(),
 				rec;
-		
+		/*
 		rowEditing.cancelEdit();
 		rec = Ext.create('Sonicle.webtop.calendar.model.EventAttendee', {
 			recipientType: 'N',
@@ -1193,6 +1193,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		});
 		sto.insert(0, rec);
 		rowEditing.startEdit(0, 0);
+		*/
+		re.cancelEdit();
+		rec = sto.add(Ext.create('Sonicle.webtop.calendar.model.EventAttendee', {
+			recipientType: 'N',
+			responseStatus: 'needsAction',
+			notify: (cal) ? cal.get('invitation') : false
+		}))[0];
+		re.startEdit(rec);
 	},
 	
 	deleteAttendee: function(rec) {

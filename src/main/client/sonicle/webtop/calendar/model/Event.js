@@ -32,7 +32,7 @@
  * the words "Powered by Sonicle WebTop".
  */
 Ext.define('Sonicle.webtop.calendar.model.Event', {
-	extend: 'WT.model.Base',
+	extend: 'WT.ux.data.BaseModel',
 	requires: [
 		'Sonicle.data.writer.Json'
 	],
@@ -119,7 +119,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	}
 });
 Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
-	extend: 'WT.model.Base',
+	extend: 'WT.ux.data.BaseModel',
 	
 	identifier: 'negativestring',
 	idProperty: 'attendeeId',

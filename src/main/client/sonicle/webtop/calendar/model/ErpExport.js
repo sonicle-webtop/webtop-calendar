@@ -36,7 +36,7 @@ Ext.define('Sonicle.webtop.calendar.model.ErpExport', {
 });
 
 Ext.define('Sonicle.webtop.calendar.model.ErpExportStart', {
-	extend: 'WT.model.Base',
+	extend: 'WT.ux.data.BaseModel',
 	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ErpExportWizard', 'data', {
 		extraParams: {
 			step: 'start'

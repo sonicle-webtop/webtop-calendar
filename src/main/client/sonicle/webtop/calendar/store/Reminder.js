@@ -32,39 +32,14 @@
  * the words "Powered by Sonicle WebTop".
  */
 Ext.define('Sonicle.webtop.calendar.store.Reminder', {
-	extend: 'Ext.data.ArrayStore',
+	extend: 'WT.ux.data.ArrayStore',
 	
-	model: 'WT.model.Simple',
+	sid: 'com.sonicle.webtop.calendar',
+	keyPrefix: 'store.reminder.',
+	
+	model: 'WT.ux.data.SimpleModel',
 	data: [
-		[0, ''],
-		[5, ''],
-		[10, ''],
-		[15, ''],
-		[30, ''],
-		[45, ''],
-		[60, ''],
-		[120, ''],
-		[180, ''],
-		[240, ''],
-		[300, ''],
-		[360, ''],
-		[420, ''],
-		[480, ''],
-		[540, ''],
-		[600, ''],
-		[660, ''],
-		[720, ''],
-		[1080, ''],
-		[1440, ''],
-		[2880, ''],
-		[10080, '']
-	],
-	
-	constructor: function(cfg) {
-		var me = this;
-		Ext.each(me.config.data, function(row) {
-			row[1] = WT.res('com.sonicle.webtop.calendar', 'store.reminder.'+row[0]);
-		});
-		me.callParent([cfg]);
-	}
+		[0],[5],[10],[15],[30],[45],[60],[120],[180],[240],[300],[360],[420],
+		[480],[540],[600],[660],[720],[1080],[1440],[2880],[10080]
+	]
 });

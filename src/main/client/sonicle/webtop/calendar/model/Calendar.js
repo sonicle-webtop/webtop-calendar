@@ -32,7 +32,7 @@
  * the words "Powered by Sonicle WebTop".
  */
 Ext.define('Sonicle.webtop.calendar.model.Calendar', {
-	extend: 'WT.model.Base',
+	extend: 'WT.ux.data.BaseModel',
 	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
 	
 	identifier: 'negative',

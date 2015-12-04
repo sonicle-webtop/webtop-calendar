@@ -32,7 +32,7 @@
  * the words "Powered by Sonicle WebTop".
  */
 Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
-	extend: 'WT.model.Base',
+	extend: 'WT.ux.data.BaseModel',
 	
 	fields: [
 		WTF.roField('id', 'string'),

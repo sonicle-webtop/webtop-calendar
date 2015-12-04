@@ -40,8 +40,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.IconComboBox',
 		'Sonicle.plugin.EnterKeyPlugin',
-		'WT.model.Empty',
-		'WT.model.Value',
+		'WT.ux.data.EmptyModel',
+		'WT.ux.data.ValueModel',
 		'WT.model.ActivityLkp',
 		'WT.model.CausalLkp',
 		'WT.store.Timezone',
@@ -591,7 +591,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					itemId: 'planning',
 					enableLocking: true,
 					store: {
-						model: 'WT.model.Empty',
+						model: 'WT.ux.data.EmptyModel',
 						proxy: WTF.proxy(me.mys.ID, 'GetPlanning', 'data'),
 						listeners: {
 							metachange: function(s, meta) {

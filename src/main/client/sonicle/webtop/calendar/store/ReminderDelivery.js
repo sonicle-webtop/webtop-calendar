@@ -31,23 +31,13 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
-	extend: 'WT.sdk.model.UserOptions',
+
+Ext.define('Sonicle.webtop.calendar.store.ReminderDelivery', {
+	extend: 'Ext.data.ArrayStore',
 	
-	proxy: WT.optionsProxy('com.sonicle.webtop.calendar'),
-	fields: [
-		WTF.field('view', 'string', false),
-		WTF.field('workdayStart', 'date', false, {dateFormat: 'H:i'}),
-		WTF.field('workdayEnd', 'date', false, {dateFormat: 'H:i'}),
-		WTF.field('eventReminderDelivery', 'string', false)
+	model: 'WT.model.Simple',
+	data: [
+		['app', WT.res('com.sonicle.webtop.calendar', 'store.reminderDelivery.app')],
+		['email', WT.res('com.sonicle.webtop.calendar', 'store.reminderDelivery.email')]
 	]
-	/*
-	validators: {
-		workdayStart: function(val, rec) {
-			console.log('validate workdayStart');
-			return val < rec.get('workdayEnd');
-			//return true;
-		}
-	}
-	*/
 });

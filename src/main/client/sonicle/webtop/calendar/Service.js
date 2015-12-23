@@ -49,6 +49,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.view.Calendar',
 		'Sonicle.webtop.calendar.view.Sharing'
 	],
+	mixins: [
+		'WT.mixin.FoldersTree'
+	],
 	
 	init: function() {
 		var me = this;
@@ -158,7 +161,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					hideHeaders: true,
 					listeners: {
 						checkchange: function(n, ck) {
-							me._showHideFolder(n, ck);
+							me.showHideFolder(n, ck);
 						},
 						itemcontextmenu: function(s, rec, itm, i, e) {
 							if(rec.get('_type') === 'root') {
@@ -215,14 +218,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					listeners: {
 						rangeselect: function(s,dates,onComplete) {
 							onComplete();
-							var cal = me.getSelectedFolder();
+							var cal = me.getSelectedFolder(me.getRef('folderstree'));
 							if(cal) me.addEvent(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
 						},
 						eventdblclick: function(s, rec) {
 							if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
 						},
 						daydblclick: function(s, dt, ad) {
-							var cal = me.getSelectedFolder(),
+							var cal = me.getSelectedFolder(me.getRef('folderstree')),
 									soDate = Sonicle.Date,
 									start, end;
 							if(cal) {
@@ -384,64 +387,70 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('sharing.tit'),
 			iconCls: WTF.cssIconCls(WT.XID, 'sharing', 'xs'),
 			handler: function() {
-				var node = me.getSelectedNode();
+				var node = me.getSelectedNode(me.getRef('folderstree'));
 				if(node) me.editShare(node.getId());
 			}
 		});
 		me.addAction('addCalendar', {
 			handler: function() {
-				var node = me.getSelectedFolder();
+				var node = me.getSelectedFolder(me.getRef('folderstree'));
 				if(node) me.addCalendar(node.get('_domainId'), node.get('_userId'));
 			}
 		});
 		me.addAction('editCalendar', {
 			handler: function() {
-				var node = me.getSelectedFolder();
+				var node = me.getSelectedFolder(me.getRef('folderstree'));
 				if(node) me.editCalendar(node.get('_calId'));
 			}
 		});
 		me.addAction('deleteCalendar', {
 			handler: function() {
-				var node = me.getSelectedFolder();
+				var node = me.getSelectedFolder(me.getRef('folderstree'));
 				if(node) me.deleteCalendar(node);
 			}
 		});
 		me.addRef('uploaders', 'importEvents', Ext.create('Sonicle.upload.Item', {
 			text: WT.res(me.ID, 'act-importEvents.lbl'),
 			iconCls: WTF.cssIconCls(me.XID, 'importEvents', 'xs'),
-			uploaderConfig: WTF.uploader(me.ID, 'ICalImport', {
-				extraParams: {
-					calendarId: null // Depends on selected node...
-				},
+			uploaderConfig: WTF.uploader(me.ID, 'ICalUpload', {
 				mimeTypes: [
 					{title: 'iCalendar files', extensions: 'ical,ics,icalendar'}
-					//{title: 'CSV files', extensions: 'csv'}
-				]
-			}),
-			handler: function(s) {
-				var node = me.getSelectedFolder();
-				if(node) {
-					s.uploader.mergeExtraParams({
-						calendarId: node.get('_calId')
-					});
+				],
+				listeners: {
+					uploadstarted: function(up) {
+						//TODO: caricamento
+						//me.wait();
+					},
+					uploadcomplete: function(up) {
+						//TODO: caricamento
+						//me.unwait();
+					},
+					uploaderror: function(up) {
+						//TODO: caricamento
+						//me.unwait();
+					},
+					fileuploaded: function(up, file) {
+						var node = me.getSelectedFolder(me.getRef('folderstree'));
+						if(node) me.importICal(node.get('_calId'), file.uploadId);
+					}
 				}
-			}
+			})
 		}));
-		me.addAction('viewAllCalendars', {
+		me.addAction('viewAllFolders', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				me._showHideAllFolders(me.getSelectedRootFolder(), true);
+				me.showHideAllFolders(me.getSelectedRootFolder(me.getRef('folderstree')), true);
 			}
 		});
-		me.addAction('viewNoneCalendars', {
+		me.addAction('viewNoneFolders', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				me._showHideAllFolders(me.getSelectedRootFolder(), false);
+				me.showHideAllFolders(me.getSelectedRootFolder(me.getRef('folderstree')), false);
 			}
 		});
 		me.addAction('addEvent', {
 			handler: function() {
-				var cal = me.getSelectedFolder(),
+				var cal = me.getSelectedFolder(me.getRef('folderstree')),
 						day = me.getRef('multical').getValue();
 				if(cal) me.addEventAtNow(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), day);
 			}
@@ -509,8 +518,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				'-',
 				me.getAction('editSharing'),
 				'-',
-				me.getAction('viewAllCalendars'),
-				me.getAction('viewNoneCalendars'),
+				me.getAction('viewAllFolders'),
+				me.getAction('viewNoneFolders'),
 				'-',
 				me.getAction('addEvent'),
 				me.getRef('uploaders', 'importEvents')
@@ -558,20 +567,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			}
 		}));
-	},
-	
-	/**
-	 * @private
-	 */
-	toRightsObj: function(rights) {
-		var iof = function(s,v) { return s.indexOf(v)!==-1; },
-				obj = {};
-		obj['CREATE'] = iof(rights, 'c');
-		obj['READ'] = iof(rights, 'r');
-		obj['UPDATE'] = iof(rights, 'u');
-		obj['DELETE'] = iof(rights, 'd');
-		obj['MANAGE'] = iof(rights, 'm');
-		return obj;
 	},
 	
 	onActivate: function() {
@@ -777,6 +772,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, me);
 	},
 	
+	importICal: function(calendarId, uploadId) {
+		var me = this;
+		WT.ajaxReq(me.ID, 'ImportICal', {
+			params: {
+				calendarId: calendarId,
+				uploadId: uploadId
+			},
+			callback: function(success, json) {
+				if(success) {
+					me.refreshEvents();
+				}
+			}
+		});
+	},
+	
 	erpExport: function() {
 		var me = this,
 				vw = WT.createView(me.ID, 'view.ErpExport');
@@ -789,93 +799,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), query));
 		me._activateMain('results');
-		WTU.loadExtraParams(gp.getStore(), {
+		WTU.loadWithExtraParams(gp.getStore(), {
 			query: query
 		});
 	},
 	
 	isEventEditable: function(rec) {
 		return !(rec.get('isReadOnly') === true);
-	},
-	
-	/**
-	 * @private
-	 * Returns selected tree node.
-	 */
-	getSelectedNode: function() {
-		var tree = this.getRef('folderstree'),
-				sel = tree.getSelection();
-		return (sel.length === 0) ? null : sel[0];
-	},
-	
-	/**
-	 * @private
-	 * Returns selected root folder. If force param is 'true', this method 
-	 * returns a default value if no selection is available.
-	 * @param {Boolean} [force=false] 'true' to always return a value.
-	 * @returns {Ext.data.NodeInterface}
-	 */
-	getSelectedRootFolder: function(force) {
-		var tree = this.getRef('folderstree'),
-				sel = tree.getSelection();
-		
-		if(sel.length === 0) {
-			if(!force) return null;
-			// As default returns myFolder, which have id equals to profileId option
-			return tree.getStore().findNode('_pid', WT.getOption('profileId'), false);
-		}
-		return (sel[0].get('_type') === 'root') ? sel[0] : sel[0].parentNode;
-	},
-	
-	/*
-	 * @private
-	 * Returns selected folder (calendar). If no selection is available, 
-	 * this method tries to return the default folder and then the built-in one.
-	 * @returns {Ext.data.NodeInterface}
-	 */
-	getSelectedFolder: function() {
-		var me = this,
-				tree = me.getRef('folderstree'),
-				sel = tree.getSelection(),
-				node;
-		
-		if(sel.length > 0) {
-			if(sel[0].get('_type') === 'root') {
-				return me.getFolderByRoot(sel[0]);
-			} else {
-				return sel[0];
-			}
-		} else {
-			node = tree.getStore().findNode('_pid', WT.getOption('profileId'), false);
-			if(node) return me.getFolderByRoot(node);
-		}
-		return null;
-	},
-	
-	/*
-	 * @private
-	 */
-	getFolderByRoot: function(rootNode) {
-		var cal = this.getDefaultFolder(rootNode);
-		return (cal) ? cal : this.getBuiltInFolder(rootNode);
-	},
-	
-	/*
-	 * @private
-	 */
-	getDefaultFolder: function(rootNode) {
-		return rootNode.findChildBy(function(n) {
-			return (n.get('_default') === true);
-		});
-	},
-	
-	/*
-	 * @private
-	 */
-	getBuiltInFolder: function(rootNode) {
-		return rootNode.findChildBy(function(n) {
-			return (n.get('_builtIn') === true);
-		});
 	},
 	
 	/*
@@ -890,33 +820,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	 */
 	_isMainActive: function(id) {
 		return (this.getMainComponent().getLayout().getActiveItem() === id);
-	},
-	
-	/*
-	 * @private
-	 */
-	_showHideFolder: function(node, show) {
-		node.beginEdit();
-		node.set('_visible', show);
-		node.endEdit();
-	},
-	
-	/*
-	 * @private
-	 */
-	_showHideAllFolders: function(parent, show) {
-		var me = this,
-				store = parent.getTreeStore();
-		
-		store.suspendAutoSync();
-		parent.cascadeBy(function(n) {
-			if(n !== parent) {
-				n.set('checked', show);
-				me._showHideFolder(n, show);
-			}
-		});
-		store.resumeAutoSync();
-		store.sync();
 	},
 	
 	print: function() {

@@ -69,6 +69,7 @@ import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.WebTopSession.UploadedFile;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.bol.js.JsSimple;
 import com.sonicle.webtop.core.bol.model.Sharing;
@@ -84,17 +85,16 @@ import com.sonicle.webtop.core.util.MessageLogEntry;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -150,7 +150,7 @@ public class Service extends BaseService {
 	public ClientOptions returnClientOptions() {
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 		ClientOptions co = new ClientOptions();
-		co.put("view", us.getCalendarView());
+		co.put("view", us.getView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));
 		return co;
@@ -697,10 +697,36 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processICalImportUploadStream(HttpServletRequest request, InputStream uploadStream) throws Exception {
+	/*
+	public void processUploadStreamICalImport(HttpServletRequest request, InputStream uploadStream) throws Exception {
 		UserProfile up = getEnv().getProfile();
 		Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
 		manager.importICal(calendarId, uploadStream, up.getTimeZone());
+	}
+	*/
+	
+	public void processImportICal(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		UserProfile up = getEnv().getProfile();
+		FileInputStream fis = null;
+		
+		try {
+			Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
+			String uploadId = ServletUtils.getStringParameter(request, "uploadId", true);
+			
+			UploadedFile upl = getUploadedFile(uploadId);
+			if(upl == null) throw new WTException("Uploaded file not found [{0}]", uploadId);
+			
+			fis = new FileInputStream(new File(WT.getTempFolder(), upl.id));
+			manager.importICal(calendarId, fis, up.getTimeZone());
+			
+			new JsonResult().printTo(out);
+			
+		} catch(Exception ex) {
+			logger.error("Error in action ImportICal", ex);
+			new JsonResult(false, ex.getMessage()).printTo(out);
+		} finally {
+			IOUtils.closeQuietly(fis);
+		}
 	}
 	
 	private OUser guessUserByAttendee(String recipient) {

@@ -34,7 +34,8 @@
 Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 	extend: 'WT.sdk.UserOptionsView',
 	requires: [
-		'Sonicle.webtop.calendar.store.View'
+		'Sonicle.webtop.calendar.store.View',
+		'Sonicle.webtop.calendar.store.ReminderDelivery'
 	],
 		
 	initComponent: function() {
@@ -98,7 +99,20 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 					//return Ext.String.format(WT.res('error.fieldgteqthan'), WT.res(me.ID, 'opts.main.fld-workdayStart.lbl'));
 					return true;
 				}*/
-			}]
+			}, WTF.lookupCombo('id', 'desc', {
+				bind: '{record.eventReminderDelivery}',
+				store: Ext.create('Sonicle.webtop.calendar.store.ReminderDelivery', {
+					autoLoad: true
+				}),
+				fieldLabel: WT.res(me.ID, 'opts.main.fld-eventReminderDelivery.lbl'),
+				width: 280,
+				listeners: {
+					blur: {
+						fn: me.onBlurAutoSave,
+						scope: me
+					}
+				}
+			})]
 		});
 	}
 });

@@ -62,9 +62,7 @@ public class EventAttendee {
 	protected String responseStatus;
 	protected Boolean notify;
 	
-	public EventAttendee() {
-		
-	}
+	public EventAttendee() {}
 
 	public String getAttendeeId() {
 		return attendeeId;

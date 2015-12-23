@@ -105,6 +105,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.PeriodList;
 import net.fortuna.ical4j.model.property.RRule;
@@ -190,14 +191,16 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 				if(now.compareTo(remindOn) >= 0) {
 					if(!byEmailCache.containsKey(event.getCalendarProfileId())) {
 						CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, event.getCalendarProfileId());
-						byEmailCache.put(event.getCalendarProfileId(), cus.getReminderByEmail());
+						boolean bool = cus.getEventReminderDelivery().equals(CalendarUserSettings.EVENT_REMINDER_DELIVERY_EMAIL);
+						byEmailCache.put(event.getCalendarProfileId(), bool);
 					}
 					
 					int ret = edao.updateRemindedOnIfNull(con, event.getEventId(), now);
 					if(ret != 1) continue;
 					
 					if(byEmailCache.get(event.getCalendarProfileId())) {
-						alerts.add(createEventReminderAlertEmail(event));
+						UserProfile.Data ud = WT.getUserData(event.getCalendarProfileId());
+						alerts.add(createEventReminderAlertEmail(ud.getLocale(), event));
 					} else {
 						alerts.add(createEventReminderAlertWeb(event));
 					}
@@ -1765,7 +1768,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		return alert;
 	}
 	
-	private ReminderAlertEmail createEventReminderAlertEmail(SchedulerEvent event) {
+	private ReminderAlertEmail createEventReminderAlertEmail(Locale locale, SchedulerEvent event) {
 		ReminderAlertEmail alert = new ReminderAlertEmail(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
 		
 		return alert;

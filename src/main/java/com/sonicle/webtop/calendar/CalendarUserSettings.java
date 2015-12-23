@@ -70,10 +70,12 @@ public class CalendarUserSettings extends BaseUserSettings {
 	public static final String WORKDAY_END = "workday.end";
 	
 	/**
-	 * [boolean]
-	 * Workday hours end time
+	 * [string][default]
+	 * Set anniversary reminder delivery mode
 	 */
-	public static final String REMINDER_BY_EMAIL = "reminder.byemail";
+	public static final String EVENT_REMINDER_DELIVERY = "event.reminder.delivery";
+	public static final String EVENT_REMINDER_DELIVERY_APP = "app";
+	public static final String EVENT_REMINDER_DELIVERY_EMAIL = "email";
 	
 	/**
 	 * [string]
@@ -94,13 +96,13 @@ public class CalendarUserSettings extends BaseUserSettings {
 	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
 	
 	
-	public String getCalendarView() {
+	public String getView() {
 		String value = getString(VIEW, null);
 		if(value != null) return value;
 		return css.getDefaultView();
 	}
 	
-	public boolean setCalendarView(String value) {
+	public boolean setView(String value) {
 		return setString(VIEW, value);
 	}
 	
@@ -124,12 +126,14 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setTime(WORKDAY_END, value, "HH:mm");
 	}
 	
-	public Boolean getReminderByEmail() {
-		return getBoolean(REMINDER_BY_EMAIL, css.getDefaultReminderByEmail());
+	public String getEventReminderDelivery() {
+		String value = getString(EVENT_REMINDER_DELIVERY, null);
+		if(value != null) return value;
+		return css.getDefaultEventReminderDelivery();
 	}
 	
-	public boolean setReminderByEmail(Boolean value) {
-		return setBoolean(REMINDER_BY_EMAIL, value);
+	public boolean setEventReminderDelivery(String value) {
+		return setString(EVENT_REMINDER_DELIVERY, value);
 	}
 	
 	/*

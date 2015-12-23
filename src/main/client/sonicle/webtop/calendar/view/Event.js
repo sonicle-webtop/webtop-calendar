@@ -39,7 +39,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.Separator',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.IconComboBox',
-		'Sonicle.plugin.EnterKeyPlugin',
 		'WT.ux.data.EmptyModel',
 		'WT.ux.data.ValueModel',
 		'WT.model.ActivityLkp',
@@ -221,9 +220,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				suggestionContext: 'eventcalendar',
 				fieldLabel: me.mys.res('event.fld-title.lbl'),
 				anchor: '100%',
-				plugins: [
-					'soenterkeyplugin'
-				],
 				listeners: {
 					enterkey: function() {
 						me.getAction('saveClose').execute();

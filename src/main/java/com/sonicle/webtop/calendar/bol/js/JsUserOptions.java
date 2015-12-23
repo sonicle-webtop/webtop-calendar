@@ -43,10 +43,9 @@ public class JsUserOptions extends JsUserOptionsBase {
 	public String view;
 	public String workdayStart;
 	public String workdayEnd;
+	public String eventReminderDelivery;
 	
-	public JsUserOptions() {
-		
-	}
+	public JsUserOptions() {}
 	
 	public JsUserOptions(String id) {
 		super(id);

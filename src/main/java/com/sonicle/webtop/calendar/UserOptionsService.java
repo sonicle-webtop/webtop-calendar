@@ -43,7 +43,7 @@ import com.sonicle.commons.web.json.Payload;
 import com.sonicle.webtop.calendar.bol.js.JsUserOptions;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.sdk.BaseUserOptionsService;
-import com.sonicle.webtop.core.sdk.JsOptions;
+import com.sonicle.webtop.core.sdk.UserProfile;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import javax.servlet.http.HttpServletRequest;
@@ -58,7 +58,8 @@ import org.slf4j.Logger;
 public class UserOptionsService extends BaseUserOptionsService {
 	public static final Logger logger = WT.getLogger(UserOptionsService.class);
 	
-	public void processUserOptions(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	@Override
+	public void processUserOptions(HttpServletRequest request, HttpServletResponse response, PrintWriter out, String payload) {
 		Connection con = null;
 		
 		try {
@@ -70,25 +71,27 @@ public class UserOptionsService extends BaseUserOptionsService {
 				JsUserOptions jso = new JsUserOptions(getTargetProfileId().toString());
 				
 				// Main
-				jso.view = cus.getCalendarView();
+				jso.view = cus.getView();
 				jso.workdayStart = hmf.print(cus.getWorkdayStart());
 				jso.workdayEnd = hmf.print(cus.getWorkdayEnd());
+				jso.eventReminderDelivery = cus.getEventReminderDelivery();
 				
 				new JsonResult(jso).printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				Payload<MapItem, JsUserOptions> pl = ServletUtils.getPayload(request, JsUserOptions.class);
+				Payload<MapItem, JsUserOptions> pl = ServletUtils.getPayload(payload, JsUserOptions.class);
 				
 				// Main
-				if(pl.map.has("view")) cus.setCalendarView(pl.data.view);
+				if(pl.map.has("view")) cus.setView(pl.data.view);
 				if(pl.map.has("workdayStart")) cus.setWorkdayStart(hmf.parseLocalTime(pl.data.workdayStart));
 				if(pl.map.has("workdayEnd")) cus.setWorkdayEnd(hmf.parseLocalTime(pl.data.workdayEnd));
+				if(pl.map.has("eventReminderDelivery")) cus.setEventReminderDelivery(pl.data.eventReminderDelivery);
 				
 				new JsonResult().printTo(out);
 			}
 			
 		} catch (Exception ex) {
-			logger.error("Error executing action UserOptions", ex);
+			logger.error("Error executing UserOptions", ex);
 			new JsonResult(false).printTo(out);
 		} finally {
 			DbUtils.closeQuietly(con);

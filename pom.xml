@@ -133,12 +133,12 @@
 							<forcedTypes>
 								<forcedType>
 									<name>JodaLocalDate</name>
-									<expressions>.*</expressions>
+									<expression>.*</expression>
 									<types>date.*</types>
 								</forcedType>
 								<forcedType>
 									<name>JodaDateTime</name>
-									<expressions>.*</expressions>
+									<expression>.*</expression>
 									<types>timestamp.*</types>
 								</forcedType>
 							</forcedTypes>

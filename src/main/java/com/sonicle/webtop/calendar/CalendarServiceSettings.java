@@ -58,7 +58,7 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 		return getTime(DEFAULT_PREFIX + CalendarUserSettings.WORKDAY_END, "18:00", "HH:mm");
 	}
 	
-	public boolean getDefaultReminderByEmail() {
-		return false;
+	public String getDefaultEventReminderDelivery() {
+		return getString(DEFAULT_PREFIX + CalendarUserSettings.EVENT_REMINDER_DELIVERY, CalendarUserSettings.EVENT_REMINDER_DELIVERY_APP);
 	}
 }

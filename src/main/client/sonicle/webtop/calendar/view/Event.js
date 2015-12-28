@@ -185,6 +185,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				'->',
 				WTF.localCombo('id', 'desc', {
 					reference: 'fldowner',
+					bind: '{record._profileId}',
 					store: {
 						autoLoad: true,
 						model: 'WT.model.Simple',
@@ -197,8 +198,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							me.updateCalendarFilters();
 							me.updateActivityParams(true);
 						}
-					},
-					value: me.profileId
+					}
 				})
 			]
 		});

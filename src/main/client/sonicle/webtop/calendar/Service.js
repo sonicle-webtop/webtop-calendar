@@ -668,20 +668,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, this);
 	},
 	
-	addEventAtNow: function(profileId, calendarId, isPrivate, busy, reminder, day) {
+	addEventAtNow: function(ownerId, calendarId, isPrivate, busy, reminder, day) {
 		if(day === undefined) day = new Date();
 		var date = Sonicle.Date.copyTime(new Date(), day);
-		this.addEvent(profileId, calendarId, isPrivate, busy, reminder, date, date, false);
+		this.addEvent(ownerId, calendarId, isPrivate, busy, reminder, date, date, false);
 	},
 	
-	addEvent: function(profileId, calendarId, isPrivate, busy, reminder, start, end, allDay) {
+	addEvent: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay) {
 		var me = this,
 				EM = Sonicle.webtop.calendar.model.Event,
-				vw = WT.createView(me.ID, 'view.Event', {
-					viewCfg: {
-						profileId: profileId
-					}
-				});
+				vw = WT.createView(me.ID, 'view.Event');
 		
 		vw.getComponent(0).on('viewsave', me.onEventViewSave, me);
 		vw.show(false, function() {
@@ -694,19 +690,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					startDate: start,
 					endDate: end,
 					timezone: WT.getOption('timezone'),
-					allDay: allDay
+					allDay: allDay,
+					_profileId: ownerId
 				}
 			});
 		});
 	},
 	
-	editEvent: function(profileId, id) {
+	editEvent: function(id) {
 		var me = this,
-				vw = WT.createView(me.ID, 'view.Event', {
-					viewCfg: {
-						profileId: profileId
-					}
-				});
+				vw = WT.createView(me.ID, 'view.Event');
 		
 		vw.getView().on('viewsave', me.onEventViewSave, me);
 		vw.show(false, function() {

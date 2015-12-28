@@ -80,9 +80,9 @@ import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.DAOException;
 import com.sonicle.webtop.core.sdk.AuthException;
 import com.sonicle.webtop.core.sdk.interfaces.IManagerUsesReminders;
-import com.sonicle.webtop.core.sdk.ReminderAlert;
-import com.sonicle.webtop.core.sdk.ReminderAlertEmail;
-import com.sonicle.webtop.core.sdk.ReminderAlertWeb;
+import com.sonicle.webtop.core.sdk.BaseReminder;
+import com.sonicle.webtop.core.sdk.ReminderEmail;
+import com.sonicle.webtop.core.sdk.ReminderInApp;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
@@ -172,8 +172,8 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 	}
 	
 	@Override
-	public List<ReminderAlert> returnReminderAlerts(DateTime now) {
-		ArrayList<ReminderAlert> alerts = new ArrayList<>();
+	public List<BaseReminder> returnReminders(DateTime now) {
+		ArrayList<BaseReminder> alerts = new ArrayList<>();
 		HashMap<UserProfile.Id, Boolean> byEmailCache = new HashMap<>();
 		EventDAO edao = EventDAO.getInstance();
 		Connection con = null;
@@ -1760,16 +1760,16 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		return atts;
 	}
 	
-	private ReminderAlertWeb createEventReminderAlertWeb(SchedulerEvent event) {
-		ReminderAlertWeb alert = new ReminderAlertWeb(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
+	private ReminderInApp createEventReminderAlertWeb(SchedulerEvent event) {
+		ReminderInApp alert = new ReminderInApp(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
 		alert.setTitle(event.getTitle());
 		alert.setDate(event.getStartDate().withZone(event.getDateTimeZone()));
 		alert.setTimezone(event.getTimezone());
 		return alert;
 	}
 	
-	private ReminderAlertEmail createEventReminderAlertEmail(Locale locale, SchedulerEvent event) {
-		ReminderAlertEmail alert = new ReminderAlertEmail(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
+	private ReminderEmail createEventReminderAlertEmail(Locale locale, SchedulerEvent event) {
+		ReminderEmail alert = new ReminderEmail(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
 		
 		return alert;
 	}

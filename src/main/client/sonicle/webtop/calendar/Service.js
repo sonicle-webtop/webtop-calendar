@@ -222,7 +222,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							if(cal) me.addEvent(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
 						},
 						eventdblclick: function(s, rec) {
-							if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
+							if(me.isEventEditable(rec)) me.editEvent(rec.get('id'));
 						},
 						daydblclick: function(s, dt, ad) {
 							var cal = me.getSelectedFolder(me.getRef('folderstree')),
@@ -302,7 +302,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					listeners: {
 						rowdblclick: function(s, rec) {
 							//TODO: handle edit permission
-							if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
+							if(me.isEventEditable(rec)) me.editEvent(rec.get('id'));
 						}
 					}
 				}))
@@ -459,7 +459,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-open.lbl'),
 			handler: function() {
 				var rec = WT.getContextMenuData().event;
-				if(me.isEventEditable(rec)) me.editEvent(rec.get('_profileId'), rec.get('id'));
+				if(me.isEventEditable(rec)) me.editEvent(rec.get('id'));
 			}
 		});
 		me.addAction('deleteEvent', {
@@ -625,7 +625,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				vw = WT.createView(me.ID, 'view.Sharing');
 		
 		vw.show(false, function() {
-			vw.getComponent(0).beginEdit({
+			vw.getView().begin('edit', {
 				data: {
 					id: id
 				}
@@ -637,9 +637,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				vw = WT.createView(me.ID, 'view.Calendar');
 		
-		vw.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		vw.getView().on('viewsave', me.onCalendarViewSave, me);
 		vw.show(false, function() {
-			vw.getComponent(0).beginNew({
+			vw.getView().begin('new', {
 				data: {
 					domainId: domainId,
 					userId: userId
@@ -652,9 +652,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				vw = WT.createView(me.ID, 'view.Calendar');
 		
-		vw.getComponent(0).on('viewsave', me.onCalendarViewSave, me);
+		vw.getView().on('viewsave', me.onCalendarViewSave, me);
 		vw.show(false, function() {
-			vw.getComponent(0).beginEdit({
+			vw.getView().begin('edit', {
 				data: {
 					calendarId: calendarId
 				}
@@ -681,7 +681,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		vw.getComponent(0).on('viewsave', me.onEventViewSave, me);
 		vw.show(false, function() {
-			vw.getComponent(0).beginNew({
+			vw.getView().begin('new', {
 				data: {
 					calendarId: calendarId,
 					isPrivate: isPrivate,
@@ -703,7 +703,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		vw.getView().on('viewsave', me.onEventViewSave, me);
 		vw.show(false, function() {
-			vw.getView().beginEdit({
+			vw.getView().begin('edit', {
 				data: {
 					id: id
 				}

@@ -42,9 +42,9 @@ import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.MapItem;
-import com.sonicle.commons.web.json.extjs.ExtFieldMeta;
-import com.sonicle.commons.web.json.extjs.ExtGridColumnMeta;
-import com.sonicle.commons.web.json.extjs.ExtGridMetaData;
+import com.sonicle.commons.web.json.extjs.FieldMeta;
+import com.sonicle.commons.web.json.extjs.GridColumnMeta;
+import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
@@ -125,7 +125,7 @@ public class Service extends BaseService {
 	public void initialize() {
 		UserProfile profile = getEnv().getProfile();
 		manager = new CalendarManager(getRunContext());
-		ss = new CalendarServiceSettings(SERVICE_ID);
+		ss = new CalendarServiceSettings(SERVICE_ID, profile.getDomainId());
 		us = new CalendarUserSettings(SERVICE_ID, profile.getId());
 		
 		try {
@@ -639,16 +639,16 @@ public class Service extends BaseService {
 			ArrayList<String> hours = manager.generateTimeSpans(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), us.getWorkdayStart(), us.getWorkdayEnd(), profileTz);
 			
 			// Generates fields and columnsInfo dynamically
-			ArrayList<ExtFieldMeta> fields = new ArrayList<>();
-			ArrayList<ExtGridColumnMeta> colsInfo = new ArrayList<>();
+			ArrayList<FieldMeta> fields = new ArrayList<>();
+			ArrayList<GridColumnMeta> colsInfo = new ArrayList<>();
 			
-			ExtGridColumnMeta col = null;
-			fields.add(new ExtFieldMeta("recipient"));
-			colsInfo.add(new ExtGridColumnMeta("recipient"));
+			GridColumnMeta col = null;
+			fields.add(new FieldMeta("recipient"));
+			colsInfo.add(new GridColumnMeta("recipient"));
 			for(String hourKey : hours) {
 				LocalDateTime ldt = ymdhmFmt.parseLocalDateTime(hourKey);
-				fields.add(new ExtFieldMeta(hourKey));
-				col = new ExtGridColumnMeta(hourKey, tFmt.print(ldt));
+				fields.add(new FieldMeta(hourKey));
+				col = new GridColumnMeta(hourKey, tFmt.print(ldt));
 				col.put("date", dFmt.print(ldt));
 				col.put("overlaps", DateTimeUtils.between(ldt, eventStartDt.toLocalDateTime(), eventEndDt.toLocalDateTime()));
 				colsInfo.add(col);
@@ -683,7 +683,7 @@ public class Service extends BaseService {
 				items.add(item);
 			}
 			
-			ExtGridMetaData meta = new ExtGridMetaData(true);
+			GridMetadata meta = new GridMetadata(true);
 			meta.setFields(fields);
 			meta.setColumnsInfo(colsInfo);
 			new JsonResult(items, meta, items.size()).printTo(out);

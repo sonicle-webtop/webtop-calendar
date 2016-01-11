@@ -48,7 +48,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	public CalendarUserSettings(String serviceId, UserProfile.Id profileId) {
 		super(serviceId, profileId);
-		css = new CalendarServiceSettings(serviceId);
+		css = new CalendarServiceSettings(serviceId, profileId.getDomainId());
 	}
 	
 	/**

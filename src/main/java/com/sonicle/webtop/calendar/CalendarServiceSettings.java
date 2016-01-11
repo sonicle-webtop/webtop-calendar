@@ -42,8 +42,8 @@ import org.joda.time.LocalTime;
  */
 public class CalendarServiceSettings extends BaseServiceSettings {
 
-	public CalendarServiceSettings(String serviceId) {
-		super(serviceId, "*");
+	public CalendarServiceSettings(String serviceId, String domainId) {
+		super(serviceId, domainId);
 	}
 	
 	public String getDefaultView() {

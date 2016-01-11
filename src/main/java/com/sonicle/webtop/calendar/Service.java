@@ -610,7 +610,7 @@ public class Service extends BaseService {
 	public void processGetPlanning(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Connection con = null;
 		ArrayList<MapItem> items = new ArrayList<>();
-		CoreUserSettings cus = new CoreUserSettings(getEnv().getProfileId());
+		CoreUserSettings cus = getEnv().getCoreUserSettings();
 		
 		try {
 			String eventStartDate = ServletUtils.getStringParameter(request, "startDate", true);

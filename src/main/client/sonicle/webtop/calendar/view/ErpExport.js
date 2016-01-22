@@ -64,7 +64,7 @@ Ext.define('Sonicle.webtop.calendar.view.ErpExport', {
 		var me = this;
 		return [{
 			itemId: 'start',
-			xtype: 'form',
+			xtype: 'form',// perchè form?
 			viewModel: {
 				links: {
 					record: {

@@ -587,7 +587,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		// Look for root folder and reload it!
 		node = store.findNode('_pid', model.get('_profileId'), false);
-		if(node) store.load({node: node});
+		if(node) {
+			store.load({node: node});
+			if(node.get('checked'))	me.refreshEvents();
+		}
 	},
 	
 	onEventViewSave: function(s, success, model) {

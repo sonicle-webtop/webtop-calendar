@@ -1770,7 +1770,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 	
 	private ReminderEmail createEventReminderAlertEmail(Locale locale, SchedulerEvent event) {
 		ReminderEmail alert = new ReminderEmail(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
-		
+		//TODO: completare email
 		return alert;
 	}
 	

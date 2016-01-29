@@ -53,6 +53,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'WT.mixin.FoldersTree'
 	],
 	
+	needsRefresh: true,
+	
 	init: function() {
 		var me = this;
 		//TODO: trovare una collocazione a questa chiamata
@@ -573,9 +575,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				scheduler = me.getRef('scheduler');
 		
-		if(scheduler.getStore().loadCount === 0) {
-			// skip multical, it's already updated with now date
-			scheduler.setStartDate(me.getRef('multical').getValue());
+		if(me.needsRefresh) {
+			me.needsRefresh = false;
+			if(scheduler.getStore().loadCount === 0) { // The first time...
+				//...skip multical, it's already updated with now date
+				scheduler.setStartDate(me.getRef('multical').getValue());
+			} else {
+				me.refreshEvents();
+			}
 		}
 	},
 	
@@ -600,8 +607,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	refreshEvents: function() {
 		var me = this;
-		me.getRef('multical').getStore().load();
-		me.getRef('scheduler').getStore().load();
+		if(me.isActive()) {
+			me.getRef('multical').getStore().load();
+			me.getRef('scheduler').getStore().load();
+		} else {
+			me.needsRefresh = true;
+		}
 	},
 	
 	changeView: function(view) {

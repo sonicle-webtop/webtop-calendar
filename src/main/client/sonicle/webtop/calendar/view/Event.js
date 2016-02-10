@@ -77,8 +77,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setDate(this.get('record'), 'startDate', val);
+					this.get('record').setStartDate(val);
 				}
 			},
 			startTime: {
@@ -87,8 +86,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setTime(this.get('record'), 'startDate', val);
+					this.get('record').setStartTime(val);
 				}
 			},
 			endDate: {
@@ -97,8 +95,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setDate(this.get('record'), 'endDate', val);
+					this.get('record').setEndDate(val);
 				}
 			},
 			endTime: {
@@ -107,8 +104,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
-					var EM = Sonicle.webtop.calendar.model.Event;
-					EM.setTime(this.get('record'), 'endDate', val);
+					this.get('record').setEndTime(val);
 				}
 			},
 			allDay: WTF.checkboxBind('record', 'allDay'),
@@ -204,10 +200,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		me.callParent(arguments);
 		
 		main = Ext.create({
-			xtype: 'form',
-			layout: 'anchor',
+			xtype: 'wtform',
 			modelValidation: true,
-			bodyPadding: 5,
 			defaults: {
 				labelWidth: 60
 			},
@@ -271,8 +265,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					iconCls: 'wtcal-icon-now-xs',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					handler: function() {
-						var EM = Sonicle.webtop.calendar.model.Event;
-						EM.setTime(me.getModel(), 'startDate', new Date());
+						me.getModel().setStartTime(new Date());
 					},
 					bind: {
 						disabled: '{fldallDay.checked}'
@@ -340,8 +333,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					iconCls: 'wtcal-icon-now-xs',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					handler: function() {
-						var EM = Sonicle.webtop.calendar.model.Event;
-						EM.setTime(me.getModel(), 'endDate', new Date());
+						me.getModel().setEndTime(new Date());
 					},
 					bind: {
 						disabled: '{fldallDay.checked}'
@@ -366,11 +358,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			}]
 		});
 		appointment = Ext.create({
-			xtype: 'form',
-			layout: 'anchor',
+			xtype: 'wtform',
 			title: me.mys.res('event.appointment.tit'),
 			modelValidation: true,
-			bodyPadding: 5,
 			defaults: {
 				labelWidth: 110
 			},

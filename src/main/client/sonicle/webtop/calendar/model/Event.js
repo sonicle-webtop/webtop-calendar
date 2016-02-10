@@ -51,7 +51,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('eventId', 'int', true),
 		WTF.field('calendarId', 'int', false),
 		WTF.field('recurrenceId', 'int', true),
-		WTF.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.field('startDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.field('timezone', 'string', false),
 		WTF.field('allDay', 'boolean', false, {defaultValue: false}),
@@ -96,6 +96,56 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 			return (rec.get('_recurringInfo') === 'recurring');
 		})
 	],
+	
+	setStartDate: function(date) {
+		var me = this,
+				end = me.get('endDate'), dt;
+		dt = me.setDatePart('startDate', date);
+		if(!Ext.isDate(dt) || !Ext.isDate(end)) return;
+		if(dt > end) me.set('endDate', dt);
+	},
+	
+	setStartTime: function(date) {
+		var me = this,
+				end = me.get('endDate'), dt;
+		dt = me.setTimePart('startDate', date);
+		if(!Ext.isDate(dt) || !Ext.isDate(end)) return;
+		if(dt > end) me.set('endDate', dt);
+	},
+	
+	setEndDate: function(date) {
+		var me = this,
+				sta = me.get('startDate'), dt;
+		dt = me.setDatePart('endDate', date);
+		if(!Ext.isDate(dt) || !Ext.isDate(sta)) return;
+		if(dt < sta) me.set('startDate', dt);
+	},
+	
+	setEndTime: function(date) {
+		var me = this,
+				sta = me.get('startDate'), dt;
+		dt = me.setTimePart('endDate', date);
+		if(!Ext.isDate(dt) || !Ext.isDate(sta)) return;
+		if(dt < sta) me.set('startDate', dt);
+	},
+	
+	setDatePart: function(field, date) {
+		var me = this,
+				v = me.get(field), dt;
+		if(!Ext.isDate(date) || !Ext.isDate(v)) return;
+		dt = Sonicle.Date.copyDate(date, v);
+		me.set(field, dt);
+		return dt;
+	},
+	
+	setTimePart: function(field, date) {
+		var me = this,
+				v = me.get(field), dt;
+		if(!Ext.isDate(date) || !Ext.isDate(v)) return;
+		dt = Sonicle.Date.copyTime(date, v);
+		me.set(field, dt);
+		return dt;
+	}
 
 /*	
 	hasMany: [{
@@ -103,20 +153,6 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		model: 'Sonicle.webtop.calendar.model.EventAttendee'
 	}],
 */
-	
-	statics: {
-		setDate: function(model, field, date) {
-			var val = model.get(field);
-			if(!Ext.isDate(date) || !Ext.isDate(val)) return;
-			model.set(field, Sonicle.Date.copyDate(date, val));
-		},
-
-		setTime: function(model, field, date) {
-			var val = model.get(field);
-			if(!Ext.isDate(date) || !Ext.isDate(val)) return;
-			model.set(field, Sonicle.Date.copyTime(date, val));
-		}
-	}
 });
 Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
 	extend: 'WT.ux.data.BaseModel',

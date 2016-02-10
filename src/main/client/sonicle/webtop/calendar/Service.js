@@ -690,7 +690,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	addEvent: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay) {
 		var me = this,
-				EM = Sonicle.webtop.calendar.model.Event,
 				vw = WT.createView(me.ID, 'view.Event');
 		
 		vw.getComponent(0).on('viewsave', me.onEventViewSave, me);

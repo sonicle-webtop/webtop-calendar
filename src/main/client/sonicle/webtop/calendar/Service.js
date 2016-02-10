@@ -35,17 +35,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	extend: 'WT.sdk.Service',
 	requires: [
 		'Sonicle.calendar.Panel',
-		'Sonicle.MultiCalendar',
+		'Sonicle.calendar.MultiCalendar',
+		'Sonicle.calendar.data.Events',
+		'Sonicle.calendar.data.MemoryCalendarStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
+		'Sonicle.calendar.data.Calendars', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
+		'Sonicle.calendar.data.MemoryEventStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
 		'Sonicle.grid.column.Icon',
 		'Sonicle.grid.column.Color',
 		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.GridEvent',
-		'Sonicle.calendar.data.Events',
-		'Sonicle.calendar.data.MemoryCalendarStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
-		'Sonicle.calendar.data.Calendars', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
-		'Sonicle.calendar.data.MemoryEventStore', //TODO: rimuovere dopo aver elminato la dipendenza inutile nel componente calendar
 		'Sonicle.webtop.calendar.view.Calendar',
 		'Sonicle.webtop.calendar.view.Sharing'
 	],
@@ -118,14 +118,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					items: [
 						me.addRef('multical', Ext.create({
 							xtype: 'somulticalendar',
-							border: true,
+							border: false,
 							startDay: WT.getStartDay(),
 							highlightMode: me.getOption('view'),
 							width: 184, //TODO: valutare un sistema di misura affidabile
 							height: 298,
 							store: {
 								model: 'Sonicle.webtop.calendar.model.MultiCalDate',
-								proxy: WTF.proxy(me.ID, 'GetSchedulerDates', 'dates')
+								proxy: WTF.proxy(me.ID, 'GetSchedulerDates', 'dates', {autoAbort: true})
 							},
 							listeners: {
 								change: function(s, nv) {
@@ -215,7 +215,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					store: {
 						autoSync: true,
 						model: 'Sonicle.calendar.data.EventModel',
-						proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events')
+						proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true})
 					},
 					listeners: {
 						rangeselect: function(s,dates,onComplete) {

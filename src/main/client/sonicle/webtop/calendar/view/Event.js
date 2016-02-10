@@ -450,6 +450,18 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				triggers: {
 					clear: WTF.clearTrigger()
 				},
+				listeners: {
+					select: function() {
+						var model = me.getModel();
+						model.set('statisticId', null);
+						model.set('causalId', null);
+					},
+					clear: function() {
+						var model = me.getModel();
+						model.set('statisticId', null);
+						model.set('causalId', null);
+					}
+				},
 				fieldLabel: me.mys.res('event.fld-customer.lbl'),
 				anchor: '100%'
 			}),
@@ -1055,47 +1067,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		this.lref('fldactivity').getStore().load();
 	},
 	
-	/*
-	updateActivityParams: function(reload) {
-		var store = this.lref('fldactivity').getStore();
-		WTU.applyExtraParams(store, {
-			profileId: this.lref('fldowner').getValue()
-		});
-		if(reload) store.load();
-	},
-	*/
-	
 	refreshStatistics: function() {
 		this.lref('fldstatistic').getStore().load();
 	},
 	
-	/*
-	updateStatisticParams: function(reload) {
-		var me = this,
-				store = me.lref('fldstatistic').getStore();
-		WTU.applyExtraParams(store, {
-			profileId: me.lref('fldowner').getValue(),
-			parentCustomerId: me.lref('fldcustomer').getValue()
-		});
-		if(reload) store.load();
-	},
-	*/
-	
 	refreshCausals: function() {
 		this.lref('fldcausal').getStore().load();
 	},
-	
-	/*
-	updateCausalParams: function(reload) {
-		var me = this,
-				store = me.lref('fldcausal').getStore();
-		WTU.applyExtraParams(store, {
-			profileId: me.lref('fldowner').getValue(),
-			customerId: me.lref('fldcustomer').getValue()
-		});
-		if(reload) store.load();
-	},
-	*/
 	
 	updateCalendarFilters: function() {
 		this.lref('fldcalendar').getStore().addFilter({
@@ -1118,14 +1096,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	onCustomerChanged: function() {
-		var me = this,
-				model = me.getModel();
-		model.set('statisticId', null);
-		model.set('causalId', null);
-		//me.updateStatisticParams(true);
-		me.refreshStatistics();
-		//me.updateCausalParams(true);
-		me.refreshCausals();
+		this.refreshStatistics();
+		this.refreshCausals();
 	},
 	
 	saveEvent: function() {

@@ -202,7 +202,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						ddMoveEventText: me.res('socal.ddmoveevent'),
 						ddResizeEventText: me.res('socal.ddresizeevent'),
 						ddDateFormat: 'j/m',
-						scrollStartHour: 7
+						scrollStartHour: Math.max(me.getOption('workdayStart').getHours()-1, 0),
+						businessHoursStart: me.getOption('workdayStart').getHours(),
+						businessHoursEnd: me.getOption('workdayEnd').getHours()
 					},
 					monthViewCfg: {
 						showHeader: true,

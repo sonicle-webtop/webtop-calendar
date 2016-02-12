@@ -217,7 +217,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					store: {
 						autoSync: true,
 						model: 'Sonicle.calendar.data.EventModel',
-						proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true})
+						proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true}),
+						listeners: {
+							write: function() {
+								me.getRef('multical').getStore().load();
+							}
+						}
 					},
 					listeners: {
 						rangeselect: function(s,dates,onComplete) {

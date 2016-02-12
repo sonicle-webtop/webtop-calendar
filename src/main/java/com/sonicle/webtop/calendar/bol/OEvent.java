@@ -36,7 +36,7 @@ package com.sonicle.webtop.calendar.bol;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
-import com.sonicle.webtop.core.dal.BaseDAO.RevisionInfo;
+import com.sonicle.webtop.core.dal.BaseDAO.CrudInfo;
 import org.joda.time.DateTime;
 
 /**
@@ -54,10 +54,15 @@ public class OEvent extends Events {
 		setStatus(STATUS_NEW);
 	}
 	
-	public void setRevisionInfo(RevisionInfo revision) {
-		setLastModified(revision.lastModified);
-		setUpdateDevice(revision.lastDevice);
-		setUpdateUser(revision.lastUser);
+	public void setInsertionInfo(CrudInfo insertionInfo) {
+		//TODO: impostare i valori...
+		setRevisionInfo(insertionInfo);
+	}
+	
+	public void setRevisionInfo(CrudInfo revisionInfo) {
+		setLastModified(revisionInfo.timestamp);
+		setUpdateDevice(revisionInfo.device);
+		setUpdateUser(revisionInfo.user);
 	}
 	
 	public void fillFrom(Event event) {

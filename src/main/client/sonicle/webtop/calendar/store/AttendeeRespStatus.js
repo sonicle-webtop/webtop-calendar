@@ -36,9 +36,17 @@ Ext.define('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 	
 	model: 'WT.model.Simple',
 	data: [
-		['unknown', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.unknown')],
-		['declined', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.declined')],
-		['tentative', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.tentative')],
-		['accepted', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.accepted')]
-	]
+		['unknown', ''],
+		['declined', ''],
+		['tentative', ''],
+		['accepted', '']
+	],
+	
+	constructor: function(cfg) {
+		var me = this;
+		Ext.each(me.config.data, function(row) {
+			row[1] = WT.res('com.sonicle.webtop.calendar', 'store.attendeeRespStatus.'+row[0]);
+		});
+		me.callParent([cfg]);
+	}
 });

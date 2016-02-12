@@ -78,9 +78,11 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public int insert(Connection con, OEvent item) throws DAOException {
+	public int insert(Connection con, OEvent item, CrudInfo insertionInfo) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		OEvent.ensureCoherence(item);
+		item.setStatus(OEvent.STATUS_NEW);
+		item.setInsertionInfo(insertionInfo);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)
@@ -88,9 +90,11 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int update(Connection con, OEvent item) throws DAOException {
+	public int update(Connection con, OEvent item, CrudInfo revisionInfo) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		OEvent.ensureCoherence(item);
+		item.setStatus(OEvent.STATUS_MODIFIED);
+		item.setRevisionInfo(revisionInfo);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
@@ -106,21 +110,64 @@ public class EventDAO extends BaseDAO {
 			.set(EVENTS.BUSY, item.getBusy())
 			.set(EVENTS.REMINDER, item.getReminder())
 			.set(EVENTS.READ_ONLY, item.getReadOnly())
-			.set(EVENTS.LAST_MODIFIED, item.getLastModified())
-			.set(EVENTS.UPDATE_DEVICE, item.getUpdateDevice())
-			.set(EVENTS.UPDATE_USER, item.getUpdateUser())
 			.set(EVENTS.ACTIVITY_ID, item.getActivityId())
 			.set(EVENTS.CUSTOMER_ID, item.getCustomerId())
 			.set(EVENTS.STATISTIC_ID, item.getStatisticId())
 			.set(EVENTS.CAUSAL_ID, item.getCausalId())
 			.set(EVENTS.ORGANIZER, item.getOrganizer())
+			.set(EVENTS.STATUS, item.getStatus())
+			.set(EVENTS.LAST_MODIFIED, item.getLastModified())
+			.set(EVENTS.UPDATE_DEVICE, item.getUpdateDevice())
+			.set(EVENTS.UPDATE_USER, item.getUpdateUser())
 			.where(
 				EVENTS.EVENT_ID.equal(item.getEventId())
 			)
 			.execute();
 	}
 	
-	public int updateRemindedOn(Connection con, Integer eventId, DateTime remindedOn) throws DAOException {
+	public int updateCalendar(Connection con, int eventId, int calendarId, CrudInfo revisionInfo) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.CALENDAR_ID,calendarId)
+			.set(EVENTS.STATUS, OEvent.STATUS_MODIFIED)
+			.set(EVENTS.LAST_MODIFIED, revisionInfo.timestamp)
+			.set(EVENTS.UPDATE_DEVICE, revisionInfo.device)
+			.set(EVENTS.UPDATE_USER, revisionInfo.user)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+			)
+			.execute();
+	}
+	
+	public int updateRevision(Connection con, int eventId, CrudInfo revisionInfo) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.LAST_MODIFIED, revisionInfo.timestamp)
+			.set(EVENTS.UPDATE_DEVICE, revisionInfo.device)
+			.set(EVENTS.UPDATE_USER, revisionInfo.user)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+			)
+			.execute();
+	}
+	
+	public int updateStatus(Connection con, int eventId, String status, CrudInfo revisionInfo) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.STATUS, status)
+			.set(EVENTS.LAST_MODIFIED, revisionInfo.timestamp)
+			.set(EVENTS.UPDATE_DEVICE, revisionInfo.device)
+			.set(EVENTS.UPDATE_USER, revisionInfo.user)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+			)
+			.execute();
+	}
+	
+	public int updateRemindedOn(Connection con, int eventId, DateTime remindedOn) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -131,7 +178,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateRemindedOnIfNull(Connection con, Integer eventId, DateTime remindedOn) throws DAOException {
+	public int updateRemindedOnIfNull(Connection con, int eventId, DateTime remindedOn) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -143,48 +190,21 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateRevision(Connection con, Integer eventId, RevisionInfo updateInfo) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.update(EVENTS)
-			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.lastDevice)
-			.set(EVENTS.UPDATE_USER, updateInfo.lastUser)
-			.where(
-				EVENTS.EVENT_ID.equal(eventId)
-			)
-			.execute();
-	}
-	
-	public int updateStatus(Connection con, Integer eventId, String status, RevisionInfo updateInfo) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.update(EVENTS)
-			.set(EVENTS.STATUS, status)
-			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.lastDevice)
-			.set(EVENTS.UPDATE_USER, updateInfo.lastUser)
-			.where(
-				EVENTS.EVENT_ID.equal(eventId)
-			)
-			.execute();
-	}
-	
-	public int logicDeleteById(Connection con, Integer eventId, RevisionInfo updateInfo) throws DAOException {
+	public int logicDeleteById(Connection con, int eventId, CrudInfo revisionInfo) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.STATUS, OEvent.STATUS_DELETED)
-			.set(EVENTS.LAST_MODIFIED, updateInfo.lastModified)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.lastDevice)
-			.set(EVENTS.UPDATE_USER, updateInfo.lastUser)
+			.set(EVENTS.LAST_MODIFIED, revisionInfo.timestamp)
+			.set(EVENTS.UPDATE_DEVICE, revisionInfo.device)
+			.set(EVENTS.UPDATE_USER, revisionInfo.user)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
 			.execute();
 	}
 	
-	public VSchedulerEvent view(Connection con, Integer eventId) throws DAOException {
+	public VSchedulerEvent view(Connection con, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
 		Events eve = EVENTS.as("eve");

@@ -37,9 +37,17 @@ Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptType', {
 	
 	model: 'WT.model.Simple',
 	data: [
-		['G', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.G')],
-		['N', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.N')],
-		['O', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.O')],
-		['R', WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.R')]
-	]
+		['G', ''],
+		['N', ''],
+		['O', ''],
+		['R', '']
+	],
+	
+	constructor: function(cfg) {
+		var me = this;
+		Ext.each(me.config.data, function(row) {
+			row[1] = WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptType.'+row[0]);
+		});
+		me.callParent([cfg]);
+	}
 });

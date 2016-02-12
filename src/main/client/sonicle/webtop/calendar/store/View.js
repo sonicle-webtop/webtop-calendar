@@ -36,10 +36,18 @@ Ext.define('Sonicle.webtop.calendar.store.View', {
 	
 	model: 'WT.model.Simple',
 	data: [
-		['d', WT.res('com.sonicle.webtop.calendar', 'store.view.d')],
-		['w5', WT.res('com.sonicle.webtop.calendar', 'store.view.w5')],
-		['w', WT.res('com.sonicle.webtop.calendar', 'store.view.w')],
-		['dw', WT.res('com.sonicle.webtop.calendar', 'store.view.dw')],
-		['m', WT.res('com.sonicle.webtop.calendar', 'store.view.m')]
-	]
+		['d', ''],
+		['w5', ''],
+		['w', ''],
+		['dw', ''],
+		['m', '']
+	],
+	
+	constructor: function(cfg) {
+		var me = this;
+		Ext.each(me.config.data, function(row) {
+			row[1] = WT.res('com.sonicle.webtop.calendar', 'store.view.'+row[0]);
+		});
+		me.callParent([cfg]);
+	}
 });

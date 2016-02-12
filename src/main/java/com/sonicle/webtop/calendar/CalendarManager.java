@@ -65,7 +65,7 @@ import com.sonicle.webtop.core.bol.OCustomer;
 import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ActivityDAO;
-import com.sonicle.webtop.core.dal.BaseDAO.RevisionInfo;
+import com.sonicle.webtop.core.dal.BaseDAO.CrudInfo;
 import com.sonicle.webtop.core.dal.CausalDAO;
 import com.sonicle.webtop.core.dal.CustomerDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
@@ -244,7 +244,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		return roots;
 	}
 	
-	public Collection<CalendarFolder> listIncomingCalendarFolders(String rootShareId) throws WTException {
+	public HashMap<Integer, CalendarFolder> listIncomingCalendarFolders(String rootShareId) throws WTException {
 		CoreManager core = WT.getCoreManager(getRunContext());
 		LinkedHashMap<Integer, CalendarFolder> folders = new LinkedHashMap<>();
 		UserProfile.Id pid = getTargetProfileId();
@@ -275,7 +275,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 				}
 			}
 		}
-		return folders.values();
+		return folders;
 	}
 	
 	public Sharing getSharing(String shareId) throws WTException {
@@ -595,7 +595,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			
 			OEvent original = edao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarElements(original.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarFolder(original.getCalendarId(), "READ"); // Rights check!
 			
 			VSchedulerEvent se = edao.view(con, ekey.eventId);
 			se.updateCalculatedFields(); // TODO: Serve??????????????????????
@@ -731,13 +731,11 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		}
 	}
 	
-	public void copyEvent(String eventKey, DateTime startDate, DateTime endDate) throws WTException {
+	public void cloneEvent(String eventKey, DateTime startDate, DateTime endDate) throws WTException {
 		Connection con = null;
 		
 		try {
-			EventKey ekey = new EventKey(eventKey);
 			Event event = getEvent(eventKey);
-			if(event == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
 			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
 			
 			event.setStartDate(startDate);
@@ -761,7 +759,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 	}
 	
 	public void updateEvent(String eventKey, DateTime startDate, DateTime endDate, String title) throws WTException {
-		EventDAO evtdao = EventDAO.getInstance();
+		EventDAO edao = EventDAO.getInstance();
 		Connection con = null;
 		
 		try {
@@ -769,21 +767,19 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
 			
-			OEvent original = evtdao.selectById(con, ekey.originalEventId);
+			OEvent original = edao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
 			checkRightsOnCalendarElements(original.getCalendarId(), "UPDATE");
 			
 			String type = guessEventType(ekey, original);
 			if(type.equals(EVENT_NORMAL) || type.equals(EVENT_BROKEN)) {
 				// 1 - Updates event's dates/times (+revision)
-				OEvent evt = evtdao.selectById(con, ekey.eventId);
+				OEvent evt = edao.selectById(con, ekey.eventId);
 				if(evt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
 				evt.setStartDate(startDate);
 				evt.setEndDate(endDate);
 				evt.setTitle(title);
-				evt.setStatus(OEvent.STATUS_MODIFIED);
-				evt.setRevisionInfo(createRevisionInfo());
-				evtdao.update(con, evt);
+				edao.update(con, evt, createRevisionInfo());
 				
 			} else {
 				throw new WTException("Unable to move recurring event instance [{}]", ekey.eventId);
@@ -868,7 +864,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		}
 	}
 	
-	public void deleteEvent(Connection con, Integer eventId) throws WTException {
+	private void deleteEvent(Connection con, int eventId) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		edao.logicDeleteById(con, eventId, createRevisionInfo());
 		//TODO: cancellare reminder
@@ -897,6 +893,31 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			
 			DbUtils.commitQuietly(con);
 			
+		} catch(SQLException | DAOException ex) {
+			DbUtils.rollbackQuietly(con);
+			throw new WTException(ex, "DB error");
+		} catch(Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public void moveEvent(boolean copy, String eventKey, int targetCalendarId) throws WTException {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			con.setAutoCommit(false);
+			
+			Event evt = getEvent(eventKey);
+			if(copy || (targetCalendarId != evt.getCalendarId())) {
+				checkRightsOnCalendarElements(targetCalendarId, "CREATE"); // Rights check!
+				
+				doMoveEvent(con, copy, evt, targetCalendarId);
+				DbUtils.commitQuietly(con);
+			}
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
 			throw new WTException(ex, "DB error");
@@ -1440,46 +1461,6 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		}
 	}
 	
-	private OEvent doEventUpdate(Connection con, OEvent oevt, Event event, boolean attendees) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
-		
-		oevt.fillFrom(event);
-		oevt.setStatus(OEvent.STATUS_MODIFIED);
-		oevt.setRevisionInfo(createRevisionInfo());
-		
-		eadao.selectByEvent(con, oevt.getEventId());
-		
-		if(attendees) {
-			List<EventAttendee> fromList = createEventAttendeeList(eadao.selectByEvent(con, oevt.getEventId()));
-			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(fromList, event.getAttendees());
-			
-			OEventAttendee oatt = null;
-			for(EventAttendee att : changeSet.created) {
-				oatt = new OEventAttendee();
-				oatt.fillFrom(att);
-				oatt.setAttendeeId(WT.generateUUID());
-				oatt.setEventId(oevt.getEventId());
-				eadao.insert(con, oatt);
-			}
-			for(EventAttendee att : changeSet.updated) {
-				oatt = new OEventAttendee();
-				oatt.fillFrom(att);
-				eadao.update(con, oatt);
-			}
-			for(EventAttendee att : changeSet.deleted) {
-				eadao.delete(con, att.getAttendeeId());
-			}
-		}
-		
-		edao.update(con, oevt);
-		return oevt;
-	}
-	
-	private String generateEventUid() {
-		return ICalendarUtils.buildUid(WT.generateUUID(), host);
-	}
-	
 	private InsertResult doEventInsert(Connection con, Event event, boolean recurrence, boolean attendees) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
@@ -1494,8 +1475,6 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			oevt.setPublicUid(event.getPublicUid());
 			
 		}
-		oevt.setStatus(OEvent.STATUS_NEW);
-		oevt.setRevisionInfo(createRevisionInfo());
 		
 		ArrayList<OEventAttendee> oatts = new ArrayList<>();
 		if(attendees && event.hasAttendees()) {
@@ -1523,9 +1502,51 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		} else {
 			oevt.setRecurrenceId(null);
 		}
-		evtDao.insert(con, oevt);
+		evtDao.insert(con, oevt, createRevisionInfo());
 		
 		return new InsertResult(oevt, orec, oatts);
+	}
+	
+	private OEvent doEventUpdate(Connection con, OEvent oevt, Event event, boolean attendees) throws WTException {
+		EventDAO edao = EventDAO.getInstance();
+		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
+		
+		oevt.fillFrom(event);
+		if(attendees) {
+			eadao.selectByEvent(con, oevt.getEventId());
+			List<EventAttendee> fromList = createEventAttendeeList(eadao.selectByEvent(con, oevt.getEventId()));
+			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(fromList, event.getAttendees());
+			
+			OEventAttendee oatt = null;
+			for(EventAttendee att : changeSet.created) {
+				oatt = new OEventAttendee();
+				oatt.fillFrom(att);
+				oatt.setAttendeeId(WT.generateUUID());
+				oatt.setEventId(oevt.getEventId());
+				eadao.insert(con, oatt);
+			}
+			for(EventAttendee att : changeSet.updated) {
+				oatt = new OEventAttendee();
+				oatt.fillFrom(att);
+				eadao.update(con, oatt);
+			}
+			for(EventAttendee att : changeSet.deleted) {
+				eadao.delete(con, att.getAttendeeId());
+			}
+		}
+		
+		edao.update(con, oevt, createRevisionInfo());
+		return oevt;
+	}
+	
+	private void doMoveEvent(Connection con, boolean copy, Event event, int targetCalendarId) throws WTException {
+		if(copy) {
+			event.setCalendarId(targetCalendarId);
+			doEventInsert(con, event, true, true);
+		} else {
+			EventDAO edao = EventDAO.getInstance();
+			edao.updateCalendar(con, event.getEventId(), targetCalendarId, createRevisionInfo());
+		}
 	}
 	
 	private ORecurrenceBroken doExcludeRecurrenceDate(Connection con, OEvent recurringEvent, LocalDate instanceDate) throws DAOException {
@@ -1774,8 +1795,8 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		return alert;
 	}
 	
-	private RevisionInfo createRevisionInfo() {
-		return new RevisionInfo("WT", getRunProfileId().toString());
+	private CrudInfo createRevisionInfo() {
+		return new CrudInfo("WT", getRunProfileId().toString());
 	}
 	
 	public static class InsertResult {

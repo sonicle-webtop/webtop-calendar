@@ -45,7 +45,6 @@ import org.joda.time.format.DateTimeFormatter;
  * @author malbinola
  */
 public class JsSchedulerEvent {
-	
 	public String id;
 	public Integer eventId;
 	public Integer originalEventId;
@@ -63,10 +62,8 @@ public class JsSchedulerEvent {
 	public Boolean isRecurring;
 	public Boolean isBroken;
 	public String folderName;
+	public String _rights;
 	public String _profileId;
-	
-	public String notes = "";
-	public String url = "";
 	
 	public JsSchedulerEvent() {}
 	

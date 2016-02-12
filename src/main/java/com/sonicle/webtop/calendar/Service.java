@@ -89,6 +89,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -117,30 +118,30 @@ public class Service extends BaseService {
 	public static final String ERP_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
 	
 	private final LinkedHashMap<String, CalendarRoot> roots = new LinkedHashMap<>();
+	private final HashMap<String, ArrayList<CalendarFolder>> foldersByRoot = new HashMap<>();
+	private final LinkedHashMap<Integer, CalendarFolder> folders = new LinkedHashMap<>();
 	private CheckedRoots checkedRoots = null;
 	private CheckedFolders checkedFolders = null;
 	private ErpExportWizard erpWizard = null;
 
 	@Override
-	public void initialize() {
+	public void initialize() throws Exception {
 		UserProfile profile = getEnv().getProfile();
 		manager = new CalendarManager(getRunContext());
 		ss = new CalendarServiceSettings(SERVICE_ID, profile.getDomainId());
 		us = new CalendarUserSettings(SERVICE_ID, profile.getId());
-		
-		try {
-			initFolders();
-		} catch(Exception ex) {
-			logger.error("initFolders", ex);
-		}
+		initFolders();
 	}
 	
 	@Override
-	public void cleanup() {
+	public void cleanup() throws Exception {
 		checkedFolders.clear();
 		checkedFolders = null;
 		checkedRoots.clear();
 		checkedRoots = null;
+		folders.clear();
+		foldersByRoot.clear();
+		roots.clear();
 		us = null;
 		ss = null;
 		manager = null;
@@ -159,11 +160,8 @@ public class Service extends BaseService {
 	private void initFolders() throws Exception {
 		UserProfile.Id pid = getEnv().getProfile().getId();
 		synchronized(roots) {
-			roots.clear();
-			roots.put(MyCalendarRoot.SHARE_ID, new MyCalendarRoot(pid));
-			for(CalendarRoot root : manager.listIncomingCalendarRoots()) {
-				roots.put(root.getShareId(), root);
-			}
+			updateRootFoldersCache();
+			updateFoldersCache();
 
 			checkedRoots = us.getCheckedCalendarRoots();
 			// If empty, adds MyNode checked by default!
@@ -172,6 +170,39 @@ public class Service extends BaseService {
 				us.setCheckedCalendarRoots(checkedRoots);
 			}
 			checkedFolders = us.getCheckedCalendarFolders();
+		}
+	}
+	
+	private void updateRootFoldersCache() throws WTException {
+		UserProfile.Id pid = getEnv().getProfile().getId();
+		synchronized(roots) {
+			roots.clear();
+			roots.put(MyCalendarRoot.SHARE_ID, new MyCalendarRoot(pid));
+			for(CalendarRoot root : manager.listIncomingCalendarRoots()) {
+				roots.put(root.getShareId(), root);
+			}
+		}
+	}
+	
+	private void updateFoldersCache() throws WTException {
+		synchronized(roots) {
+			foldersByRoot.clear();
+			folders.clear();
+			for(CalendarRoot root : roots.values()) {
+				foldersByRoot.put(root.getShareId(), new ArrayList<CalendarFolder>());
+				if(root instanceof MyCalendarRoot) {
+					for(OCalendar cal : manager.listCalendars()) {
+						MyCalendarFolder fold = new MyCalendarFolder(root.getShareId(), cal);
+						foldersByRoot.get(root.getShareId()).add(fold);
+						folders.put(cal.getCalendarId(), fold);
+					}
+				} else {
+					for(CalendarFolder fold : manager.listIncomingCalendarFolders(root.getShareId()).values()) {
+						foldersByRoot.get(root.getShareId()).add(fold);
+						folders.put(fold.getCalendar().getCalendarId(), fold);
+					}
+				}
+			}
 		}
 	}
 	
@@ -196,8 +227,16 @@ public class Service extends BaseService {
 							children.add(createFolderNode(folder, root.getPerms()));
 						}
 					} else {
-						for(CalendarFolder folder : manager.listIncomingCalendarFolders(node)) {
-							children.add(createFolderNode(folder, root.getPerms()));
+						/*
+						HashMap<Integer, CalendarFolder> folds = manager.listIncomingCalendarFolders(root.getShareId());
+						for(CalendarFolder fold : folds.values()) {
+							children.add(createFolderNode(fold, root.getPerms()));
+						}
+						*/
+						if(foldersByRoot.containsKey(root.getShareId())) {
+							for(CalendarFolder fold : foldersByRoot.get(root.getShareId())) {
+								children.add(createFolderNode(fold, root.getPerms()));
+							}
 						}
 					}
 				}
@@ -268,9 +307,18 @@ public class Service extends BaseService {
 						items.add(new JsCalendarLkp(cal));
 					}
 				} else {
-					for(CalendarFolder folder : manager.listIncomingCalendarFolders(root.getShareId())) {
-						if(!folder.getElementsPerms().implies("CREATE")) continue;
-						items.add(new JsCalendarLkp(folder.getCalendar()));
+					/*
+					HashMap<Integer, CalendarFolder> folds = manager.listIncomingCalendarFolders(root.getShareId());
+					for(CalendarFolder fold : folds.values()) {
+						if(!fold.getElementsPerms().implies("CREATE")) continue;
+						items.add(new JsCalendarLkp(fold.getCalendar()));
+					}
+					*/
+					if(foldersByRoot.containsKey(root.getShareId())) {
+						for(CalendarFolder fold : foldersByRoot.get(root.getShareId())) {
+							if(!fold.getElementsPerms().implies("CREATE")) continue;
+							items.add(new JsCalendarLkp(fold.getCalendar()));
+						}
 					}
 				}
 			}
@@ -321,6 +369,7 @@ public class Service extends BaseService {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
 				item = manager.addCalendar(pl.data);
+				updateFoldersCache();
 				toggleCheckedFolder(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
@@ -334,6 +383,7 @@ public class Service extends BaseService {
 				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
 				
 				manager.deleteCalendar(pl.data.getCalendarId());
+				updateFoldersCache();
 				new JsonResult().printTo(out);
 			}
 			
@@ -394,20 +444,25 @@ public class Service extends BaseService {
 				// Get events for each visible folder
 				JsSchedulerEvent jse = null;
 				List<SchedulerEvent> recInstances = null;
-				List<CalendarManager.CalendarEvents> calEvts = null;
+				List<CalendarManager.CalendarEvents> foldEvents = null;
 				Integer[] checked = getCheckedFolders();
 				for(CalendarRoot root : getCheckedRoots()) {
-					calEvts = manager.listSchedulerEvents(root, checked, fromDate, toDate);
-					// Iterates over calendar->events
-					for(CalendarManager.CalendarEvents ce : calEvts) {
+					foldEvents = manager.listSchedulerEvents(root, checked, fromDate, toDate);
+					
+					for(CalendarManager.CalendarEvents ce : foldEvents) {
+						CalendarFolder fold = folders.get(ce.calendar.getCalendarId());
+						if(fold == null) continue;
+						
 						for(SchedulerEvent evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
 								jse = new JsSchedulerEvent(ce.calendar, evt, up.getId(), utz);
+								jse._rights = fold.getElementsPerms().toString();
 								items.add(jse);
 							} else {
 								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
 								for(SchedulerEvent recInstance : recInstances) {
 									jse = new JsSchedulerEvent(ce.calendar, recInstance, up.getId(), utz);
+									jse._rights = fold.getElementsPerms().toString();
 									items.add(jse);
 								}
 							}
@@ -422,7 +477,7 @@ public class Service extends BaseService {
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
 				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
 				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
-				manager.copyEvent(EventKey.buildKey(pl.data.eventId, pl.data.originalEventId), newStart, newEnd);
+				manager.cloneEvent(EventKey.buildKey(pl.data.eventId, pl.data.originalEventId), newStart, newEnd);
 				
 				new JsonResult().printTo(out);
 				
@@ -506,6 +561,14 @@ public class Service extends BaseService {
 				
 				Event evt = JsEvent.buildEvent(pl.data);
 				manager.editEvent(target, evt, up.getTimeZone());
+				new JsonResult().printTo(out);
+				
+			} else if(crud.equals(Crud.MOVE)) {
+				String id = ServletUtils.getStringParameter(request, "id", true);
+				Integer calendarId = ServletUtils.getIntParameter(request, "targetCalendarId", true);
+				boolean copy = ServletUtils.getBooleanParameter(request, "copy", false);
+				
+				manager.moveEvent(copy, id, calendarId);
 				new JsonResult().printTo(out);
 			}
 			

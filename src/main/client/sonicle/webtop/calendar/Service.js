@@ -221,6 +221,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					},
 					listeners: {
+						contextmenu: function(s,e) {
+							WT.showContextMenu(e, me.getRef('cxmScheduler'));
+						},
 						rangeselect: function(s,dates,onComplete) {
 							onComplete();
 							var cal = me.getSelectedFolder(me.getRef('folderstree'));
@@ -247,8 +250,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 								me.addEvent(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end, ad);
 							}
 						},
-						eventcontextmenu: function(s, rec, el, evt) {
-							WT.showContextMenu(evt, me.getRef('cxmEvent'), {event: rec});
+						eventcontextmenu: function(s, rec, el, e) {
+							WT.showContextMenu(e, me.getRef('cxmEvent'), {event: rec});
 						}
 					}
 				})),
@@ -577,6 +580,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		}));
 		
+		me.addRef('cxmScheduler', Ext.create({
+			xtype: 'menu',
+			items: [
+				me.getAction('addEvent'),
+				me.getAction('printEvent')
+			]
+		}));
+		
 		me.addRef('cxmEvent', Ext.create({
 			xtype: 'menu',
 			items: [
@@ -693,7 +704,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			}, me);
 		} else {
-			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(title), 40), function(bid) {
+			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(title, 40)), function(bid) {
 				if(bid === 'yes') {
 					deleteEvent(id, 'this', {
 						cb: function(succ) {

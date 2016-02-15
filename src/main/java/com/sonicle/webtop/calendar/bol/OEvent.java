@@ -54,15 +54,17 @@ public class OEvent extends Events {
 		setStatus(STATUS_NEW);
 	}
 	
-	public void setInsertionInfo(CrudInfo insertionInfo) {
-		//TODO: impostare i valori...
-		setRevisionInfo(insertionInfo);
+	public void setInsertInfo(CrudInfo insertInfo) {
+		setInsertTimestamp(insertInfo.timestamp);
+		setInsertDevice(insertInfo.device);
+		setInsertUser(insertInfo.user);
+		setUpdateInfo(insertInfo);
 	}
 	
-	public void setRevisionInfo(CrudInfo revisionInfo) {
-		setLastModified(revisionInfo.timestamp);
-		setUpdateDevice(revisionInfo.device);
-		setUpdateUser(revisionInfo.user);
+	public void setUpdateInfo(CrudInfo updateInfo) {
+		setUpdateTimestamp(updateInfo.timestamp);
+		setUpdateDevice(updateInfo.device);
+		setUpdateUser(updateInfo.user);
 	}
 	
 	public void fillFrom(Event event) {

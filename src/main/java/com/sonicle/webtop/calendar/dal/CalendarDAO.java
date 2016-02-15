@@ -170,8 +170,9 @@ public class CalendarDAO extends BaseDAO {
 				.fetchInto(OCalendar.class);
 	}
 	
-	public int insert(Connection con, OCalendar item) throws DAOException {
+	public int insert(Connection con, OCalendar item, CrudInfo insertInfo) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		item.setInsertInfo(insertInfo);
 		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
 		return dsl
 			.insertInto(CALENDARS)
@@ -179,8 +180,9 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int update(Connection con, OCalendar item) throws DAOException {
+	public int update(Connection con, OCalendar item, CrudInfo updateInfo) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		item.setUpdateInfo(updateInfo);
 		return dsl
 			.update(CALENDARS)
 			.set(CALENDARS.NAME, item.getName())
@@ -192,17 +194,19 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.SYNC, item.getSync())
 			.set(CALENDARS.INVITATION, item.getInvitation())
 			.set(CALENDARS.IS_DEFAULT, item.getIsDefault())
+			.set(CALENDARS.UPDATE_TIMESTAMP, updateInfo.timestamp)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(item.getCalendarId())
 			)
 			.execute();
 	}
 	
-	public int update(Connection con, Integer calendarId, FieldsMap fieldValues) throws DAOException {
+	public int update(Connection con, int calendarId, FieldsMap fieldValues, CrudInfo updateInfo) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(CALENDARS)
 			.set(fieldValues)
+			.set(CALENDARS.UPDATE_TIMESTAMP, updateInfo.timestamp)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)

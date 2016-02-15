@@ -339,7 +339,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			item.setCalendarId(dao.getSequence(con).intValue());
 			item.setBuiltIn(false);
 			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
-			dao.insert(con, item);
+			dao.insert(con, item, createUpdateInfo());
 			DbUtils.commitQuietly(con);
 			return item;
 			
@@ -364,7 +364,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			CalendarDAO dao = CalendarDAO.getInstance();
 			
 			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
-			dao.update(con, item);
+			dao.update(con, item, createUpdateInfo());
 			DbUtils.commitQuietly(con);
 			return item;
 			
@@ -691,7 +691,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 					// 2 - Marks recurring event date inserting a broken record
 					doExcludeRecurrenceDate(con, original, ekey.atDate, insert.event.getEventId());
 					// 3 - Updates revision of original event
-					edao.updateRevision(con, original.getEventId(), createRevisionInfo());
+					edao.updateRevision(con, original.getEventId(), createUpdateInfo());
 					
 				} else if(target.equals(TARGET_SINCE)) {
 					// 1 - Resize original recurrence (sets until date at the day before date)
@@ -701,7 +701,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 					orec.applyEndUntil(ekey.atDate.minusDays(1).toDateTimeAtStartOfDay(), DateTimeZone.forID(original.getTimezone()), true);
 					rdao.update(con, orec);
 					// 2 - Updates revision of original event
-					edao.updateRevision(con, original.getEventId(), createRevisionInfo());
+					edao.updateRevision(con, original.getEventId(), createUpdateInfo());
 					// 3 - Insert new event adjusting recurrence a bit
 					event.getRecurrence().setEndsMode(Recurrence.ENDS_MODE_UNTIL);
 					event.getRecurrence().setUntilDate(until);
@@ -779,7 +779,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 				evt.setStartDate(startDate);
 				evt.setEndDate(endDate);
 				evt.setTitle(title);
-				edao.update(con, evt, createRevisionInfo());
+				edao.update(con, evt, createUpdateInfo());
 				
 			} else {
 				throw new WTException("Unable to move recurring event instance [{}]", ekey.eventId);
@@ -824,7 +824,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 					// 1 - logically delete newevent (broken one)
 					deleteEvent(con, ekey.eventId);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createRevisionInfo());
+					evtdao.updateRevision(con, original.getEventId(), createUpdateInfo());
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
@@ -833,7 +833,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 					doExcludeRecurrenceDate(con, original, ekey.atDate);
 					
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createRevisionInfo());
+					evtdao.updateRevision(con, original.getEventId(), createUpdateInfo());
 					
 				} else if(target.equals(TARGET_SINCE)) {
 					// 1 - resize original recurrence (sets until date at the day before deleted date)
@@ -843,7 +843,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 					rec.updateRRule(DateTimeZone.forID(original.getTimezone()));
 					recdao.update(con, rec);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createRevisionInfo());
+					evtdao.updateRevision(con, original.getEventId(), createUpdateInfo());
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - logically delete original event
@@ -866,7 +866,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 	
 	private void deleteEvent(Connection con, int eventId) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
-		edao.logicDeleteById(con, eventId, createRevisionInfo());
+		edao.logicDeleteById(con, eventId, createUpdateInfo());
 		//TODO: cancellare reminder
 		//TODO: se ricorrenza, eliminare tutte le broken dove newid!=null ??? Non servi più dato che verifico il D dell'evento ricorrente
 	}
@@ -1502,7 +1502,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		} else {
 			oevt.setRecurrenceId(null);
 		}
-		evtDao.insert(con, oevt, createRevisionInfo());
+		evtDao.insert(con, oevt, createUpdateInfo());
 		
 		return new InsertResult(oevt, orec, oatts);
 	}
@@ -1535,7 +1535,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			}
 		}
 		
-		edao.update(con, oevt, createRevisionInfo());
+		edao.update(con, oevt, createUpdateInfo());
 		return oevt;
 	}
 	
@@ -1545,7 +1545,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			doEventInsert(con, event, true, true);
 		} else {
 			EventDAO edao = EventDAO.getInstance();
-			edao.updateCalendar(con, event.getEventId(), targetCalendarId, createRevisionInfo());
+			edao.updateCalendar(con, event.getEventId(), targetCalendarId, createUpdateInfo());
 		}
 	}
 	
@@ -1795,7 +1795,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		return alert;
 	}
 	
-	private CrudInfo createRevisionInfo() {
+	private CrudInfo createUpdateInfo() {
 		return new CrudInfo("WT", getRunProfileId().toString());
 	}
 	

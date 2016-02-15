@@ -38,6 +38,8 @@ import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.core.RunContext;
 import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.dal.BaseDAO;
+import com.sonicle.webtop.core.dal.BaseDAO.CrudInfo;
 import com.sonicle.webtop.core.sdk.BaseBridge;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.sql.Connection;
@@ -80,12 +82,16 @@ public class CalendarBridge extends BaseBridge {
 				cal.setIsDefault(true);
 				cal.setBusy(false);
 				cal.setCalendarId(cdao.getSequence(con).intValue());
-				cdao.insert(con, cal);
+				cdao.insert(con, cal, createUpdateInfo(profileId));
 			}
 			
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
+	}
+	
+	private CrudInfo createUpdateInfo(UserProfile.Id profileId) {
+		return new CrudInfo("WT", profileId.toString());
 	}
 	
 	@Override

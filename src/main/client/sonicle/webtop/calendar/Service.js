@@ -674,7 +674,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	confirmDeleteCalendar: function(rec) {
-		WT.confirm(this.res('calendar.confirm.delete', rec.get('text')), function(bid) {
+		WT.confirm(this.res('calendar.confirm.delete', Ext.String.ellipsis(rec.get('text'), 40)), function(bid) {
 			if(bid === 'yes') rec.drop();
 		}, this);
 	},
@@ -693,7 +693,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			}, me);
 		} else {
-			WT.confirm(me.res('event.confirm.delete', title), function(bid) {
+			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(title), 40), function(bid) {
 				if(bid === 'yes') {
 					deleteEvent(id, 'this', {
 						cb: function(succ) {

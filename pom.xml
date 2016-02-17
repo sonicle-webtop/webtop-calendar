@@ -88,6 +88,31 @@
 		</resources>
 		<plugins>
 			<plugin>
+				<groupId>com.sonicle.maven</groupId>
+				<artifactId>minify-maven-plugin</artifactId>
+				<version>1.7.5-SNAPSHOT</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>minify</goal>
+						</goals>
+						<configuration>
+							<charset>UTF-8</charset>
+							<skipMerge>true</skipMerge>
+							<webappSourceDir>${project.basedir}/src/main</webappSourceDir>
+							<webappTargetDir>${project.build.directory}</webappTargetDir>
+							<jsSourceDir>client</jsSourceDir>
+							<jsTargetDir>classes</jsTargetDir>
+							<jsSourceIncludes>
+								<jsSourceInclude>**/*.js</jsSourceInclude>
+							</jsSourceIncludes>
+							<suffix>.debug</suffix>
+							<jsEngine>CLEANER</jsEngine>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<!-- Specify the maven code generator plugin -->
 				<groupId>org.jooq</groupId>
 				<artifactId>jooq-codegen-maven</artifactId>

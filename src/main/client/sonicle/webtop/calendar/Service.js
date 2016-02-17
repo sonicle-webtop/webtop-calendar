@@ -1,5 +1,5 @@
 /*
- * webtop-mail is a WebTop Service developed by Sonicle S.r.l.
+ * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -331,7 +331,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAction('toolbox', 'erpExport', {
-			iconCls: 'wtcal-icon-exportEvents-xs',
+			iconCls: 'wtcal-icon-export-xs',
 			handler: function() {
 				me.erpExport();
 			}
@@ -420,6 +420,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if(node) me.confirmDeleteCalendar(node);
 			}
 		});
+		me.addAction('importEvents', {
+			handler: function() {
+				var node = me.getSelectedFolder(me.getRef('folderstree'));
+				if(node) me.importEvents(node.get('_calId'));
+			}
+		});
+		/*
 		me.addRef('uploaders', 'importEvents', Ext.create('Sonicle.upload.Item', {
 			text: WT.res(me.ID, 'act-importEvents.lbl'),
 			iconCls: WTF.cssIconCls(me.XID, 'importEvents', 'xs'),
@@ -447,6 +454,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			})
 		}));
+		*/
 		me.addAction('viewAllFolders', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
@@ -561,7 +569,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('viewNoneFolders'),
 				'-',
 				me.getAction('addEvent'),
-				me.getRef('uploaders', 'importEvents') //TODO: sostituire import
+				me.getAction('importEvents')
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
@@ -575,7 +583,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					me.getAction('addCalendar').setDisabled(!rr.MANAGE);
 					me.getAction('editSharing').setDisabled(!rr.MANAGE);
 					me.getAction('addEvent').setDisabled(!er.CREATE);
-					me.getRef('uploaders', 'importEvents').setDisabled(!er.CREATE);
+					me.getAction('importEvents').setDisabled(!er.CREATE);
 				}
 			}
 		}));
@@ -930,6 +938,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, me);
 	},
 	*/
+	
+	importEvents: function(calendarId) {
+		var me = this,
+				vwc = WT.createView(me.ID, 'view.ImportEvents', {
+					viewCfg: {
+						calendarId: calendarId
+					}
+				});
+		
+		vwc.getView().on('dosuccess', function() {
+			me.reloadEvents();
+		});
+		vwc.show();
+	},
+	
 	
 	
 	

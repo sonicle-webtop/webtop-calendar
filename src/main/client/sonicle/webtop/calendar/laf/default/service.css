@@ -20,8 +20,8 @@
 .wtcal-icon-event-xs { background-image: url('calendar_16.png') !important; }
 .wtcal-icon-newEvent-xs { background-image: url('event-new_16.png') !important; }
 .wtcal-icon-addEvent-xs { background-image: url('event-add_16.png') !important; }
-.wtcal-icon-importEvents-xs { background-image: url('calendar-import_16.png') !important; }
-.wtcal-icon-exportEvents-xs { background-image: url('calendar-export_16.png') !important; }
+.wtcal-icon-import-xs { background-image: url('import_16.png') !important; }
+.wtcal-icon-export-xs { background-image: url('export_16.png') !important; }
 .wtcal-icon-single-event-xs { background-image: url('event-single_16.png') !important; }
 .wtcal-icon-recurring-event-xs { background-image: url('event-recurring_16.png') !important; }
 .wtcal-icon-broken-event-xs { background-image: url('event-broken_16.png') !important; }

@@ -31,9 +31,10 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar;
+package com.sonicle.webtop.calendar.io;
 
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.webtop.calendar.ICal4jUtils;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
@@ -42,23 +43,18 @@ import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.Component;
-import net.fortuna.ical4j.model.Date;
 import net.fortuna.ical4j.model.NumberList;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.Property;
@@ -72,44 +68,59 @@ import net.fortuna.ical4j.model.parameter.Cn;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.parameter.Role;
 import net.fortuna.ical4j.model.property.Attendee;
-import net.fortuna.ical4j.model.property.CalScale;
-import net.fortuna.ical4j.model.property.Description;
 import net.fortuna.ical4j.model.property.DtEnd;
 import net.fortuna.ical4j.model.property.DtStart;
 import net.fortuna.ical4j.model.property.ExDate;
-import net.fortuna.ical4j.model.property.Location;
-import net.fortuna.ical4j.model.property.Method;
 import net.fortuna.ical4j.model.property.Organizer;
-import net.fortuna.ical4j.model.property.ProdId;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.model.property.RecurrenceId;
-import net.fortuna.ical4j.model.property.Transp;
-import net.fortuna.ical4j.model.property.Uid;
-import net.fortuna.ical4j.model.property.Version;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 
 /**
  *
  * @author malbinola
  */
-public class ICalHelper {
+public class EventICalFileReader implements EventFileReader {
+	private DateTimeZone defaultTz;
 	
-	/*
-	public static ArrayList<ParseResult> parseICal(LogEntries log, InputStream is, org.joda.time.DateTimeZone defaultTz) throws ParserException, IOException {
+	public EventICalFileReader(DateTimeZone defaultTz) {
+		this.defaultTz = defaultTz;
+	}
+	
+	@Override
+	public ArrayList<EventReadResult> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException {
+		FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(file);
+			return listEvents(log, fis);
+		} finally {
+			IOUtils.closeQuietly(fis);
+		}
+	}
+	
+	public ArrayList<EventReadResult> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException {
 		// See http://www.kanzaki.com/docs/ical/
-		ArrayList<ParseResult> retults = new ArrayList<>();
-		Calendar cal = ICalendarUtils.parseRelaxed(is);
+		ArrayList<EventReadResult> results = new ArrayList<>();
+		
+		Calendar cal = null;
+		try {
+			cal = ICalendarUtils.parseRelaxed(is);
+		} catch(ParserException ex) {
+			throw new UnsupportedOperationException(ex);
+		}
+		
 		VEvent ve = null;
 		LogEntries velog = null;
-
-		for (Iterator xi = cal.getComponents().iterator(); xi.hasNext();) {
+		for(Iterator xi = cal.getComponents().iterator(); xi.hasNext();) {
 			Component component = (Component) xi.next();
 			if (component instanceof VEvent) {
 				ve = (VEvent)component;
 				velog = new LogEntries();
 				try {
-					retults.add(ICalHelper.parseVEvent(velog, ve, defaultTz));
+					results.add(readVEvent(velog, ve));
 					if(!velog.isEmpty()) {
 						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_WARN, "VEVENT ['{1}', {0}]", ve.getUid(), ve.getSummary()));
 						log.addAll(velog);
@@ -119,12 +130,10 @@ public class ICalHelper {
 				}
 			}
 		}
-		return retults;
+		return results;
 	}
-	*/
 	
-	/*
-	public static ParseResult parseVEvent(LogEntries log, VEvent ve, org.joda.time.DateTimeZone defaultTz) throws Exception {
+	public EventReadResult readVEvent(LogEntries log, VEvent ve) throws Exception {
 		Event event = new Event();
 		ArrayList<LocalDate> excludedDates = null;
 		LocalDate overwritesRecurringInstance = null;
@@ -245,12 +254,10 @@ public class ICalHelper {
 			event.setAttendees(attendees);
 		}
 
-		return new ParseResult(event, excludedDates, overwritesRecurringInstance);
+		return new EventReadResult(event, excludedDates, overwritesRecurringInstance);
 	}
 	
-	*/
-	/*
-	public static Recurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) throws Exception {
+	private Recurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) throws Exception {
 		Recurrence rec = new Recurrence();
 		
 		Recur recur = rr.getRecur();
@@ -330,7 +337,7 @@ public class ICalHelper {
 		return rec;
 	}
 	
-	public static List<LocalDate> parseVEventExDate(LogEntries log, ExDate ex) throws Exception {
+	private List<LocalDate> parseVEventExDate(LogEntries log, ExDate ex) throws Exception {
 		ArrayList<LocalDate> dates = new ArrayList<>();
 		Iterator it = ex.getDates().iterator();
 		while(it.hasNext()) {
@@ -339,7 +346,7 @@ public class ICalHelper {
 		return dates;
 	}
 	
-	public static String parseVEventOrganizer(LogEntries log, Organizer org) throws Exception {
+	private String parseVEventOrganizer(LogEntries log, Organizer org) throws Exception {
 		InternetAddress ia = null;
 		// See http://www.kanzaki.com/docs/ical/organizer.html
 		
@@ -359,7 +366,7 @@ public class ICalHelper {
 		return ia.toString();
 	}
 	
-	public static EventAttendee parseVEventAttendee(LogEntries log, Attendee att) throws Exception {
+	private EventAttendee parseVEventAttendee(LogEntries log, Attendee att) throws Exception {
 		EventAttendee attendee = new EventAttendee();
 		// See http://www.kanzaki.com/docs/ical/attendee.html
 		
@@ -407,9 +414,8 @@ public class ICalHelper {
 		attendee.setNotify(false);
 		return attendee;
 	}
-	*/
-	/*
-	private static TimeZone guessTimeZone(TimeZone tz, org.joda.time.DateTimeZone defaultTz) {
+	
+	private static TimeZone guessTimeZone(TimeZone tz, DateTimeZone defaultTz) {
 		if(tz == null) return ICal4jUtils.getTimeZone(defaultTz.getID());
 		
 		// During iCal import we can found non standard timezones coming from
@@ -432,118 +438,5 @@ public class ICalHelper {
 		if(!dt.isEqual(dt.withTimeAtStartOfDay())) return false;
 		if(start.plusDays(1).getDayOfMonth() != end.getDayOfMonth()) return false;
 		return true;
-	}
-	*/
-	
-	public static boolean isBusy(Transp transparency) {
-		return !StringUtils.equals(transparency.getValue(), "TRANSPARENT");
-	}
-	
-	public static void exportICal(OutputStream os, ArrayList<Event> events) throws Exception {
-		// Calendar container
-		Calendar ical = new Calendar();
-		ical.getProperties().add(new ProdId("-//Events Calendar//iCal4j 1.0//EN"));
-		ical.getProperties().add(Version.VERSION_2_0);
-		ical.getProperties().add(CalScale.GREGORIAN);
-		ical.getProperties().add(Method.REQUEST);
-		
-		for(Event event : events) {
-			ical.getComponents().add(exportEvent(event));
-		}
-		
-		CalendarOutputter outputter = new CalendarOutputter();
-		outputter.output(ical, os);
-	}
-	
-	public static VEvent exportEvent(Event event) throws Exception {
-		org.joda.time.DateTimeZone etz = org.joda.time.DateTimeZone.forID(event.getTimezone());
-		Date start = ICal4jUtils.toICal4jDateTime(event.getStartDate(), etz);
-		Date end = ICal4jUtils.toICal4jDateTime(event.getEndDate(), etz);
-		VEvent ve = new VEvent(start, end, event.getTitle());
-		
-		//Uid
-		ve.getProperties().add(new Uid(event.getPublicUid()));
-		
-		// Description
-		ve.getProperties().add(new Description(event.getDescription()));
-		
-		// Location
-		if(!StringUtils.isEmpty(event.getLocation())) {
-			ve.getProperties().add(new Location(event.getLocation()));
-		}
-		
-		// Organizer
-		//TODO: valutare export organizer
-		Organizer organizer = new Organizer(URI.create("mailto:dev1@mycompany.com"));
-		organizer.getParameters().add(new Cn("Organizer Name"));
-		ve.getProperties().add(organizer);
-		
-		// Recerrence
-		if(event.hasRecurrence()) {
-			ve.getProperties().add(exportEventRecurrence(event));
-		}
-		
-		// Attendees
-		for(EventAttendee attendee : event.getAttendees()) {
-			try {
-				if(attendee.hasEmailRecipient()) {
-					ve.getProperties().add(exportEventAttendee(attendee));
-				}
-			} catch(URISyntaxException | AddressException ex) {
-				/* Do nothing...*/
-			}
-		}
-		
-		return ve;
-	}
-	
-	public static RRule exportEventRecurrence(Event event) throws ParseException {
-		return new RRule(event.getRecurrence().getRRule());
-	}
-	
-	public static Attendee exportEventAttendee(EventAttendee attendee) throws Exception {
-		Attendee att = new Attendee();
-		
-		// Evaluates attendee details
-		// Joins email and common name (CN)
-		InternetAddress email = new InternetAddress(attendee.getRecipient());
-		att.setCalAddress(new URI(MessageFormat.format("mailto:{0}", email.getAddress())));
-		if(!StringUtils.isEmpty(email.getPersonal())) {
-			att.getParameters().add(new Cn(email.getPersonal()));
-		}
-		
-		// Evaluates attendee role
-		String rpcType = attendee.getRecipientType();
-		if(rpcType.equals(EventAttendee.RECIPIENT_TYPE_NECESSARY)) {
-			att.getParameters().add(Role.REQ_PARTICIPANT);
-		} else {
-			att.getParameters().add(Role.OPT_PARTICIPANT);
-		}
-		
-		// Evaluates attendee response status
-		String status = attendee.getResponseStatus();
-		if(status.equals(EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
-			att.getParameters().add(PartStat.ACCEPTED);
-		} else if(status.equals(EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
-			att.getParameters().add(PartStat.TENTATIVE);
-		} else if(status.equals(EventAttendee.RESPONSE_STATUS_DECLINED)) {
-			att.getParameters().add(PartStat.DECLINED);
-		} else {
-			att.getParameters().add(PartStat.NEEDS_ACTION);
-		}
-		
-		return att;
-	}
-	
-	public static class ParseResult {
-		Event event;
-		ArrayList<LocalDate> excludedDates;
-		LocalDate overwritesRecurringInstance;
-		
-		public ParseResult(Event event, ArrayList<LocalDate> excludedDates, LocalDate overwritesRecurringInstance) {
-			this.event = event;
-			this.excludedDates = excludedDates;
-			this.overwritesRecurringInstance = overwritesRecurringInstance;
-		}
 	}
 }

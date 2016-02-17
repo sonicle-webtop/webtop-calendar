@@ -204,6 +204,20 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
+	public int logicDeleteByCalendarId(Connection con, int calendarId, CrudInfo updateInfo) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.STATUS, OEvent.STATUS_DELETED)
+			.set(EVENTS.UPDATE_TIMESTAMP, updateInfo.timestamp)
+			.set(EVENTS.UPDATE_DEVICE, updateInfo.device)
+			.set(EVENTS.UPDATE_USER, updateInfo.user)
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+			)
+			.execute();
+	}
+	
 	public VSchedulerEvent view(Connection con, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");

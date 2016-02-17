@@ -57,6 +57,8 @@ import com.sonicle.webtop.calendar.dal.EventAttendeeDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
+import com.sonicle.webtop.calendar.io.EventFileReader;
+import com.sonicle.webtop.calendar.io.EventReadResult;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OActivity;
@@ -90,6 +92,7 @@ import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -816,13 +819,13 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			if(type.equals(EVENT_NORMAL)) {
 				if(target.equals(TARGET_THIS)) {
 					if(!ekey.eventId.equals(original.getEventId())) throw new WTException("In this case both ids must be equals");
-					deleteEvent(con, ekey.eventId);
+					doDeleteEvent(con, ekey.eventId);
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
 				if(target.equals(TARGET_THIS)) {
 					// 1 - logically delete newevent (broken one)
-					deleteEvent(con, ekey.eventId);
+					doDeleteEvent(con, ekey.eventId);
 					// 2 - updates revision of original event
 					evtdao.updateRevision(con, original.getEventId(), createUpdateInfo());
 				}
@@ -847,7 +850,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - logically delete original event
-					deleteEvent(con, ekey.eventId);
+					doDeleteEvent(con, ekey.eventId);
 				}
 			}
 			
@@ -864,11 +867,17 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		}
 	}
 	
-	private void deleteEvent(Connection con, int eventId) throws WTException {
+	private void doDeleteEvent(Connection con, int eventId) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		edao.logicDeleteById(con, eventId, createUpdateInfo());
 		//TODO: cancellare reminder
 		//TODO: se ricorrenza, eliminare tutte le broken dove newid!=null ??? Non servi più dato che verifico il D dell'evento ricorrente
+	}
+	
+	private int doDeleteEventsByCalendar(Connection con, int calendarId) throws WTException {
+		EventDAO edao = EventDAO.getInstance();
+		return edao.logicDeleteByCalendarId(con, calendarId, createUpdateInfo());
+		//TODO: cancellare reminder
 	}
 	
 	public void restoreEvent(String eventKey) throws WTException {
@@ -889,7 +898,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			// 1 - removes the broken record
 			rbdao.deleteByNewEvent(con, ekey.eventId);
 			// 2 - logically delete broken event
-			deleteEvent(con, ekey.eventId);
+			doDeleteEvent(con, ekey.eventId);
 			
 			DbUtils.commitQuietly(con);
 			
@@ -1148,6 +1157,83 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		}
 	}
 	
+	public LogEntries importEvents(int calendarId, EventFileReader rea, File file, String mode) throws WTException {
+		LogEntries log = new LogEntries();
+		HashMap<String, OEvent> uidMap = new HashMap<>();
+		Connection con = null;
+		
+		try {
+			checkRightsOnCalendarElements(calendarId, "CREATE"); // Rights check!
+			if(mode.equals("copy")) checkRightsOnCalendarElements(calendarId, "DELETE"); // Rights check!
+			
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started at {0}", new DateTime()));
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Reading source file..."));
+			ArrayList<EventReadResult> parsed = null;
+			try {
+				parsed = rea.listEvents(log, file);
+			} catch(IOException | UnsupportedOperationException ex) {
+				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
+				throw new WTException(ex);
+			}
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", parsed.size()));
+			
+			con = WT.getConnection(SERVICE_ID);
+			con.setAutoCommit(false);
+			
+			if(mode.equals("copy")) {
+				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Cleaning previous events..."));
+				int del = doDeleteEventsByCalendar(con, calendarId);
+				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s deleted!", del));
+			}
+			
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Importing..."));
+			int count = 0;
+			for(EventReadResult parse : parsed) {
+				parse.event.setCalendarId(calendarId);
+				try {
+					InsertResult insert = doEventInsert(con, parse.event, true, true);
+					
+					if(insert.recurrence != null) {
+						// Cache recurring event for future use within broken references 
+						uidMap.put(insert.event.getPublicUid(), insert.event);
+						
+						// If present, adds excluded dates as broken instances
+						if(parse.excludedDates != null) {
+							for(LocalDate date : parse.excludedDates) {
+								doExcludeRecurrenceDate(con, insert.event, date);
+							}
+						}
+					} else {
+						if(parse.overwritesRecurringInstance != null) {
+							if(uidMap.containsKey(insert.event.getPublicUid())) {
+								OEvent oevt = uidMap.get(insert.event.getPublicUid());
+								doExcludeRecurrenceDate(con, oevt, parse.overwritesRecurringInstance, insert.event.getEventId());
+							}
+						}
+					}
+					
+					DbUtils.commitQuietly(con);
+					count++;
+				} catch(Exception ex) {
+					logger.trace("Error inserting event", ex);
+					DbUtils.rollbackQuietly(con);
+					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", parse.event.getTitle(), parse.event.getPublicUid(), ex.getMessage()));
+				}
+			}
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s imported!", count));
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} catch(WTException ex) {
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended at {0}", new DateTime()));
+		}
+		return log;
+	}
+	
+	/*
 	public void importICal(int calendarId, InputStream is, DateTimeZone defaultTz) throws Exception {
 		Connection con = null;
 		HashMap<String, OEvent> uidMap = new HashMap<>();
@@ -1215,6 +1301,7 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			}
 		}
 	}
+	*/
 	
 	public void exportEvents(LogEntries log, String domainId, DateTime fromDate, DateTime toDate, OutputStream os) throws Exception {
 		Connection con = null, ccon = null;

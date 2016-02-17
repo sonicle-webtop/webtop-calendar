@@ -39,7 +39,7 @@ Ext.define('Sonicle.webtop.calendar.view.ErpExport', {
 	
 	dockableConfig: {
 		title: '{erpExport.tit}',
-		iconCls: 'wtcal-icon-exportEvents-xs',
+		iconCls: 'wtcal-icon-export-xs',
 		width: 450,
 		height: 250
 	},

@@ -66,6 +66,7 @@ import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
+import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
@@ -760,35 +761,31 @@ public class Service extends BaseService {
 		}
 	}
 	
-	/*
-	public void processUploadStreamICalImport(HttpServletRequest request, InputStream uploadStream) throws Exception {
+	public void processImportEventsFromICal(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		UserProfile up = getEnv().getProfile();
-		Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
-		manager.importICal(calendarId, uploadStream, up.getTimeZone());
-	}
-	*/
-	
-	public void processImportICal(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		UserProfile up = getEnv().getProfile();
-		FileInputStream fis = null;
 		
 		try {
-			Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
 			String uploadId = ServletUtils.getStringParameter(request, "uploadId", true);
+			String op = ServletUtils.getStringParameter(request, "op", true);
 			
 			UploadedFile upl = getUploadedFile(uploadId);
 			if(upl == null) throw new WTException("Uploaded file not found [{0}]", uploadId);
+			File file = new File(WT.getTempFolder(), upl.id);
 			
-			fis = new FileInputStream(new File(WT.getTempFolder(), upl.id));
-			manager.importICal(calendarId, fis, up.getTimeZone());
+			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
 			
-			new JsonResult().printTo(out);
+			if(op.equals("do")) {
+				Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
+				String mode = ServletUtils.getStringParameter(request, "importMode", true);
+				
+				LogEntries log = manager.importEvents(calendarId, rea, file, mode);
+				clearUploadedFile(uploadId);
+				new JsonResult(log.print()).printTo(out);
+			}
 			
 		} catch(Exception ex) {
-			logger.error("Error in action ImportICal", ex);
+			logger.error("Error in action ImportContactsFromICal", ex);
 			new JsonResult(false, ex.getMessage()).printTo(out);
-		} finally {
-			IOUtils.closeQuietly(fis);
 		}
 	}
 	

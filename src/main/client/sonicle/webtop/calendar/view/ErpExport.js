@@ -52,11 +52,11 @@ Ext.define('Sonicle.webtop.calendar.view.ErpExport', {
 		me.callParent(arguments);
 		me.on('beforenavigate', me.onBeforeNavigate);
 		me.on('dosuccess', function() {
-			//Sonicle.URLManager.download('http://iso.esd.microsoft.com/W10IP/4B33E0680A465FBA52C09A34454D5EB6/Windows10_InsiderPreview_x64_IT-IT_10162.iso');
-			//Sonicle.URLManager.download("service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true");
+			//Sonicle.URLMgr.download('http://iso.esd.microsoft.com/W10IP/4B33E0680A465FBA52C09A34454D5EB6/Windows10_InsiderPreview_x64_IT-IT_10162.iso');
+			//Sonicle.URLMgr.download("service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true");
 			//window.open("service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true");
-			//Sonicle.URLManager.download('service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true');
-			Sonicle.URLManager.download(WTF.processBinUrl(me.mys.ID, 'ErpExportWizard'));
+			//Sonicle.URLMgr.download('service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true');
+			Sonicle.URLMgr.download(WTF.processBinUrl(me.mys.ID, 'ErpExportWizard'));
 		});
 	},
 	

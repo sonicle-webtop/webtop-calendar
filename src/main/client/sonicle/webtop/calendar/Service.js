@@ -477,7 +477,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('openEvent', {
 			text: WT.res('act-open.lbl'),
 			handler: function(s,e) {
-				var rec = WTU.itselfOrFirst(e.tag.event), er;
+				var rec = WTU.itselfOrFirst(e.menuData.event), er;
 				if(rec) {
 					er = me.toRightsObj(rec.get('_rights'));
 					me.openEvent(er.UPDATE, rec.get('id'));
@@ -488,7 +488,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-delete.lbl'),
 			iconCls: 'wt-icon-delete-xs',
 			handler: function(s,e) {
-				var rec = WTU.itselfOrFirst(e.tag.event);
+				var rec = WTU.itselfOrFirst(e.menuData.event);
 				if(rec) me.confirmDeleteEvent(rec.get('id'), rec.get('isRecurring'), rec.get('title'));
 			}
 		});
@@ -496,19 +496,19 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-restore.lbl'),
 			iconCls: 'wt-icon-restore-xs',
 			handler: function(s,e) {
-				var rec = e.tag.event;
+				var rec = e.menuData.event;
 				if(rec) me.confirmRestoreEvent(rec.get('id'));
 			}
 		});
 		me.addAction('copyEvent', {
 			handler: function(s,e) {
-				var rec = WTU.itselfOrFirst(e.tag.event);
+				var rec = WTU.itselfOrFirst(e.menuData.event);
 				if(rec) me.confirmMoveEvent(true, rec.get('id'), rec.get('_profileId'), rec.get('calendarId'));
 			}
 		});
 		me.addAction('moveEvent', {
 			handler: function(s,e) {
-				var rec = WTU.itselfOrFirst(e.tag.event);
+				var rec = WTU.itselfOrFirst(e.menuData.event);
 				if(rec) me.confirmMoveEvent(false, rec.get('id'), rec.get('_profileId'), rec.get('calendarId'));
 			}
 		});
@@ -516,7 +516,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-print.lbl'),
 			iconCls: 'wt-icon-print-xs',
 			handler: function() {
-				//var rec = e.tag.event;
+				//var rec = e.menuData.event;
 				//if(rec) me.printEvent(...);
 				//TODO: implementare stampa contatto/i
 				WT.warn('TODO');
@@ -547,8 +547,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
-				beforeshow: function(e) {
-					var rec = e.tag.folder,
+				beforeshow: function(s) {
+					var rec = s.menuData.folder,
 							rr = me.toRightsObj(rec.get('_rrights'));
 					me.getAction('addCalendar').setDisabled(!rr.MANAGE);
 					me.getAction('editSharing').setDisabled(!rr.MANAGE);
@@ -573,8 +573,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
-				beforeshow: function(e) {
-					var rec = e.tag.folder,
+				beforeshow: function(s) {
+					var rec = s.menuData.folder,
 							rr = me.toRightsObj(rec.get('_rrights')),
 							fr = me.toRightsObj(rec.get('_frights')),
 							er = me.toRightsObj(rec.get('_erights'));
@@ -616,8 +616,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
-				beforeshow: function(e) {
-					var rec = e.tag.event,
+				beforeshow: function(s) {
+					var rec = s.menuData.event,
 							ro = me.isEventRO(rec);
 							er = me.toRightsObj(rec.get('_rights')),
 							brk = (rec.get('isBroken') === true);

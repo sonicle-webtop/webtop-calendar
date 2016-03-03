@@ -515,11 +515,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('printEvent', {
 			text: WT.res('act-print.lbl'),
 			iconCls: 'wt-icon-print-xs',
-			handler: function() {
-				//var rec = e.menuData.event;
-				//if(rec) me.printEvent(...);
-				//TODO: implementare stampa contatto/i
-				WT.warn('TODO');
+			handler: function(s,e) {
+				var rec = e.menuData.event;
+				if(rec) me.printEventsDetail([rec.getId()]);
 			}
 		});
 		
@@ -975,6 +973,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				vw = WT.createView(me.ID, 'view.ErpExport');
 		vw.show(false);
+	},
+	
+	printEventsDetail: function(keys) {
+		var me = this, url;
+		url = WTF.processBinUrl(me.ID, 'PrintEventsDetail', {keys: WTU.arrayAsParam(keys)});
+		Sonicle.URLMgr.openFile(url, {filename: 'events-detail', newWindow: true});
 	},
 	
 	searchEvents: function(query) {

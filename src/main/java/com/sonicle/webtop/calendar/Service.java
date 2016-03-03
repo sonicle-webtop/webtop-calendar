@@ -39,6 +39,7 @@ import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.PayloadAsList;
 import com.sonicle.commons.web.json.Payload;
 import com.sonicle.commons.web.ServletUtils;
+import com.sonicle.commons.web.ServletUtils.StringArray;
 import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.MapItem;
@@ -63,10 +64,12 @@ import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
+import com.sonicle.webtop.calendar.bol.model.EventBean;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
+import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
@@ -76,6 +79,8 @@ import com.sonicle.webtop.core.bol.js.JsSimple;
 import com.sonicle.webtop.core.bol.model.Sharing;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.UserDAO;
+import com.sonicle.webtop.core.io.AbstractReport;
+import com.sonicle.webtop.core.io.ReportConfig;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -83,6 +88,7 @@ import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -96,6 +102,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -787,6 +794,55 @@ public class Service extends BaseService {
 			logger.error("Error in action ImportContactsFromICal", ex);
 			new JsonResult(false, ex.getMessage()).printTo(out);
 		}
+	}
+	
+	public void processPrintEventsDetail(HttpServletRequest request, HttpServletResponse response) {
+		ArrayList<EventBean> items = new ArrayList<>();
+		ByteArrayOutputStream baos = null;
+		CoreManager core = WT.getCoreManager(getRunContext());
+		
+		try {
+			String filename = ServletUtils.getStringParameter(request, "filename", "print");
+			StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
+			
+			Event event = null;
+			OCalendar calendar = null;
+			for(String key : keys) {
+				event = manager.getEvent(key);
+				calendar = manager.getCalendar(event.getCalendarId());
+				items.add(new EventBean(core, calendar, event));
+			}
+			
+			ReportConfig.Builder builder = reportConfigBuilder();
+			RptEventsDetail rpt = new RptEventsDetail(builder.build());
+			rpt.setDataSource(new JRBeanCollectionDataSource(items));
+			
+			baos = new ByteArrayOutputStream();
+			WT.generateReportToStream(rpt, AbstractReport.OutputType.PDF, baos);
+			ServletUtils.setContentDispositionHeader(response, "inline", filename + ".pdf");
+			ServletUtils.writeContent(response, baos, "application/pdf");
+			
+		} catch(Exception ex) {
+			logger.error("Error in action PrintContacts", ex);
+			ServletUtils.writeErrorHandlingJs(response, ex.getMessage());
+		} finally {
+			IOUtils.closeQuietly(baos);
+		}
+	}
+	
+	private ReportConfig.Builder reportConfigBuilder() {
+		UserProfile.Data ud = getEnv().getProfile().getData();
+		CoreUserSettings cus = getEnv().getCoreUserSettings();
+		return new ReportConfig.Builder()
+				.useLocale(ud.getLocale())
+				.useTimeZone(ud.getTimeZone().toTimeZone())
+				.dateFormatShort(cus.getShortDateFormat())
+				.dateFormatLong(cus.getLongDateFormat())
+				.timeFormatShort(cus.getShortTimeFormat())
+				.timeFormatLong(cus.getLongTimeFormat())
+				.haveResourceBundle(true)
+				.generatedBy(WT.getPlatformName() + " " + lookupResource(CalendarLocale.SERVICE_NAME))
+				.printedBy(ud.getDisplayName());
 	}
 	
 	private OUser guessUserByAttendee(String recipient) {

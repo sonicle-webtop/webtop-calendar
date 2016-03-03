@@ -144,7 +144,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}
 				}),
 				'-',
-				me.addAction('deleteEvent', {
+				me.addAction('delete', {
 					text: null,
 					tooltip: WT.res('act-delete.lbl'),
 					iconCls: 'wt-icon-delete-xs',
@@ -152,7 +152,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.deleteEvent();
 					}
 				}),
-				me.addAction('restoreEvent', {
+				me.addAction('restore', {
 					text: null,
 					tooltip: WT.res('act-restore.lbl'),
 					iconCls: 'wt-icon-restore-xs',
@@ -162,18 +162,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					disabled: true
 				}),
 				'-',
-				me.addAction('printEvent', {
+				me.addAction('print', {
 					text: null,
 					tooltip: WT.res('act-print.lbl'),
 					iconCls: 'wt-icon-print-xs',
 					handler: function() {
-						me.printEvent(
-							me.getModel(), 
-							me.lref('fldcalendar').getRawValue(),
-							me.lref('fldactivity').getRawValue(),
-							me.lref('fldcustomer').getRawValue(),
-							me.lref('fldstatistic').getRawValue()
-						);
+						//TODO: aggiungere l'azione 'salva' permettendo così la stampa senza chiudere la form
+						me.printEvent(me.getModel().getId());
 					}
 				}),
 				'->',
@@ -1053,11 +1048,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		if(me.isMode(me.MODE_NEW)) {
 			owner.setDisabled(false);
-			me.getAction('deleteEvent').setDisabled(true);
-			me.getAction('restoreEvent').setDisabled(true);
+			me.getAction('delete').setDisabled(true);
+			me.getAction('restore').setDisabled(true);
 		} else if(me.isMode(me.MODE_EDIT)) {
 			owner.setDisabled(true);
-			me.getAction('restoreEvent').setDisabled(!(model.get('_isBroken') === true));
+			me.getAction('restore').setDisabled(!(model.get('_isBroken') === true));
 		}
 		
 		me.lref('fldtitle').focus(true);
@@ -1243,7 +1238,16 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		sto.load();
 	},
 	
-	printEvent: function (record, calendar, activity, customer, statistic) {
+	printEvent: function(eventKey) {
+		var me = this;
+		if(me.getModel().isDirty()) {
+			WT.warn(WT.res('warn.print.notsaved'));
+		} else {
+			me.mys.printEventsDetail([eventKey]);
+		}
+	},
+	
+	printEvent22: function(record, calendar, activity, customer, statistic) {
 		var me = this,
 				//var event_id = rec.get('eventId'),
 				eventBy = record.get('_profileId'),

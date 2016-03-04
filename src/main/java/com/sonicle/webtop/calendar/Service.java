@@ -800,17 +800,19 @@ public class Service extends BaseService {
 		ArrayList<EventBean> items = new ArrayList<>();
 		ByteArrayOutputStream baos = null;
 		CoreManager core = WT.getCoreManager(getRunContext());
+		UserProfile up = getEnv().getProfile();
 		
 		try {
 			String filename = ServletUtils.getStringParameter(request, "filename", "print");
 			StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
+			RRuleStringify rrs = new RRuleStringify();
 			
 			Event event = null;
 			OCalendar calendar = null;
 			for(String key : keys) {
 				event = manager.getEvent(key);
 				calendar = manager.getCalendar(event.getCalendarId());
-				items.add(new EventBean(core, calendar, event));
+				items.add(new EventBean(core, rrs, up.getTimeZone(), calendar, event));
 			}
 			
 			ReportConfig.Builder builder = reportConfigBuilder();

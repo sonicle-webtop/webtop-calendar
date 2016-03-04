@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-03-04T17:44:29 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="eventsdetail_sub" pageWidth="510" pageHeight="270" columnWidth="510" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
+	<property name="com.jaspersoft.studio.unit." value="cm"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<style name="PageTitle" fontName="Verdana" fontSize="14"/>
+	<style name="PageFooter" forecolor="#666666" fontName="Arial" fontSize="8"/>
+	<style name="MemoTitle" fontName="Verdana" fontSize="12" isBold="true">
+		<box>
+			<bottomPen lineWidth="1.5"/>
+		</box>
+	</style>
+	<style name="ColumnCaption" mode="Opaque" backcolor="#BFBFBF" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="ColumnValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="FieldCaption" mode="Transparent" backcolor="rgba(171, 205, 239, 0.0)" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="FieldValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="Section" mode="Opaque" backcolor="#F2F0F0" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<parameter name="REPORT_PATH" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_GENERATED_BY" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["WebTop"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_PRINTED_BY" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_DATE_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA["dd/MM/yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_DATE_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["MMM dd, yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm:ss"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="recipient" class="java.lang.String"/>
+	<field name="recipientType" class="java.lang.String"/>
+	<detail>
+		<band height="14" splitType="Stretch">
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+			<textField>
+				<reportElement style="FieldValue" x="0" y="0" width="510" height="14" uuid="c01d57a1-8661-45e2-8a28-503f822a057c"/>
+				<textFieldExpression><![CDATA[$F{recipient}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

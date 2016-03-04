@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
+import com.sonicle.webtop.calendar.RRuleStringify;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.bol.OActivity;
@@ -41,7 +42,11 @@ import com.sonicle.webtop.core.bol.OCustomer;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.JRHelper;
 import java.awt.Image;
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import org.joda.time.DateTimeZone;
 
 /**
  *
@@ -61,6 +66,8 @@ public class EventBean {
 	public String title;
 	public String description;
 	public String location;
+	public String recurrenceType;
+	public String recurrenceDescription;
 	public Boolean isPrivate;
 	public Boolean isBusy;
 	public Integer reminder;
@@ -72,8 +79,10 @@ public class EventBean {
 	public String statisticDescription;
 	public Integer causalId;
 	public String causalDescription;
+	public String organizer;
+	public ArrayList<Attendee> attendees;
 	
-	public EventBean(CoreManager core, OCalendar calendar, Event event) throws WTException {
+	public EventBean(CoreManager core, RRuleStringify rrStringify, DateTimeZone userTz, OCalendar calendar, Event event) throws WTException {
 		this.calendarId = event.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = calendar.getHexColor();
@@ -87,6 +96,14 @@ public class EventBean {
 		this.title = event.getTitle();
 		this.description = event.getDescription();
 		this.location = event.getLocation();
+		this.recurrenceType = "none";
+		this.recurrenceDescription = "";
+		if(event.getRecurrence() != null) {
+			this.recurrenceType = event.getRecurrence().getType();
+			try {
+				this.recurrenceDescription = rrStringify.toHumanReadableText(event.getRecurrence().getRRule(), userTz);
+			} catch(ParseException ex) {}
+		}
 		this.isPrivate = event.getIsPrivate();
 		this.isBusy = event.getBusy();
 		this.reminder = event.getReminder();
@@ -98,6 +115,14 @@ public class EventBean {
 		this.statisticDescription = lookupCustomer(core, this.statisticId);
 		this.causalId = event.getCausalId();
 		this.causalDescription = lookupCausal(core, this.causalId);
+		this.organizer = event.getOrganizer();
+		
+		if(event.hasAttendees()) {
+			attendees = new ArrayList<>();
+			for(EventAttendee att : event.getAttendees()) {
+				attendees.add(new Attendee(att));
+			}
+		}
 	}
 	
 	private String lookupActivity(CoreManager core, Integer activityId) throws WTException {
@@ -169,6 +194,14 @@ public class EventBean {
 	public String getLocation() {
 		return location;
 	}
+	
+	public String getRecurrenceType() {
+		return recurrenceType;
+	}
+	
+	public String getRecurrenceDescription() {
+		return recurrenceDescription;
+	}
 
 	public Boolean getIsPrivate() {
 		return isPrivate;
@@ -212,5 +245,31 @@ public class EventBean {
 	
 	public String getCausalDescription() {
 		return causalDescription;
+	}
+	
+	public String getOrganizer() {
+		return organizer;
+	}
+	
+	public List<Attendee> getAttendees() {
+		return attendees;
+	}
+	
+	public static class Attendee {
+		public String recipient;
+		public String recipientType;
+		
+		public Attendee(EventAttendee att) {
+			recipient = att.getRecipient();
+			recipientType = att.getRecipientType();
+		}
+		
+		public String getRecipient() {
+			return recipient;
+		}
+		
+		public String getRecipientType() {
+			return recipientType;
+		}
 	}
 }

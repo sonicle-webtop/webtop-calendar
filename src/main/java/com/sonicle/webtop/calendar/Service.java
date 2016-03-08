@@ -806,13 +806,16 @@ public class Service extends BaseService {
 			String filename = ServletUtils.getStringParameter(request, "filename", "print");
 			StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
 			RRuleStringify rrs = new RRuleStringify();
+			rrs.setTimeZone(up.getTimeZone());
+			//rrs.setDateFormat();
+			//rrs.setTimeFormat();
 			
 			Event event = null;
 			OCalendar calendar = null;
 			for(String key : keys) {
 				event = manager.getEvent(key);
 				calendar = manager.getCalendar(event.getCalendarId());
-				items.add(new EventBean(core, rrs, up.getTimeZone(), calendar, event));
+				items.add(new EventBean(core, rrs, calendar, event));
 			}
 			
 			ReportConfig.Builder builder = reportConfigBuilder();

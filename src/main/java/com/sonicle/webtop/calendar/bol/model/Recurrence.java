@@ -68,9 +68,7 @@ public class Recurrence {
 	protected Integer yearlyDay;
 	protected String rrule;
 	
-	public Recurrence() {
-		
-	}
+	public Recurrence() {}
 
 	public String getEndsMode() {
 		return endsMode;

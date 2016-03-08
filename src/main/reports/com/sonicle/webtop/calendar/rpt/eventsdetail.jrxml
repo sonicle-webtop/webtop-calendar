@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
-<!-- 2016-03-04T18:07:14 -->
+<!-- 2016-03-07T13:32:28 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="eventsdetail" pageWidth="595" pageHeight="842" columnWidth="557" leftMargin="19" rightMargin="19" topMargin="19" bottomMargin="19" resourceBundle="eventsdetail" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
 	<property name="com.jaspersoft.studio.unit." value="cm"/>
 	<property name="com.jaspersoft.studio.unit.pageHeight" value="cm"/>
@@ -177,11 +177,11 @@
 			</textField>
 			<textField>
 				<reportElement style="FieldValue" x="90" y="117" width="300" height="14" uuid="63fbc091-c537-4c4b-b788-58996572b84a"/>
-				<textFieldExpression><![CDATA[IF(EQUALS($F{recurrenceType},null),null,str("recurrence."+$F{recurrenceType}))]]></textFieldExpression>
+				<textFieldExpression><![CDATA[str("recurrence."+IF(EQUALS($F{recurrenceType},null),"null",$F{recurrenceType}))]]></textFieldExpression>
 			</textField>
 		</band>
 		<band height="14">
-			<printWhenExpression><![CDATA[NOT(EQUALS($F{recurrenceType},"none"))]]></printWhenExpression>
+			<printWhenExpression><![CDATA[NOT(EQUALS($F{recurrenceType},null))]]></printWhenExpression>
 			<textField isStretchWithOverflow="true">
 				<reportElement style="FieldValue" x="90" y="0" width="466" height="14" uuid="0a78de4f-9bc2-42a3-8f8c-5b7955ea3cb2"/>
 				<textFieldExpression><![CDATA[$F{recurrenceDescription}]]></textFieldExpression>

@@ -46,7 +46,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import org.joda.time.DateTimeZone;
 
 /**
  *
@@ -82,7 +81,7 @@ public class EventBean {
 	public String organizer;
 	public ArrayList<Attendee> attendees;
 	
-	public EventBean(CoreManager core, RRuleStringify rrStringify, DateTimeZone userTz, OCalendar calendar, Event event) throws WTException {
+	public EventBean(CoreManager core, RRuleStringify rrStringify, OCalendar calendar, Event event) throws WTException {
 		this.calendarId = event.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = calendar.getHexColor();
@@ -96,12 +95,12 @@ public class EventBean {
 		this.title = event.getTitle();
 		this.description = event.getDescription();
 		this.location = event.getLocation();
-		this.recurrenceType = "none";
-		this.recurrenceDescription = "";
+		this.recurrenceType = null;
+		this.recurrenceDescription = null;
 		if(event.getRecurrence() != null) {
 			this.recurrenceType = event.getRecurrence().getType();
 			try {
-				this.recurrenceDescription = rrStringify.toHumanReadableText(event.getRecurrence().getRRule(), userTz);
+				this.recurrenceDescription = rrStringify.toHumanReadableText(event.getRecurrence().getRRule());
 			} catch(ParseException ex) {}
 		}
 		this.isPrivate = event.getIsPrivate();

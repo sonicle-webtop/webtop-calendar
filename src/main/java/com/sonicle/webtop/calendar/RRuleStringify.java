@@ -53,6 +53,10 @@ import org.joda.time.format.DateTimeFormatter;
  * @author malbinola
  */
 public class RRuleStringify {
+	private DateTimeZone timezone = null;
+	private String dateFormat = null;
+	private String timeFormat = null;
+	
 	private String everyOneDay = "Ogni giorno";
 	private String everyXDays = "Ogni {0} giorni";
 	private String everyWorkDay = "Ogni giorno feriale";
@@ -64,7 +68,7 @@ public class RRuleStringify {
 	private String everyXYears = "Ogni {0} anni";
 	private String forOneTime = "per una volta";
 	private String forXTimes = "per {0} volte";
-	private String until = "fino a {0}";
+	private String untilDate = "fino al {0}";
 	private String dayMo = "Lun";
 	private String dayTu = "Mar";
 	private String dayWe = "Mer";
@@ -88,31 +92,47 @@ public class RRuleStringify {
 	private String byOrdinalSecond = "2°";
 	private String byOrdinalThird = "2°";
 	private String byOrdinalX = "{0}°";
-	private String fmtIn = "in {0}";
+	private String fmtOnDay = "di {0}";
+	private String fmtInMonth = "in {0}";
 	private String fmtOn = "il {0}";
 	private String fmtOnOrdinalDay = "il {0} giorno";
-	
 	private final WeekDay[] workDays = new WeekDay[]{WeekDay.MO, WeekDay.TU, WeekDay.WE, WeekDay.TH, WeekDay.FR};
 	
-	
-	public String toHumanReadableText(String rr, DateTimeZone tz) throws ParseException {
-		return toHumanReadableText(new RRule(rr), tz);
+	public RRuleStringify() {
+		timezone = DateTimeZone.UTC;
+		dateFormat = "yyyy-MM-dd";
+		timeFormat = "HH:mm";
 	}
 	
-	private String untilText(Date date, DateTimeZone tz) {
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter("", tz);
-		return fmt.print(ICal4jUtils.toJodaDateTime(date, DateTimeZone.UTC));
+	public DateTimeZone getTimeZone() {
+		return this.timezone;
 	}
 	
-	private void appendEndText(StringBuilder sb, Recur recur, DateTimeZone tz) {
-		if(recur.getCount() > 0) {
-			sb.append(timesText(recur.getCount()));
-		} else if(recur.getUntil() != null) {
-			sb.append(untilText(recur.getUntil(), tz));
-		}
+	public void setTimeZone(DateTimeZone timezone) {
+		this.timezone = timezone;
 	}
 	
-	public String toHumanReadableText(RRule rr, DateTimeZone tz) {
+	public String getDateFormat() {
+		return this.dateFormat;
+	}
+	
+	public void setDateFormat(String dateFormat) {
+		this.dateFormat = dateFormat;
+	}
+	
+	public String getTimeFormat() {
+		return this.timeFormat;
+	}
+	
+	public void setTimeFormat(String timeFormat) {
+		this.timeFormat = timeFormat;
+	}
+	
+	public String toHumanReadableText(String rr) throws ParseException {
+		return toHumanReadableText(new RRule(rr));
+	}
+	
+	public String toHumanReadableText(RRule rr) {
 		Recur recur = rr.getRecur();
 		StringBuilder sb = new StringBuilder();
 		
@@ -125,7 +145,7 @@ public class RRuleStringify {
 				sb.append(" ");
 			}
 			
-			appendEndText(sb, recur, tz);
+			appendEndText(sb, recur);
 			
 		} else if(recur.getFrequency().equals(Recur.WEEKLY)) {
 			if(isByWorkDays(recur.getDayList())) { // every work day
@@ -139,11 +159,11 @@ public class RRuleStringify {
 					sb.append(everyOneWeek);
 					sb.append(" ");
 				}
-				sb.append(formatIfNotEmpty(fmtIn, byDayText(recur.getDayList())));
+				sb.append(formatIfNotEmpty(fmtOnDay, byDayText(recur.getDayList())));
 				sb.append(" ");
 			}
 			
-			appendEndText(sb, recur, tz);
+			appendEndText(sb, recur);
 			
 		} else if(recur.getFrequency().equals(Recur.MONTHLY)) {
 			if(recur.getInterval() > 1) {
@@ -161,7 +181,7 @@ public class RRuleStringify {
 				//TODO: gestire caso "primo(secondo, ..ultimo) venerdì di ogni X mese"
 			}
 			
-			appendEndText(sb, recur, tz);
+			appendEndText(sb, recur);
 			
 		} else if(recur.getFrequency().equals(Recur.YEARLY)) {
 			if(recur.getInterval() > 1) { // every x years
@@ -173,7 +193,7 @@ public class RRuleStringify {
 			}
 			
 			if(!recur.getMonthDayList().isEmpty()) { // in Gen,Feb,...
-				sb.append(formatIfNotEmpty(fmtIn, byMonthText(recur.getMonthList())));
+				sb.append(formatIfNotEmpty(fmtInMonth, byMonthText(recur.getMonthList())));
 				sb.append(" ");
 			}
 			if(!recur.getMonthDayList().isEmpty()) { // on 1,2,3...
@@ -181,10 +201,23 @@ public class RRuleStringify {
 				sb.append(" ");
 			}
 			
-			appendEndText(sb, recur, tz);
+			appendEndText(sb, recur);
 		}
 		
 		return sb.toString();
+	}
+	
+	private void appendEndText(StringBuilder sb, Recur recur) {
+		if(recur.getCount() > 0) {
+			sb.append(timesText(recur.getCount()));
+		} else if(recur.getUntil() != null) {
+			sb.append(untilText(recur.getUntil()));
+		}
+	}
+	
+	private String untilText(Date date) {
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat, timezone);
+		return MessageFormat.format(untilDate, fmt.print(ICal4jUtils.toJodaDateTime(date, DateTimeZone.UTC)));
 	}
 	
 	private String byDayText(WeekDayList days) {

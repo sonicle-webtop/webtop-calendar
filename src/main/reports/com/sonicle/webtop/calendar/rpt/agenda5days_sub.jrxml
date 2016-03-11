@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-03-11T17:57:42 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agenda5days_sub" columnCount="5" printOrder="Horizontal" pageWidth="804" pageHeight="270" columnWidth="159" columnSpacing="2" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
+	<property name="com.jaspersoft.studio.unit." value="cm"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<style name="PageTitle" fontName="Verdana" fontSize="14"/>
+	<style name="PageFooter" forecolor="#666666" fontName="Arial" fontSize="8"/>
+	<style name="MemoTitle" fontName="Verdana" fontSize="12" isBold="true">
+		<box>
+			<bottomPen lineWidth="1.5"/>
+		</box>
+	</style>
+	<style name="ColumnCaption" mode="Opaque" backcolor="#BFBFBF" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="ColumnValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="FieldCaption" mode="Transparent" backcolor="rgba(171, 205, 239, 0.0)" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="FieldValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="Section" mode="Opaque" backcolor="#F2F0F0" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<parameter name="REPORT_PATH" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_GENERATED_BY" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["WebTop"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_PRINTED_BY" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_DATE_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA["dd/MM/yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_DATE_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["MMM dd, yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm:ss"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="date" class="java.util.Date"/>
+	<field name="events" class="java.util.List"/>
+	<detail>
+		<band height="231" splitType="Stretch">
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<subreport>
+				<reportElement x="0" y="28" width="159" height="30" uuid="49ac42cc-88e3-484d-80a5-e47b49dee742">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{events})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent2_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<textField pattern="EEEE">
+				<reportElement key="" style="Section" x="0" y="0" width="159" height="14" uuid="ef55295e-9dea-4f62-a5ff-ea07d5b2323c">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement key="" style="Section" x="0" y="14" width="159" height="11" uuid="b3eef8ec-9aac-4a79-8552-61608fa849d4">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></patternExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

@@ -33,18 +33,23 @@
  */
 package com.sonicle.webtop.calendar.rpt;
 
-import com.sonicle.webtop.core.io.AbstractReport;
 import com.sonicle.webtop.core.io.ReportConfig;
 
 /**
  *
  * @author malbinola
  */
-public class RptEventsDetail extends AbstractReport {
+public class RptAgendaWeek5 extends AbstractWeekReport {
 
-	public RptEventsDetail(ReportConfig config) {
+	public RptAgendaWeek5(ReportConfig config) {
 		super(config);
-		this.name = "eventsdetail";
-		this.hasResourceBundle = true;
+		this.name = "agendaweek";
+		this.hasResourceBundle = false;
+	}
+	
+	@Override
+	protected void fillBuiltInParams() {
+		super.fillBuiltInParams();
+		params.put("DAYS_IN_WEEK", 5);
 	}
 }

@@ -69,7 +69,10 @@ import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
+import com.sonicle.webtop.calendar.rpt.AbstractWeekReport;
 import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
+import com.sonicle.webtop.calendar.rpt.RptAgendaWeek5;
+import com.sonicle.webtop.calendar.rpt.RptAgendaWeek7;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
@@ -796,6 +799,51 @@ public class Service extends BaseService {
 		}
 	}
 	
+	public void processPrintAgenda(HttpServletRequest request, HttpServletResponse response) {
+		ByteArrayOutputStream baos = null;
+		CoreManager core = WT.getCoreManager(getRunContext());
+		UserProfile up = getEnv().getProfile();
+		
+		try {
+			String filename = ServletUtils.getStringParameter(request, "filename", "print");
+			String view = ServletUtils.getStringParameter(request, "view", "w5");
+			String from = ServletUtils.getStringParameter(request, "startDate", true);
+			String to = ServletUtils.getStringParameter(request, "endDate", true);
+
+			// Defines view boundary
+			DateTime fromDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+			DateTime toDate = CalendarManager.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
+			
+			ReportConfig.Builder builder = reportConfigBuilder();
+			AbstractWeekReport rpt = null;
+			if(view.equals("w5")) {
+				rpt = new RptAgendaWeek5(builder.build());
+			} else if(view.equals("w")) {
+				rpt = new RptAgendaWeek7(builder.build());
+			}
+			//RptAgendaWeek5 rpt = new RptAgendaWeek5(builder.build());
+			
+			// Get events for each visible folder
+			List<CalendarManager.CalendarEvents> foldEvents = new ArrayList<>();
+			Integer[] checked = getCheckedFolders();
+			for(CalendarRoot root : getCheckedRoots()) {
+				foldEvents.addAll(manager.listSchedulerEvents(root, checked, fromDate, toDate));
+			}
+			rpt.setDataSource(manager, fromDate, toDate, up.getTimeZone(), foldEvents);
+			
+			baos = new ByteArrayOutputStream();
+			WT.generateReportToStream(rpt, AbstractReport.OutputType.PDF, baos);
+			ServletUtils.setContentDispositionHeader(response, "inline", filename + ".pdf");
+			ServletUtils.writeContent(response, baos, "application/pdf");
+			
+		} catch(Exception ex) {
+			logger.error("Error in action PrintAgenda", ex);
+			ServletUtils.writeErrorHandlingJs(response, ex.getMessage());
+		} finally {
+			IOUtils.closeQuietly(baos);
+		}
+	}
+	
 	public void processPrintEventsDetail(HttpServletRequest request, HttpServletResponse response) {
 		ArrayList<EventBean> items = new ArrayList<>();
 		ByteArrayOutputStream baos = null;
@@ -845,7 +893,6 @@ public class Service extends BaseService {
 				.dateFormatLong(cus.getLongDateFormat())
 				.timeFormatShort(cus.getShortTimeFormat())
 				.timeFormatLong(cus.getLongTimeFormat())
-				.haveResourceBundle(true)
 				.generatedBy(WT.getPlatformName() + " " + lookupResource(CalendarLocale.SERVICE_NAME))
 				.printedBy(ud.getDisplayName());
 	}

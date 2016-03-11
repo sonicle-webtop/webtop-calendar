@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-03-11T16:55:05 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agendaevent2_sub" pageWidth="159" pageHeight="27" columnWidth="159" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
+	<property name="com.jaspersoft.studio.unit." value="cm"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+	<style name="PageTitle" fontName="Verdana" fontSize="14"/>
+	<style name="PageFooter" forecolor="#666666" fontName="Arial" fontSize="8"/>
+	<style name="MemoTitle" fontName="Verdana" fontSize="12" isBold="true">
+		<box>
+			<bottomPen lineWidth="1.5"/>
+		</box>
+	</style>
+	<style name="ColumnCaption" mode="Opaque" backcolor="#BFBFBF" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="ColumnValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="FieldCaption" mode="Transparent" backcolor="rgba(171, 205, 239, 0.0)" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="FieldValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="Section" mode="Opaque" backcolor="#F2F0F0" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<parameter name="REPORT_PATH" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_GENERATED_BY" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["WebTop"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_PRINTED_BY" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_DATE_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA["dd/MM/yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_DATE_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["MMM dd, yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm:ss"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="title" class="java.lang.String"/>
+	<field name="location" class="java.lang.String"/>
+	<field name="startDate" class="java.util.Date"/>
+	<field name="endDate" class="java.util.Date"/>
+	<field name="spanLeft" class="java.lang.Integer"/>
+	<field name="spanRight" class="java.lang.Integer"/>
+	<field name="calendarColorImage" class="java.awt.Image"/>
+	<variable name="startTime" class="java.lang.String">
+		<variableExpression><![CDATA[DATEFORMAT($F{startDate},$P{WT_TIME_FORMAT_SHORT})]]></variableExpression>
+	</variable>
+	<variable name="endTime" class="java.lang.String">
+		<variableExpression><![CDATA[DATEFORMAT($F{endDate},$P{WT_TIME_FORMAT_SHORT})]]></variableExpression>
+	</variable>
+	<variable name="startTimeSpan" class="java.lang.String">
+		<variableExpression><![CDATA[$F{spanLeft}==null ? "" : "(-"+$F{spanLeft}.toString()+")"]]></variableExpression>
+	</variable>
+	<variable name="endTimeSpan" class="java.lang.String">
+		<variableExpression><![CDATA[$F{spanRight}==null ? "" : "(+"+$F{spanRight}.toString()+")"]]></variableExpression>
+	</variable>
+	<variable name="time" class="java.lang.String">
+		<variableExpression><![CDATA[msg("{0} - {1}",$V{startTime}+$V{startTimeSpan},$V{endTime}+$V{endTimeSpan})]]></variableExpression>
+	</variable>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<textField>
+				<reportElement x="2" y="10" width="157" height="10" uuid="c01d57a1-8661-45e2-8a28-503f822a057c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{title}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="12" y="0" width="88" height="10" uuid="b34a307c-21ba-47b0-bfdd-717a5670a3c3">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{time}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></patternExpression>
+			</textField>
+			<image hAlign="Center" vAlign="Middle">
+				<reportElement x="2" y="1" width="8" height="8" uuid="c9ff7173-a9e0-4075-81ba-f129eae3fd44">
+					<property name="com.jaspersoft.layout.grid.x" value="-1"/>
+					<property name="com.jaspersoft.layout.grid.y" value="-1"/>
+					<property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+					<property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+					<property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+					<property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+					<property name="com.jaspersoft.layout.grid.weight.fixed" value="true"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<imageExpression><![CDATA[$F{calendarColorImage}]]></imageExpression>
+			</image>
+		</band>
+		<band height="7">
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<printWhenExpression><![CDATA[$F{location}!=null]]></printWhenExpression>
+			<textField>
+				<reportElement x="2" y="0" width="157" height="7" uuid="04df232c-2710-4208-9b9f-e407255772bd">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="5"/>
+				</textElement>
+				<textFieldExpression><![CDATA["@"+$F{location}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

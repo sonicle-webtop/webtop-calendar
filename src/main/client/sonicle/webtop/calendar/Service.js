@@ -71,6 +71,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			xtype: 'toolbar',
 			items: [
 				'-',
+				me.getAction('printAgenda'),
+				'-',
 				me.getAction('today'),
 				me.getAction('previousday'),
 				me.getAction('nextday'),
@@ -510,6 +512,22 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
 				if(rec) me.confirmMoveEvent(false, rec.get('id'), rec.get('_profileId'), rec.get('calendarId'));
+			}
+		});
+		me.addAction('printAgenda', {
+			text: null,
+			tooltip: me.res('act-printAgenda.tip'),
+			iconCls: 'wt-icon-print-xs',
+			handler: function() {
+				var sched = me.getRef('scheduler'),
+						bounds = sched.getActiveView().getViewBounds(),
+						params = {
+							startDate: Ext.Date.format(bounds.start, 'Y-m-d'),
+							endDate: Ext.Date.format(bounds.end, 'Y-m-d'),
+							view: me.getRef('multical').getHighlightMode()
+						},
+						url = WTF.processBinUrl(me.ID, 'PrintAgenda', params);
+				Sonicle.URLMgr.openFile(url, {filename: 'agenda', newWindow: true});
 			}
 		});
 		me.addAction('printEvent', {

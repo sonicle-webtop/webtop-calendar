@@ -31,20 +31,41 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.rpt;
+package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.core.io.AbstractReport;
-import com.sonicle.webtop.core.io.ReportConfig;
+import java.util.ArrayList;
+import java.util.Date;
 
 /**
  *
  * @author malbinola
  */
-public class RptEventsDetail extends AbstractReport {
+public class BeanWeekAgenda {
+	public Date fromDate;
+	public Date toDate;
+	public String timezone;
+	public ArrayList<BeanDayAgenda> days;
+	
+	public BeanWeekAgenda(Date fromDate, Date toDate, String timezone, ArrayList<BeanDayAgenda> days) {
+		this.fromDate = fromDate;
+		this.toDate = toDate;
+		this.timezone = timezone;
+		this.days = days;
+	}
 
-	public RptEventsDetail(ReportConfig config) {
-		super(config);
-		this.name = "eventsdetail";
-		this.hasResourceBundle = true;
+	public Date getFromDate() {
+		return fromDate;
+	}
+
+	public Date getToDate() {
+		return toDate;
+	}
+
+	public String getTimezone() {
+		return timezone;
+	}
+
+	public ArrayList<BeanDayAgenda> getDays() {
+		return days;
 	}
 }

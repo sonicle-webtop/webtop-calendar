@@ -45,6 +45,6 @@ public class RptEventsDetail extends AbstractReport {
 	public RptEventsDetail(ReportConfig config) {
 		super(config);
 		this.name = "eventsdetail";
-		this.hasResourceBundle = true;
+		this.resourceBundleName = this.name;
 	}
 }

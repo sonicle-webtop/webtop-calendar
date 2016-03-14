@@ -47,7 +47,7 @@ public class RptAgendaWeek5 extends AbstractWeekReport {
 	public RptAgendaWeek5(ReportConfig config) {
 		super(config);
 		this.name = "agendaweek5";
-		this.hasResourceBundle = false;
+		this.resourceBundleName = "agendaweekX";
 	}
 	
 	@Override

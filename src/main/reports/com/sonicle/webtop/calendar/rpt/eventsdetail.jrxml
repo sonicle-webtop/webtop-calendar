@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
-<!-- 2016-03-14T14:48:40 -->
+<!-- 2016-03-14T15:32:23 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="eventsdetail" pageWidth="595" pageHeight="842" columnWidth="557" leftMargin="19" rightMargin="19" topMargin="19" bottomMargin="19" resourceBundle="eventsdetail" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
 	<property name="com.jaspersoft.studio.unit." value="cm"/>
 	<property name="com.jaspersoft.studio.unit.pageHeight" value="cm"/>
@@ -12,7 +12,7 @@
 	<property name="com.jaspersoft.studio.unit.columnWidth" value="cm"/>
 	<property name="com.jaspersoft.studio.unit.columnSpacing" value="cm"/>
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
-	<style name="PageTitle" fontName="Verdana" fontSize="14"/>
+	<style name="PageTitle" fontName="Verdana" fontSize="12"/>
 	<style name="PageFooter" forecolor="#666666" fontName="Arial" fontSize="8"/>
 	<style name="MemoTitle" fontName="Verdana" fontSize="12" isBold="true">
 		<box>
@@ -89,8 +89,8 @@
 		<band splitType="Stretch"/>
 	</background>
 	<title>
-		<band height="14" splitType="Stretch">
-			<property name="com.jaspersoft.studio.unit.height" value="cm"/>
+		<band height="19" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
 			<textField isBlankWhenNull="true">
 				<reportElement key="" style="PageFooter" mode="Transparent" x="290" y="0" width="266" height="12" uuid="cf53f968-4370-4a8e-ae40-f0ca7213fab3">
 					<property name="com.jaspersoft.studio.unit.height" value="cm"/>

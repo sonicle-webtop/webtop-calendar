@@ -42,15 +42,21 @@ import java.util.Date;
  */
 public class BeanDayAgenda {
 	public Date date;
+	public ArrayList<RBAgendaEvent> spanningEvents;
 	public ArrayList<RBAgendaEvent> events;
 	
-	public BeanDayAgenda(Date date, ArrayList<RBAgendaEvent> events) {
+	public BeanDayAgenda(Date date, ArrayList<RBAgendaEvent> spanningEvents, ArrayList<RBAgendaEvent> events) {
 		this.date = date;
+		this.spanningEvents = spanningEvents;
 		this.events = events;
 	}
 
 	public Date getDate() {
 		return date;
+	}
+	
+	public ArrayList<RBAgendaEvent> getSpanningEvents() {
+		return spanningEvents;
 	}
 
 	public ArrayList<RBAgendaEvent> getEvents() {

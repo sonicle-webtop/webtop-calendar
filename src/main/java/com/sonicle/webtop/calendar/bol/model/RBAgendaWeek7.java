@@ -40,86 +40,45 @@ import java.util.Date;
  *
  * @author malbinola
  */
-public class BeanWeekAgenda1 {
-	public Date fromDate;
-	public Date toDate;
-	public String timezone;
-	public Date day1Date;
-	public ArrayList<RBAgendaEvent> day1Events;
-	public Date day2Date;
-	public ArrayList<RBAgendaEvent> day2Events;
-	public Date day3Date;
-	public ArrayList<RBAgendaEvent> day3Events;
-	public Date day4Date;
-	public ArrayList<RBAgendaEvent> day4Events;
-	public Date day5Date;
-	public ArrayList<RBAgendaEvent> day5Events;
+public class RBAgendaWeek7 extends RBAgendaWeek5 {
+	public Date day6Date;
+	public ArrayList<RBAgendaEvent> day6SpanningEvents;
+	public ArrayList<RBAgendaEvent> day6Events;
+	public Date day7Date;
+	public ArrayList<RBAgendaEvent> day7SpanningEvents;
+	public ArrayList<RBAgendaEvent> day7Events;
 	
-	public BeanWeekAgenda1(Date fromDate, Date toDate, String timezone, ArrayList<Date> dayDates, ArrayList<ArrayList<RBAgendaEvent>> dayEvents) {
-		this.fromDate = fromDate;
-		this.toDate = toDate;
-		this.timezone = timezone;
-		this.day1Date = dayDates.get(0);
-		this.day1Events = dayEvents.get(0);
-		this.day2Date = dayDates.get(1);
-		this.day2Events = dayEvents.get(1);
-		this.day3Date = dayDates.get(2);
-		this.day3Events = dayEvents.get(2);
-		this.day4Date = dayDates.get(3);
-		this.day4Events = dayEvents.get(3);
-		this.day5Date = dayDates.get(4);
-		this.day5Events = dayEvents.get(4);
+	public RBAgendaWeek7(String timezone, Date fromDate, Date toDate, ArrayList<Date> dayDates, ArrayList<ArrayList<RBAgendaEvent>> daySpanningEvents, ArrayList<ArrayList<RBAgendaEvent>> dayEvents) {
+		super(timezone, fromDate, toDate, dayDates, daySpanningEvents, dayEvents);
+		this.day6Date = dayDates.get(5);
+		this.day6SpanningEvents = daySpanningEvents.get(5);
+		this.day6Events = dayEvents.get(5);
+		this.day7Date = dayDates.get(6);
+		this.day7SpanningEvents = daySpanningEvents.get(6);
+		this.day7Events = dayEvents.get(6);
 	}
 
-	public Date getFromDate() {
-		return fromDate;
+	public Date getDay6Date() {
+		return day6Date;
 	}
 
-	public Date getToDate() {
-		return toDate;
+	public ArrayList<RBAgendaEvent> getDay6SpanningEvents() {
+		return day6SpanningEvents;
 	}
 
-	public String getTimezone() {
-		return timezone;
+	public ArrayList<RBAgendaEvent> getDay6Events() {
+		return day6Events;
 	}
 
-	public Date getDay1Date() {
-		return day1Date;
+	public Date getDay7Date() {
+		return day7Date;
 	}
 
-	public ArrayList<RBAgendaEvent> getDay1Events() {
-		return day1Events;
+	public ArrayList<RBAgendaEvent> getDay7SpanningEvents() {
+		return day7SpanningEvents;
 	}
 
-	public Date getDay2Date() {
-		return day2Date;
-	}
-
-	public ArrayList<RBAgendaEvent> getDay2Events() {
-		return day2Events;
-	}
-
-	public Date getDay3Date() {
-		return day3Date;
-	}
-
-	public ArrayList<RBAgendaEvent> getDay3Events() {
-		return day3Events;
-	}
-
-	public Date getDay4Date() {
-		return day4Date;
-	}
-
-	public ArrayList<RBAgendaEvent> getDay4Events() {
-		return day4Events;
-	}
-
-	public Date getDay5Date() {
-		return day5Date;
-	}
-
-	public ArrayList<RBAgendaEvent> getDay5Events() {
-		return day5Events;
+	public ArrayList<RBAgendaEvent> getDay7Events() {
+		return day7Events;
 	}
 }

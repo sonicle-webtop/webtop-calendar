@@ -33,7 +33,10 @@
  */
 package com.sonicle.webtop.calendar.rpt;
 
+import com.sonicle.webtop.calendar.bol.model.RBAgendaWeek5;
 import com.sonicle.webtop.core.io.ReportConfig;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  *
@@ -43,7 +46,7 @@ public class RptAgendaWeek5 extends AbstractWeekReport {
 
 	public RptAgendaWeek5(ReportConfig config) {
 		super(config);
-		this.name = "agendaweek";
+		this.name = "agendaweek5";
 		this.hasResourceBundle = false;
 	}
 	
@@ -51,5 +54,12 @@ public class RptAgendaWeek5 extends AbstractWeekReport {
 	protected void fillBuiltInParams() {
 		super.fillBuiltInParams();
 		params.put("DAYS_IN_WEEK", 5);
+	}
+	
+	@Override
+	Collection<?> createBeanCollection(AbstractWeekReport.Data data) {
+		ArrayList<RBAgendaWeek5> items = new ArrayList<>();
+		items.add(new RBAgendaWeek5(data.utz.getID(), data.fromDate.toDate(), data.toDate.toDate(), data.dayDates, data.daysSpanningEvents, data.daysEvents));
+		return items;
 	}
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
-<!-- 2016-03-11T16:43:33 -->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agendaevent_sub" pageWidth="159" pageHeight="25" columnWidth="159" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
+<!-- 2016-03-14T10:33:03 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agendaevent_sub" pageWidth="159" pageHeight="20" columnWidth="159" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
 	<property name="com.jaspersoft.studio.unit." value="cm"/>
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
 	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
@@ -79,39 +79,39 @@
 	<variable name="endTime" class="java.lang.String">
 		<variableExpression><![CDATA[DATEFORMAT($F{endDate},$P{WT_TIME_FORMAT_SHORT})]]></variableExpression>
 	</variable>
-	<variable name="startTimeSpan" class="java.lang.String">
-		<variableExpression><![CDATA[$F{spanLeft}==null ? "" : "(-"+$F{spanLeft}.toString()+")"]]></variableExpression>
+	<variable name="startSpan" class="java.lang.String">
+		<variableExpression><![CDATA[$F{spanLeft}==null ? "" : DATEFORMAT($F{startDate},"dd MMM")+" "]]></variableExpression>
 	</variable>
-	<variable name="endTimeSpan" class="java.lang.String">
-		<variableExpression><![CDATA[$F{spanRight}==null ? "" : "(+"+$F{spanRight}.toString()+")"]]></variableExpression>
+	<variable name="endSpan" class="java.lang.String">
+		<variableExpression><![CDATA[$F{spanRight}==null ? "" : DATEFORMAT($F{endDate},"dd MMM")+" "]]></variableExpression>
 	</variable>
 	<variable name="time" class="java.lang.String">
-		<variableExpression><![CDATA[msg("{0} - {1}",$V{startTime}+$V{startTimeSpan},$V{endTime}+$V{endTimeSpan})]]></variableExpression>
+		<variableExpression><![CDATA[msg("{0} - {1}",$V{startSpan}+$V{startTime},$V{endSpan}+$V{endTime})]]></variableExpression>
 	</variable>
 	<detail>
-		<band height="10" splitType="Stretch">
+		<band height="20" splitType="Stretch">
 			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
 			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
 			<textField>
-				<reportElement x="60" y="0" width="99" height="10" uuid="c01d57a1-8661-45e2-8a28-503f822a057c"/>
+				<reportElement x="2" y="10" width="157" height="10" uuid="c01d57a1-8661-45e2-8a28-503f822a057c"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="7"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{title}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{title}+($F{location}==null ? "" : " @"+$F{location})]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="9" y="0" width="50" height="10" uuid="b34a307c-21ba-47b0-bfdd-717a5670a3c3">
+				<reportElement x="12" y="0" width="146" height="10" uuid="b34a307c-21ba-47b0-bfdd-717a5670a3c3">
 					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
-					<font fontName="Arial" size="6"/>
+					<font fontName="Arial" size="7"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{time}]]></textFieldExpression>
 				<patternExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></patternExpression>
 			</textField>
 			<image hAlign="Center" vAlign="Middle">
-				<reportElement x="0" y="1" width="8" height="8" uuid="c9ff7173-a9e0-4075-81ba-f129eae3fd44">
+				<reportElement x="2" y="1" width="8" height="8" uuid="c9ff7173-a9e0-4075-81ba-f129eae3fd44">
 					<property name="com.jaspersoft.layout.grid.x" value="-1"/>
 					<property name="com.jaspersoft.layout.grid.y" value="-1"/>
 					<property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
@@ -130,19 +130,6 @@
 				</box>
 				<imageExpression><![CDATA[$F{calendarColorImage}]]></imageExpression>
 			</image>
-		</band>
-		<band height="10">
-			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
-			<printWhenExpression><![CDATA[$F{location}!=null]]></printWhenExpression>
-			<textField>
-				<reportElement x="5" y="0" width="154" height="10" uuid="04df232c-2710-4208-9b9f-e407255772bd">
-					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
-				</reportElement>
-				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="7"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{location}]]></textFieldExpression>
-			</textField>
 		</band>
 	</detail>
 </jasperReport>

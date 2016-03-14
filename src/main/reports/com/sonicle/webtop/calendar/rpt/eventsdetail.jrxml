@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
-<!-- 2016-03-07T13:32:28 -->
+<!-- 2016-03-14T14:48:40 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="eventsdetail" pageWidth="595" pageHeight="842" columnWidth="557" leftMargin="19" rightMargin="19" topMargin="19" bottomMargin="19" resourceBundle="eventsdetail" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
 	<property name="com.jaspersoft.studio.unit." value="cm"/>
 	<property name="com.jaspersoft.studio.unit.pageHeight" value="cm"/>
@@ -324,10 +324,11 @@
 				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
 			</textField>
 			<textField pattern="">
-				<reportElement style="PageFooter" x="408" y="0" width="112" height="12" uuid="fbc2093c-c1e2-4b06-a26a-677d5a872207"/>
+				<reportElement style="PageFooter" x="327" y="0" width="230" height="12" uuid="fbc2093c-c1e2-4b06-a26a-677d5a872207">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
 				<textElement textAlignment="Right"/>
-				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
-				<patternExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}+" "+$P{WT_TIME_FORMAT_SHORT}]]></patternExpression>
+				<textFieldExpression><![CDATA[DATEFORMAT(new java.util.Date(),$P{WT_DATE_FORMAT_SHORT}+" "+$P{WT_TIME_FORMAT_SHORT}) + " ("+$P{REPORT_TIME_ZONE}.getID()+")"]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement style="PageFooter" x="0" y="0" width="150" height="12" forecolor="#666666" uuid="4a5676f0-5f81-4209-81f6-03d16ddbd4d7"/>

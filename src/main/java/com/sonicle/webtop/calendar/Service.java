@@ -821,7 +821,6 @@ public class Service extends BaseService {
 			} else if(view.equals("w")) {
 				rpt = new RptAgendaWeek7(builder.build());
 			}
-			//RptAgendaWeek5 rpt = new RptAgendaWeek5(builder.build());
 			
 			// Get events for each visible folder
 			List<CalendarManager.CalendarEvents> foldEvents = new ArrayList<>();

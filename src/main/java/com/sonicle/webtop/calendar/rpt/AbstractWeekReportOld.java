@@ -37,12 +37,13 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
+import com.sonicle.webtop.calendar.bol.model.BeanDayAgenda;
+import com.sonicle.webtop.calendar.bol.model.BeanWeekAgenda;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.core.io.AbstractReport;
 import com.sonicle.webtop.core.io.ReportConfig;
 import com.sonicle.webtop.core.sdk.WTException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -52,16 +53,15 @@ import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
+import org.joda.time.LocalDate;
 
 /**
  *
  * @author malbinola
  */
-public abstract class AbstractWeekReport extends AbstractReport {
-	
-	abstract Collection<?> createBeanCollection(Data data);
+public abstract class AbstractWeekReportOld extends AbstractReport {
 
-	public AbstractWeekReport(ReportConfig config) {
+	public AbstractWeekReportOld(ReportConfig config) {
 		super(config);
 	}
 	
@@ -132,22 +132,35 @@ public abstract class AbstractWeekReport extends AbstractReport {
 					}
 					if(spanning) {
 						daysSpanningEvents.get(i).add(new RBAgendaEvent(calendar, se, spanLeft, spanRight));
-					} else {
-						daysEvents.get(i).add(new RBAgendaEvent(calendar, se, spanLeft, spanRight));
 					}
+					daysEvents.get(i).add(new RBAgendaEvent(calendar, se, spanLeft, spanRight));
 				}
 			}
 		}
+		ArrayList<BeanDayAgenda> dayItems = new ArrayList<>();
+		for(int i=0; i<dayDates.size(); i++) {
+			dayItems.add(new BeanDayAgenda(dayDates.get(i), daysSpanningEvents.get(i), daysEvents.get(i)));
+		}
 		
-		setDataSource(new JRBeanCollectionDataSource(createBeanCollection(new Data(utz, fromDate, toDate, dayDates, daysSpanningEvents, daysEvents))));
+		ArrayList<BeanWeekAgenda> items = new ArrayList<>();
+		items.add(new BeanWeekAgenda(fromDate.toDate(), toDate.toDate(), utz.getID(), dayItems));
+		setDataSource(new JRBeanCollectionDataSource(items));
 	}
 	
 	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {
 		return DateTimeUtils.startsInDay(dayDate, se.getStartDate().withZone(utz));
+		// NB: dayDate must be at midnight!!
+		//DateTime dayDateTo = dayDate.plusDays(1);
+		//DateTime start = se.getStartDate().withZone(utz);
+		//return (start.compareTo(dayDate) >= 0) && start.isBefore(dayDateTo);
 	}
 	
 	private boolean endsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {
 		return DateTimeUtils.endsInDay(dayDate, se.getEndDate().withZone(utz));
+		// NB: dayDate must be at midnight!!
+		//DateTime dayDateTo = dayDate.plusDays(1);
+		//DateTime end = se.getEndDate().withZone(utz);
+		//return end.isAfter(dayDate) && end.isBefore(dayDateTo); // We need to exclude midnight!!
 	}
 	
 	private boolean isInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {
@@ -162,21 +175,14 @@ public abstract class AbstractWeekReport extends AbstractReport {
 		return false;
 	}
 	
-	protected static class Data {
-		DateTimeZone utz;
-		DateTime fromDate;
-		DateTime toDate;
-		ArrayList<Date> dayDates;
-		ArrayList<ArrayList<RBAgendaEvent>> daysSpanningEvents;
-		ArrayList<ArrayList<RBAgendaEvent>> daysEvents;
-		
-		public Data(DateTimeZone utz, DateTime fromDate, DateTime toDate, ArrayList<Date> dayDates, ArrayList<ArrayList<RBAgendaEvent>> daysSpanningEvents, ArrayList<ArrayList<RBAgendaEvent>> daysEvents) {
-			this.utz = utz;
-			this.fromDate = fromDate;
-			this.toDate = toDate;
-			this.dayDates = dayDates;
-			this.daysSpanningEvents = daysSpanningEvents;
-			this.daysEvents = daysEvents;
-		}
-	} 
+	
+	
+	
+	
+	private boolean isMultiDay(DateTimeZone utz, SchedulerEvent se) {
+		LocalDate start = se.getStartDate().withZone(utz).toLocalDate();
+		LocalDate end = se.getEndDate().withZone(utz).toLocalDate();
+		return start.compareTo(end) != 0;
+		//return Minutes.minutesBetween(se.getStartDate(), se.getEndDate()).getMinutes() > 1440;
+	}
 }

@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-03-14T14:41:22 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agendaweek5" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="804" leftMargin="19" rightMargin="19" topMargin="19" bottomMargin="19" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
+	<property name="com.jaspersoft.studio.unit." value="cm"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.topMargin" value="cm"/>
+	<property name="com.jaspersoft.studio.unit.bottomMargin" value="cm"/>
+	<property name="com.jaspersoft.studio.unit.leftMargin" value="cm"/>
+	<property name="com.jaspersoft.studio.unit.rightMargin" value="cm"/>
+	<style name="PageTitle" fontName="Verdana" fontSize="14"/>
+	<style name="PageFooter" forecolor="#666666" fontName="Arial" fontSize="8"/>
+	<style name="MemoTitle" fontName="Verdana" fontSize="12" isBold="true">
+		<box>
+			<bottomPen lineWidth="1.5"/>
+		</box>
+	</style>
+	<style name="ColumnCaption" mode="Opaque" backcolor="#BFBFBF" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="ColumnValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="FieldCaption" mode="Transparent" backcolor="rgba(171, 205, 239, 0.0)" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="FieldValue" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="9"/>
+	<style name="Section" mode="Opaque" backcolor="#F2F0F0" vTextAlign="Middle" isBlankWhenNull="true" fontName="Arial" fontSize="10" isBold="true">
+		<box>
+			<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+			<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+		</box>
+	</style>
+	<parameter name="REPORT_PATH" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_GENERATED_BY" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["WebTop"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_PRINTED_BY" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="WT_DATE_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA["dd/MM/yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_DATE_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["MMM dd, yyyy"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_SHORT" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="WT_TIME_FORMAT_LONG" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HH:mm:ss"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="DAYS_IN_WEEK" class="java.lang.Integer" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="timezone" class="java.lang.String"/>
+	<field name="fromDate" class="java.util.Date"/>
+	<field name="toDate" class="java.util.Date"/>
+	<field name="day1Date" class="java.util.Date"/>
+	<field name="day1SpanningEvents" class="java.util.List"/>
+	<field name="day1Events" class="java.util.List"/>
+	<field name="day2Date" class="java.util.Date"/>
+	<field name="day2SpanningEvents" class="java.util.List"/>
+	<field name="day2Events" class="java.util.List"/>
+	<field name="day3Date" class="java.util.Date"/>
+	<field name="day3SpanningEvents" class="java.util.List"/>
+	<field name="day3Events" class="java.util.List"/>
+	<field name="day4Date" class="java.util.Date"/>
+	<field name="day4SpanningEvents" class="java.util.List"/>
+	<field name="day4Events" class="java.util.List"/>
+	<field name="day5Date" class="java.util.Date"/>
+	<field name="day5SpanningEvents" class="java.util.List"/>
+	<field name="day5Events" class="java.util.List"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="14" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="cm"/>
+			<textField isBlankWhenNull="true">
+				<reportElement key="" style="PageFooter" mode="Transparent" x="538" y="0" width="266" height="12" uuid="cf53f968-4370-4a8e-ae40-f0ca7213fab3">
+					<property name="com.jaspersoft.studio.unit.height" value="cm"/>
+				</reportElement>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{WT_PRINTED_BY}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="38">
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<textField pattern="EEEE">
+				<reportElement key="" style="Section" x="0" y="0" width="159" height="14" uuid="7e87311a-f0e6-4656-877c-cacc3a278781">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{day1Date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement key="" style="Section" x="0" y="14" width="159" height="11" uuid="67019415-9e3d-4d97-8266-c145d1dd5d97">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{day1Date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></patternExpression>
+			</textField>
+			<subreport overflowType="Stretch">
+				<reportElement x="0" y="28" width="159" height="10" uuid="e7dd8004-bb1e-42af-af71-a6210c695b06">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day1SpanningEvents})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<textField pattern="EEEE">
+				<reportElement key="" style="Section" x="161" y="0" width="159" height="14" uuid="8419aca6-c3fb-40bb-a9f1-08667fd5b98b">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{day2Date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement key="" style="Section" x="161" y="14" width="159" height="11" uuid="563c9b1a-c3ea-4ce8-af7d-46a9caffa48b">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{day2Date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></patternExpression>
+			</textField>
+			<subreport overflowType="Stretch">
+				<reportElement x="161" y="28" width="159" height="10" uuid="053b7bc7-505d-4b4e-9450-10b63e7c5598">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day2SpanningEvents})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<textField pattern="EEEE">
+				<reportElement key="" style="Section" x="322" y="0" width="159" height="14" uuid="3acffce0-5dbe-4e5a-aace-b08d5ec78f16">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{day3Date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement key="" style="Section" x="322" y="14" width="159" height="11" uuid="8d050da7-97ef-478a-81a6-0f841a5f457e">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{day3Date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></patternExpression>
+			</textField>
+			<subreport overflowType="Stretch">
+				<reportElement x="322" y="28" width="159" height="10" uuid="0ff358a3-794e-45bd-90d5-ecf92a6d3fb7">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day3SpanningEvents})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<textField pattern="EEEE">
+				<reportElement key="" style="Section" x="483" y="0" width="159" height="14" uuid="dc3ef7e0-95dd-44f3-90a7-7a80f6e5e60d">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{day4Date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement key="" style="Section" x="483" y="14" width="159" height="11" uuid="3dd58b86-b77c-4a61-9947-94b30bcb2737">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{day4Date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></patternExpression>
+			</textField>
+			<subreport overflowType="Stretch">
+				<reportElement x="483" y="28" width="159" height="10" uuid="023fb1d6-98df-4b4d-a3bb-da4f137b6118">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day4SpanningEvents})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<textField pattern="EEEE">
+				<reportElement key="" style="Section" x="644" y="0" width="159" height="14" uuid="14ce4360-e426-453b-b874-56fe2c56ea76">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{day5Date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement key="" style="Section" x="644" y="14" width="159" height="11" uuid="8d477981-cc69-4e6f-af5b-1200df1bcb5a">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{day5Date}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></patternExpression>
+			</textField>
+			<subreport overflowType="Stretch">
+				<reportElement x="644" y="28" width="159" height="10" uuid="1f7775cd-b30a-4594-9624-d82f19ede967">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day5SpanningEvents})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="35">
+			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+			<subreport>
+				<reportElement x="0" y="6" width="159" height="20" uuid="53b07427-6ccd-4f46-85f0-949bfc21b6ff">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day1Events})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="161" y="6" width="159" height="20" uuid="1d762b83-9e48-4c4e-b364-b8711dd83dc0">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day2Events})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="322" y="6" width="159" height="20" uuid="010905a3-b8fe-43cc-9d4e-f4e65a0175d1">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day3Events})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<line>
+				<reportElement x="0" y="2" width="804" height="1" forecolor="#F2F0F0" uuid="0c2558fc-0eaa-4ac6-ae80-f8516d95947c">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<subreport>
+				<reportElement x="483" y="6" width="159" height="20" uuid="19196ef2-086d-40b0-a6ba-a2c5ed4f9760">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day4Events})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="644" y="6" width="159" height="20" uuid="a705edca-833e-4456-a528-1ed332bfc006">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="pixel"/>
+				</reportElement>
+				<subreportParameter name="REPORT_PATH">
+					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_GENERATED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_GENERATED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_PRINTED_BY">
+					<subreportParameterExpression><![CDATA[$P{WT_PRINTED_BY}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_DATE_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_DATE_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_SHORT">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_SHORT}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="WT_TIME_FORMAT_LONG">
+					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{day5Events})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="12" splitType="Stretch">
+			<textField>
+				<reportElement style="PageFooter" x="360" y="0" width="39" height="12" uuid="13be2147-0f6a-404e-a5f5-16d679de89b0"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER} + " /"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement style="PageFooter" x="400" y="0" width="40" height="12" uuid="a8aeebb8-0ec7-43d9-9045-ee4fa415781a"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField pattern="">
+				<reportElement style="PageFooter" x="574" y="0" width="230" height="12" uuid="fbc2093c-c1e2-4b06-a26a-677d5a872207">
+					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[DATEFORMAT(new java.util.Date(),$P{WT_DATE_FORMAT_SHORT}+" "+$P{WT_TIME_FORMAT_SHORT}) + " ("+$P{REPORT_TIME_ZONE}.getID()+")"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="PageFooter" x="0" y="0" width="150" height="12" forecolor="#666666" uuid="4a5676f0-5f81-4209-81f6-03d16ddbd4d7"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$P{WT_GENERATED_BY}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

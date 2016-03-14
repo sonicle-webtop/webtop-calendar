@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
-<!-- 2016-03-11T17:57:42 -->
+<!-- 2016-03-14T10:13:27 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="agenda5days_sub" columnCount="5" printOrder="Horizontal" pageWidth="804" pageHeight="270" columnWidth="159" columnSpacing="2" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="47fa44bf-1a8e-4a18-a0df-8b26982ff32e">
 	<property name="com.jaspersoft.studio.unit." value="cm"/>
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
@@ -69,8 +69,9 @@
 			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
 			<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
 			<subreport>
-				<reportElement x="0" y="28" width="159" height="30" uuid="49ac42cc-88e3-484d-80a5-e47b49dee742">
+				<reportElement x="0" y="28" width="159" height="20" uuid="49ac42cc-88e3-484d-80a5-e47b49dee742">
 					<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
 				</reportElement>
 				<subreportParameter name="REPORT_PATH">
 					<subreportParameterExpression><![CDATA[$P{REPORT_PATH}]]></subreportParameterExpression>
@@ -94,7 +95,7 @@
 					<subreportParameterExpression><![CDATA[$P{WT_TIME_FORMAT_LONG}]]></subreportParameterExpression>
 				</subreportParameter>
 				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{events})]]></dataSourceExpression>
-				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent2_sub.jasper"]]></subreportExpression>
+				<subreportExpression><![CDATA[$P{REPORT_PATH}+"agendaevent_sub.jasper"]]></subreportExpression>
 			</subreport>
 			<textField pattern="EEEE">
 				<reportElement key="" style="Section" x="0" y="0" width="159" height="14" uuid="ef55295e-9dea-4f62-a5ff-ea07d5b2323c">

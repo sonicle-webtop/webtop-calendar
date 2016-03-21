@@ -33,69 +33,53 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.commons.db.DbUtils;
-import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.core.RunContext;
 import com.sonicle.webtop.core.WT;
-import com.sonicle.webtop.core.dal.BaseDAO;
-import com.sonicle.webtop.core.dal.BaseDAO.CrudInfo;
-import com.sonicle.webtop.core.sdk.BaseBridge;
+import com.sonicle.webtop.core.sdk.BaseController;
+import com.sonicle.webtop.core.sdk.BaseReminder;
 import com.sonicle.webtop.core.sdk.UserProfile;
-import java.sql.Connection;
+import com.sonicle.webtop.core.sdk.WTException;
+import com.sonicle.webtop.core.sdk.WTOperationException;
+import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesProfiles;
+import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesReminders;
+import java.util.List;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarBridge extends BaseBridge {
-	public static final Logger logger = WT.getLogger(CalendarBridge.class);
+public class CalendarController extends BaseController implements IControllerHandlesProfiles, IControllerHandlesReminders {
+	public static final Logger logger = WT.getLogger(CalendarController.class);
 	
-	public CalendarBridge(RunContext context) {
+	public CalendarController(RunContext context) {
 		super(context);
 	}
 	
 	@Override
-	public void initializeProfile(UserProfile.Id profileId) throws Exception {
-		Connection con = null;
+	public void initializeProfile(UserProfile.Id profileId) throws WTException {
+		CalendarManager manager = new CalendarManager(getRunContext(), profileId);
 		
+		// Adds built-in calendar
 		try {
-			con = WT.getConnection(SERVICE_ID);
-			CalendarDAO cdao = CalendarDAO.getInstance();
-			
-			// Adds built-in calendar
-			OCalendar cal = cdao.selectBuiltInByDomainUser(con, profileId.getDomainId(), profileId.getUserId());
-			if(cal == null) {
-				cal = new OCalendar();
-				cal.setDomainId(profileId.getDomainId());
-				cal.setUserId(profileId.getUserId());
-				cal.setBuiltIn(true);
-				cal.setName("WebTop");
-				cal.setDescription("");
-				cal.setColor("#FFFFFF");
-				cal.setIsPrivate(false);
-				cal.setBusy(false);
-				cal.setReminder(null);
-				cal.setSync(true);
-				cal.setInvitation(false);
-				cal.setIsDefault(true);
-				cal.setBusy(false);
-				cal.setCalendarId(cdao.getSequence(con).intValue());
-				cdao.insert(con, cal, createUpdateInfo(profileId));
-			}
-			
-		} finally {
-			DbUtils.closeQuietly(con);
+			manager.addBuiltInCalendar();
+		} catch(WTOperationException ex) {
+			// Do nothing...
+		} catch(WTException ex) {
+			throw ex;
 		}
 	}
 	
-	private CrudInfo createUpdateInfo(UserProfile.Id profileId) {
-		return new CrudInfo("WT", profileId.toString());
-	}
-	
 	@Override
-	public void cleanupProfile(UserProfile.Id profileId, boolean deep) {
+	public void cleanupProfile(UserProfile.Id profileId, boolean deep) throws WTException {
 		//TODO: implementare cleanup utente
+		//CalendarManager manager = new CalendarManager(getRunContext(), profileId);
+	}
+
+	@Override
+	public List<BaseReminder> returnReminders(DateTime now) {
+		CalendarManager manager = new CalendarManager(getRunContext());
+		return manager.getRemindersToBeNotified(now);
 	}
 }

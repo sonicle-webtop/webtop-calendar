@@ -38,7 +38,6 @@ import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.security.DomainAccount;
-import com.sonicle.webtop.calendar.ICalHelper.ParseResult;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
@@ -81,20 +80,18 @@ import com.sonicle.webtop.core.bol.model.SharePermsElements;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.DAOException;
 import com.sonicle.webtop.core.sdk.AuthException;
-import com.sonicle.webtop.core.sdk.interfaces.IManagerUsesReminders;
 import com.sonicle.webtop.core.sdk.BaseReminder;
 import com.sonicle.webtop.core.sdk.ReminderEmail;
 import com.sonicle.webtop.core.sdk.ReminderInApp;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
+import com.sonicle.webtop.core.sdk.WTOperationException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
-import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Connection;
@@ -102,14 +99,12 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.PeriodList;
 import net.fortuna.ical4j.model.property.RRule;
 import org.apache.commons.lang3.StringUtils;
@@ -133,7 +128,7 @@ import org.supercsv.prefs.CsvPreference;
  *
  * @author malbinola
  */
-public class CalendarManager extends BaseManager implements IManagerUsesReminders {
+public class CalendarManager extends BaseManager {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
 	private static final String RESOURCE_CALENDAR = "CALENDAR";
 	private static final String EVENT_NORMAL = "normal";
@@ -172,51 +167,6 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		String dt = StringUtils.replace(dateTime, "T", " ");
 		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(tz);
 		return formatter.parseDateTime(dt);
-	}
-	
-	@Override
-	public List<BaseReminder> returnReminders(DateTime now) {
-		ArrayList<BaseReminder> alerts = new ArrayList<>();
-		HashMap<UserProfile.Id, Boolean> byEmailCache = new HashMap<>();
-		EventDAO edao = EventDAO.getInstance();
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
-			
-			DateTime from = now.withTimeAtStartOfDay();
-			DateTime remindOn = null;
-			List<SchedulerEvent> events = listExpiredSchedulerEvents(con, from, from.plusDays(7));
-			for(SchedulerEvent event : events) {
-				//TODO: implementare gestione reminder anche per le ricorrenze
-				remindOn = event.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(event.getReminder());
-				if(now.compareTo(remindOn) >= 0) {
-					if(!byEmailCache.containsKey(event.getCalendarProfileId())) {
-						CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, event.getCalendarProfileId());
-						boolean bool = cus.getEventReminderDelivery().equals(CalendarUserSettings.EVENT_REMINDER_DELIVERY_EMAIL);
-						byEmailCache.put(event.getCalendarProfileId(), bool);
-					}
-					
-					int ret = edao.updateRemindedOnIfNull(con, event.getEventId(), now);
-					if(ret != 1) continue;
-					
-					if(byEmailCache.get(event.getCalendarProfileId())) {
-						UserProfile.Data ud = WT.getUserData(event.getCalendarProfileId());
-						alerts.add(createEventReminderAlertEmail(ud.getLocale(), event));
-					} else {
-						alerts.add(createEventReminderAlertWeb(event));
-					}
-				}
-			}
-			DbUtils.commitQuietly(con);
-			
-		} catch(Exception ex) {
-			logger.error("Error collecting reminder alerts", ex);
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-		return alerts;
 	}
 	
 	private void checkRightsOnCalendarRoot(UserProfile.Id ownerPid, String action) throws WTException {
@@ -330,6 +280,24 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		}
 	}
 	
+	public OCalendar getBuiltInCalendar() throws WTException {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			CalendarDAO dao = CalendarDAO.getInstance();
+			OCalendar cal = dao.selectBuiltInByDomainUser(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
+			if(cal == null) return null;
+			checkRightsOnCalendarFolder(cal.getCalendarId(), "READ");
+			return cal;
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
 	public OCalendar addCalendar(OCalendar item) throws WTException {
 		Connection con = null;
 		
@@ -337,12 +305,62 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 			checkRightsOnCalendarRoot(item.getProfileId(), "MANAGE");
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
+			
+			item.setBuiltIn(false);
+			item = doInsertCalendar(con, item);
+			DbUtils.commitQuietly(con);
+			return item;
+			
+			/*
 			CalendarDAO dao = CalendarDAO.getInstance();
 			
 			item.setCalendarId(dao.getSequence(con).intValue());
 			item.setBuiltIn(false);
 			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
 			dao.insert(con, item, createUpdateInfo());
+			DbUtils.commitQuietly(con);
+			return item;
+			*/
+			
+		} catch(SQLException | DAOException ex) {
+			DbUtils.rollbackQuietly(con);
+			throw new WTException(ex, "DB error");
+		} catch(Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public OCalendar addBuiltInCalendar() throws WTException {
+		Connection con = null;
+		OCalendar item = null;
+		
+		try {
+			checkRightsOnCalendarRoot(getTargetProfileId(), "MANAGE");
+			con = WT.getConnection(SERVICE_ID);
+			con.setAutoCommit(false);
+			CalendarDAO dao = CalendarDAO.getInstance();
+			
+			item = dao.selectBuiltInByDomainUser(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
+			if(item != null) throw new WTOperationException("Built-in calendar already present");
+			
+			item = new OCalendar();
+			item.setDomainId(getTargetProfileId().getDomainId());
+			item.setUserId(getTargetProfileId().getUserId());
+			item.setBuiltIn(true);
+			item.setName(WT.getPlatformName());
+			item.setDescription("");
+			item.setColor("#FFFFFF");
+			item.setIsPrivate(false);
+			item.setBusy(false);
+			item.setReminder(null);
+			item.setSync(true);
+			item.setInvitation(false);
+			item.setIsDefault(true);
+			item.setBusy(false);
+			item = doInsertCalendar(con, item);
 			DbUtils.commitQuietly(con);
 			return item;
 			
@@ -1396,6 +1414,50 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 		}
 	}
 	
+	public List<BaseReminder> getRemindersToBeNotified(DateTime now) {
+		ArrayList<BaseReminder> alerts = new ArrayList<>();
+		HashMap<UserProfile.Id, Boolean> byEmailCache = new HashMap<>();
+		EventDAO edao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			con.setAutoCommit(false);
+			
+			DateTime from = now.withTimeAtStartOfDay();
+			DateTime remindOn = null;
+			List<SchedulerEvent> events = listExpiredSchedulerEvents(con, from, from.plusDays(7));
+			for(SchedulerEvent event : events) {
+				//TODO: implementare gestione reminder anche per le ricorrenze
+				remindOn = event.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(event.getReminder());
+				if(now.compareTo(remindOn) >= 0) {
+					if(!byEmailCache.containsKey(event.getCalendarProfileId())) {
+						CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, event.getCalendarProfileId());
+						boolean bool = cus.getEventReminderDelivery().equals(CalendarUserSettings.EVENT_REMINDER_DELIVERY_EMAIL);
+						byEmailCache.put(event.getCalendarProfileId(), bool);
+					}
+					
+					int ret = edao.updateRemindedOnIfNull(con, event.getEventId(), now);
+					if(ret != 1) continue;
+					
+					if(byEmailCache.get(event.getCalendarProfileId())) {
+						UserProfile.Data ud = WT.getUserData(event.getCalendarProfileId());
+						alerts.add(createEventReminderAlertEmail(ud.getLocale(), event));
+					} else {
+						alerts.add(createEventReminderAlertWeb(event));
+					}
+				}
+			}
+			DbUtils.commitQuietly(con);
+			
+		} catch(Exception ex) {
+			logger.error("Error collecting reminder alerts", ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+		return alerts;
+	}
+	
 	private void fillExportMapDates(HashMap<String, Object> map, SchedulerEvent se) throws Exception {
 		DateTime startDt = se.getStartDate().withZone(DateTimeZone.UTC);
 		map.put("startDate", startDt);
@@ -1546,6 +1608,14 @@ public class CalendarManager extends BaseManager implements IManagerUsesReminder
 				return EVENT_BROKEN;
 			}
 		}
+	}
+	
+	private OCalendar doInsertCalendar(Connection con, OCalendar item) throws WTException {
+		CalendarDAO dao = CalendarDAO.getInstance();
+		item.setCalendarId(dao.getSequence(con).intValue());
+		if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
+		dao.insert(con, item, createUpdateInfo());
+		return item;
 	}
 	
 	private InsertResult doEventInsert(Connection con, Event event, boolean recurrence, boolean attendees) throws WTException {

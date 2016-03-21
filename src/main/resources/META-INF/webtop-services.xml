@@ -11,6 +11,16 @@
 			Value must be unique in webtop platform. This name is used as 
 			short service idenfitier (XID) and as prefix for css classes.
 			
+		<version> -> Service version. REQUIRED
+		<buildDate> -> This package build date.
+		<company> -> Service's company name.
+		<companyEmail> -> Service's company email.
+		<companyWebSite> -> Service's company website.
+		<supportEmail> -> Service's company support email for feedbacks.
+			
+		<controllerClassName> -> Controller class name (do not specify base package name).
+			If empty, default "Controller" value will be used.
+			
 		<serviceClassName> -> Service class name (do not specify base package name).
 			If empty, default "Service" value will be used.
 			
@@ -37,11 +47,6 @@
 			<modelJsClassName> -> Client model class name.
 				If empty, default "model.UserOptions" value will be used.
 		
-		<company> -> Service's company name.
-		<companyEmail> -> Service's company email.
-		<companyWebSite> -> Service's company website.
-		<supportEmail> -> Service's company support email for feedbacks.
-		
 		<resources> -> Resources section.
 			It must contain zero or more <resource> elements that define following attributes:
 			- name
@@ -58,8 +63,9 @@
 		<shortName>wtcal</shortName>
 		<version>2.0.0</version>
 		<buildDate>03/11/2014</buildDate>
-		<bridgeClassName>CalendarBridge</bridgeClassName>
-		<managerClassName>CalendarManager</managerClassName>
+		
+		<controllerClassName>CalendarController</controllerClassName>
+		
 		<serviceClassName>Service</serviceClassName>
 		<publicServiceClassName>PublicService</publicServiceClassName>
 		<clientOptionsModelJsClassName>model.ClientOptions</clientOptionsModelJsClassName>

@@ -385,7 +385,8 @@ public class CalendarManager extends BaseManager {
 			CalendarDAO dao = CalendarDAO.getInstance();
 			
 			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
-			dao.update(con, item, createUpdateInfo());
+			dao.update(con, item);
+			//TODO: log update operation
 			DbUtils.commitQuietly(con);
 			return item;
 			

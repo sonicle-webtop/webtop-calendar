@@ -33,8 +33,8 @@
  */
 package com.sonicle.webtop.calendar.rpt;
 
-import com.sonicle.webtop.core.io.AbstractReport;
-import com.sonicle.webtop.core.io.ReportConfig;
+import com.sonicle.webtop.core.io.output.AbstractReport;
+import com.sonicle.webtop.core.io.output.ReportConfig;
 
 /**
  *

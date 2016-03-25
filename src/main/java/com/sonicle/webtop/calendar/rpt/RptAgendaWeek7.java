@@ -34,7 +34,7 @@
 package com.sonicle.webtop.calendar.rpt;
 
 import com.sonicle.webtop.calendar.bol.model.RBAgendaWeek7;
-import com.sonicle.webtop.core.io.ReportConfig;
+import com.sonicle.webtop.core.io.output.ReportConfig;
 import java.util.ArrayList;
 import java.util.Collection;
 

@@ -138,7 +138,6 @@ public class CalendarManager extends BaseManager {
 	public static final String TARGET_SINCE = "since";
 	public static final String TARGET_ALL = "all";
 	
-	private String host;
 	private final HashMap<Integer, UserProfile.Id> cacheCalendarToOwner = new HashMap<>();
 	private final Object shareCacheLock = new Object();
 	private final HashMap<UserProfile.Id, String> cacheOwnerToRootShare = new HashMap<>();
@@ -147,16 +146,16 @@ public class CalendarManager extends BaseManager {
 
 	public CalendarManager(RunContext context) {
 		super(context);
-		host = "unknown";
 	}
 	
 	public CalendarManager(RunContext context, UserProfile.Id targetProfileId) {
 		super(context, targetProfileId);
-		host = "unknown";
 	}
 	
-	public void setHost(String value) {
-		host = value;
+	private void writeLog(String action, String data) {
+		CoreManager core = WT.getCoreManager(getRunContext());
+		core.setSoftwareName(getSoftwareName());
+		core.writeLog(action, data);
 	}
 	
 	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
@@ -309,6 +308,7 @@ public class CalendarManager extends BaseManager {
 			item.setBuiltIn(false);
 			item = doInsertCalendar(con, item);
 			DbUtils.commitQuietly(con);
+			writeLog("CALENDAR_INSERT", item.getCalendarId().toString());
 			return item;
 			
 			/*
@@ -362,6 +362,7 @@ public class CalendarManager extends BaseManager {
 			item.setBusy(false);
 			item = doInsertCalendar(con, item);
 			DbUtils.commitQuietly(con);
+			writeLog("CALENDAR_INSERT",  String.valueOf(item.getCalendarId()));
 			return item;
 			
 		} catch(SQLException | DAOException ex) {
@@ -376,18 +377,18 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public OCalendar updateCalendar(OCalendar item) throws WTException {
+		CalendarDAO dao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			checkRightsOnCalendarFolder(item.getCalendarId(), "UPDATE");
+			
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
-			CalendarDAO dao = CalendarDAO.getInstance();
-			
 			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
 			dao.update(con, item);
-			//TODO: log update operation
 			DbUtils.commitQuietly(con);
+			writeLog("CALENDAR_UPDATE",  String.valueOf(item.getCalendarId()));
 			return item;
 			
 		} catch(SQLException | DAOException ex) {
@@ -402,15 +403,18 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public void deleteCalendar(int calendarId) throws WTException {
+		CalendarDAO dao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			checkRightsOnCalendarFolder(calendarId, "DELETE");
-			con = WT.getConnection(SERVICE_ID);
 			
-			CalendarDAO dao = CalendarDAO.getInstance();
+			con = WT.getConnection(SERVICE_ID);
+			con.setAutoCommit(false);
 			dao.deleteById(con, calendarId);
 			//TODO: cancellare eventi collegati
+			DbUtils.commitQuietly(con);
+			writeLog("CALENDAR_DELETE",  String.valueOf(calendarId));
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -662,8 +666,9 @@ public class CalendarManager extends BaseManager {
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
 			
-			doEventInsert(con, event, true, true);
+			InsertResult result = doEventInsert(con, event, true, true);
 			DbUtils.commitQuietly(con);
+			writeLog("EVENT_INSERT", String.valueOf(result.event.getEventId()));
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -696,6 +701,9 @@ public class CalendarManager extends BaseManager {
 				if(target.equals(TARGET_THIS)) {
 					// 1 - Updates the event with new data
 					doEventUpdate(con, original, event, true);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
@@ -704,6 +712,9 @@ public class CalendarManager extends BaseManager {
 					OEvent oevt = edao.selectById(con, ekey.eventId);
 					if(oevt == null) throw new WTException("Unable to retrieve broken event [{}]", ekey.eventId);
 					doEventUpdate(con, oevt, event, true);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
@@ -713,7 +724,11 @@ public class CalendarManager extends BaseManager {
 					// 2 - Marks recurring event date inserting a broken record
 					doExcludeRecurrenceDate(con, original, ekey.atDate, insert.event.getEventId());
 					// 3 - Updates revision of original event
-					edao.updateRevision(con, original.getEventId(), createUpdateInfo());
+					edao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 					
 				} else if(target.equals(TARGET_SINCE)) {
 					// 1 - Resize original recurrence (sets until date at the day before date)
@@ -723,11 +738,16 @@ public class CalendarManager extends BaseManager {
 					orec.applyEndUntil(ekey.atDate.minusDays(1).toDateTimeAtStartOfDay(), DateTimeZone.forID(original.getTimezone()), true);
 					rdao.update(con, orec);
 					// 2 - Updates revision of original event
-					edao.updateRevision(con, original.getEventId(), createUpdateInfo());
+					edao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 					// 3 - Insert new event adjusting recurrence a bit
 					event.getRecurrence().setEndsMode(Recurrence.ENDS_MODE_UNTIL);
 					event.getRecurrence().setUntilDate(until);
-					doEventInsert(con, event, true, false);
+					InsertResult insert = doEventInsert(con, event, true, false);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - Updates recurring event data (dates must be preserved) (+revision)
@@ -738,9 +758,11 @@ public class CalendarManager extends BaseManager {
 					ORecurrence orec = rdao.select(con, original.getRecurrenceId());
 					orec.fillFrom(event.getRecurrence(), original.getStartDate(), original.getEndDate(), original.getTimezone());
 					rdao.update(con, orec);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 				}
 			}
-			DbUtils.commitQuietly(con);
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -766,8 +788,9 @@ public class CalendarManager extends BaseManager {
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
 			
-			doEventInsert(con, event, true, true);
+			InsertResult insert = doEventInsert(con, event, true, true);
 			DbUtils.commitQuietly(con);
+			writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -801,13 +824,14 @@ public class CalendarManager extends BaseManager {
 				evt.setStartDate(startDate);
 				evt.setEndDate(endDate);
 				evt.setTitle(title);
-				edao.update(con, evt, createUpdateInfo());
+				edao.update(con, evt, createRevisionTimestamp());
+				
+				DbUtils.commitQuietly(con);
+				writeLog("EVENT_UPDATE", String.valueOf(evt.getEventId()));
 				
 			} else {
 				throw new WTException("Unable to move recurring event instance [{}]", ekey.eventId);
-			}
-			
-			DbUtils.commitQuietly(con);
+			}	
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -839,6 +863,9 @@ public class CalendarManager extends BaseManager {
 				if(target.equals(TARGET_THIS)) {
 					if(!ekey.eventId.equals(original.getEventId())) throw new WTException("In this case both ids must be equals");
 					doDeleteEvent(con, ekey.eventId);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_DELETE", String.valueOf(original.getEventId()));
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
@@ -846,16 +873,22 @@ public class CalendarManager extends BaseManager {
 					// 1 - logically delete newevent (broken one)
 					doDeleteEvent(con, ekey.eventId);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createUpdateInfo());
+					evtdao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
 				if(target.equals(TARGET_THIS)) {
 					// 1 - inserts a broken record (without new event) on deleted date
 					doExcludeRecurrenceDate(con, original, ekey.atDate);
-					
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createUpdateInfo());
+					evtdao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 					
 				} else if(target.equals(TARGET_SINCE)) {
 					// 1 - resize original recurrence (sets until date at the day before deleted date)
@@ -865,15 +898,19 @@ public class CalendarManager extends BaseManager {
 					rec.updateRRule(DateTimeZone.forID(original.getTimezone()));
 					recdao.update(con, rec);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createUpdateInfo());
+					evtdao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - logically delete original event
 					doDeleteEvent(con, ekey.eventId);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
 				}
 			}
-			
-			DbUtils.commitQuietly(con);
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -888,14 +925,14 @@ public class CalendarManager extends BaseManager {
 	
 	private void doDeleteEvent(Connection con, int eventId) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
-		edao.logicDeleteById(con, eventId, createUpdateInfo());
+		edao.logicDeleteById(con, eventId, createRevisionTimestamp());
 		//TODO: cancellare reminder
 		//TODO: se ricorrenza, eliminare tutte le broken dove newid!=null ??? Non servi più dato che verifico il D dell'evento ricorrente
 	}
 	
 	private int doDeleteEventsByCalendar(Connection con, int calendarId) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
-		return edao.logicDeleteByCalendarId(con, calendarId, createUpdateInfo());
+		return edao.logicDeleteByCalendarId(con, calendarId, createRevisionTimestamp());
 		//TODO: cancellare reminder
 	}
 	
@@ -920,6 +957,7 @@ public class CalendarManager extends BaseManager {
 			doDeleteEvent(con, ekey.eventId);
 			
 			DbUtils.commitQuietly(con);
+			writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -945,6 +983,7 @@ public class CalendarManager extends BaseManager {
 				
 				doMoveEvent(con, copy, evt, targetCalendarId);
 				DbUtils.commitQuietly(con);
+				writeLog("EVENT_UPDATE", String.valueOf(evt.getEventId()));
 			}
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -1615,7 +1654,7 @@ public class CalendarManager extends BaseManager {
 		CalendarDAO dao = CalendarDAO.getInstance();
 		item.setCalendarId(dao.getSequence(con).intValue());
 		if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
-		dao.insert(con, item, createUpdateInfo());
+		dao.insert(con, item);
 		return item;
 	}
 	
@@ -1660,8 +1699,7 @@ public class CalendarManager extends BaseManager {
 		} else {
 			oevt.setRecurrenceId(null);
 		}
-		evtDao.insert(con, oevt, createUpdateInfo());
-		
+		evtDao.insert(con, oevt, createRevisionTimestamp());
 		return new InsertResult(oevt, orec, oatts);
 	}
 	
@@ -1693,7 +1731,7 @@ public class CalendarManager extends BaseManager {
 			}
 		}
 		
-		edao.update(con, oevt, createUpdateInfo());
+		edao.update(con, oevt, createRevisionTimestamp());
 		return oevt;
 	}
 	
@@ -1703,7 +1741,7 @@ public class CalendarManager extends BaseManager {
 			doEventInsert(con, event, true, true);
 		} else {
 			EventDAO edao = EventDAO.getInstance();
-			edao.updateCalendar(con, event.getEventId(), targetCalendarId, createUpdateInfo());
+			edao.updateCalendar(con, event.getEventId(), targetCalendarId, createRevisionTimestamp());
 		}
 	}
 	
@@ -1953,8 +1991,8 @@ public class CalendarManager extends BaseManager {
 		return alert;
 	}
 	
-	private CrudInfo createUpdateInfo() {
-		return new CrudInfo("WT", getRunProfileId().toString());
+	private DateTime createRevisionTimestamp() {
+		return DateTime.now(DateTimeZone.UTC);
 	}
 	
 	public static class InsertResult {

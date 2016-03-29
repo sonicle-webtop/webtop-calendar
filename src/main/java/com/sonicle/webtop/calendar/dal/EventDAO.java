@@ -78,11 +78,11 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public int insert(Connection con, OEvent item, CrudInfo insertInfo) throws DAOException {
+	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		OEvent.ensureCoherence(item);
-		item.setStatus(OEvent.STATUS_NEW);
-		item.setInsertInfo(insertInfo);
+		item.setRevisionStatus(OEvent.REV_STATUS_NEW);
+		item.setRevisionTimestamp(revisionTimestamp);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)
@@ -90,11 +90,11 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int update(Connection con, OEvent item, CrudInfo updateInfo) throws DAOException {
+	public int update(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		OEvent.ensureCoherence(item);
-		item.setStatus(OEvent.STATUS_MODIFIED);
-		item.setUpdateInfo(updateInfo);
+		item.setRevisionStatus(OEvent.REV_STATUS_MODIFIED);
+		item.setRevisionTimestamp(revisionTimestamp);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
@@ -115,52 +115,44 @@ public class EventDAO extends BaseDAO {
 			.set(EVENTS.STATISTIC_ID, item.getStatisticId())
 			.set(EVENTS.CAUSAL_ID, item.getCausalId())
 			.set(EVENTS.ORGANIZER, item.getOrganizer())
-			.set(EVENTS.STATUS, item.getStatus())
-			.set(EVENTS.UPDATE_TIMESTAMP, item.getUpdateTimestamp())
-			.set(EVENTS.UPDATE_DEVICE, item.getUpdateDevice())
-			.set(EVENTS.UPDATE_USER, item.getUpdateUser())
+			.set(EVENTS.REVISION_STATUS, item.getRevisionStatus())
+			.set(EVENTS.REVISION_TIMESTAMP, item.getRevisionTimestamp())
 			.where(
 				EVENTS.EVENT_ID.equal(item.getEventId())
 			)
 			.execute();
 	}
 	
-	public int updateCalendar(Connection con, int eventId, int calendarId, CrudInfo revisionInfo) throws DAOException {
+	public int updateCalendar(Connection con, int eventId, int calendarId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID,calendarId)
-			.set(EVENTS.STATUS, OEvent.STATUS_MODIFIED)
-			.set(EVENTS.UPDATE_TIMESTAMP, revisionInfo.timestamp)
-			.set(EVENTS.UPDATE_DEVICE, revisionInfo.device)
-			.set(EVENTS.UPDATE_USER, revisionInfo.user)
+			.set(EVENTS.REVISION_STATUS, OEvent.REV_STATUS_MODIFIED)
+			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
 			.execute();
 	}
 	
-	public int updateRevision(Connection con, int eventId, CrudInfo updateInfo) throws DAOException {
+	public int updateRevision(Connection con, int eventId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.UPDATE_TIMESTAMP, updateInfo.timestamp)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.device)
-			.set(EVENTS.UPDATE_USER, updateInfo.user)
+			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
 			.execute();
 	}
 	
-	public int updateStatus(Connection con, int eventId, String status, CrudInfo updateInfo) throws DAOException {
+	public int updateRevisionStatus(Connection con, int eventId, String revisionStatus, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.STATUS, status)
-			.set(EVENTS.UPDATE_TIMESTAMP, updateInfo.timestamp)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.device)
-			.set(EVENTS.UPDATE_USER, updateInfo.user)
+			.set(EVENTS.REVISION_STATUS, revisionStatus)
+			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
@@ -190,28 +182,24 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int logicDeleteById(Connection con, int eventId, CrudInfo updateInfo) throws DAOException {
+	public int logicDeleteById(Connection con, int eventId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.STATUS, OEvent.STATUS_DELETED)
-			.set(EVENTS.UPDATE_TIMESTAMP, updateInfo.timestamp)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.device)
-			.set(EVENTS.UPDATE_USER, updateInfo.user)
+			.set(EVENTS.REVISION_STATUS, OEvent.REV_STATUS_DELETED)
+			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
 			.execute();
 	}
 	
-	public int logicDeleteByCalendarId(Connection con, int calendarId, CrudInfo updateInfo) throws DAOException {
+	public int logicDeleteByCalendarId(Connection con, int calendarId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.STATUS, OEvent.STATUS_DELETED)
-			.set(EVENTS.UPDATE_TIMESTAMP, updateInfo.timestamp)
-			.set(EVENTS.UPDATE_DEVICE, updateInfo.device)
-			.set(EVENTS.UPDATE_USER, updateInfo.user)
+			.set(EVENTS.REVISION_STATUS, OEvent.REV_STATUS_DELETED)
+			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 			)
@@ -227,7 +215,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
 			.where(
 				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
 		
@@ -245,8 +233,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 			)
 			.fetchOneInto(VSchedulerEvent.class);
@@ -261,7 +249,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
 			.where(
 				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
 		
@@ -279,8 +267,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.PUBLIC_UID.equal(publicUid)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 			)
 			.fetchOneInto(VSchedulerEvent.class);
@@ -295,7 +283,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
 			.where(
 				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
 		
@@ -328,8 +316,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal("N")
+					.or(EVENTS.REVISION_STATUS.equal("M"))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -354,7 +342,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
 			.where(
 				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
 		
@@ -395,8 +383,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -421,7 +409,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
 			.where(
 				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
 		
@@ -439,8 +427,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -473,8 +461,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNotNull())
 				.and(
@@ -520,8 +508,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNotNull())
 				.and(
@@ -552,8 +540,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNotNull())
 				.and(
@@ -576,7 +564,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
 			.where(
 				rbk.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve.STATUS.notEqual(OEvent.STATUS_DELETED))
+				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
 		
@@ -599,8 +587,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -637,8 +625,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
 				.and(
-					EVENTS.STATUS.equal("N")
-					.or(EVENTS.STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(
 					RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range

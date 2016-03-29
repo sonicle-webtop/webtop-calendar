@@ -64,8 +64,12 @@
 		<version>2.0.0</version>
 		<buildDate>03/11/2014</buildDate>
 		
-		<controllerClassName>CalendarController</controllerClassName>
+		<company>Sonicle S.r.l.</company>
+		<companyEmail>sonicle@sonicle.com</companyEmail>
+		<companyWebSite>http://www.sonicle.com</companyWebSite>
+		<supportEmail>sonicle@sonicle.com</supportEmail>
 		
+		<controllerClassName>CalendarController</controllerClassName>
 		<serviceClassName>Service</serviceClassName>
 		<publicServiceClassName>PublicService</publicServiceClassName>
 		<clientOptionsModelJsClassName>model.ClientOptions</clientOptionsModelJsClassName>
@@ -74,10 +78,7 @@
 			<viewJsClassName>view.UserOptions</viewJsClassName>
 			<modelJsClassName>model.UserOptions</modelJsClassName>
 		</userOptions>
-		<company>Sonicle S.r.l.</company>
-		<companyEmail>sonicle@sonicle.com</companyEmail>
-		<companyWebSite>http://www.sonicle.com</companyWebSite>
-		<supportEmail>sonicle@sonicle.com</supportEmail>
+		
 		<resources>
 			<resource name="CALENDAR" type="share" />
 		</resources>

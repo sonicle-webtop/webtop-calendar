@@ -170,9 +170,8 @@ public class CalendarDAO extends BaseDAO {
 				.fetchInto(OCalendar.class);
 	}
 	
-	public int insert(Connection con, OCalendar item, CrudInfo insertInfo) throws DAOException {
+	public int insert(Connection con, OCalendar item) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		item.setInsertInfo(insertInfo);
 		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
 		return dsl
 			.insertInto(CALENDARS)

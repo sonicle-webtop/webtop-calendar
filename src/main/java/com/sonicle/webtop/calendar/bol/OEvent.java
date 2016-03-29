@@ -36,7 +36,6 @@ package com.sonicle.webtop.calendar.bol;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
-import com.sonicle.webtop.core.dal.BaseDAO.CrudInfo;
 import org.joda.time.DateTime;
 
 /**
@@ -44,27 +43,14 @@ import org.joda.time.DateTime;
  * @author malbinola
  */
 public class OEvent extends Events {
-	public final static String STATUS_NEW = "N";
-	public final static String STATUS_MODIFIED = "M";
-	public final static String STATUS_DELETED = "D";
+	public final static String REV_STATUS_NEW = "N";
+	public final static String REV_STATUS_MODIFIED = "M";
+	public final static String REV_STATUS_DELETED = "D";
 	
 	public OEvent() {
 		super();
 		setReadOnly(false);
-		setStatus(STATUS_NEW);
-	}
-	
-	public void setInsertInfo(CrudInfo insertInfo) {
-		setInsertTimestamp(insertInfo.timestamp);
-		setInsertDevice(insertInfo.device);
-		setInsertUser(insertInfo.user);
-		setUpdateInfo(insertInfo);
-	}
-	
-	public void setUpdateInfo(CrudInfo updateInfo) {
-		setUpdateTimestamp(updateInfo.timestamp);
-		setUpdateDevice(updateInfo.device);
-		setUpdateUser(updateInfo.user);
+		setRevisionStatus(REV_STATUS_NEW);
 	}
 	
 	public void fillFrom(Event event) {

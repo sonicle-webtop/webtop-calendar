@@ -31,35 +31,49 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.rpt;
+package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.calendar.bol.model.RBAgendaWeek7;
-import com.sonicle.webtop.core.io.output.ReportConfig;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Date;
 
 /**
  *
  * @author malbinola
  */
-public class RptAgendaWeek7 extends AbstractAgenda {
+public class RBAgendaSummary {
+	public String timezone;
+	public Date fromDate;
+	public Date toDate;
+	public ArrayList<RBAgendaDayEvents> dayEvents;
+	
+	public RBAgendaSummary(String timezone, Date fromDate, Date toDate, ArrayList<Date> dayDates, ArrayList<ArrayList<RBAgendaEvent>> daySpanningEvents, ArrayList<ArrayList<RBAgendaEvent>> dayEvents) {
+		this.timezone = timezone;
+		this.fromDate = fromDate;
+		this.toDate = toDate;
+		this.dayEvents = new ArrayList<>();
+		
+		for(int i=0; i<dayDates.size(); i++) {
+			ArrayList<RBAgendaEvent> spanningEvents = daySpanningEvents.get(i);
+			ArrayList<RBAgendaEvent> otherEvents = dayEvents.get(i);
+			if(!spanningEvents.isEmpty() || !otherEvents.isEmpty()) {
+				this.dayEvents.add(new RBAgendaDayEvents(dayDates.get(i), spanningEvents, otherEvents));
+			}
+		}
+	}
 
-	public RptAgendaWeek7(ReportConfig config) {
-		super(config);
-		this.name = "agendaweek7";
-		this.resourceBundleName = "agendaweekX";
+	public String getTimezone() {
+		return timezone;
 	}
-	
-	@Override
-	protected void fillBuiltInParams() {
-		super.fillBuiltInParams();
-		params.put("DAYS", 7);
+
+	public Date getFromDate() {
+		return fromDate;
 	}
-	
-	@Override
-	Collection<?> createBeanCollection(AbstractAgenda.Data data) {
-		ArrayList<RBAgendaWeek7> items = new ArrayList<>();
-		items.add(new RBAgendaWeek7(data.utz.getID(), data.fromDate.toDate(), data.toDate.toDate(), data.dayDates, data.daysSpanningEvents, data.daysEvents));
-		return items;
+
+	public Date getToDate() {
+		return toDate;
+	}
+
+	public ArrayList<RBAgendaDayEvents> getDayEvents() {
+		return dayEvents;
 	}
 }

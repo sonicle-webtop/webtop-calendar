@@ -69,7 +69,8 @@ import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
-import com.sonicle.webtop.calendar.rpt.AbstractWeekReport;
+import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
+import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
 import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek5;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek7;
@@ -799,27 +800,52 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processPrintAgenda(HttpServletRequest request, HttpServletResponse response) {
+	public void processPrintScheduler(HttpServletRequest request, HttpServletResponse response) {
 		ByteArrayOutputStream baos = null;
-		CoreManager core = WT.getCoreManager(getRunContext());
 		UserProfile up = getEnv().getProfile();
 		
 		try {
 			String filename = ServletUtils.getStringParameter(request, "filename", "print");
 			String view = ServletUtils.getStringParameter(request, "view", "w5");
 			String from = ServletUtils.getStringParameter(request, "startDate", true);
-			String to = ServletUtils.getStringParameter(request, "endDate", true);
-
-			// Defines view boundary
-			DateTime fromDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
-			DateTime toDate = CalendarManager.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
+			
+			DateTime startDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
 			
 			ReportConfig.Builder builder = reportConfigBuilder();
-			AbstractWeekReport rpt = null;
-			if(view.equals("w5")) {
+			DateTime fromDate = null, toDate = null;
+			AbstractAgenda rpt = null;
+			if(view.equals("d")) {
+				fromDate = startDate.withTimeAtStartOfDay();
+				toDate = startDate.plusDays(1).withTimeAtStartOfDay();
+				rpt = new RptAgendaSummary(builder.build(), 1);
+				
+			} else if(view.equals("w5")) {
+				fromDate = startDate.withTimeAtStartOfDay();
+				toDate = startDate.plusDays(5).withTimeAtStartOfDay();
 				rpt = new RptAgendaWeek5(builder.build());
+				
 			} else if(view.equals("w")) {
+				fromDate = startDate.withTimeAtStartOfDay();
+				toDate = startDate.plusDays(7).withTimeAtStartOfDay();
 				rpt = new RptAgendaWeek7(builder.build());
+				
+			} else if(view.equals("dw")) {
+				fromDate = startDate.withTimeAtStartOfDay();
+				toDate = startDate.plusDays(14).withTimeAtStartOfDay();
+				rpt = new RptAgendaSummary(builder.build(), 14);
+				
+			} else if(view.equals("m")) {
+				if(startDate.getDayOfMonth() == 1) {
+					fromDate = startDate.withTimeAtStartOfDay();
+				} else {
+					fromDate = startDate.plusMonths(1).withDayOfMonth(1).withTimeAtStartOfDay();
+				}
+				int days = fromDate.dayOfMonth().getMaximumValue();
+				toDate = fromDate.plusMonths(1).withDayOfMonth(1).withTimeAtStartOfDay();
+				rpt = new RptAgendaSummary(builder.build(), days);
+				
+			} else {
+				throw new WTException("View not supported [{0}]", view);
 			}
 			
 			// Get events for each visible folder
@@ -836,7 +862,7 @@ public class Service extends BaseService {
 			ServletUtils.writeContent(response, baos, "application/pdf");
 			
 		} catch(Exception ex) {
-			logger.error("Error in action PrintAgenda", ex);
+			logger.error("Error in action PrintScheduler", ex);
 			ServletUtils.writeErrorHandlingJs(response, ex.getMessage());
 		} finally {
 			IOUtils.closeQuietly(baos);

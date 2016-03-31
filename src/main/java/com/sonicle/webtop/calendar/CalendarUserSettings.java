@@ -53,7 +53,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	/**
 	 * [string][default]
-	 * Calendar view (d:day, w:week, w5:workweek, m:month)
+	 * Calendar view ("d" day, "w5" work week, "w" week, "dw" double-week, "m" month)
 	 */
 	public static final String VIEW = "view";
 	

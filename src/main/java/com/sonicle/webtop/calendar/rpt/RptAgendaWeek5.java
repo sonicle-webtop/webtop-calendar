@@ -42,7 +42,7 @@ import java.util.Collection;
  *
  * @author malbinola
  */
-public class RptAgendaWeek5 extends AbstractWeekReport {
+public class RptAgendaWeek5 extends AbstractAgenda {
 
 	public RptAgendaWeek5(ReportConfig config) {
 		super(config);
@@ -53,11 +53,11 @@ public class RptAgendaWeek5 extends AbstractWeekReport {
 	@Override
 	protected void fillBuiltInParams() {
 		super.fillBuiltInParams();
-		params.put("DAYS_IN_WEEK", 5);
+		params.put("DAYS", 5);
 	}
 	
 	@Override
-	Collection<?> createBeanCollection(AbstractWeekReport.Data data) {
+	Collection<?> createBeanCollection(AbstractAgenda.Data data) {
 		ArrayList<RBAgendaWeek5> items = new ArrayList<>();
 		items.add(new RBAgendaWeek5(data.utz.getID(), data.fromDate.toDate(), data.toDate.toDate(), data.dayDates, data.daysSpanningEvents, data.daysEvents));
 		return items;

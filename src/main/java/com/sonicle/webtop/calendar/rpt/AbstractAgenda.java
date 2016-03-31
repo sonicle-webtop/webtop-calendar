@@ -52,16 +52,17 @@ import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
+import org.joda.time.LocalDate;
 
 /**
  *
  * @author malbinola
  */
-public abstract class AbstractWeekReport extends AbstractReport {
+public abstract class AbstractAgenda extends AbstractReport {
 	
 	abstract Collection<?> createBeanCollection(Data data);
 
-	public AbstractWeekReport(ReportConfig config) {
+	public AbstractAgenda(ReportConfig config) {
 		super(config);
 	}
 	
@@ -139,7 +140,7 @@ public abstract class AbstractWeekReport extends AbstractReport {
 			}
 		}
 		
-		setDataSource(new JRBeanCollectionDataSource(createBeanCollection(new Data(utz, fromDate, toDate, dayDates, daysSpanningEvents, daysEvents))));
+		setDataSource(new JRBeanCollectionDataSource(createBeanCollection(new Data(utz, fromDate.toLocalDate(), toDate.minusDays(1).toLocalDate(), dayDates, daysSpanningEvents, daysEvents))));
 	}
 	
 	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {
@@ -164,13 +165,13 @@ public abstract class AbstractWeekReport extends AbstractReport {
 	
 	protected static class Data {
 		DateTimeZone utz;
-		DateTime fromDate;
-		DateTime toDate;
+		LocalDate fromDate;
+		LocalDate toDate;
 		ArrayList<Date> dayDates;
 		ArrayList<ArrayList<RBAgendaEvent>> daysSpanningEvents;
 		ArrayList<ArrayList<RBAgendaEvent>> daysEvents;
 		
-		public Data(DateTimeZone utz, DateTime fromDate, DateTime toDate, ArrayList<Date> dayDates, ArrayList<ArrayList<RBAgendaEvent>> daysSpanningEvents, ArrayList<ArrayList<RBAgendaEvent>> daysEvents) {
+		public Data(DateTimeZone utz, LocalDate fromDate, LocalDate toDate, ArrayList<Date> dayDates, ArrayList<ArrayList<RBAgendaEvent>> daysSpanningEvents, ArrayList<ArrayList<RBAgendaEvent>> daysEvents) {
 			this.utz = utz;
 			this.fromDate = fromDate;
 			this.toDate = toDate;

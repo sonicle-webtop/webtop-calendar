@@ -31,35 +31,31 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.rpt;
+package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.calendar.bol.model.RBAgendaWeek7;
-import com.sonicle.webtop.core.io.output.ReportConfig;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Date;
 
 /**
  *
  * @author malbinola
  */
-public class RptAgendaWeek7 extends AbstractAgenda {
+public class RBAgendaDayEvents {
+	public Date date;
+	public ArrayList<RBAgendaEvent> events;
+	
+	public RBAgendaDayEvents(Date date, ArrayList<RBAgendaEvent> spanningEvents, ArrayList<RBAgendaEvent> otherEvents) {
+		this.date = date;
+		this.events = new ArrayList<>();
+		this.events.addAll(spanningEvents);
+		this.events.addAll(otherEvents);
+	}
 
-	public RptAgendaWeek7(ReportConfig config) {
-		super(config);
-		this.name = "agendaweek7";
-		this.resourceBundleName = "agendaweekX";
+	public Date getDate() {
+		return date;
 	}
-	
-	@Override
-	protected void fillBuiltInParams() {
-		super.fillBuiltInParams();
-		params.put("DAYS", 7);
-	}
-	
-	@Override
-	Collection<?> createBeanCollection(AbstractAgenda.Data data) {
-		ArrayList<RBAgendaWeek7> items = new ArrayList<>();
-		items.add(new RBAgendaWeek7(data.utz.getID(), data.fromDate.toDate(), data.toDate.toDate(), data.dayDates, data.daysSpanningEvents, data.daysEvents));
-		return items;
+
+	public ArrayList<RBAgendaEvent> getEvents() {
+		return events;
 	}
 }

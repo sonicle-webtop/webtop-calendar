@@ -33,7 +33,7 @@
  */
 package com.sonicle.webtop.calendar.rpt;
 
-import com.sonicle.webtop.calendar.bol.model.RBAgendaWeek7;
+import com.sonicle.webtop.calendar.bol.model.RBAgendaSummary;
 import com.sonicle.webtop.core.io.output.ReportConfig;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,24 +42,26 @@ import java.util.Collection;
  *
  * @author malbinola
  */
-public class RptAgendaWeek7 extends AbstractAgenda {
+public class RptAgendaSummary extends AbstractAgenda {
+	private final int days;
 
-	public RptAgendaWeek7(ReportConfig config) {
+	public RptAgendaSummary(ReportConfig config, int days) {
 		super(config);
-		this.name = "agendaweek7";
-		this.resourceBundleName = "agendaweekX";
+		this.name = "agendasummary";
+		this.resourceBundleName = "agendasummary";
+		this.days = days;
 	}
 	
 	@Override
 	protected void fillBuiltInParams() {
 		super.fillBuiltInParams();
-		params.put("DAYS", 7);
+		params.put("DAYS", days);
 	}
 	
 	@Override
 	Collection<?> createBeanCollection(AbstractAgenda.Data data) {
-		ArrayList<RBAgendaWeek7> items = new ArrayList<>();
-		items.add(new RBAgendaWeek7(data.utz.getID(), data.fromDate.toDate(), data.toDate.toDate(), data.dayDates, data.daysSpanningEvents, data.daysEvents));
+		ArrayList<RBAgendaSummary> items = new ArrayList<>();
+		items.add(new RBAgendaSummary(data.utz.getID(), data.fromDate.toDate(), data.toDate.toDate(), data.dayDates, data.daysSpanningEvents, data.daysEvents));
 		return items;
 	}
 }

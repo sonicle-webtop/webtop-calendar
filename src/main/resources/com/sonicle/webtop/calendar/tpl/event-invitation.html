@@ -1,0 +1,101 @@
+<table cellspacing="0" cellpadding="8" border="0" summary="" style="width:100%;font-family:Arial,Sans-serif;border:1px Solid #ccc;border-width:1px 2px 2px 1px;background-color:#fff;">
+	<tr><td>
+			<div style="padding:2px">
+				<div style="float:right;font-weight:bold;font-size:13px">
+					<a href="https://www.google.com/calendar/event?action=VIEW&amp;eid=dm9xNmUwY2J1ODZldnN1NHM2Z3ZvZWFxMjggbWF0dGVvLmFsYmlub2xhQHNvbmljbGUuY29t&amp;tok=MjUjbWF0dGVvLmFsYmlub2xhQGdtYWlsLmNvbWUwZWU1OTlmMmM5ZTk5OGY0ODEzOTNhZTlkNzFkMmIwMGI2YTNjYzM&amp;ctz=Europe/Rome&amp;hl=it" style="color:#20c;white-space:nowrap" itemprop="url">altri dettagli &raquo;</a>
+					<br>
+				</div>
+				<h3 style="padding:0 0 6px 0;margin:0;font-family:Arial,Sans-serif;font-size:16px;font-weight:bold;color:#222">
+					<span>${event.title}</span>
+				</h3>
+				<div style="padding-bottom:15px;font-size:13px;color:#222;white-space:pre-wrap!important;white-space:-moz-pre-wrap!important;white-space:-pre-wrap!important;white-space:-o-pre-wrap!important;white-space:pre;word-wrap:break-word">
+					<span>${event.description}</span>
+				</div>
+				<table cellpadding="0" cellspacing="0" border="0" summary="">
+					<tr>
+					<td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+						<div><i style="font-style:normal">${i18n.whenStart}</i></div>
+					</td>
+					<td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+						${event.startDate} <span style="color:#888">${event.timezone}</span>
+					</td>
+					</tr>
+					<tr>
+					<td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+						<div><i style="font-style:normal">${i18n.whenEnd}</i></div>
+					</td>
+					<td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+						${event.endDate} <span style="color:#888">${event.timezone}</span>
+					</td>
+					</tr>
+					<#if event.location??>
+					<tr>
+					<td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+						<div><i style="font-style:normal">${i18n.where}</i></div>
+					</td>
+					<td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+						<span>${event.location}</span>
+						<span dir="ltr"> (<a href='https://maps.google.com/maps?q=${event.location?replace(" ","+")}&amp;hl=it' style="color:#20c;white-space:nowrap" target="_blank" itemprop="map">${i18n.whereMap}</a>)</span>
+					</td>
+					</tr>
+					</#if>
+					<tr>
+					<td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+						<div><i style="font-style:normal">${i18n.calendar}</i></div>
+					</td>
+					<td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">${event.calendarName}</td>
+					</tr>
+					<tr>
+					<td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+						<div><i style="font-style:normal">${i18n.who}</i></div>
+					</td>
+					<td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+						<table cellspacing="0" cellpadding="0">
+							<tr>
+							<td style="padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222">
+								<span style="font-family:Courier New,monospace">&#x2022;</span>
+							</td>
+							<td style="padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222">
+								<div><div style="margin:0 0 0.3em 0">
+									<span>${event.organizer}</span><span style="font-size:11px;color:#888"> - ${i18n.whoOrganizer}</span>
+								</div></div>
+							</td>
+							</tr>
+							<#list eventAttendees as attendee>
+							<tr>
+							<td style="padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222">
+								<span style="font-family:Courier New,monospace">&#x2022;</span>
+							</td>
+							<td style="padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222">
+								<div><div style="margin:0 0 0.3em 0">
+									<span><#if attendee.cn??>${attendee.cn}</#if><#if attendee.address??><#if attendee.cn??> - </#if><a href="mailto:${attendee.address}" target="_blank">${attendee.address}</a></#if></span>
+								</div></div>
+							</td>
+							</tr>
+							</#list>
+						</table>
+					</td>
+					</tr>
+				</table>
+			</div>
+			<p style="color:#222;font-size:13px;margin:0">
+				<span style="color:#888">${i18n.going}&nbsp;&nbsp;&nbsp;</span>
+				<wbr><strong>
+					<a href="https://www.google.com/calendar/event?action=RESPOND&amp;eid=dm9xNmUwY2J1ODZldnN1NHM2Z3ZvZWFxMjggbWF0dGVvLmFsYmlub2xhQHNvbmljbGUuY29t&amp;rst=1&amp;tok=MjUjbWF0dGVvLmFsYmlub2xhQGdtYWlsLmNvbWUwZWU1OTlmMmM5ZTk5OGY0ODEzOTNhZTlkNzFkMmIwMGI2YTNjYzM&amp;ctz=Europe/Rome&amp;hl=it" style="color:#20c;white-space:nowrap" itemprop="url">${i18n.goingYes}</a>
+					<span style="margin:0 0.4em;font-weight:normal"> - </span>
+					<a href="https://www.google.com/calendar/event?action=RESPOND&amp;eid=dm9xNmUwY2J1ODZldnN1NHM2Z3ZvZWFxMjggbWF0dGVvLmFsYmlub2xhQHNvbmljbGUuY29t&amp;rst=3&amp;tok=MjUjbWF0dGVvLmFsYmlub2xhQGdtYWlsLmNvbWUwZWU1OTlmMmM5ZTk5OGY0ODEzOTNhZTlkNzFkMmIwMGI2YTNjYzM&amp;ctz=Europe/Rome&amp;hl=it" style="color:#20c;white-space:nowrap" itemprop="url">${i18n.goingMaybe}</a>
+					<span style="margin:0 0.4em;font-weight:normal"> - </span>
+					<a href="https://www.google.com/calendar/event?action=RESPOND&amp;eid=dm9xNmUwY2J1ODZldnN1NHM2Z3ZvZWFxMjggbWF0dGVvLmFsYmlub2xhQHNvbmljbGUuY29t&amp;rst=2&amp;tok=MjUjbWF0dGVvLmFsYmlub2xhQGdtYWlsLmNvbWUwZWU1OTlmMmM5ZTk5OGY0ODEzOTNhZTlkNzFkMmIwMGI2YTNjYzM&amp;ctz=Europe/Rome&amp;hl=it" style="color:#20c;white-space:nowrap" itemprop="url">${i18n.goingNo}</a>
+				</strong>&nbsp;&nbsp;&nbsp;&nbsp;<wbr>
+				<a href="https://www.google.com/calendar/event?action=VIEW&amp;eid=dm9xNmUwY2J1ODZldnN1NHM2Z3ZvZWFxMjggbWF0dGVvLmFsYmlub2xhQHNvbmljbGUuY29t&amp;tok=MjUjbWF0dGVvLmFsYmlub2xhQGdtYWlsLmNvbWUwZWU1OTlmMmM5ZTk5OGY0ODEzOTNhZTlkNzFkMmIwMGI2YTNjYzM&amp;ctz=Europe/Rome&amp;hl=it" style="color:#20c;white-space:nowrap" itemprop="url">altre opzioni &raquo;</a>
+			</p>
+		</td>
+	</tr>
+	<tr>
+	<td style="background-color:#f6f6f6;color:#888;border-top:1px Solid #ccc;font-family:Arial,Sans-serif;font-size:11px">
+		<p>${i18n.footerHeader}</p>
+		<p>${i18n.footerMessage}</p>
+		<p>${i18n.footerDisclaimer}</p>
+	</td>
+	</tr>
+</table>

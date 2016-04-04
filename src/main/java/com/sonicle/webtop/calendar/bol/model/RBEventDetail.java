@@ -51,7 +51,7 @@ import java.util.List;
  *
  * @author malbinola
  */
-public class EventBean {
+public class RBEventDetail {
 	public Integer calendarId;
 	public String calendarName;
 	public String calendarColor;
@@ -81,7 +81,7 @@ public class EventBean {
 	public String organizer;
 	public ArrayList<Attendee> attendees;
 	
-	public EventBean(CoreManager core, RRuleStringify rrStringify, OCalendar calendar, Event event) throws WTException {
+	public RBEventDetail(CoreManager core, RRuleStringify rrStringify, OCalendar calendar, Event event) throws WTException {
 		this.calendarId = event.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = calendar.getHexColor();

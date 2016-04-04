@@ -69,6 +69,7 @@ public class Event {
 	protected Recurrence recurrence;
 	protected String organizer;
 	protected List<EventAttendee> attendees = new ArrayList<>();
+	protected DateTime revisionTimestamp;
 	
 	public Event() {}
 	
@@ -251,6 +252,10 @@ public class Event {
 		return organizer;
 	}
 	
+	public void setOrganizer(String value) {
+		organizer = value;
+	}
+	
 	public String getOrganizerAddress() throws AddressException {
 		return new InternetAddress(organizer).getAddress();
 	}
@@ -259,16 +264,20 @@ public class Event {
 		return new InternetAddress(organizer).getPersonal();
 	}
 	
-	public void setOrganizer(String value) {
-		organizer = value;
-	}
-	
 	public List<EventAttendee> getAttendees() {
 		return attendees;
 	}
 	
 	public void setAttendees(List<EventAttendee> value) {
 		attendees = value;
+	}
+	
+	public DateTime getRevisionTimestamp() {
+		return revisionTimestamp;
+	}
+	
+	public void setRevisionTimestamp(DateTime value) {
+		revisionTimestamp = value;
 	}
 	
 	public boolean hasRecurrence() {

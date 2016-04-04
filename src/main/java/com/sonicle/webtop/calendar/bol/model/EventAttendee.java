@@ -34,6 +34,7 @@
 package com.sonicle.webtop.calendar.bol.model;
 
 import java.util.ArrayList;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -47,12 +48,11 @@ public class EventAttendee {
 	public static final String RECIPIENT_TYPE_NECESSARY = "N";
 	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
 	public static final String RECIPIENT_TYPE_RESOURCE = "R";
-	public static final String RECIPIENT_TYPE_ORGANIZER = "G";
-	public static final String RESPONSE_STATUS_UNKNOWN = "unknown";
+	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
 	public static final String RESPONSE_STATUS_DECLINED = "declined";
 	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
 	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
-	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of unknown/needsAction
+	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of needsAction
 	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
 	
 	protected String attendeeId;
@@ -71,16 +71,6 @@ public class EventAttendee {
 	public void setAttendeeId(String value) {
 		attendeeId = value;
 	}
-	
-	/*
-	public String getDisplayName() {
-		return displayName;
-	}
-
-	public void setDisplayName(String value) {
-		displayName = value;
-	}
-	*/
 
 	public String getRecipient() {
 		return recipient;
@@ -88,6 +78,14 @@ public class EventAttendee {
 
 	public void setRecipient(String value) {
 		recipient = value;
+	}
+	
+	public String getAddress() throws AddressException {
+		return new InternetAddress(recipient).getAddress();
+	}
+	
+	public String getCN() throws AddressException {
+		return new InternetAddress(recipient).getPersonal();
 	}
 
 	public String getRecipientType() {
@@ -99,11 +97,11 @@ public class EventAttendee {
 	}
 
 	public String getResponseStatus() {
-		return responseStatus;
+		return (responseStatus == null) ? RESPONSE_STATUS_NEEDSACTION : responseStatus;
 	}
 
 	public void setResponseStatus(String value) {
-		responseStatus = value;
+		responseStatus = (value == null) ? RESPONSE_STATUS_NEEDSACTION : value;
 	}
 
 	public Boolean getNotify() {

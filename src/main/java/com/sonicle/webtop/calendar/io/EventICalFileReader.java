@@ -405,10 +405,10 @@ public class EventICalFileReader implements EventFileReader {
 			} else if(partstat.equals(PartStat.DECLINED)) {
 				attendee.setResponseStatus(EventAttendee.RESPONSE_STATUS_DECLINED);
 			} else {
-				attendee.setResponseStatus(EventAttendee.RESPONSE_STATUS_UNKNOWN);
+				attendee.setResponseStatus(EventAttendee.RESPONSE_STATUS_NEEDSACTION);
 			}
 		} else {
-			attendee.setResponseStatus(EventAttendee.RESPONSE_STATUS_UNKNOWN);
+			attendee.setResponseStatus(EventAttendee.RESPONSE_STATUS_NEEDSACTION);
 		}
 		
 		attendee.setNotify(false);

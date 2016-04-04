@@ -294,6 +294,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.START_DATE,
 				EVENTS.END_DATE,
 				EVENTS.TIMEZONE,
+				EVENTS.REVISION_TIMESTAMP,
 				originalEventId,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id")
@@ -316,8 +317,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.REVISION_STATUS.equal("N")
-					.or(EVENTS.REVISION_STATUS.equal("M"))
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -452,6 +453,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.END_DATE,
 				EVENTS.TIMEZONE,
 				EVENTS.EVENT_ID.as("original_event_id"), // For recurring events, originalEventId is always equal to eventId
+				EVENTS.REVISION_TIMESTAMP,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id")
 			)
@@ -578,6 +580,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.TIMEZONE,
 				EVENTS.TITLE,
 				EVENTS.REMINDER,
+				EVENTS.REVISION_TIMESTAMP,
 				originalEventId,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id")

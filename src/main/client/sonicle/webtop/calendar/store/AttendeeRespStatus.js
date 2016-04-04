@@ -36,7 +36,7 @@ Ext.define('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 	
 	model: 'WT.model.Simple',
 	data: [
-		['unknown', ''],
+		['needsAction', ''],
 		['declined', ''],
 		['tentative', ''],
 		['accepted', '']

@@ -103,16 +103,6 @@ public class ICal4jUtils {
 		}
 	}
 	
-	public static org.joda.time.DateTime fromICal4jDate(Date date, TimeZone timezone) {
-		/*
-		org.joda.time.LocalDate ld = new org.joda.time.LocalDate(date.getTime());
-		DateTimeZone tz = DateTimeZone.forID(timezone.getID());
-		return new org.joda.time.DateTime(tz).withDate(ld);
-		*/
-		org.joda.time.DateTimeZone tz = org.joda.time.DateTimeZone.forID(timezone.getID());
-		return new org.joda.time.DateTime(date.getTime(), tz);
-	}
-	
 	public static org.joda.time.DateTime calculateRecurrenceStart(org.joda.time.DateTime eventStart, RRule rrule, org.joda.time.DateTimeZone tz) {
 		return calculateRecurrenceStart(eventStart, rrule.getRecur(), tz);
 	}
@@ -146,6 +136,22 @@ public class ICal4jUtils {
 		VEvent vevent = new VEvent(ICal4jUtils.toICal4jDateTime(start, tz), ICal4jUtils.toICal4jDateTime(end, tz), "");
 		vevent.getProperties().add(rr);
 		return vevent.calculateRecurrenceSet(ICal4jUtils.toICal4jPeriod(from, to, tz));
+	}
+	
+	public static DateTime toDateTime(org.joda.time.DateTime dt) {
+		DateTime dt1 = new DateTime(dt.toDate());
+		dt1.setTimeZone(getTimeZone(dt.getZone().getID()));
+		return dt1;
+	}
+	
+	public static org.joda.time.DateTime fromICal4jDate(Date date, TimeZone timezone) {
+		/*
+		org.joda.time.LocalDate ld = new org.joda.time.LocalDate(date.getTime());
+		DateTimeZone tz = DateTimeZone.forID(timezone.getID());
+		return new org.joda.time.DateTime(tz).withDate(ld);
+		*/
+		org.joda.time.DateTimeZone tz = org.joda.time.DateTimeZone.forID(timezone.getID());
+		return new org.joda.time.DateTime(date.getTime(), tz);
 	}
 	
 	public static org.joda.time.DateTime toJodaDateTime(DateTime date) {

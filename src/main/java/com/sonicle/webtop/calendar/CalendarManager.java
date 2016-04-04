@@ -35,8 +35,12 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
+import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.web.Crud;
+import com.sonicle.commons.web.json.MapItem;
+import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.security.DomainAccount;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
@@ -59,6 +63,7 @@ import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.calendar.io.EventReadResult;
 import com.sonicle.webtop.core.CoreManager;
+import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
 import com.sonicle.webtop.core.bol.OActivity;
 import com.sonicle.webtop.core.bol.OCausal;
@@ -90,12 +95,17 @@ import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
+import com.sonicle.webtop.core.util.NotificationHelper;
+import freemarker.template.TemplateException;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,8 +115,14 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import javax.mail.Part;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import net.fortuna.ical4j.model.PeriodList;
 import net.fortuna.ical4j.model.property.RRule;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -639,7 +655,7 @@ public class CalendarManager extends BaseManager {
 				
 				event = createEvent(eventKey, Event.RecurringInfo.RECURRING, se);
 				int eventDays = calculateEventLengthInDays(se);
-				event.setStartDate(event.getStartDate().withDate(ekey.atDate));
+				event.setStartDate(event.getStartDate().withDate(ekey.instanceDate));
 				event.setEndDate(event.getEndDate().withDate(event.getStartDate().plusDays(eventDays).toLocalDate()));
 				event.setRecurrence(createEventRecurrence(rec));
 				
@@ -669,6 +685,10 @@ public class CalendarManager extends BaseManager {
 			InsertResult result = doEventInsert(con, event, true, true);
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_INSERT", String.valueOf(result.event.getEventId()));
+			
+			
+			
+			//notifyAttendees(Crud.UPDATE, getEvent(event.getKey()));
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -704,6 +724,7 @@ public class CalendarManager extends BaseManager {
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					notifyAttendees(Crud.UPDATE, getEvent(event.getKey()));
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
@@ -715,6 +736,7 @@ public class CalendarManager extends BaseManager {
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
+					notifyAttendees(Crud.UPDATE, getEvent(event.getKey()));
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
@@ -722,7 +744,7 @@ public class CalendarManager extends BaseManager {
 					// 1 - Inserts new broken event
 					InsertResult insert = doEventInsert(con, event, false, false);
 					// 2 - Marks recurring event date inserting a broken record
-					doExcludeRecurrenceDate(con, original, ekey.atDate, insert.event.getEventId());
+					doExcludeRecurrenceDate(con, original, ekey.instanceDate, insert.event.getEventId());
 					// 3 - Updates revision of original event
 					edao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
 					
@@ -735,7 +757,7 @@ public class CalendarManager extends BaseManager {
 					ORecurrence orec = rdao.select(con, original.getRecurrenceId());
 					if(orec == null) throw new WTException("Unable to retrieve original event's recurrence [{}]", original.getRecurrenceId());
 					DateTime until = orec.getUntilDate();
-					orec.applyEndUntil(ekey.atDate.minusDays(1).toDateTimeAtStartOfDay(), DateTimeZone.forID(original.getTimezone()), true);
+					orec.applyEndUntil(ekey.instanceDate.minusDays(1).toDateTimeAtStartOfDay(), DateTimeZone.forID(original.getTimezone()), true);
 					rdao.update(con, orec);
 					// 2 - Updates revision of original event
 					edao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
@@ -812,11 +834,11 @@ public class CalendarManager extends BaseManager {
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
 			
-			OEvent original = edao.selectById(con, ekey.originalEventId);
-			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarElements(original.getCalendarId(), "UPDATE");
+			OEvent originalEvent = edao.selectById(con, ekey.originalEventId);
+			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
+			checkRightsOnCalendarElements(originalEvent.getCalendarId(), "UPDATE");
 			
-			String type = guessEventType(ekey, original);
+			String type = guessEventType(ekey, originalEvent);
 			if(type.equals(EVENT_NORMAL) || type.equals(EVENT_BROKEN)) {
 				// 1 - Updates event's dates/times (+revision)
 				OEvent evt = edao.selectById(con, ekey.eventId);
@@ -854,18 +876,18 @@ public class CalendarManager extends BaseManager {
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
 			
-			OEvent original = evtdao.selectById(con, ekey.originalEventId);
-			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarElements(original.getCalendarId(), "DELETE");
+			OEvent originalEvent = evtdao.selectById(con, ekey.originalEventId);
+			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
+			checkRightsOnCalendarElements(originalEvent.getCalendarId(), "DELETE");
 			
-			String type = guessEventType(ekey, original);
+			String type = guessEventType(ekey, originalEvent);
 			if(type.equals(EVENT_NORMAL)) {
 				if(target.equals(TARGET_THIS)) {
-					if(!ekey.eventId.equals(original.getEventId())) throw new WTException("In this case both ids must be equals");
+					if(!ekey.eventId.equals(originalEvent.getEventId())) throw new WTException("In this case both ids must be equals");
 					doDeleteEvent(con, ekey.eventId);
 					
 					DbUtils.commitQuietly(con);
-					writeLog("EVENT_DELETE", String.valueOf(original.getEventId()));
+					writeLog("EVENT_DELETE", String.valueOf(originalEvent.getEventId()));
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
@@ -873,35 +895,35 @@ public class CalendarManager extends BaseManager {
 					// 1 - logically delete newevent (broken one)
 					doDeleteEvent(con, ekey.eventId);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					evtdao.updateRevision(con, originalEvent.getEventId(), createRevisionTimestamp());
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
-					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
 				if(target.equals(TARGET_THIS)) {
 					// 1 - inserts a broken record (without new event) on deleted date
-					doExcludeRecurrenceDate(con, original, ekey.atDate);
+					doExcludeRecurrenceDate(con, originalEvent, ekey.instanceDate);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					evtdao.updateRevision(con, originalEvent.getEventId(), createRevisionTimestamp());
 					
 					DbUtils.commitQuietly(con);
-					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
 					
 				} else if(target.equals(TARGET_SINCE)) {
 					// 1 - resize original recurrence (sets until date at the day before deleted date)
-					ORecurrence rec = recdao.select(con, original.getRecurrenceId());
-					if(rec == null) throw new WTException("Unable to retrieve original event's recurrence [{}]", original.getRecurrenceId());
-					rec.setUntilDate(ekey.atDate.toDateTimeAtStartOfDay().minusDays(1));
-					rec.updateRRule(DateTimeZone.forID(original.getTimezone()));
+					ORecurrence rec = recdao.select(con, originalEvent.getRecurrenceId());
+					if(rec == null) throw new WTException("Unable to retrieve original event's recurrence [{}]", originalEvent.getRecurrenceId());
+					rec.setUntilDate(ekey.instanceDate.toDateTimeAtStartOfDay().minusDays(1));
+					rec.updateRRule(DateTimeZone.forID(originalEvent.getTimezone()));
 					recdao.update(con, rec);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					evtdao.updateRevision(con, originalEvent.getEventId(), createRevisionTimestamp());
 					
 					DbUtils.commitQuietly(con);
-					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - logically delete original event
@@ -1498,6 +1520,105 @@ public class CalendarManager extends BaseManager {
 		return alerts;
 	}
 	
+	private void notifyAttendees(String crud, Event event) {
+		try {
+			// Finds attendees to be notified...
+			ArrayList<EventAttendee> toBeNotified = new ArrayList<>();
+			for(EventAttendee attendee : event.getAttendees()) {
+				if(attendee.getNotify()) toBeNotified.add(attendee);
+			}
+			
+			if(!toBeNotified.isEmpty()) {
+				UserProfile.Data ud = WT.getUserData(getTargetProfileId());
+				CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
+				String dateFormat = cus.getShortDateFormat();
+				String timeFormat = cus.getShortTimeFormat();
+				
+				boolean methodCancel = crud.equals(Crud.DELETE);
+				InternetAddress from = ud.getEmail();
+				String subject = lookupResource(getLocale(), MessageFormat.format(CalendarLocale.INVITATION_SUBJECT_X, crud));
+				
+				// Creates ical content
+				String icalText = null;
+				ByteArrayOutputStream baos = null;
+				try {
+					baos = new ByteArrayOutputStream();
+					ArrayList<Event> events = new ArrayList<>();
+					events.add(event);
+					String prodId = ICalHelper.buildProdId(WT.getPlatformName(), "Calendar");
+					ICalHelper.exportICal(prodId, methodCancel, events, baos);
+					icalText = baos.toString("UTF8");
+				} finally {
+					IOUtils.closeQuietly(baos);
+				}
+				
+				// Creates message parts
+				String filename = "webtop-invite.ics";
+				MimeBodyPart icsPart = ICalHelper.createInvitationICalPart(icalText, filename);
+				MimeBodyPart calendarPart = ICalHelper.createInvitationCalendarPart(methodCancel, icalText, filename);
+				
+				for(EventAttendee attendee : toBeNotified) {
+					InternetAddress to = new InternetAddress(attendee.getRecipient());
+					if(MailUtils.isAddressValid(to)) {
+						String body = buildEventInvitationEmailBody(getLocale(), dateFormat, timeFormat, attendee.getAddress(), event);
+						WT.sendEmail(true, from, new InternetAddress[]{to}, null, null, subject, body, new Part[]{icsPart, calendarPart});
+					}
+				}
+			}
+		} catch(Exception ex) {
+			logger.error("Error notifying attendees", ex);
+		}		
+	}
+	
+	public String buildEventInvitationEmailBody(Locale locale, String dateFormat, String timeFormat, String recipientEmail, Event event) {
+		try {
+			OCalendar calendar = getCalendar(event.getCalendarId());
+			if(calendar == null) throw new WTException("Calendar not found [{0}]", event.getCalendarId());
+			
+			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
+			String because = lookupResource(locale, CalendarLocale.TPL_INVITATION_FOOTER_BECAUSE);
+			
+			MapItem i18nMap = new MapItem();
+			i18nMap.putAll(TplHelper.generateFooterI18nStrings(SERVICE_ID, locale, source, recipientEmail, because));
+			i18nMap.putAll(TplHelper.generateEventI18nStrings(SERVICE_ID, locale));
+			
+			DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+			MapItem eventMap = new MapItem();
+			eventMap.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
+			eventMap.put("description", StringUtils.defaultIfBlank(event.getDescription(), ""));
+			eventMap.put("timezone", event.getTimezone());
+			eventMap.put("startDate", fmt.print(event.getStartDate()));
+			eventMap.put("endDate", fmt.print(event.getEndDate()));
+			eventMap.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
+			eventMap.put("calendarName", calendar.getName());
+			eventMap.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
+			
+			MapItemList eventAttendees = new MapItemList();
+			for(EventAttendee attendee : event.getAttendees()) {
+				MapItem item = new MapItem();
+				String cn = attendee.getCN();
+				String address = attendee.getAddress();
+				item.put("cn", StringUtils.isBlank(cn) ? null : cn);
+				item.put("address", StringUtils.isBlank(address) ? null : address);
+				eventAttendees.add(item);
+			}
+			
+			MapItem map = new MapItem();
+			map.put("i18n", i18nMap);
+			map.put("event", eventMap);
+			map.put("eventAttendees", eventAttendees);
+			map.put("recipientEmail", StringUtils.defaultString(recipientEmail));
+			return WT.buildTemplate(SERVICE_ID, "tpl/event-invitation.html", map);
+			
+		} catch(IOException | TemplateException | AddressException | WTException ex) {
+			logger.error("Error generating body", ex);
+			return null;
+		}
+	}
+	
+	
+	
+	
 	private void fillExportMapDates(HashMap<String, Object> map, SchedulerEvent se) throws Exception {
 		DateTime startDt = se.getStartDate().withZone(DateTimeZone.UTC);
 		map.put("startDate", startDt);
@@ -1662,16 +1783,14 @@ public class CalendarManager extends BaseManager {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+		DateTime revision = createRevisionTimestamp();
+		
+		if(StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
+		if(StringUtils.isBlank(event.getPublicUid())) event.setPublicUid(WT.generateUUID());
 		
 		OEvent oevt = new OEvent();
 		oevt.fillFrom(event);
 		oevt.setEventId(evtDao.getSequence(con).intValue());
-		if(StringUtils.isEmpty(event.getPublicUid())) {
-			oevt.setPublicUid(WT.generateUUID());
-		} else {
-			oevt.setPublicUid(event.getPublicUid());
-			
-		}
 		
 		ArrayList<OEventAttendee> oatts = new ArrayList<>();
 		if(attendees && event.hasAttendees()) {
@@ -1699,18 +1818,21 @@ public class CalendarManager extends BaseManager {
 		} else {
 			oevt.setRecurrenceId(null);
 		}
-		evtDao.insert(con, oevt, createRevisionTimestamp());
+		evtDao.insert(con, oevt, revision);
 		return new InsertResult(oevt, orec, oatts);
 	}
 	
-	private OEvent doEventUpdate(Connection con, OEvent oevt, Event event, boolean attendees) throws WTException {
+	private OEvent doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean attendees) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
+		DateTime revision = createRevisionTimestamp();
 		
-		oevt.fillFrom(event);
+		if(StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
+		
+		originalEvent.fillFrom(event);
 		if(attendees) {
-			eadao.selectByEvent(con, oevt.getEventId());
-			List<EventAttendee> fromList = createEventAttendeeList(eadao.selectByEvent(con, oevt.getEventId()));
+			eadao.selectByEvent(con, originalEvent.getEventId());
+			List<EventAttendee> fromList = createEventAttendeeList(eadao.selectByEvent(con, originalEvent.getEventId()));
 			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(fromList, event.getAttendees());
 			
 			OEventAttendee oatt = null;
@@ -1718,7 +1840,7 @@ public class CalendarManager extends BaseManager {
 				oatt = new OEventAttendee();
 				oatt.fillFrom(att);
 				oatt.setAttendeeId(WT.generateUUID());
-				oatt.setEventId(oevt.getEventId());
+				oatt.setEventId(originalEvent.getEventId());
 				eadao.insert(con, oatt);
 			}
 			for(EventAttendee att : changeSet.updated) {
@@ -1731,8 +1853,8 @@ public class CalendarManager extends BaseManager {
 			}
 		}
 		
-		edao.update(con, oevt, createRevisionTimestamp());
-		return oevt;
+		edao.update(con, originalEvent, revision);
+		return originalEvent;
 	}
 	
 	private void doMoveEvent(Connection con, boolean copy, Event event, int targetCalendarId) throws WTException {
@@ -1759,6 +1881,12 @@ public class CalendarManager extends BaseManager {
 		orb.setNewEventId(brokenEventId);
 		broDao.insert(con, orb);
 		return orb;
+	}
+	
+	private String buildOrganizer() {
+		UserProfile.Data ud = WT.getUserData(getTargetProfileId());
+		InternetAddress ia = MailUtils.buildInternetAddress(ud.getEmail().getAddress(), ud.getDisplayName());
+		return ia.toString();
 	}
 	
 	private void buildShareCache() {
@@ -1908,6 +2036,7 @@ public class CalendarManager extends BaseManager {
 		event.setCustomerId(se.getCustomerId());
 		event.setStatisticId(se.getStatisticId());
 		event.setCausalId(se.getCausalId());
+		event.setRevisionTimestamp(se.getRevisionTimestamp());
 		return event;
 	}
 	

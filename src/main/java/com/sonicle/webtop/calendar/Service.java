@@ -64,7 +64,7 @@ import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
-import com.sonicle.webtop.calendar.bol.model.EventBean;
+import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
@@ -870,7 +870,7 @@ public class Service extends BaseService {
 	}
 	
 	public void processPrintEventsDetail(HttpServletRequest request, HttpServletResponse response) {
-		ArrayList<EventBean> items = new ArrayList<>();
+		ArrayList<RBEventDetail> items = new ArrayList<>();
 		ByteArrayOutputStream baos = null;
 		CoreManager core = WT.getCoreManager(getRunContext());
 		UserProfile up = getEnv().getProfile();
@@ -888,7 +888,7 @@ public class Service extends BaseService {
 			for(String key : keys) {
 				event = manager.getEvent(key);
 				calendar = manager.getCalendar(event.getCalendarId());
-				items.add(new EventBean(core, rrs, calendar, event));
+				items.add(new RBEventDetail(core, rrs, calendar, event));
 			}
 			
 			ReportConfig.Builder builder = reportConfigBuilder();

@@ -73,6 +73,8 @@ public class OEvent extends Events {
 		setStatisticId(event.getStatisticId());
 		setCausalId(event.getCausalId());
 		setOrganizer(event.getOrganizer());
+		setRevisionTimestamp(event.getRevisionTimestamp());
+		setPublicUid(event.getPublicUid());
 	}
 	
 	public static void ensureCoherence(OEvent event) {

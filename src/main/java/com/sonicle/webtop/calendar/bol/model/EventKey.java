@@ -52,7 +52,7 @@ public class EventKey {
 
 	public Integer eventId;
 	public Integer originalEventId;
-	public LocalDate atDate;
+	public LocalDate instanceDate;
 
 	public EventKey(String eventKey) {
 		String decoded = null;
@@ -67,7 +67,7 @@ public class EventKey {
 			originalEventId = Integer.valueOf(matcher.group(1));
 			eventId = Integer.valueOf(matcher.group(2));
 			DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyyMMdd").withZone(DateTimeZone.UTC);
-			atDate = formatter.parseDateTime(matcher.group(3)).toLocalDate();
+			instanceDate = formatter.parseDateTime(matcher.group(3)).toLocalDate();
 		} else if((matcher = PATTERN_GENID.matcher(decoded)).matches()) {
 			originalEventId = Integer.valueOf(matcher.group(1));
 			eventId = Integer.valueOf(matcher.group(2));

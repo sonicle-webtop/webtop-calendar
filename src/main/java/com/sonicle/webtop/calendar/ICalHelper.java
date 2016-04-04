@@ -33,40 +33,21 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.bol.model.Recurrence;
-import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.util.ICalendarUtils;
-import com.sonicle.webtop.core.util.LogEntries;
-import com.sonicle.webtop.core.util.LogEntry;
-import com.sonicle.webtop.core.util.MessageLogEntry;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import net.fortuna.ical4j.data.CalendarOutputter;
-import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.Component;
 import net.fortuna.ical4j.model.Date;
-import net.fortuna.ical4j.model.NumberList;
-import net.fortuna.ical4j.model.Parameter;
-import net.fortuna.ical4j.model.Property;
-import net.fortuna.ical4j.model.PropertyList;
-import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.TimeZone;
-import net.fortuna.ical4j.model.WeekDay;
-import net.fortuna.ical4j.model.WeekDayList;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.Cn;
 import net.fortuna.ical4j.model.parameter.PartStat;
@@ -74,19 +55,19 @@ import net.fortuna.ical4j.model.parameter.Role;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.CalScale;
 import net.fortuna.ical4j.model.property.Description;
-import net.fortuna.ical4j.model.property.DtEnd;
-import net.fortuna.ical4j.model.property.DtStart;
-import net.fortuna.ical4j.model.property.ExDate;
+import net.fortuna.ical4j.model.property.DtStamp;
+import net.fortuna.ical4j.model.property.LastModified;
 import net.fortuna.ical4j.model.property.Location;
 import net.fortuna.ical4j.model.property.Method;
 import net.fortuna.ical4j.model.property.Organizer;
 import net.fortuna.ical4j.model.property.ProdId;
 import net.fortuna.ical4j.model.property.RRule;
-import net.fortuna.ical4j.model.property.RecurrenceId;
 import net.fortuna.ical4j.model.property.Transp;
 import net.fortuna.ical4j.model.property.Uid;
 import net.fortuna.ical4j.model.property.Version;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 
 /**
@@ -439,13 +420,27 @@ public class ICalHelper {
 		return !StringUtils.equals(transparency.getValue(), "TRANSPARENT");
 	}
 	
-	public static void exportICal(OutputStream os, ArrayList<Event> events) throws Exception {
-		// Calendar container
+	public static String buildProdId(String company, String product) {
+		return "-//" + company + "//" + product + "//EN";
+	}
+	
+	public static void exportICal(String prodId, ArrayList<Event> events, OutputStream os) throws Exception {
+		exportICal(prodId, false, events, os);
+	}
+	
+	public static void exportICal(String prodId, boolean methodCancel, ArrayList<Event> events, OutputStream os) throws Exception {
+		DateTime now = DateTime.now(DateTimeZone.UTC).withMillisOfSecond(0);
+		
 		Calendar ical = new Calendar();
-		ical.getProperties().add(new ProdId("-//Events Calendar//iCal4j 1.0//EN"));
+		ical.getProperties().add(new ProdId(prodId));
 		ical.getProperties().add(Version.VERSION_2_0);
 		ical.getProperties().add(CalScale.GREGORIAN);
-		ical.getProperties().add(Method.REQUEST);
+		if(methodCancel) {
+			ical.getProperties().add(Method.CANCEL);
+		} else {
+			ical.getProperties().add(Method.REQUEST);
+		}
+		ical.getProperties().add(new DtStamp(ICal4jUtils.toDateTime(now)));
 		
 		for(Event event : events) {
 			ical.getComponents().add(exportEvent(event));
@@ -461,7 +456,10 @@ public class ICalHelper {
 		Date end = ICal4jUtils.toICal4jDateTime(event.getEndDate(), etz);
 		VEvent ve = new VEvent(start, end, event.getTitle());
 		
-		//Uid
+		// LastModified
+		ve.getProperties().add(new LastModified(ICal4jUtils.toDateTime(event.getRevisionTimestamp().withZone(DateTimeZone.UTC))));
+		
+		// Uid
 		ve.getProperties().add(new Uid(event.getPublicUid()));
 		
 		// Description
@@ -473,9 +471,11 @@ public class ICalHelper {
 		}
 		
 		// Organizer
-		//TODO: valutare export organizer
-		Organizer organizer = new Organizer(URI.create("mailto:dev1@mycompany.com"));
-		organizer.getParameters().add(new Cn("Organizer Name"));
+		String mailto = MessageFormat.format("mailto:{0}", event.getOrganizerAddress());
+		Organizer organizer = new Organizer(URI.create(mailto));
+		if(!StringUtils.isBlank(event.getOrganizerCN())) {
+			organizer.getParameters().add(new Cn(event.getOrganizerCN()));
+		}
 		ve.getProperties().add(organizer);
 		
 		// Recerrence
@@ -514,7 +514,7 @@ public class ICalHelper {
 		
 		// Evaluates attendee role
 		String rpcType = attendee.getRecipientType();
-		if(rpcType.equals(EventAttendee.RECIPIENT_TYPE_NECESSARY)) {
+		if(StringUtils.equals(rpcType, EventAttendee.RECIPIENT_TYPE_NECESSARY)) {
 			att.getParameters().add(Role.REQ_PARTICIPANT);
 		} else {
 			att.getParameters().add(Role.OPT_PARTICIPANT);
@@ -522,17 +522,34 @@ public class ICalHelper {
 		
 		// Evaluates attendee response status
 		String status = attendee.getResponseStatus();
-		if(status.equals(EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
+		if(StringUtils.equals(status, EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
 			att.getParameters().add(PartStat.ACCEPTED);
-		} else if(status.equals(EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
+		} else if(StringUtils.equals(status, EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
 			att.getParameters().add(PartStat.TENTATIVE);
-		} else if(status.equals(EventAttendee.RESPONSE_STATUS_DECLINED)) {
+		} else if(StringUtils.equals(status, EventAttendee.RESPONSE_STATUS_DECLINED)) {
 			att.getParameters().add(PartStat.DECLINED);
 		} else {
 			att.getParameters().add(PartStat.NEEDS_ACTION);
 		}
 		
 		return att;
+	}
+	
+	public static MimeBodyPart createInvitationICalPart(String icalText, String filename) throws MessagingException {
+		MimeBodyPart part = new MimeBodyPart();
+		part.setText(icalText, "UTF8", "application/ics");
+		part.setHeader("Content-type", "application/ics");
+		part.setFileName(filename);
+		return part;
+	}
+	
+	public static MimeBodyPart createInvitationCalendarPart(boolean cancel, String icalText, String filename) throws MessagingException {
+		String method = cancel ? "CANCEL" : "REQUEST";
+		MimeBodyPart part = new MimeBodyPart();
+		part.setText(icalText, "UTF8", "text/calendar");
+		part.setHeader("Content-type", "text/calendar; charset=UTF-8; method=" + method);
+		part.setFileName(filename);
+		return part;
 	}
 	
 	public static class ParseResult {

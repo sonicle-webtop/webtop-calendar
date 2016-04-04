@@ -33,7 +33,7 @@
  */
 package com.sonicle.webtop.calendar.io;
 
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventBase;
 import java.util.ArrayList;
 import org.joda.time.LocalDate;
 
@@ -42,11 +42,11 @@ import org.joda.time.LocalDate;
  * @author malbinola
  */
 public class EventReadResult {
-	public Event event;
+	public EventBase event;
 	public ArrayList<LocalDate> excludedDates;
 	public LocalDate overwritesRecurringInstance;
 	
-	public EventReadResult(Event event, ArrayList<LocalDate> excludedDates, LocalDate overwritesRecurringInstance) {
+	public EventReadResult(EventBase event, ArrayList<LocalDate> excludedDates, LocalDate overwritesRecurringInstance) {
 		this.event = event;
 		this.excludedDates = excludedDates;
 		this.overwritesRecurringInstance = overwritesRecurringInstance;

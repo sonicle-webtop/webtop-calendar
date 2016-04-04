@@ -37,7 +37,7 @@ import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.ServletUtils;
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.WT;
@@ -118,7 +118,7 @@ public class PublicService extends BasePublicService {
 					throw new WTException("Invalid reply provided. Valid options are: 'yes', 'no' and 'maybe'.");
 				}
 
-				Event event = manager.updateEventAttendeeReply(eid, aid, resp);
+				EventBase event = manager.updateEventAttendeeReply(eid, aid, resp);
 				if(event == null) throw new EventNotFoundException();
 				
 				//TODO: inviare email all'organizzatore con la notifica della risposta
@@ -141,7 +141,7 @@ public class PublicService extends BasePublicService {
 			} else if(action.equals("view")) {
 				String eid = ServletUtils.getStringParameter(request, "eid", true);
 				
-				Event event = manager.getEventByPublicUid(eid);
+				EventBase event = manager.getEventByPublicUid(eid);
 				if(event == null) throw new EventNotFoundException();
 				List<EventAttendee> atts = manager.listEventAttendees(event.getEventId(), true);
 				
@@ -193,7 +193,7 @@ public class PublicService extends BasePublicService {
 		}
 	}
 	
-	private String buildWhenString(Event se) {
+	private String buildWhenString(EventBase se) {
 		UserProfile.Id profileId = new UserProfile.Id(se.getCalendarProfileId());
 		CoreUserSettings cus = new CoreUserSettings(profileId);
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
@@ -202,7 +202,7 @@ public class PublicService extends BasePublicService {
 		return MessageFormat.format("{0} - {1}", dtFmt.print(se.getStartDate()), dtFmt.print(se.getEndDate()));
 	}
 	
-	private Map buildEventReplyMap(Event event) {
+	private Map buildEventReplyMap(EventBase event) {
 		Map map = new HashMap();
 		String when = buildWhenString(event);
 		String organizer = getOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
@@ -216,7 +216,7 @@ public class PublicService extends BasePublicService {
 		return map;
 	}
 	
-	private Map buildEventViewMap(Event event) {
+	private Map buildEventViewMap(EventBase event) {
 		Map map = new HashMap();
 		String when = buildWhenString(event);
 		String organizer = getOrganizer(new UserProfile.Id(event.getCalendarProfileId()));

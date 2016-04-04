@@ -34,7 +34,7 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import org.joda.time.DateTime;
 
@@ -53,7 +53,7 @@ public class OEvent extends Events {
 		setRevisionStatus(REV_STATUS_NEW);
 	}
 	
-	public void fillFrom(Event event) {
+	public void fillFrom(EventBase event) {
 		setCalendarId(event.getCalendarId());
 		
 		setStartDate(event.getStartDate());

@@ -35,8 +35,9 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import java.util.ArrayList;
 import org.joda.time.DateTimeZone;
@@ -172,10 +173,8 @@ public class JsEvent {
 		_profileId = ownerPid;
 	}
 	
-	public static Event buildEvent(JsEvent jse) {
-		Event event = new Event();
-		
-		event.setKey(jse.id);
+	public static Event buildEventInstance(JsEvent jse) {
+		Event event = new Event(jse.id);
 		event.setEventId(jse.eventId);
 		event.setCalendarId(jse.calendarId);
 		

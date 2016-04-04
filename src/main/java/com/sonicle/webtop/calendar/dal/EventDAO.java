@@ -294,6 +294,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.START_DATE,
 				EVENTS.END_DATE,
 				EVENTS.TIMEZONE,
+				EVENTS.ORGANIZER,
 				EVENTS.REVISION_TIMESTAMP,
 				originalEventId,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
@@ -452,8 +453,9 @@ public class EventDAO extends BaseDAO {
 				EVENTS.START_DATE,
 				EVENTS.END_DATE,
 				EVENTS.TIMEZONE,
-				EVENTS.EVENT_ID.as("original_event_id"), // For recurring events, originalEventId is always equal to eventId
+				EVENTS.ORGANIZER,
 				EVENTS.REVISION_TIMESTAMP,
+				EVENTS.EVENT_ID.as("original_event_id"), // For recurring events, originalEventId is always equal to eventId
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id")
 			)
@@ -530,11 +532,13 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		
 		return dsl
-			.select(EVENTS.fields())
 			.select(
+				EVENTS.fields()
+			)
+			.select(
+				EVENTS.EVENT_ID.as("original_event_id"),
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
-				CALENDARS.USER_ID.as("calendar_user_id"),
-				EVENTS.EVENT_ID.as("original_event_id")
+				CALENDARS.USER_ID.as("calendar_user_id")
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
@@ -580,6 +584,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.TIMEZONE,
 				EVENTS.TITLE,
 				EVENTS.REMINDER,
+				EVENTS.ORGANIZER,
 				EVENTS.REVISION_TIMESTAMP,
 				originalEventId,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
@@ -618,6 +623,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.END_DATE,
 				EVENTS.TIMEZONE,
 				EVENTS.REMINDER,
+				EVENTS.ORGANIZER,
 				EVENTS.EVENT_ID.as("original_event_id"), // For recurring events, originalEventId is always equal to eventId
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id")

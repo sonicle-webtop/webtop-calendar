@@ -49,7 +49,7 @@ import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
@@ -64,6 +64,7 @@ import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
@@ -560,7 +561,7 @@ public class Service extends BaseService {
 				
 				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
-				Event evt = JsEvent.buildEvent(pl.data);
+				Event evt = JsEvent.buildEventInstance(pl.data);
 				CoreManager core = WT.getCoreManager(getRunContext());
 				evt.setOrganizer(core.getUserCompleteEmailAddress(up.getId()));
 				
@@ -571,8 +572,8 @@ public class Service extends BaseService {
 				String target = ServletUtils.getStringParameter(request, "target", "this");
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				Event evt = JsEvent.buildEvent(pl.data);
-				manager.editEvent(target, evt, up.getTimeZone());
+				Event evt = JsEvent.buildEventInstance(pl.data);
+				manager.editEvent(target, evt);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.MOVE)) {

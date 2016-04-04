@@ -34,16 +34,20 @@
 package com.sonicle.webtop.calendar;
 
 import java.net.SocketException;
+import net.fortuna.ical4j.model.Component;
 import net.fortuna.ical4j.model.Date;
 import net.fortuna.ical4j.model.DateTime;
 import net.fortuna.ical4j.model.Period;
 import net.fortuna.ical4j.model.PeriodList;
+import net.fortuna.ical4j.model.Property;
 import net.fortuna.ical4j.model.Recur;
 import net.fortuna.ical4j.model.TimeZone;
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import net.fortuna.ical4j.model.TimeZoneRegistryImpl;
 import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.property.DtStamp;
+import net.fortuna.ical4j.model.property.LastModified;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.util.UidGenerator;
 
@@ -103,44 +107,23 @@ public class ICal4jUtils {
 		}
 	}
 	
-	public static org.joda.time.DateTime calculateRecurrenceStart(org.joda.time.DateTime eventStart, RRule rrule, org.joda.time.DateTimeZone tz) {
-		return calculateRecurrenceStart(eventStart, rrule.getRecur(), tz);
+	public static void addProperty(Component component, Property property) {
+		component.getProperties().add(property);
 	}
 	
-	public static org.joda.time.DateTime calculateRecurrenceStart(org.joda.time.DateTime eventStart, Recur recur, org.joda.time.DateTimeZone tz) {
-		Date d = recur.getNextDate(ICal4jUtils.toICal4jDateTime(eventStart, tz), ICal4jUtils.toICal4jDateTime(eventStart.minusDays(1), tz));
-		return toJodaDateTime(d, tz);
+	public static void addOrReplaceProperty(Component component, Property property) {
+		Property oldProp = component.getProperties().getProperty(property.getName());
+		if(oldProp != null) component.getProperties().remove(oldProp);
+		addProperty(component, property);
 	}
 	
-	public static org.joda.time.DateTime calculateRecurrenceEnd(org.joda.time.DateTime eventStart, org.joda.time.DateTime eventEnd, RRule rr, org.joda.time.DateTimeZone tz) {
-		VEvent vevent = new VEvent(ICal4jUtils.toICal4jDateTime(eventStart, tz), ICal4jUtils.toICal4jDateTime(eventEnd, tz), "");
-		vevent.getProperties().add(rr);
-		PeriodList periods = vevent.calculateRecurrenceSet(ICal4jUtils.toICal4jPeriod(eventStart, ifiniteDate(), tz));
-		if((periods == null) || periods.isEmpty()) return null;
-		Period last = (Period)periods.toArray()[periods.size()-1];
-		return toJodaDateTime(last.getEnd(), tz);
-	}
-	
-	public static PeriodList calculateRecurrenceSet(org.joda.time.DateTime eventStart, org.joda.time.DateTime eventEnd, org.joda.time.DateTime recStart, RRule rr, org.joda.time.DateTime from, org.joda.time.DateTime to, org.joda.time.DateTimeZone tz) {
-		org.joda.time.DateTime start, end;
-		
-		if(eventStart.isEqual(recStart)) {
-			start = eventStart;
-			end = eventEnd;
-		} else {
-			int eventDays = org.joda.time.Days.daysBetween(eventStart.toLocalDate(), eventEnd.toLocalDate()).getDays();
-			start = eventStart.withDate(recStart.toLocalDate());
-			end = eventEnd.withDate(start.plusDays(eventDays).toLocalDate());
-		}
-		
-		VEvent vevent = new VEvent(ICal4jUtils.toICal4jDateTime(start, tz), ICal4jUtils.toICal4jDateTime(end, tz), "");
-		vevent.getProperties().add(rr);
-		return vevent.calculateRecurrenceSet(ICal4jUtils.toICal4jPeriod(from, to, tz));
-	}
-	
-	public static DateTime toDateTime(org.joda.time.DateTime dt) {
+	public static DateTime createDateTime(org.joda.time.DateTime dt) {
 		DateTime dt1 = new DateTime(dt.toDate());
-		dt1.setTimeZone(getTimeZone(dt.getZone().getID()));
+		if(dt.getZone().equals(org.joda.time.DateTimeZone.UTC)) {
+			dt1.setUtc(true);
+		} else {
+			dt1.setTimeZone(getTimeZone(dt.getZone().getID()));
+		}
 		return dt1;
 	}
 	
@@ -181,6 +164,52 @@ public class ICal4jUtils {
 	public static org.joda.time.DateTime ifiniteDate(org.joda.time.DateTimeZone tz) {
 		return new org.joda.time.DateTime(2100, 12, 31, 0, 0, 0, tz);
 	}
+	
+	public static DtStamp createDtStamp(org.joda.time.DateTime dt) {
+		return new DtStamp(createDateTime(dt));
+	}
+	
+	
+	
+	
+	
+	
+	public static org.joda.time.DateTime calculateRecurrenceStart(org.joda.time.DateTime eventStart, RRule rrule, org.joda.time.DateTimeZone tz) {
+		return calculateRecurrenceStart(eventStart, rrule.getRecur(), tz);
+	}
+	
+	public static org.joda.time.DateTime calculateRecurrenceStart(org.joda.time.DateTime eventStart, Recur recur, org.joda.time.DateTimeZone tz) {
+		Date d = recur.getNextDate(ICal4jUtils.toICal4jDateTime(eventStart, tz), ICal4jUtils.toICal4jDateTime(eventStart.minusDays(1), tz));
+		return toJodaDateTime(d, tz);
+	}
+	
+	public static org.joda.time.DateTime calculateRecurrenceEnd(org.joda.time.DateTime eventStart, org.joda.time.DateTime eventEnd, RRule rr, org.joda.time.DateTimeZone tz) {
+		VEvent vevent = new VEvent(ICal4jUtils.toICal4jDateTime(eventStart, tz), ICal4jUtils.toICal4jDateTime(eventEnd, tz), "");
+		vevent.getProperties().add(rr);
+		PeriodList periods = vevent.calculateRecurrenceSet(ICal4jUtils.toICal4jPeriod(eventStart, ifiniteDate(), tz));
+		if((periods == null) || periods.isEmpty()) return null;
+		Period last = (Period)periods.toArray()[periods.size()-1];
+		return toJodaDateTime(last.getEnd(), tz);
+	}
+	
+	public static PeriodList calculateRecurrenceSet(org.joda.time.DateTime eventStart, org.joda.time.DateTime eventEnd, org.joda.time.DateTime recStart, RRule rr, org.joda.time.DateTime from, org.joda.time.DateTime to, org.joda.time.DateTimeZone tz) {
+		org.joda.time.DateTime start, end;
+		
+		if(eventStart.isEqual(recStart)) {
+			start = eventStart;
+			end = eventEnd;
+		} else {
+			int eventDays = org.joda.time.Days.daysBetween(eventStart.toLocalDate(), eventEnd.toLocalDate()).getDays();
+			start = eventStart.withDate(recStart.toLocalDate());
+			end = eventEnd.withDate(start.plusDays(eventDays).toLocalDate());
+		}
+		
+		VEvent vevent = new VEvent(ICal4jUtils.toICal4jDateTime(start, tz), ICal4jUtils.toICal4jDateTime(end, tz), "");
+		vevent.getProperties().add(rr);
+		return vevent.calculateRecurrenceSet(ICal4jUtils.toICal4jPeriod(from, to, tz));
+	}
+	
+	
 	
 	/*
 	public static void calculateRecurrenceStart(VEvent event) {

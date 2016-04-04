@@ -35,7 +35,7 @@ package com.sonicle.webtop.calendar.io;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.ICal4jUtils;
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -134,7 +134,7 @@ public class EventICalFileReader implements EventFileReader {
 	}
 	
 	public EventReadResult readVEvent(LogEntries log, VEvent ve) throws Exception {
-		Event event = new Event();
+		EventBase event = new EventBase();
 		ArrayList<LocalDate> excludedDates = null;
 		LocalDate overwritesRecurringInstance = null;
 		// See http://www.kanzaki.com/docs/ical/vevent.html

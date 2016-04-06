@@ -429,9 +429,11 @@ public class CalendarManager extends BaseManager {
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
 			dao.deleteById(con, calendarId);
-			//TODO: cancellare eventi collegati
+			doDeleteEventsByCalendar(con, calendarId);
+			
 			DbUtils.commitQuietly(con);
 			writeLog("CALENDAR_DELETE",  String.valueOf(calendarId));
+			writeLog("EVENT_DELETE",  "*");
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");

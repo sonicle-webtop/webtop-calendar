@@ -40,7 +40,7 @@ import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.core.CoreUserSettings;
-import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BasePublicService;

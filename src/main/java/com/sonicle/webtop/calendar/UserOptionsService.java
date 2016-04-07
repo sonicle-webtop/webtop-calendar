@@ -41,7 +41,7 @@ import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.Payload;
 import com.sonicle.webtop.calendar.bol.js.JsUserOptions;
-import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseUserOptionsService;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.io.PrintWriter;

@@ -33,8 +33,8 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.core.RunContext;
-import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.app.RunContext;
+import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseController;
 import com.sonicle.webtop.core.sdk.BaseReminder;
 import com.sonicle.webtop.core.sdk.UserProfile;

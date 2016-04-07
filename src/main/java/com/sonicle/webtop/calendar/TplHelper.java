@@ -34,7 +34,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.webtop.core.CoreLocaleKey;
-import com.sonicle.webtop.core.WT;
+import com.sonicle.webtop.core.app.WT;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Locale;

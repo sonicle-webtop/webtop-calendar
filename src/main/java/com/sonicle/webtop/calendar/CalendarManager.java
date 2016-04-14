@@ -1570,7 +1570,7 @@ public class CalendarManager extends BaseManager {
 					InternetAddress to = new InternetAddress(attendee.getRecipient());
 					if(MailUtils.isAddressValid(to)) {
 						String body = buildEventInvitationEmailBody(getLocale(), dateFormat, timeFormat, attendee.getAddress(), event);
-						WT.sendEmail(true, from, new InternetAddress[]{to}, null, null, subject, body, new Part[]{icsPart, calendarPart});
+						WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, body, new MimeBodyPart[]{icsPart, calendarPart});
 					}
 				}
 			}

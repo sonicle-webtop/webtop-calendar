@@ -537,7 +537,7 @@ public class ICalHelper {
 	
 	public static MimeBodyPart createInvitationICalPart(String icalText, String filename) throws MessagingException {
 		MimeBodyPart part = new MimeBodyPart();
-		part.setText(icalText, "UTF8", "application/ics");
+		part.setText(icalText, "UTF-8");
 		part.setHeader("Content-type", "application/ics");
 		part.setFileName(filename);
 		return part;
@@ -546,7 +546,7 @@ public class ICalHelper {
 	public static MimeBodyPart createInvitationCalendarPart(boolean cancel, String icalText, String filename) throws MessagingException {
 		String method = cancel ? "CANCEL" : "REQUEST";
 		MimeBodyPart part = new MimeBodyPart();
-		part.setText(icalText, "UTF8", "text/calendar");
+		part.setText(icalText, "UTF-8");
 		part.setHeader("Content-type", "text/calendar; charset=UTF-8; method=" + method);
 		part.setFileName(filename);
 		return part;

@@ -118,6 +118,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import javax.mail.MessagingException;
 import javax.mail.Part;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
@@ -1573,7 +1574,11 @@ public class CalendarManager extends BaseManager {
 					InternetAddress to = new InternetAddress(attendee.getRecipient());
 					if(MailUtils.isAddressValid(to)) {
 						String body = buildEventInvitationEmailBody(getLocale(), dateFormat, timeFormat, attendee.getAddress(), event);
-						WT.sendEmail(true, from, new InternetAddress[]{to}, null, null, subject, body, new Part[]{icsPart, calendarPart});
+						try {
+							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, body, new MimeBodyPart[]{icsPart, calendarPart});
+						} catch(MessagingException ex) {
+							logger.warn("Problems encountered sending notification to {}", to.toString());
+						}
 					}
 				}
 			}

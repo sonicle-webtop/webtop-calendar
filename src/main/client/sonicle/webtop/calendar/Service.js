@@ -720,8 +720,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			me.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid) {
 				if(bid === 'ok') {
 					var target = WT.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
-					deleteEvent(id, target, {
-						cb: function(succ) {
+					me.deleteEvent(id, target, {
+						callback: function(succ) {
 							if(succ) me.reloadEvents();
 						}
 					});
@@ -730,8 +730,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		} else {
 			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(title, 40)), function(bid) {
 				if(bid === 'yes') {
-					deleteEvent(id, 'this', {
-						cb: function(succ) {
+					me.deleteEvent(id, 'this', {
+						callback: function(succ) {
 							if(succ) me.reloadEvents();
 						}
 					});

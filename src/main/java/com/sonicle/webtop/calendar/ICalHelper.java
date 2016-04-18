@@ -506,10 +506,10 @@ public class ICalHelper {
 		
 		// Evaluates attendee details
 		// Joins email and common name (CN)
-		InternetAddress email = new InternetAddress(attendee.getRecipient());
-		att.setCalAddress(new URI(MessageFormat.format("mailto:{0}", email.getAddress())));
-		if(!StringUtils.isEmpty(email.getPersonal())) {
-			att.getParameters().add(new Cn(email.getPersonal()));
+		String mailto = MessageFormat.format("mailto:{0}", attendee.getAddress());
+		att.setCalAddress(URI.create(mailto));
+		if(!StringUtils.isBlank(attendee.getCN())) {
+			att.getParameters().add(new Cn(attendee.getCN()));
 		}
 		
 		// Evaluates attendee role

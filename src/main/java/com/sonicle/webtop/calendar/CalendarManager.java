@@ -93,6 +93,7 @@ import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTOperationException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
+import com.sonicle.webtop.core.util.IdentifierUtils;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
@@ -1545,7 +1546,8 @@ public class CalendarManager extends BaseManager {
 				
 				boolean methodCancel = crud.equals(Crud.DELETE);
 				InternetAddress from = ud.getEmail();
-				String subject = lookupResource(getLocale(), MessageFormat.format(CalendarLocale.INVITATION_SUBJECT_X, crud));
+				String subjectFmt = lookupResource(getLocale(), MessageFormat.format(CalendarLocale.INVITATION_SUBJECT_X, crud));
+				String subject = MessageFormat.format(subjectFmt, buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, event));
 				
 				// Creates ical content
 				String icalText = null;
@@ -1562,7 +1564,8 @@ public class CalendarManager extends BaseManager {
 				}
 				
 				// Creates message parts
-				String filename = "webtop-invite.ics";
+				//String filename = "calendar-invite.ics";
+				String filename = MessageFormat.format("{0}-invite.ics", WT.getPlatformName().toLowerCase());
 				MimeBodyPart icsPart = ICalHelper.createInvitationICalPart(icalText, filename);
 				MimeBodyPart calendarPart = ICalHelper.createInvitationCalendarPart(methodCancel, icalText, filename);
 				
@@ -1577,6 +1580,22 @@ public class CalendarManager extends BaseManager {
 		} catch(Exception ex) {
 			logger.error("Error notifying attendees", ex);
 		}		
+	}
+	
+	public String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, EventBase event) {
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
+		sb.append(" - ");
+		sb.append(fmt.print(event.getStartDate()));
+		sb.append(" -> ");
+		sb.append(fmt.print(event.getEndDate()));
+		sb.append(" (");
+		sb.append(event.getTimezone());
+		sb.append(")");
+		
+		return sb.toString();
 	}
 	
 	public String buildEventInvitationEmailBody(Locale locale, String dateFormat, String timeFormat, String recipientEmail, EventBase event) {
@@ -1795,7 +1814,7 @@ public class CalendarManager extends BaseManager {
 		DateTime revision = createRevisionTimestamp();
 		
 		if(StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
-		if(StringUtils.isBlank(event.getPublicUid())) event.setPublicUid(WT.generateUUID());
+		if(StringUtils.isBlank(event.getPublicUid())) event.setPublicUid(IdentifierUtils.getUUID());
 		
 		OEvent oevt = new OEvent();
 		oevt.fillFrom(event);
@@ -1807,7 +1826,7 @@ public class CalendarManager extends BaseManager {
 			for(EventAttendee att : event.getAttendees()) {
 				oatt = new OEventAttendee();
 				oatt.fillFrom(att);
-				oatt.setAttendeeId(WT.generateUUID());
+				oatt.setAttendeeId(IdentifierUtils.getUUID());
 				oatt.setEventId(oevt.getEventId());
 				attDao.insert(con, oatt);
 				oatts.add(oatt);
@@ -1848,7 +1867,7 @@ public class CalendarManager extends BaseManager {
 			for(EventAttendee att : changeSet.created) {
 				oatt = new OEventAttendee();
 				oatt.fillFrom(att);
-				oatt.setAttendeeId(WT.generateUUID());
+				oatt.setAttendeeId(IdentifierUtils.getUUID());
 				oatt.setEventId(originalEvent.getEventId());
 				eadao.insert(con, oatt);
 			}

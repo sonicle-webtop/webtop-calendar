@@ -72,7 +72,6 @@ import com.sonicle.webtop.core.bol.OCustomer;
 import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ActivityDAO;
-import com.sonicle.webtop.core.dal.BaseDAO.CrudInfo;
 import com.sonicle.webtop.core.dal.CausalDAO;
 import com.sonicle.webtop.core.dal.CustomerDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
@@ -101,7 +100,6 @@ import com.sonicle.webtop.core.util.NotificationHelper;
 import freemarker.template.TemplateException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -117,9 +115,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import javax.mail.MessagingException;
-import javax.mail.Part;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
@@ -1499,6 +1495,7 @@ public class CalendarManager extends BaseManager {
 			
 			DateTime from = now.withTimeAtStartOfDay();
 			DateTime remindOn = null;
+			logger.debug("Getting expired events");
 			List<SchedulerEvent> events = listExpiredSchedulerEvents(con, from, from.plusDays(7));
 			for(SchedulerEvent event : events) {
 				//TODO: implementare gestione reminder anche per le ricorrenze

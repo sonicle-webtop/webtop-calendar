@@ -140,7 +140,7 @@ public abstract class AbstractAgenda extends AbstractReport {
 			}
 		}
 		
-		setDataSource(new JRBeanCollectionDataSource(createBeanCollection(new Data(utz, fromDate.toLocalDate(), toDate.minusDays(1).toLocalDate(), dayDates, daysSpanningEvents, daysEvents))));
+		setDataSource(createBeanCollection(new Data(utz, fromDate.toLocalDate(), toDate.minusDays(1).toLocalDate(), dayDates, daysSpanningEvents, daysEvents)));
 	}
 	
 	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {

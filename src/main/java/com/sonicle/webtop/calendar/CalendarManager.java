@@ -349,6 +349,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public OCalendar addBuiltInCalendar() throws WTException {
+		CalendarDAO dao = CalendarDAO.getInstance();
 		Connection con = null;
 		OCalendar item = null;
 		
@@ -356,7 +357,6 @@ public class CalendarManager extends BaseManager {
 			checkRightsOnCalendarRoot(getTargetProfileId(), "MANAGE");
 			con = WT.getConnection(SERVICE_ID);
 			con.setAutoCommit(false);
-			CalendarDAO dao = CalendarDAO.getInstance();
 			
 			item = dao.selectBuiltInByDomainUser(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if(item != null) throw new WTOperationException("Built-in calendar already present");
@@ -377,6 +377,7 @@ public class CalendarManager extends BaseManager {
 			item.setBusy(false);
 			item = doInsertCalendar(con, item);
 			DbUtils.commitQuietly(con);
+			
 			writeLog("CALENDAR_INSERT",  String.valueOf(item.getCalendarId()));
 			return item;
 			

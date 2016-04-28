@@ -49,7 +49,6 @@ import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
-import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
@@ -107,10 +106,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.shiro.SecurityUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
@@ -895,7 +892,7 @@ public class Service extends BaseService {
 			
 			ReportConfig.Builder builder = reportConfigBuilder();
 			RptEventsDetail rpt = new RptEventsDetail(builder.build());
-			rpt.setDataSource(new JRBeanCollectionDataSource(items));
+			rpt.setDataSource(items);
 			
 			baos = new ByteArrayOutputStream();
 			WT.generateReportToStream(rpt, AbstractReport.OutputType.PDF, baos);

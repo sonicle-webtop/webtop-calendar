@@ -184,7 +184,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	private void checkRightsOnCalendarRoot(UserProfile.Id ownerPid, String action) throws WTException {
-		if(WT.isWebTopAdmin(getRunProfileId())) return;
+		if(getRunContext().isWebTopAdmin()) return;
 		if(ownerPid.equals(getTargetProfileId())) return;
 		
 		String shareId = ownerToRootShareId(ownerPid);
@@ -1980,7 +1980,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
-		if(WT.isWebTopAdmin(getRunProfileId())) return;
+		if(getRunContext().isWebTopAdmin()) return;
 		
 		// Skip rights check if running user is resource's owner
 		UserProfile.Id ownerPid = calendarToOwner(calendarId);
@@ -2002,7 +2002,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
-		if(WT.isWebTopAdmin(getRunProfileId())) return;
+		if(getRunContext().isWebTopAdmin()) return;
 		
 		// Skip rights check if running user is resource's owner
 		UserProfile.Id ownerPid = calendarToOwner(calendarId);

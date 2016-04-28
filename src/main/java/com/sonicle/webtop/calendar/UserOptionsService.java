@@ -43,7 +43,6 @@ import com.sonicle.commons.web.json.Payload;
 import com.sonicle.webtop.calendar.bol.js.JsUserOptions;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseUserOptionsService;
-import com.sonicle.webtop.core.sdk.UserProfile;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import javax.servlet.http.HttpServletRequest;
@@ -64,7 +63,7 @@ public class UserOptionsService extends BaseUserOptionsService {
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			CalendarUserSettings cus = new CalendarUserSettings(getServiceId(), getTargetProfileId());
+			CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, getTargetProfileId());
 			DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 			
 			if(crud.equals(Crud.READ)) {

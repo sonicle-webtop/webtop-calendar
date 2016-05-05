@@ -33,7 +33,6 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseController;
 import com.sonicle.webtop.core.sdk.BaseReminder;
@@ -53,13 +52,13 @@ import org.slf4j.Logger;
 public class CalendarController extends BaseController implements IControllerHandlesProfiles, IControllerHandlesReminders {
 	public static final Logger logger = WT.getLogger(CalendarController.class);
 	
-	public CalendarController(RunContext context) {
-		super(context);
+	public CalendarController() {
+		super();
 	}
 	
 	@Override
-	public void initializeProfile(UserProfile.Id profileId) throws WTException {
-		CalendarManager manager = new CalendarManager(getRunContext(), profileId);
+	public void addProfile(UserProfile.Id profileId) throws WTException {
+		CalendarManager manager = new CalendarManager(getServiceContext(), profileId);
 		
 		// Adds built-in calendar
 		try {
@@ -72,14 +71,14 @@ public class CalendarController extends BaseController implements IControllerHan
 	}
 	
 	@Override
-	public void cleanupProfile(UserProfile.Id profileId, boolean deep) throws WTException {
+	public void removeProfile(UserProfile.Id profileId, boolean deep) throws WTException {
 		//TODO: implementare cleanup utente
 		//CalendarManager manager = new CalendarManager(getRunContext(), profileId);
 	}
 
 	@Override
 	public List<BaseReminder> returnReminders(DateTime now) {
-		CalendarManager manager = new CalendarManager(getRunContext());
+		CalendarManager manager = new CalendarManager(getServiceContext());
 		return manager.getRemindersToBeNotified(now);
 	}
 }

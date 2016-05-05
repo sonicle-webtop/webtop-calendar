@@ -73,7 +73,7 @@ public class PublicService extends BasePublicService {
 
 	@Override
 	public void initialize() {
-		manager = new CalendarManager(getRunContext());
+		manager = new CalendarManager(getServiceContext());
 	}
 
 	@Override

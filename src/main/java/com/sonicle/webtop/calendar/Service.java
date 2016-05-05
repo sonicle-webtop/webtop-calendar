@@ -138,7 +138,7 @@ public class Service extends BaseService {
 	@Override
 	public void initialize() throws Exception {
 		UserProfile profile = getEnv().getProfile();
-		manager = new CalendarManager(getRunContext());
+		manager = new CalendarManager(getServiceContext());
 		ss = new CalendarServiceSettings(SERVICE_ID, profile.getDomainId());
 		us = new CalendarUserSettings(SERVICE_ID, profile.getId());
 		initFolders();
@@ -560,7 +560,7 @@ public class Service extends BaseService {
 				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
 				Event evt = JsEvent.buildEventInstance(pl.data);
-				CoreManager core = WT.getCoreManager(getRunContext());
+				CoreManager core = WT.getCoreManager(getServiceContext());
 				evt.setOrganizer(core.getUserCompleteEmailAddress(up.getId()));
 				
 				manager.addEvent(evt);
@@ -871,7 +871,7 @@ public class Service extends BaseService {
 	public void processPrintEventsDetail(HttpServletRequest request, HttpServletResponse response) {
 		ArrayList<RBEventDetail> items = new ArrayList<>();
 		ByteArrayOutputStream baos = null;
-		CoreManager core = WT.getCoreManager(getRunContext());
+		CoreManager core = WT.getCoreManager(getServiceContext());
 		UserProfile up = getEnv().getProfile();
 		
 		try {

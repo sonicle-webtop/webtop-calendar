@@ -77,7 +77,6 @@ import com.sonicle.webtop.core.dal.CausalDAO;
 import com.sonicle.webtop.core.dal.CustomerDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseManager;
-import com.sonicle.webtop.core.app.ServiceContext;
 import com.sonicle.webtop.core.bol.Owner;
 import com.sonicle.webtop.core.bol.model.IncomingShareRoot;
 import com.sonicle.webtop.core.bol.model.Sharing;
@@ -160,16 +159,16 @@ public class CalendarManager extends BaseManager {
 	private final HashMap<UserProfile.Id, String> cacheOwnerToWildcardFolderShare = new HashMap<>();
 	private final HashMap<Integer, String> cacheCalendarToFolderShare = new HashMap<>();
 
-	public CalendarManager(ServiceContext context) {
-		super(context);
+	public CalendarManager() {
+		this(RunContext.getProfileId());
 	}
 	
-	public CalendarManager(ServiceContext context, UserProfile.Id targetProfileId) {
-		super(context, targetProfileId);
+	public CalendarManager(UserProfile.Id targetProfileId) {
+		super(targetProfileId);
 	}
 	
 	private void writeLog(String action, String data) {
-		CoreManager core = WT.getCoreManager(getServiceContext());
+		CoreManager core = WT.getCoreManager();
 		core.setSoftwareName(getSoftwareName());
 		core.writeLog(action, data);
 	}
@@ -185,7 +184,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public List<CalendarRoot> listIncomingCalendarRoots() throws WTException {
-		CoreManager core = WT.getCoreManager(getServiceContext(), getTargetProfileId());
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		ArrayList<CalendarRoot> roots = new ArrayList();
 		HashSet<String> hs = new HashSet<>();
 		
@@ -201,7 +200,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public HashMap<Integer, CalendarFolder> listIncomingCalendarFolders(String rootShareId) throws WTException {
-		CoreManager core = WT.getCoreManager(getServiceContext(), getTargetProfileId());
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		LinkedHashMap<Integer, CalendarFolder> folders = new LinkedHashMap<>();
 		
 		// Retrieves incoming folders (from sharing). This lookup already 
@@ -234,12 +233,12 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public Sharing getSharing(String shareId) throws WTException {
-		CoreManager core = WT.getCoreManager(getServiceContext(), getTargetProfileId());
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		return core.getSharing(getTargetProfileId(), SERVICE_ID, RESOURCE_CALENDAR, shareId);
 	}
 	
 	public void updateSharing(Sharing sharing) throws WTException {
-		CoreManager core = WT.getCoreManager(getServiceContext(), getTargetProfileId());
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		core.updateSharing(getTargetProfileId(), SERVICE_ID, RESOURCE_CALENDAR, sharing);
 	}
 	
@@ -1909,7 +1908,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	private void buildShareCache() {
-		CoreManager core = WT.getCoreManager(getServiceContext(), getTargetProfileId());
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		
 		try {
 			cacheOwnerToRootShare.clear();
@@ -1976,7 +1975,7 @@ public class CalendarManager extends BaseManager {
 		
 		String shareId = ownerToRootShareId(ownerPid);
 		if(shareId == null) throw new WTException("ownerToRootShareId({0}) -> null", ownerPid);
-		CoreManager core = WT.getCoreManager(getServiceContext(), targetPid);
+		CoreManager core = WT.getCoreManager(targetPid);
 		if(core.isShareRootPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
 		
 		throw new AuthException("Action not allowed on root share [{0}, {1}, {2}, {3}]", shareId, action, RESOURCE_CALENDAR, targetPid.toString());
@@ -1992,7 +1991,7 @@ public class CalendarManager extends BaseManager {
 		if(ownerPid.equals(targetPid)) return;
 		
 		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(getServiceContext(), targetPid);
+		CoreManager core = WT.getCoreManager(targetPid);
 		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
 		if(wildcardShareId != null) {
 			if(core.isShareFolderPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
@@ -2014,7 +2013,7 @@ public class CalendarManager extends BaseManager {
 		if(ownerPid.equals(getTargetProfileId())) return;
 		
 		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(getServiceContext(), getTargetProfileId());
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
 		if(wildcardShareId != null) {
 			if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;

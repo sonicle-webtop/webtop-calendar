@@ -70,6 +70,7 @@
 		<supportEmail>sonicle@sonicle.com</supportEmail>
 		
 		<controllerClassName>CalendarController</controllerClassName>
+		<managerClassName>CalendarManager</managerClassName>
 		<serviceClassName>Service</serviceClassName>
 		<publicServiceClassName>PublicService</publicServiceClassName>
 		<clientOptionsModelJsClassName>model.ClientOptions</clientOptionsModelJsClassName>

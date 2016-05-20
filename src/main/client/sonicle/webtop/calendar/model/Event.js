@@ -34,6 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WT.ux.data.BaseModel',
 	requires: [
+		'Sonicle.webtop.calendar.model.EventAttendee',
 		'Sonicle.data.writer.Json'
 	],
 	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents', 'data', {
@@ -96,6 +97,9 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 			return (rec.get('_recurringInfo') === 'recurring');
 		})
 	],
+	hasMany: [
+		WTF.hasMany('attendees', 'Sonicle.webtop.calendar.model.EventAttendee')
+	],
 	
 	setStartDate: function(date) {
 		var me = this,
@@ -146,30 +150,4 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		me.set(field, dt);
 		return dt;
 	}
-
-/*	
-	hasMany: [{
-		name: 'attendees',
-		model: 'Sonicle.webtop.calendar.model.EventAttendee'
-	}],
-*/
-});
-Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
-	extend: 'WT.ux.data.BaseModel',
-	
-	identifier: 'negativestring',
-	idProperty: 'attendeeId',
-	fields: [
-		WTF.field('_fk', 'string', true, {
-			reference: {
-				parent: 'Sonicle.webtop.calendar.model.Event',
-				inverse: 'attendees'
-			}
-		}),
-		WTF.field('attendeeId', 'string', false),
-		WTF.field('recipient', 'string', false),
-		WTF.field('recipientType', 'string', false),
-		WTF.field('responseStatus', 'string', false),
-		WTF.field('notify', 'boolean', false)
-	]
 });

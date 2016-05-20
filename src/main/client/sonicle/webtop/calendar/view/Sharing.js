@@ -38,6 +38,5 @@ Ext.define('Sonicle.webtop.calendar.view.Sharing', {
 	],
 	
 	modelName: 'Sonicle.webtop.calendar.model.Sharing',
-	fieldTitle: 'description',
-	rightsModelName: 'Sonicle.webtop.calendar.model.SharingRights'
+	fieldTitle: 'description'
 });

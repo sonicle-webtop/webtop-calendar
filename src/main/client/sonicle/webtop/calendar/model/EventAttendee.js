@@ -31,19 +31,25 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.Sharing', {
-	extend: 'WT.sdk.model.Sharing',
-	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageSharing', 'data', {
-		writer: {
-			type: 'sojson',
-			writeAssociations: true
-		}
-	}),
+Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
+	extend: 'WT.ux.data.BaseModel',
 	
-	field:[
-		WTF.roField('description', 'string')
-	],
-	hasMany: [
-		WTF.hasMany('rights', 'Sonicle.webtop.core.sdk.model.SharingRights')
+	identifier: 'negativestring',
+	idProperty: 'attendeeId',
+	fields: [
+		/*
+		WTF.field('_fk', 'string', true, {
+			reference: {
+				parent: 'Sonicle.webtop.calendar.model.Event',
+				inverse: 'attendees'
+			}
+		}),
+		*/
+		WTF.fkField('string'),
+		WTF.field('attendeeId', 'string', false),
+		WTF.field('recipient', 'string', false),
+		WTF.field('recipientType', 'string', false),
+		WTF.field('responseStatus', 'string', false),
+		WTF.field('notify', 'boolean', false)
 	]
 });

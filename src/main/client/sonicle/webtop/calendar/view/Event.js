@@ -38,7 +38,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.field.Palette',
 		'Sonicle.form.Separator',
 		'Sonicle.form.RadioGroup',
-		'Sonicle.form.field.IconComboBox',
+		'Sonicle.form.field.ColorComboBox',
 		'WT.ux.data.EmptyModel',
 		'WT.ux.data.ValueModel',
 		'WT.ux.field.SuggestCombo',
@@ -273,7 +273,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					hideEmptyLabel: true,
 					boxLabel: me.mys.res('event.fld-allDay.lbl')
 				}, {
-					xtype: 'soiconcombo',
+					xtype: 'socolorcombo',
 					reference: 'fldcalendar',
 					bind: '{record.calendarId}',
 					typeAhead: false,
@@ -282,12 +282,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					selectOnFocus: true,
 					store: {
 						autoLoad: true,
-						model: 'Sonicle.webtop.calendar.model.CalendarLkp',
+						model: me.mys.preNs('model.CalendarLkp'),
 						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
 					},
 					valueField: 'calendarId',
 					displayField: 'name',
-					iconClsField: 'colorCls',
+					colorField: 'color',
 					labelWidth: 70,
 					fieldLabel: me.mys.res('event.fld-calendar.lbl'),
 					margin: 0,

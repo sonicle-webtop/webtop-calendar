@@ -60,7 +60,7 @@ public class JsCalendarLkp {
 		isPrivate = bean.getIsPrivate();
 		busy = bean.getBusy();
 		reminder = bean.getReminder();
-		color = bean.getHexColor();
+		color = bean.getColor();
 		invitation = bean.getInvitation();
 	}
 }

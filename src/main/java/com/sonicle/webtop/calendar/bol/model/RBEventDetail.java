@@ -84,7 +84,7 @@ public class RBEventDetail {
 	public RBEventDetail(CoreManager core, RRuleStringify rrStringify, OCalendar calendar, Event event) throws WTException {
 		this.calendarId = event.getCalendarId();
 		this.calendarName = calendar.getName();
-		this.calendarColor = calendar.getHexColor();
+		this.calendarColor = calendar.getColor();
 		this.calendarColorImage = JRHelper.colorAsImage(calendar.getHexColor());
 		this.eventKey = event.getKey();
 		this.eventId = event.getEventId();

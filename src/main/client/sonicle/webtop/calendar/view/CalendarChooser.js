@@ -34,7 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 	extend: 'WT.sdk.DockableView',
 	requires: [
-		'Sonicle.form.field.IconComboBox',
+		'Sonicle.form.field.ColorComboBox',
 		'Sonicle.webtop.calendar.model.CalendarLkp'
 	],
 	
@@ -110,7 +110,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 					allowBlank: false
 				}),
 				WTF.lookupCombo('calendarId', 'name', {
-					xtype: 'soiconcombo',
+					xtype: 'socolorcombo',
 					reference: 'fldcalendar',
 					bind: '{calendarId}',
 					store: {
@@ -118,7 +118,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 						model: me.mys.preNs('model.CalendarLkp'),
 						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
 					},
-					iconClsField: 'colorCls',
+					colorField: 'color',
 					fieldLabel: me.mys.res('calendarChooser.fld-calendar.lbl'),
 					anchor: '100%',
 					allowBlank: false

@@ -451,7 +451,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					},
 					fileuploaded: function(up, file) {
 						var node = me.getSelectedFolder(me.getRef('folderstree'));
-						if(node) me.importICal(node.get('_calId'), file.uploadId);
+						if(node) me.importICal(node.get('_calId'), file.server_response.uploadId);
 					}
 				}
 			})

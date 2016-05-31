@@ -789,7 +789,7 @@ public class Service extends BaseService {
 				String mode = ServletUtils.getStringParameter(request, "importMode", true);
 				
 				LogEntries log = manager.importEvents(calendarId, rea, file, mode);
-				clearUploadedFile(uploadId);
+				removeUploadedFile(uploadId);
 				new JsonResult(log.print()).printTo(out);
 			}
 			

@@ -780,7 +780,7 @@ public class Service extends BaseService {
 			
 			UploadedFile upl = getUploadedFile(uploadId);
 			if(upl == null) throw new WTException("Uploaded file not found [{0}]", uploadId);
-			File file = new File(WT.getTempFolder(), upl.id);
+			File file = new File(WT.getTempFolder(), upl.getUploadId());
 			
 			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
 			

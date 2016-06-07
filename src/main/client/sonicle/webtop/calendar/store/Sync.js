@@ -31,28 +31,21 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.Calendar', {
-	extend: 'WT.ux.data.BaseModel',
-	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
+Ext.define('Sonicle.webtop.calendar.store.Sync', {
+	extend: 'Ext.data.ArrayStore',
 	
-	identifier: 'negative',
-	idProperty: 'calendarId',
-	fields: [
-		WTF.field('calendarId', 'int', false),
-		WTF.field('domainId', 'string', false),
-		WTF.field('userId', 'string', false),
-		WTF.field('name', 'string', false),
-		WTF.field('description', 'string', true),
-		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
-		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
-		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
-		WTF.field('busy', 'boolean', false, {defaultValue: false}),
-		WTF.field('reminder', 'int', true),
-		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
-		WTF.field('sync', 'string', false, {defaultValue: 'O'}),
-		// Read-only fields
-		WTF.calcField('_profileId', 'string', ['domainId', 'userId'], function(v, rec) {
-			return rec.get('userId') + '@' + rec.get('domainId');
-		})
-	]
+	model: 'WT.model.Simple',
+	data: [
+		['O',''],
+		['R',''],
+		['W','']
+	],
+	
+	constructor: function(cfg) {
+		var me = this;
+		Ext.each(me.config.data, function(row) {
+			row[1] = WT.res('com.sonicle.webtop.calendar', 'store.sync.'+row[0]);
+		});
+		me.callParent([cfg]);
+	}
 });

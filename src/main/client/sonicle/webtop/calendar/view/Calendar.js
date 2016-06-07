@@ -37,7 +37,8 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		'Sonicle.form.trigger.Clear',
 		'Sonicle.form.field.Palette',
 		'Sonicle.form.RadioGroup',
-		'Sonicle.webtop.calendar.store.Reminder'
+		'Sonicle.webtop.calendar.store.Reminder',
+		'Sonicle.webtop.calendar.store.Sync'
 	],
 	
 	dockableConfig: {
@@ -59,8 +60,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 				visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
 				showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
 				isDefault: WTF.checkboxBind('record', 'isDefault'),
-				invitation: WTF.checkboxBind('record', 'invitation'),
-				sync: WTF.checkboxBind('record', 'sync')
+				invitation: WTF.checkboxBind('record', 'invitation')
 			}
 		};
 		me.callParent([config]);
@@ -75,7 +75,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 			xtype: 'wtfieldspanel',
 			modelValidation: true,
 			defaults: {
-				labelWidth: 100
+				labelWidth: 110
 			},
 			items: [{
 				xtype: 'textfield',
@@ -93,7 +93,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 				bind: '{record.color}',
 				colors: WT.getColorPalette(),
 				fieldLabel: me.mys.res('calendar.fld-color.lbl'),
-				width: 200
+				width: 210
 			}, {
 				xtype: 'checkbox',
 				bind: '{isDefault}',
@@ -148,18 +148,22 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 					clear: WTF.clearTrigger()
 				},
 				emptyText: WT.res('word.none.male'),
-				fieldLabel: me.mys.res('calendar.fld-reminder.lbl')
+				fieldLabel: me.mys.res('calendar.fld-reminder.lbl'),
+				width: 250
 			}, {
 				xtype: 'checkbox',
 				bind: '{invitation}',
 				hideEmptyLabel: false,
 				boxLabel: me.mys.res('calendar.fld-invitation.lbl')
-			}, {
-				xtype: 'checkbox',
-				bind: '{sync}',
-				hideEmptyLabel: false,
-				boxLabel: me.mys.res('calendar.fld-sync.lbl')
-			}]
+			},
+			WTF.lookupCombo('id', 'desc', {
+				bind: '{record.sync}',
+				store: Ext.create('Sonicle.webtop.calendar.store.Sync', {
+					autoLoad: true
+				}),
+				fieldLabel: me.mys.res('calendar.fld-sync.lbl'),
+				width: 250
+			})]
 		});
 		me.on('viewload', me.onViewLoad);
 	},

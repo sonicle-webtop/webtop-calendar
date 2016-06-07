@@ -358,7 +358,7 @@ public class CalendarManager extends BaseManager {
 			item.setIsPrivate(false);
 			item.setBusy(false);
 			item.setReminder(null);
-			item.setSync(true);
+			item.setSync(OCalendar.SYNC_OFF);
 			item.setInvitation(false);
 			item.setIsDefault(true);
 			item.setBusy(false);

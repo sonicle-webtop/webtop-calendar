@@ -167,12 +167,6 @@ public class CalendarManager extends BaseManager {
 		super(targetProfileId);
 	}
 	
-	private void writeLog(String action, String data) {
-		CoreManager core = WT.getCoreManager();
-		core.setSoftwareName(getSoftwareName());
-		core.writeLog(action, data);
-	}
-	
 	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
 		return parseYmdHmsWithZone(date + " " + time, tz);
 	}

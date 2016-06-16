@@ -1024,7 +1024,7 @@ public class Service extends BaseService {
 	
 	private ExtTreeNode createFolderNode(CalendarFolder folder, SharePermsRoot rootPerms) {
 		OCalendar cal = folder.getCalendar();
-		String id = new CompositeId(folder.getShareId(), cal.getCalendarId()).toString();
+		String id = new CompositeId().setTokens(folder.getShareId(), cal.getCalendarId()).toString();
 		boolean visible = checkedFolders.contains(cal.getCalendarId());
 		ExtTreeNode node = new ExtTreeNode(id, cal.getName(), true);
 		node.put("_type", JsFolderNode.TYPE_FOLDER);

@@ -4,8 +4,8 @@
 		<package>com.sonicle.webtop.calendar</package>
 		<jsPackage>Sonicle.webtop.calendar</jsPackage>
 		<shortName>wtcal</shortName>
-		<version>2.0.0</version>
-		<buildDate>03/11/2014</buildDate>
+		<version>1.0.0</version>
+		<buildDate>24/06/2016</buildDate>
 		
 		<company>Sonicle S.r.l.</company>
 		<companyEmail>sonicle@sonicle.com</companyEmail>

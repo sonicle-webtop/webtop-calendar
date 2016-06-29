@@ -80,6 +80,7 @@ import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.WebTopSession.UploadedFile;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.bol.js.JsSimple;
+import com.sonicle.webtop.core.bol.js.JsWizardData;
 import com.sonicle.webtop.core.bol.model.Sharing;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.UserDAO;
@@ -790,7 +791,7 @@ public class Service extends BaseService {
 				
 				LogEntries log = manager.importEvents(calendarId, rea, file, mode);
 				removeUploadedFile(uploadId);
-				new JsonResult(log.print()).printTo(out);
+				new JsonResult(new JsWizardData(log.print())).printTo(out);
 			}
 			
 		} catch(Exception ex) {

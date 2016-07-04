@@ -270,7 +270,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					},
 					columns: [{
 						xtype: 'soiconcolumn',
-						iconField: function(v,rec) {
+						getIconCls: function(v,rec) {
 							var ico = 'single-event';
 							if(rec.get('isBroken')) ico = 'broken-event';
 							if(rec.get('isRecurring')) ico = 'recurring-event';

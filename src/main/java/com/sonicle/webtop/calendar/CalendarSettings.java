@@ -33,33 +33,60 @@
  */
 package com.sonicle.webtop.calendar;
 
-import static com.sonicle.webtop.calendar.CalendarSettings.*;
-import com.sonicle.webtop.core.sdk.BaseServiceSettings;
-import org.joda.time.LocalTime;
-
 /**
  *
  * @author malbinola
  */
-public class CalendarServiceSettings extends BaseServiceSettings {
-
-	public CalendarServiceSettings(String serviceId, String domainId) {
-		super(serviceId, domainId);
-	}
+public class CalendarSettings {
 	
-	public String getDefaultView() {
-		return getString(DEFAULT_PREFIX + VIEW, "w5");
-	}
+	/**
+	 * [user][default]
+	 * [string]
+	 * Calendar view ("d" day, "w5" work week, "w" week, "dw" double-week, "m" month)
+	 */
+	public static final String VIEW = "view";
 	
-	public LocalTime getDefaultWorkdayStart() {
-		return getTime(DEFAULT_PREFIX + WORKDAY_START, "09:00", "HH:mm");
-	}
+	/**
+	 * [user][default]
+	 * [string]
+	 * Workday hours start time
+	 */
+	public static final String WORKDAY_START = "workday.start";
 	
-	public LocalTime getDefaultWorkdayEnd() {
-		return getTime(DEFAULT_PREFIX + WORKDAY_END, "18:00", "HH:mm");
-	}
+	/**
+	 * [user][default]
+	 * [string]
+	 * Workday hours end time
+	 */
+	public static final String WORKDAY_END = "workday.end";
 	
-	public String getDefaultEventReminderDelivery() {
-		return getString(DEFAULT_PREFIX + EVENT_REMINDER_DELIVERY, EVENT_REMINDER_DELIVERY_APP);
-	}
+	/**
+	 * [user][default]
+	 * [string]
+	 * Set anniversary reminder delivery mode
+	 */
+	public static final String EVENT_REMINDER_DELIVERY = "event.reminder.delivery";
+	public static final String EVENT_REMINDER_DELIVERY_APP = "app";
+	public static final String EVENT_REMINDER_DELIVERY_EMAIL = "email";
+	
+	/**
+	 * [user]
+	 * [string]
+	 * Selected folder root node.
+	 */
+	public static final String SELECTED_CALENDAR_ROOTS = "calendar.roots.selected";
+	
+	/**
+	 * [user]
+	 * [string[]]
+	 * List of checked (or visible) folder root nodes.
+	 */
+	public static final String CHECKED_CALENDAR_ROOTS = "calendar.roots.checked";
+	
+	/**
+	 * [user]
+	 * [int[]]
+	 * List of checked (or visible) calendars.
+	 */
+	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
 }

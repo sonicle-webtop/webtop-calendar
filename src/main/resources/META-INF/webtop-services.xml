@@ -23,8 +23,8 @@
 			<modelJsClassName>model.UserOptions</modelJsClassName>
 		</userOptions>
 		
-		<resources>
-			<resource name="CALENDAR" type="share" />
-		</resources>
+		<permissions>
+			<sharePermission group="CALENDAR" />
+		</permissions>
 	</service>
 </services>

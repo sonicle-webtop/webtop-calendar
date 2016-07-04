@@ -34,6 +34,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.web.json.JsonResult;
+import static com.sonicle.webtop.calendar.CalendarSettings.*;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import java.util.HashSet;
@@ -50,51 +51,6 @@ public class CalendarUserSettings extends BaseUserSettings {
 		super(serviceId, profileId);
 		css = new CalendarServiceSettings(serviceId, profileId.getDomainId());
 	}
-	
-	/**
-	 * [string][default]
-	 * Calendar view ("d" day, "w5" work week, "w" week, "dw" double-week, "m" month)
-	 */
-	public static final String VIEW = "view";
-	
-	/**
-	 * [string][default]
-	 * Workday hours start time
-	 */
-	public static final String WORKDAY_START = "workday.start";
-	
-	/**
-	 * [string][default]
-	 * Workday hours end time
-	 */
-	public static final String WORKDAY_END = "workday.end";
-	
-	/**
-	 * [string][default]
-	 * Set anniversary reminder delivery mode
-	 */
-	public static final String EVENT_REMINDER_DELIVERY = "event.reminder.delivery";
-	public static final String EVENT_REMINDER_DELIVERY_APP = "app";
-	public static final String EVENT_REMINDER_DELIVERY_EMAIL = "email";
-	
-	/**
-	 * [string]
-	 * Selected folder root node.
-	 */
-	public static final String SELECTED_CALENDAR_ROOTS = "calendar.roots.selected";
-	
-	/**
-	 * [string[]]
-	 * List of checked (or visible) folder root nodes.
-	 */
-	public static final String CHECKED_CALENDAR_ROOTS = "calendar.roots.checked";
-	
-	/**
-	 * [int[]]
-	 * List of checked (or visible) calendars.
-	 */
-	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
-	
 	
 	public String getView() {
 		String value = getString(VIEW, null);

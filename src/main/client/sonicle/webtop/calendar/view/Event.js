@@ -34,9 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.view.Event', {
 	extend: 'WT.sdk.ModelView',
 	requires: [
-		'Sonicle.form.trigger.Clear',
 		'Sonicle.form.field.Palette',
-		'Sonicle.form.Separator',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.ColorComboBox',
 		'WT.ux.data.EmptyModel',

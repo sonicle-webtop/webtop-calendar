@@ -40,28 +40,28 @@ package com.sonicle.webtop.calendar;
 public class CalendarSettings {
 	
 	/**
-	 * [user][default]
+	 * [user][dbdefault]
 	 * [string]
 	 * Calendar view ("d" day, "w5" work week, "w" week, "dw" double-week, "m" month)
 	 */
 	public static final String VIEW = "view";
 	
 	/**
-	 * [user][default]
+	 * [user][dbdefault]
 	 * [string]
 	 * Workday hours start time
 	 */
 	public static final String WORKDAY_START = "workday.start";
 	
 	/**
-	 * [user][default]
+	 * [user][dbdefault]
 	 * [string]
 	 * Workday hours end time
 	 */
 	public static final String WORKDAY_END = "workday.end";
 	
 	/**
-	 * [user][default]
+	 * [user][dbdefault]
 	 * [string]
 	 * Set anniversary reminder delivery mode
 	 */

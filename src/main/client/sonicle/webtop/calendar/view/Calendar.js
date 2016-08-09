@@ -34,7 +34,6 @@
 Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	extend: 'WT.sdk.ModelView',
 	requires: [
-		'Sonicle.form.trigger.Clear',
 		'Sonicle.form.field.Palette',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.webtop.calendar.store.Reminder',

@@ -48,6 +48,7 @@ import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.servlet.ServletHelper;
 import freemarker.template.Template;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -82,13 +83,13 @@ public class PublicService extends BasePublicService {
 	}
 	
 	@Override
-	public void processDefault(HttpServletRequest request, HttpServletResponse response) throws Exception {
-		String context = extractContext(request.getPathInfo());
+	public void processDefaultAction(HttpServletRequest request, HttpServletResponse response, PrintWriter out) throws Exception {
+		PublicPath path = parsePathInfo(request.getPathInfo());
 		
-		if(context.equals("event")) {
+		if(path.context.equals("event")) {
 			processEvent(request, response);
 		} else {
-			throw new WTException("Invalid context [{0}]", context);
+			throw new WTException("Invalid context [{0}]", path.context);
 		}
 	}
 	

@@ -121,7 +121,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							xtype: 'somulticalendar',
 							border: false,
 							startDay: WT.getStartDay(),
-							highlightMode: me.getOption('view'),
+							highlightMode: me.getVar('view'),
 							width: 184, //TODO: valutare un sistema di misura affidabile
 							height: 298,
 							store: {
@@ -186,7 +186,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.addRef('scheduler', Ext.create({
 					xtype: 'calendarpanel',
 					itemId: 'scheduler',
-					activeView: me.getOption('view'),
+					activeView: me.getVar('view'),
 					startDay: WT.getStartDay(),
 					use24HourTime: WT.getUse24HourTime(),
 					timezone: WT.getTimezone(),
@@ -203,9 +203,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						ddMoveEventText: me.res('socal.ddmoveevent'),
 						ddResizeEventText: me.res('socal.ddresizeevent'),
 						ddDateFormat: 'j/m',
-						scrollStartHour: Math.max(me.getOption('workdayStart').getHours()-1, 0),
-						businessHoursStart: me.getOption('workdayStart').getHours(),
-						businessHoursEnd: me.getOption('workdayEnd').getHours()
+						scrollStartHour: Math.max(me.getVar('workdayStart').getHours()-1, 0),
+						businessHoursStart: me.getVar('workdayStart').getHours(),
+						businessHoursEnd: me.getVar('workdayEnd').getHours()
 					},
 					monthViewCfg: {
 						showHeader: true,
@@ -243,8 +243,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 									start, end;
 							if(cal) {
 								if(ad) {
-									start = soDate.copyTime(me.getOption('workdayStart'), dt);
-									end = soDate.copyTime(me.getOption('workdayEnd'), dt);
+									start = soDate.copyTime(me.getVar('workdayStart'), dt);
+									end = soDate.copyTime(me.getVar('workdayEnd'), dt);
 								} else {
 									start = dt;
 									end = soDate.add(dt, {minutes: 30});
@@ -325,7 +325,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	initActions: function() {
 		var me = this,
-				view = me.getOption('view');
+				view = me.getVar('view');
 		
 		me.addAction('new', 'newEvent', {
 			handler: function() {
@@ -829,7 +829,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					reminder: reminder,
 					startDate: start,
 					endDate: end,
-					timezone: WT.getOption('timezone'),
+					timezone: WT.getVar('timezone'),
 					allDay: allDay,
 					_profileId: ownerId
 				}

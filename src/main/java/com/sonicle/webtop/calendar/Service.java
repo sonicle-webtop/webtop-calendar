@@ -160,9 +160,9 @@ public class Service extends BaseService {
 	}
 	
 	@Override
-	public ClientOptions returnClientOptions() {
+	public ServiceVars returnServiceVars() {
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
-		ClientOptions co = new ClientOptions();
+		ServiceVars co = new ServiceVars();
 		co.put("view", us.getView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));

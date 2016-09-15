@@ -83,13 +83,13 @@ public class PublicService extends BasePublicService {
 	}
 	
 	@Override
-	public void processDefaultAction(HttpServletRequest request, HttpServletResponse response, PrintWriter out) throws Exception {
-		PublicPath path = parsePathInfo(request.getPathInfo());
+	public void processDefaultAction(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		PublicPath path = new PublicPath(request.getPathInfo());
 		
-		if(path.context.equals("event")) {
+		if(path.getContext().equals("event")) {
 			processEvent(request, response);
 		} else {
-			throw new WTException("Invalid context [{0}]", path.context);
+			throw new WTException("Invalid context [{0}]", path.getContext());
 		}
 	}
 	

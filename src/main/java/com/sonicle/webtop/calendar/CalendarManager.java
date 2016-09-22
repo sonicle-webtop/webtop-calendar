@@ -159,12 +159,12 @@ public class CalendarManager extends BaseManager {
 	private final HashMap<UserProfile.Id, String> cacheOwnerToWildcardFolderShare = new HashMap<>();
 	private final HashMap<Integer, String> cacheCalendarToFolderShare = new HashMap<>();
 
-	public CalendarManager() {
-		this(RunContext.getProfileId());
+	public CalendarManager(boolean fastInit) {
+		this(fastInit, RunContext.getProfileId());
 	}
 	
-	public CalendarManager(UserProfile.Id targetProfileId) {
-		super(targetProfileId);
+	public CalendarManager(boolean fastInit, UserProfile.Id targetProfileId) {
+		super(fastInit, targetProfileId);
 	}
 	
 	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {

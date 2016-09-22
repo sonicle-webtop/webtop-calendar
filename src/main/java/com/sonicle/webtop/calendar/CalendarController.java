@@ -58,7 +58,7 @@ public class CalendarController extends BaseController implements IControllerHan
 	
 	@Override
 	public void addProfile(UserProfile.Id profileId) throws WTException {
-		CalendarManager manager = new CalendarManager(profileId);
+		CalendarManager manager = new CalendarManager(true, profileId);
 		
 		// Adds built-in calendar
 		try {
@@ -78,7 +78,7 @@ public class CalendarController extends BaseController implements IControllerHan
 
 	@Override
 	public List<BaseReminder> returnReminders(DateTime now) {
-		CalendarManager manager = new CalendarManager();
+		CalendarManager manager = new CalendarManager(true);
 		return manager.getRemindersToBeNotified(now);
 	}
 }

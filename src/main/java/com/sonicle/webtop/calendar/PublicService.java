@@ -74,7 +74,7 @@ public class PublicService extends BasePublicService {
 
 	@Override
 	public void initialize() {
-		manager = new CalendarManager();
+		manager = new CalendarManager(true);
 	}
 
 	@Override

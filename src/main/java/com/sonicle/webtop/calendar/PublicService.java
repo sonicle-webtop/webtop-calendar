@@ -33,29 +33,24 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.commons.LangUtils;
-import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.ServletUtils;
+import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.calendar.bol.js.JsPubEvent;
 import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.app.WT;
-import com.sonicle.webtop.core.bol.OUser;
-import com.sonicle.webtop.core.dal.UserDAO;
+import com.sonicle.webtop.core.app.WebTopSession;
+import com.sonicle.webtop.core.bol.js.JsWTSPublic;
 import com.sonicle.webtop.core.sdk.BasePublicService;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.servlet.ServletHelper;
-import freemarker.template.Template;
-import java.io.PrintWriter;
-import java.sql.Connection;
+import freemarker.template.TemplateException;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -69,30 +64,158 @@ import org.slf4j.Logger;
  */
 public class PublicService extends BasePublicService {
 	public static final Logger logger = WT.getLogger(PublicService.class);
+	public static final String PUBPATH_CONTEXT_EVENT = "event";
 	
 	private CalendarManager manager;
 
 	@Override
-	public void initialize() {
+	public void initialize() throws Exception {
 		manager = new CalendarManager(true);
 	}
 
 	@Override
-	public void cleanup() {
+	public void cleanup() throws Exception {
 		manager = null;
 	}
 	
 	@Override
 	public void processDefaultAction(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		PublicPath path = new PublicPath(request.getPathInfo());
+		WebTopSession wts = getEnv().getWebTopSession();
 		
-		if(path.getContext().equals("event")) {
-			processEvent(request, response);
-		} else {
-			throw new WTException("Invalid context [{0}]", path.getContext());
+		try {
+			try {
+				if(path.getContext().equals(PUBPATH_CONTEXT_EVENT)) {
+					EventUrlPath eventUrlPath = new EventUrlPath(path.getRemainingPath());
+
+					EventBase event = null;
+					if(!StringUtils.isBlank(eventUrlPath.getPublicUid())) {
+						
+						if(eventUrlPath.isActionReply()) {
+							String aid = ServletUtils.getStringParameter(request, "aid", true);
+							String resp = ServletUtils.getStringParameter(request, "resp", true);
+							
+							String responseStatus = toResponseStatus(resp);
+							if(responseStatus == null) throw new WTException("Invalid resp [{0}]", resp);
+							
+							event = manager.updateEventAttendeeReply(eventUrlPath.getPublicUid(), aid, responseStatus);
+							
+						} else {
+							event = manager.getEventByPublicUid(eventUrlPath.getPublicUid());
+						}
+					}
+					
+					if(event == null) {
+						logger.trace("Event not found [{}]", eventUrlPath.getPublicUid());
+						writeErrorPage(request, response, wts, "eventnotfound");
+						
+					} else {
+						OCalendar calendar = manager.getCalendar(event.getCalendarId());
+						writeEventPage(request, response, wts, "Event", calendar, event);
+					}
+
+				} else {
+					logger.trace("Invalid context [{}]", path.getContext());
+					writeErrorPage(request, response, wts, "badrequest");
+				}
+				
+			} catch(Exception ex) {
+				writeErrorPage(request, response, wts, "badrequest");
+				//logger.trace("Error", t);
+			}
+		} catch(Throwable t) {
+			logger.error("Unexpected error", t);
 		}
 	}
 	
+	private String toResponseStatus(String resp) {
+		if(resp.equals("yes")) {
+			return EventAttendee.RESPONSE_STATUS_ACCEPTED;
+		} else if(resp.equals("no")) {
+			return EventAttendee.RESPONSE_STATUS_DECLINED;
+		} else if(resp.equals("maybe")) {
+			return EventAttendee.RESPONSE_STATUS_TENTATIVE;
+		} else {
+			return null;
+		}
+	}
+	
+	private String buildEventData(OCalendar calendar, EventBase event) {
+		JsPubEvent js = new JsPubEvent();
+		js.id = 1;
+		js.title = event.getTitle();
+		js.when = buildWhenString(event);
+		js.timezone = event.getTimezone();
+		js.where = event.getLocation();
+		js.whereUrl = TplHelper.buildGoogleMapsUrl(event.getLocation());
+		js.calendar = calendar.getName();
+		js.organizer = buildOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
+		js.attendees = buildAttendees(js.id, event);
+		return JsonResult.GSON.toJson(js);
+	}
+	
+	private String buildWhenString(EventBase event) {
+		UserProfile.Id profileId = new UserProfile.Id(event.getCalendarProfileId());
+		CoreUserSettings cus = new CoreUserSettings(profileId);
+		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
+		DateTimeFormatter dtFmt = DateTimeUtils.createFormatter(pattern, etz);
+		return MessageFormat.format("{0} - {1}", dtFmt.print(event.getStartDate()), dtFmt.print(event.getEndDate()));
+	}
+	
+	private String buildOrganizer(UserProfile.Id organizerPid) {
+		return StringUtils.defaultString(WT.getUserData(organizerPid).getDisplayName(), organizerPid.toString());
+	}
+	
+	private ArrayList<JsPubEvent.Attendee> buildAttendees(int id, EventBase event) {
+		ArrayList<JsPubEvent.Attendee> attendees = new ArrayList<>();
+		for(EventAttendee attendee : event.getAttendees()) {
+			attendees.add(new JsPubEvent.Attendee(id, attendee));
+		}
+		return attendees;
+	}
+	
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, OCalendar calendar, EventBase event) throws IOException, TemplateException {
+		writeEventPage(request, response, wts, view, calendar, event, new JsWTSPublic.Vars());
+	}
+	
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, OCalendar calendar, EventBase event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
+		vars.put("view", view);
+		vars.put("eventData", buildEventData(calendar, event));
+		writePage(response, wts, vars, ServletUtils.getBaseURL(request));
+	}
+	
+	private void writeErrorPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String reskey) throws IOException, TemplateException {
+		JsWTSPublic.Vars vars = new JsWTSPublic.Vars();
+		vars.put("view", "Error");
+		vars.put("reskey", reskey);
+		writePage(response, wts, vars, ServletUtils.getBaseURL(request));
+	}
+	
+	public static class EventUrlPath extends UrlPathTokens {
+		public final static String TOKEN_REPLY = "reply";
+			
+		public EventUrlPath(String remainingPath) {
+			super(StringUtils.split(remainingPath, "/", 2));
+		}
+		
+		public String getPublicUid() {
+			return getTokenAt(0);
+		}
+		
+		public String getAction() {
+			return getTokenAt(1);
+		}
+		
+		public boolean isActionReply() {
+			return StringUtils.equals(getAction(), TOKEN_REPLY);
+		}
+	}
+	
+	
+	
+	
+	/*
 	private void processEvent(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		Map tplMap = new HashMap();
 		String template = null;
@@ -194,7 +317,7 @@ public class PublicService extends BasePublicService {
 		}
 	}
 	
-	private String buildWhenString(EventBase se) {
+	private String buildWhenString99(EventBase se) {
 		UserProfile.Id profileId = new UserProfile.Id(se.getCalendarProfileId());
 		CoreUserSettings cus = new CoreUserSettings(profileId);
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
@@ -205,7 +328,7 @@ public class PublicService extends BasePublicService {
 	
 	private Map buildEventReplyMap(EventBase event) {
 		Map map = new HashMap();
-		String when = buildWhenString(event);
+		String when = buildWhenString99(event);
 		String organizer = getOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
 		
 		map.put("title", event.getTitle());
@@ -219,7 +342,7 @@ public class PublicService extends BasePublicService {
 	
 	private Map buildEventViewMap(EventBase event) {
 		Map map = new HashMap();
-		String when = buildWhenString(event);
+		String when = buildWhenString99(event);
 		String organizer = getOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
 		
 		map.put("title", event.getTitle());
@@ -265,4 +388,5 @@ public class PublicService extends BasePublicService {
 			super(cause, message, arguments);
 		}
 	}
+	*/
 }

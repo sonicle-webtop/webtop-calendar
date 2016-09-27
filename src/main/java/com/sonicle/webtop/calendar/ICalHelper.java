@@ -430,7 +430,7 @@ public class ICalHelper {
 	}
 	
 	public static void exportICal(String prodId, boolean methodCancel, ArrayList<EventBase> events, OutputStream os) throws Exception {
-		org.joda.time.DateTime now = DateTimeUtils.now();
+		//org.joda.time.DateTime now = DateTimeUtils.now();
 		
 		Calendar ical = new Calendar();
 		ical.getProperties().add(new ProdId(prodId));

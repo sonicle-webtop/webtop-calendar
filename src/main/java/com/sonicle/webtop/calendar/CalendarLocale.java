@@ -45,21 +45,22 @@ public class CalendarLocale {
     public static final String REMINDER_HOURS = "reminder.hours";
 	
 	public static final String INVITATION_SUBJECT_X = "invitation.subject.{0}";
-	
-	public static final String TPL_INVITATION_WHEN_START = "tpl.invitation.when.start";
-	public static final String TPL_INVITATION_WHEN_END = "tpl.invitation.when.end";
-	public static final String TPL_INVITATION_WHERE = "tpl.invitation.where";
-	public static final String TPL_INVITATION_WHERE_MAP = "tpl.invitation.where.map";
-	public static final String TPL_INVITATION_CALENDAR = "tpl.invitation.calendar";
-	public static final String TPL_INVITATION_WHO = "tpl.invitation.who";
-	public static final String TPL_INVITATION_WHO_ORGANIZER = "tpl.invitation.who.organizer";
-	public static final String TPL_INVITATION_GOING = "tpl.invitation.going";
-	public static final String TPL_INVITATION_GOING_YES = "tpl.invitation.going.yes";
-	public static final String TPL_INVITATION_GOING_MAYBE = "tpl.invitation.going.maybe";
-	public static final String TPL_INVITATION_GOING_NO = "tpl.invitation.going.no";
-	public static final String TPL_INVITATION_FOOTER_HEADER = "tpl.invitation.footer.header";
-	public static final String TPL_INVITATION_FOOTER_BECAUSE = "tpl.invitation.footer.because";
-	public static final String TPL_INVITATION_FOOTER_DISCLAIMER = "tpl.invitation.footer.disclaimer";
+	public static final String TPL_EMAIL_INVITATION_CRUD_UPDATE = "tpl.email.invitation.crud.update";
+	public static final String TPL_EMAIL_INVITATION_CRUD_DELETE = "tpl.email.invitation.crud.delete";
+	public static final String TPL_EMAIL_INVITATION_WHEN_START = "tpl.email.invitation.when.start";
+	public static final String TPL_EMAIL_INVITATION_WHEN_END = "tpl.email.invitation.when.end";
+	public static final String TPL_EMAIL_INVITATION_WHERE = "tpl.email.invitation.where";
+	public static final String TPL_EMAIL_INVITATION_WHERE_MAP = "tpl.email.invitation.where.map";
+	public static final String TPL_EMAIL_INVITATION_ORGANIZER = "tpl.email.invitation.organizer";
+	public static final String TPL_EMAIL_INVITATION_WHO = "tpl.email.invitation.who";
+	public static final String TPL_EMAIL_INVITATION_GOING = "tpl.email.invitation.going";
+	public static final String TPL_EMAIL_INVITATION_GOING_YES = "tpl.email.invitation.going.yes";
+	public static final String TPL_EMAIL_INVITATION_GOING_MAYBE = "tpl.email.invitation.going.maybe";
+	public static final String TPL_EMAIL_INVITATION_GOING_NO = "tpl.email.invitation.going.no";
+	public static final String TPL_EMAIL_INVITATION_VIEW = "tpl.email.invitation.view";
+	public static final String TPL_EMAIL_INVITATION_FOOTER_HEADER = "tpl.email.invitation.footer.header";
+	public static final String TPL_EMAIL_INVITATION_FOOTER_BECAUSE = "tpl.email.invitation.footer.because";
+	public static final String TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER = "tpl.email.invitation.footer.disclaimer";
 	
 	
 	public static final String PUB_SUMMARY = "pub.summary";

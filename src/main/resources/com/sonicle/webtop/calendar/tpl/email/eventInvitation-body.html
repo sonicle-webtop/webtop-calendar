@@ -1,0 +1,82 @@
+<div style="padding-bottom:15px;font-size:13px;color:#222;white-space:pre-wrap!important;white-space:-moz-pre-wrap!important;white-space:-pre-wrap!important;white-space:-o-pre-wrap!important;white-space:pre;word-wrap:break-word">
+    <span>${event.description}</span>
+</div>
+<!--
+<#if detailsUrl??>
+<div style="float:right;font-weight:bold;font-size:13px">
+    <a href="${detailsUrl}" style="color:#20c;white-space:nowrap">${i18n.details} &raquo;</a>
+    <br>
+</div>
+</#if>
+-->
+<table cellpadding="0" cellspacing="0" border="0" summary="">
+    <tr>
+        <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+            <div><i style="font-style:normal">${i18n.whenStart}</i></div>
+        </td>
+        <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+            ${event.startDate} <span style="color:#888">${event.timezone}</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+            <div><i style="font-style:normal">${i18n.whenEnd}</i></div>
+        </td>
+        <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+            ${event.endDate} <span style="color:#888">${event.timezone}</span>
+        </td>
+    </tr>
+    <#if event.location??>
+    <tr>
+        <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+            <div><i style="font-style:normal">${i18n.where}</i></div>
+        </td>
+        <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+            <span>${event.location}</span>
+            <span dir="ltr"> (<a href='${event.locationUrl}' style="color:#20c;white-space:nowrap" target="_blank" itemprop="map">${i18n.whereMap}</a>)</span>
+        </td>
+    </tr>
+    </#if>
+    <tr>
+        <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+            <div><i style="font-style:normal">${i18n.organizer}</i></div>
+        </td>
+        <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+            <span>${event.organizer}</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+            <div><i style="font-style:normal">${i18n.who}</i></div>
+        </td>
+        <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+            <table cellspacing="0" cellpadding="0">
+                <#list eventAttendees as attendee>
+                <tr>
+                    <td style="padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222">
+                        <span style="font-family:Courier New,monospace">&#x2022;</span>
+                    </td>
+                    <td style="padding-right:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222">
+                        <div><div style="margin:0 0 0.3em 0">
+                                <span><#if attendee.cn??>${attendee.cn}</#if><#if attendee.address??><#if attendee.cn??> - </#if><a href="mailto:${attendee.address}" target="_blank">${attendee.address}</a></#if></span>
+                            </div></div>
+                    </td>
+                </tr>
+                </#list>
+            </table>
+        </td>
+    </tr>
+</table>
+<#if replyYesUrl??>
+<p style="color:#222;font-size:13px;margin:0">
+    <span style="color:#888">${i18n.going}&nbsp;&nbsp;&nbsp;</span>
+    <wbr><strong>
+        <a href="${replyYesUrl}" style="color:#20c;white-space:nowrap" itemprop="url">${i18n.goingYes}</a>
+        <span style="margin:0 0.4em;font-weight:normal"> - </span>
+        <a href="${replyMaybeUrl}" style="color:#20c;white-space:nowrap" itemprop="url">${i18n.goingMaybe}</a>
+        <span style="margin:0 0.4em;font-weight:normal"> - </span>
+        <a href="${replyNoUrl}" style="color:#20c;white-space:nowrap" itemprop="url">${i18n.goingNo}</a>
+    </strong>&nbsp;&nbsp;&nbsp;&nbsp;<wbr>
+    <a href="${viewUrl}" style="color:#20c;white-space:nowrap" itemprop="url">${i18n.view} &raquo;</a>
+</p>
+</#if>

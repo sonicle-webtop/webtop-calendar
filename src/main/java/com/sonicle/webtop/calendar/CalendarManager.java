@@ -36,6 +36,7 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.MailUtils;
+import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
@@ -603,7 +604,7 @@ public class CalendarManager extends BaseManager {
 	
 	public EventBase getEventByPublicUid(String publicUid) throws WTException {
 		String eventKey = eventKeyByPublicUid(publicUid);
-		if(eventKey == null) throw new WTException("Unable to find event with UID [{0}]", publicUid);
+		if(eventKey == null) return null;
 		return getEvent(eventKey);
 	}
 	
@@ -839,6 +840,8 @@ public class CalendarManager extends BaseManager {
 				
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(evt.getEventId()));
+				// Handle attendees invitation
+				notifyAttendees(Crud.UPDATE, getEvent(eventKey));
 				
 			} else {
 				throw new WTException("Unable to move recurring event instance [{}]", ekey.eventId);
@@ -869,6 +872,8 @@ public class CalendarManager extends BaseManager {
 			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
 			checkRightsOnCalendarElements(originalEvent.getCalendarId(), "DELETE");
 			
+			EventBase evtBase = getEvent(eventKey); // Gets event for later use
+			
 			String type = guessEventType(ekey, originalEvent);
 			if(type.equals(EVENT_NORMAL)) {
 				if(target.equals(TARGET_THIS)) {
@@ -877,6 +882,8 @@ public class CalendarManager extends BaseManager {
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(originalEvent.getEventId()));
+					// Handle attendees invitation
+					//notifyAttendees(Crud.DELETE, evtBase);
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
@@ -889,6 +896,8 @@ public class CalendarManager extends BaseManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
 					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
+					// Handle attendees invitation
+					//notifyAttendees(Crud.DELETE, evtBase);
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
@@ -1217,6 +1226,9 @@ public class CalendarManager extends BaseManager {
 			
 			EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
 			int ret = eadao.updateAttendeeResponse(con, attendeeUid, ve.getEventId(), response);
+			
+			//TODO: inviare email all'organizzatore con la notifica della risposta
+			
 			return (ret == 1) ? getEvent(ve.getKey()) : null;
 			
 		} catch(Exception ex) {
@@ -1525,9 +1537,6 @@ public class CalendarManager extends BaseManager {
 				String timeFormat = cus.getShortTimeFormat();
 				
 				boolean methodCancel = crud.equals(Crud.DELETE);
-				InternetAddress from = ud.getEmail();
-				String subjectFmt = lookupResource(getLocale(), MessageFormat.format(CalendarLocale.INVITATION_SUBJECT_X, crud));
-				String subject = MessageFormat.format(subjectFmt, buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, event));
 				
 				// Creates ical content
 				String icalText = null;
@@ -1549,12 +1558,19 @@ public class CalendarManager extends BaseManager {
 				MimeBodyPart icsPart = ICalHelper.createInvitationICalPart(icalText, filename);
 				MimeBodyPart calendarPart = ICalHelper.createInvitationCalendarPart(methodCancel, icalText, filename);
 				
+				String source = NotificationHelper.buildSource(getLocale(), SERVICE_ID);
+				String subject = TplHelper.buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, crud, event);
+				String because = lookupResource(getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
+				
+				String servicePublicUrl = WT.getServicePublicUrl(getTargetProfileId().getDomainId(), SERVICE_ID);
+				InternetAddress from = ud.getEmail();
 				for(EventAttendee attendee : toBeNotified) {
 					InternetAddress to = new InternetAddress(attendee.getRecipient());
 					if(MailUtils.isAddressValid(to)) {
-						String body = buildEventInvitationEmailBody(getLocale(), dateFormat, timeFormat, attendee.getAddress(), event);
+						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, attendee.getAddress(), servicePublicUrl);
+						final String html = TplHelper.buildInvitationTpl(getLocale(), crud, source, attendee.getAddress(), event.getTitle(), customBody, because);
 						try {
-							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, body, new MimeBodyPart[]{icsPart, calendarPart});
+							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{icsPart, calendarPart});
 						} catch(MessagingException ex) {
 							logger.warn("Problems encountered sending notification to {}", to.toString());
 						}
@@ -1566,68 +1582,15 @@ public class CalendarManager extends BaseManager {
 		}		
 	}
 	
-	public String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, EventBase event) {
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
-		sb.append(" - ");
-		sb.append(fmt.print(event.getStartDate()));
-		sb.append(" -> ");
-		sb.append(fmt.print(event.getEndDate()));
-		sb.append(" (");
-		sb.append(event.getTimezone());
-		sb.append(")");
-		
-		return sb.toString();
+	public static String buildEventPublicUrl(String publicBaseUrl, String eventPublicId) {
+		String s = PublicService.PUBPATH_CONTEXT_EVENT + "/" + eventPublicId;
+		return PathUtils.concatPaths(publicBaseUrl, s);
 	}
 	
-	public String buildEventInvitationEmailBody(Locale locale, String dateFormat, String timeFormat, String recipientEmail, EventBase event) {
-		try {
-			OCalendar calendar = getCalendar(event.getCalendarId());
-			if(calendar == null) throw new WTException("Calendar not found [{0}]", event.getCalendarId());
-			
-			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
-			String because = lookupResource(locale, CalendarLocale.TPL_INVITATION_FOOTER_BECAUSE);
-			
-			MapItem i18nMap = new MapItem();
-			i18nMap.putAll(TplHelper.generateFooterI18nStrings(SERVICE_ID, locale, source, recipientEmail, because));
-			i18nMap.putAll(TplHelper.generateEventI18nStrings(SERVICE_ID, locale));
-			
-			DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
-			MapItem eventMap = new MapItem();
-			eventMap.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
-			eventMap.put("description", StringUtils.defaultIfBlank(event.getDescription(), ""));
-			eventMap.put("timezone", event.getTimezone());
-			eventMap.put("startDate", fmt.print(event.getStartDate()));
-			eventMap.put("endDate", fmt.print(event.getEndDate()));
-			eventMap.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
-			eventMap.put("calendarName", calendar.getName());
-			eventMap.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
-			
-			MapItemList eventAttendees = new MapItemList();
-			for(EventAttendee attendee : event.getAttendees()) {
-				MapItem item = new MapItem();
-				String cn = attendee.getCN();
-				String address = attendee.getAddress();
-				item.put("cn", StringUtils.isBlank(cn) ? null : cn);
-				item.put("address", StringUtils.isBlank(address) ? null : address);
-				eventAttendees.add(item);
-			}
-			
-			MapItem map = new MapItem();
-			map.put("i18n", i18nMap);
-			map.put("event", eventMap);
-			map.put("eventAttendees", eventAttendees);
-			map.put("recipientEmail", StringUtils.defaultString(recipientEmail));
-			return WT.buildTemplate(SERVICE_ID, "tpl/event-invitation.html", map);
-			
-		} catch(IOException | TemplateException | AddressException | WTException ex) {
-			logger.error("Error generating body", ex);
-			return null;
-		}
+	public static String buildEventReplyPublicUrl(String publicBaseUrl, String eventPublicId, String attendeePublicId, String resp) {
+		String s = PublicService.PUBPATH_CONTEXT_EVENT + "/" + eventPublicId + "/" + PublicService.EventUrlPath.TOKEN_REPLY + "?aid=" + attendeePublicId + "&resp=" + resp;
+		return PathUtils.concatPaths(publicBaseUrl, s);
 	}
-	
 	
 	
 	

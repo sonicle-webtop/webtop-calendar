@@ -44,9 +44,9 @@ public class CalendarLocale {
     public static final String REMINDER_MINUTES = "reminder.minutes";
     public static final String REMINDER_HOURS = "reminder.hours";
 	
-	public static final String INVITATION_SUBJECT_X = "invitation.subject.{0}";
-	public static final String TPL_EMAIL_INVITATION_CRUD_UPDATE = "tpl.email.invitation.crud.update";
-	public static final String TPL_EMAIL_INVITATION_CRUD_DELETE = "tpl.email.invitation.crud.delete";
+	public static final String EMAIL_INVITATION_SUBJECT_X = "email.invitation.subject.{0}";
+	public static final String TPL_EMAIL_INVITATION_MSG_UPDATED = "tpl.email.invitation.msg.updated";
+	public static final String TPL_EMAIL_INVITATION_MSG_DELETED = "tpl.email.invitation.msg.deleted";
 	public static final String TPL_EMAIL_INVITATION_WHEN_START = "tpl.email.invitation.when.start";
 	public static final String TPL_EMAIL_INVITATION_WHEN_END = "tpl.email.invitation.when.end";
 	public static final String TPL_EMAIL_INVITATION_WHERE = "tpl.email.invitation.where";
@@ -61,29 +61,12 @@ public class CalendarLocale {
 	public static final String TPL_EMAIL_INVITATION_FOOTER_HEADER = "tpl.email.invitation.footer.header";
 	public static final String TPL_EMAIL_INVITATION_FOOTER_BECAUSE = "tpl.email.invitation.footer.because";
 	public static final String TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER = "tpl.email.invitation.footer.disclaimer";
-	
-	
-	public static final String PUB_SUMMARY = "pub.summary";
-	public static final String PUB_WHEN = "pub.when";
-	public static final String PUB_LOCATION = "pub.location";
-	public static final String PUB_MAP = "pub.map";
-	public static final String PUB_ORGANIZER = "pub.organizer";
-	public static final String PUB_ATTENDEES = "pub.attendees";
-	public static final String PUB_GOING = "pub.going";
-	public static final String PUB_REPLY_YES = "pub.reply.yes";
-	public static final String PUB_REPLY_NO = "pub.reply.no";
-	public static final String PUB_REPLY_MAYBE = "pub.reply.maybe";
-	public static final String PUB_VIEW_REPLIES = "pub.viewReplies";
-	public static final String PUB_CONFIRM_YES = "pub.confirm.yes";
-	public static final String PUB_CONFIRM_NO = "pub.confirm.no";
-	public static final String PUB_CONFIRM_MAYBE = "pub.confirm.maybe";
-	public static final String PUB_RESPONSE_UNKNOWN = "pub.response.unknown";
-	public static final String PUB_RESPONSE_DECLINED = "pub.response.declined";
-	public static final String PUB_RESPONSE_TENTATIVE = "pub.response.tentative";
-	public static final String PUB_RESPONSE_ACCEPTED = "pub.response.accepted";
-	public static final String PUB_SIGNATURE = "pub.signature";
-	public static final String PUB_SENT_FROM = "pub.sentFrom";
-	public static final String PUB_DISCLAIMER = "pub.disclaimer";
-	public static final String PUB_NOTFOUND_TITLE = "pub.notfound.title";
-	public static final String PUB_NOTFOUND_MESSAGE = "pub.notfound.message";
+	public static final String EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED = "email.responseUpdate.subject.accepted";
+	public static final String EMAIL_RESPONSEUPDATE_SUBJECT_TENTATIVE = "email.responseUpdate.subject.tentative";
+	public static final String EMAIL_RESPONSEUPDATE_SUBJECT_DECLINED = "email.responseUpdate.subject.declined";
+	public static final String EMAIL_RESPONSEUPDATE_SUBJECT_OTHER = "email.responseUpdate.subject.other";
+	public static final String TPL_EMAIL_RESPONSEUPDATE_MSG_ACCEPTED = "tpl.email.responseUpdate.msg.accepted";
+	public static final String TPL_EMAIL_RESPONSEUPDATE_MSG_TENTATIVE = "tpl.email.responseUpdate.msg.tentative";
+	public static final String TPL_EMAIL_RESPONSEUPDATE_MSG_DECLINED = "tpl.email.responseUpdate.msg.declined";
+	public static final String TPL_EMAIL_RESPONSEUPDATE_MSG_OTHER = "tpl.email.responseUpdate.msg.other";
 }

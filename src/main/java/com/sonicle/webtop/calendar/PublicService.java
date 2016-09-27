@@ -98,7 +98,7 @@ public class PublicService extends BasePublicService {
 							String responseStatus = toResponseStatus(resp);
 							if(responseStatus == null) throw new WTException("Invalid resp [{0}]", resp);
 							
-							event = manager.updateEventAttendeeReply(eventUrlPath.getPublicUid(), aid, responseStatus);
+							event = manager.updateEventAttendeeResponse(eventUrlPath.getPublicUid(), aid, responseStatus);
 							
 						} else {
 							event = manager.getEventByPublicUid(eventUrlPath.getPublicUid());

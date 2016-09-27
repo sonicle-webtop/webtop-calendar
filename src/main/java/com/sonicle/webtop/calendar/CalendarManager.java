@@ -1217,7 +1217,7 @@ public class CalendarManager extends BaseManager {
 		return createEventAttendeeList(attendees);
 	}
 	
-	public EventBase updateEventAttendeeReply(String eventUid, String attendeeUid, String response) throws Exception {
+	public EventBase updateEventAttendeeResponse(String eventUid, String attendeeUid, String response) throws Exception {
 		Connection con = null;
 		
 		try {
@@ -1226,10 +1226,13 @@ public class CalendarManager extends BaseManager {
 			
 			EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
 			int ret = eadao.updateAttendeeResponse(con, attendeeUid, ve.getEventId(), response);
-			
-			//TODO: inviare email all'organizzatore con la notifica della risposta
-			
-			return (ret == 1) ? getEvent(ve.getKey()) : null;
+			if(ret == 1) {
+				EventBase evtBase = getEvent(ve.getKey());
+				notifyOrganizer(getLocale(), evtBase, attendeeUid);
+				return evtBase;
+			} else {
+				return null;
+			}
 			
 		} catch(Exception ex) {
 			throw ex;
@@ -1522,6 +1525,39 @@ public class CalendarManager extends BaseManager {
 		return alerts;
 	}
 	
+	private void notifyOrganizer(Locale locale, EventBase event, String attendeeId) {
+		String targetDomainId = getTargetProfileId().getDomainId();
+		CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
+		String dateFormat = cus.getShortDateFormat();
+		String timeFormat = cus.getShortTimeFormat();
+		
+		try {
+			// Find the attendee (in event) that has updated its response
+			EventAttendee targetAttendee = null;
+			for(EventAttendee attendee : event.getAttendees()) {
+				if(attendee.getAttendeeId().equals(attendeeId)) {
+					targetAttendee = attendee;
+					break;
+				}
+			}
+			if(targetAttendee == null) throw new WTException("Attendee not found [{0}]", attendeeId);
+			
+			InternetAddress from = WT.getNotificationAddress(targetDomainId);
+			InternetAddress to = MailUtils.buildInternetAddress(event.getOrganizer());
+			if(!MailUtils.isAddressValid(to)) throw new WTException("Organizer address not valid [{0}]", event.getOrganizer());
+			
+			String servicePublicUrl = WT.getServicePublicUrl(targetDomainId, SERVICE_ID);
+			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
+			String subject = TplHelper.buildResponseUpdateEmailSubject(locale, event, targetAttendee);
+			String customBody = TplHelper.buildResponseUpdateBodyTpl(locale, dateFormat, timeFormat, event, servicePublicUrl);
+			
+			String html = TplHelper.buildResponseUpdateTpl(locale, source, event.getTitle(), customBody, targetAttendee);
+			WT.sendEmail(getTargetProfileId(), true, from, to, subject, html);
+		} catch(Exception ex) {
+			logger.warn("Unable to notify organizer", ex);
+		}	
+	}
+	
 	private void notifyAttendees(String crud, EventBase event) {
 		try {
 			// Finds attendees to be notified...
@@ -1553,32 +1589,31 @@ public class CalendarManager extends BaseManager {
 				}
 				
 				// Creates message parts
-				//String filename = "calendar-invite.ics";
-				String filename = MessageFormat.format("{0}-invite.ics", WT.getPlatformName().toLowerCase());
+				String filename = WT.getPlatformName().toLowerCase() + "-invite.ics";
 				MimeBodyPart icsPart = ICalHelper.createInvitationICalPart(icalText, filename);
 				MimeBodyPart calendarPart = ICalHelper.createInvitationCalendarPart(methodCancel, icalText, filename);
 				
 				String source = NotificationHelper.buildSource(getLocale(), SERVICE_ID);
-				String subject = TplHelper.buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, crud, event);
+				String subject = TplHelper.buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, event, crud);
 				String because = lookupResource(getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
 				
 				String servicePublicUrl = WT.getServicePublicUrl(getTargetProfileId().getDomainId(), SERVICE_ID);
 				InternetAddress from = ud.getEmail();
 				for(EventAttendee attendee : toBeNotified) {
-					InternetAddress to = new InternetAddress(attendee.getRecipient());
+					InternetAddress to = MailUtils.buildInternetAddress(attendee.getRecipient());
 					if(MailUtils.isAddressValid(to)) {
 						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, attendee.getAddress(), servicePublicUrl);
 						final String html = TplHelper.buildInvitationTpl(getLocale(), crud, source, attendee.getAddress(), event.getTitle(), customBody, because);
 						try {
 							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{icsPart, calendarPart});
 						} catch(MessagingException ex) {
-							logger.warn("Problems encountered sending notification to {}", to.toString());
+							logger.warn("Unable to send notification to attendee {}", to.toString());
 						}
 					}
 				}
 			}
 		} catch(Exception ex) {
-			logger.error("Error notifying attendees", ex);
+			logger.warn("Unable notify attendees", ex);
 		}		
 	}
 	

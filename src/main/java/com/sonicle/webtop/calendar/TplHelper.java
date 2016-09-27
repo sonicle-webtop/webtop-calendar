@@ -61,7 +61,7 @@ import org.joda.time.format.DateTimeFormatter;
 public class TplHelper {
 	private static final String SERVICE_ID = "com.sonicle.webtop.calendar";
 	
-	public static String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, String crud, EventBase event) {
+	public static String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, EventBase event, String crud) {
 		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
 		StringBuilder sb = new StringBuilder();
 		
@@ -73,12 +73,9 @@ public class TplHelper {
 		sb.append(fmt.print(event.getStartDate()));
 		sb.append(" - ");
 		sb.append(fmt.print(event.getEndDate()));
-		//sb.append(" (");
-		//sb.append(event.getTimezone());
-		//sb.append(")");
 		
-		String subjectFmt = WT.lookupResource(SERVICE_ID, locale, MessageFormat.format(CalendarLocale.INVITATION_SUBJECT_X, crud));
-		return NotificationHelper.buildSubject(locale, SERVICE_ID, MessageFormat.format(subjectFmt, sb.toString()));
+		String pattern = WT.lookupResource(SERVICE_ID, locale, MessageFormat.format(CalendarLocale.EMAIL_INVITATION_SUBJECT_X, crud));
+		return NotificationHelper.buildSubject(locale, SERVICE_ID, MessageFormat.format(pattern, sb.toString()));
 	}
 	
 	public static String buildEventInvitationBodyTpl(Locale locale, String dateFormat, String timeFormat, EventBase event, String recipientEmail, String servicePublicUrl) throws IOException, TemplateException, AddressException {
@@ -137,15 +134,15 @@ public class TplHelper {
 		notMap.putAll(createInvitationTplStrings(locale, crud, source, recipientEmail, bodyHeader, customBodyHtml, becauseString));
 		MapItem map = new MapItem();
 		map.put("recipientEmail", StringUtils.defaultString(recipientEmail));
-		return NotificationHelper.buildCustomBodyTpl(notMap, map);
+		return NotificationHelper.builTpl(notMap, map);
 	}
 	
 	public static Map<String, String> createInvitationTplStrings(Locale locale, String crud, String source, String recipientEmail, String bodyHeader, String customBody, String becauseString) {
 		HashMap<String, String> map = new HashMap<>();
 		if(StringUtils.equals(crud, "update")) {
-			map.put("greenMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_CRUD_UPDATE));
+			map.put("greenMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_UPDATED));
 		} else if(StringUtils.equals(crud, "delete")) {
-			map.put("redMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_CRUD_DELETE));
+			map.put("redMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_DELETED));
 		}
 		map.put("bodyHeader", StringUtils.defaultString(bodyHeader));
 		map.put("customBody", StringUtils.defaultString(customBody));
@@ -154,6 +151,62 @@ public class TplHelper {
 		foomsg += "<br>"+WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER);
 		map.put("footerMessage", foomsg);
 		return map;
+	}
+	
+	public static String buildResponseUpdateEmailSubject(Locale locale, EventBase event, EventAttendee attendee) {
+		String pattern;
+		if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED);
+		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_TENTATIVE);
+		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_DECLINED)) {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_DECLINED);
+		} else {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_OTHER);
+		}
+		return MessageFormat.format(pattern, event.getTitle());
+	}
+	
+	public static String buildResponseUpdateBodyTpl(Locale locale, String dateFormat, String timeFormat, EventBase event, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+		MapItem i18n = new MapItem();
+		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
+		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
+		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
+		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("view", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
+		
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+		MapItem evt = new MapItem();
+		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
+		evt.put("timezone", event.getTimezone());
+		evt.put("startDate", fmt.print(event.getStartDate()));
+		evt.put("endDate", fmt.print(event.getEndDate()));
+		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
+		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
+		
+		String viewUrl = CalendarManager.buildEventPublicUrl(servicePublicUrl, event.getPublicUid());
+		
+		MapItem vars = new MapItem();
+		vars.put("i18n", i18n);
+		vars.put("event", evt);
+		vars.put("viewUrl", viewUrl);
+		
+		return WT.buildTemplate(SERVICE_ID, "tpl/email/responseUpdate-body.html", vars);
+	}
+	
+	public static String buildResponseUpdateTpl(Locale locale, String source, String bodyHeader, String customBodyHtml, EventAttendee attendee) throws IOException, TemplateException {
+		MapItem notMap = new MapItem();
+		notMap.putAll(NotificationHelper.createNoReplayCustomBodyTplStrings(locale, source, bodyHeader, customBodyHtml));
+		if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
+			notMap.put("greenMessage", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_ACCEPTED), attendee.getRecipient()));
+		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
+			notMap.put("yellowMessage", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_TENTATIVE), attendee.getRecipient()));
+		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_DECLINED)) {
+			notMap.put("redMessage", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_DECLINED), attendee.getRecipient()));
+		} else {
+			notMap.put("greyMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_OTHER));
+		}
+		return NotificationHelper.builTpl(notMap, null);
 	}
 	
 	public static String buildGoogleMapsUrl(String s) {

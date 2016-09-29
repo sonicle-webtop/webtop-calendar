@@ -883,7 +883,7 @@ public class CalendarManager extends BaseManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(originalEvent.getEventId()));
 					// Handle attendees invitation
-					//notifyAttendees(Crud.DELETE, evtBase);
+					notifyAttendees(Crud.DELETE, evtBase);
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
@@ -897,7 +897,7 @@ public class CalendarManager extends BaseManager {
 					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
 					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
 					// Handle attendees invitation
-					//notifyAttendees(Crud.DELETE, evtBase);
+					notifyAttendees(Crud.DELETE, evtBase);
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
@@ -1602,8 +1602,8 @@ public class CalendarManager extends BaseManager {
 				for(EventAttendee attendee : toBeNotified) {
 					InternetAddress to = MailUtils.buildInternetAddress(attendee.getRecipient());
 					if(MailUtils.isAddressValid(to)) {
-						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, attendee.getAddress(), servicePublicUrl);
-						final String html = TplHelper.buildInvitationTpl(getLocale(), crud, source, attendee.getAddress(), event.getTitle(), customBody, because);
+						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
+						final String html = TplHelper.buildInvitationTpl(getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
 						try {
 							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{icsPart, calendarPart});
 						} catch(MessagingException ex) {

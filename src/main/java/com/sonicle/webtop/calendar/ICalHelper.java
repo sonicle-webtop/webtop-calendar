@@ -63,6 +63,7 @@ import net.fortuna.ical4j.model.property.Method;
 import net.fortuna.ical4j.model.property.Organizer;
 import net.fortuna.ical4j.model.property.ProdId;
 import net.fortuna.ical4j.model.property.RRule;
+import net.fortuna.ical4j.model.property.Sequence;
 import net.fortuna.ical4j.model.property.Transp;
 import net.fortuna.ical4j.model.property.Uid;
 import net.fortuna.ical4j.model.property.Version;
@@ -458,6 +459,7 @@ public class ICalHelper {
 		
 		// LastModified
 		ICal4jUtils.addProperty(ve, new LastModified(ICal4jUtils.createDateTime(event.getRevisionTimestamp().withZone(DateTimeZone.UTC))));
+		ICal4jUtils.addProperty(ve, new Sequence(1));
 		
 		// Uid
 		ICal4jUtils.addProperty(ve, new Uid(event.getPublicUid()));

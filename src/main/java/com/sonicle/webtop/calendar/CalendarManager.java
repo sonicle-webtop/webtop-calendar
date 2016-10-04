@@ -40,8 +40,6 @@ import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
-import com.sonicle.commons.web.json.MapItem;
-import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.security.DomainAccount;
 import com.sonicle.webtop.calendar.bol.model.EventBase;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
@@ -98,7 +96,6 @@ import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
 import com.sonicle.webtop.core.util.NotificationHelper;
-import freemarker.template.TemplateException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -106,7 +103,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -117,7 +113,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import javax.mail.MessagingException;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import net.fortuna.ical4j.model.PeriodList;
@@ -159,10 +154,6 @@ public class CalendarManager extends BaseManager {
 	private final HashMap<UserProfile.Id, String> cacheOwnerToRootShare = new HashMap<>();
 	private final HashMap<UserProfile.Id, String> cacheOwnerToWildcardFolderShare = new HashMap<>();
 	private final HashMap<Integer, String> cacheCalendarToFolderShare = new HashMap<>();
-
-	public CalendarManager(boolean fastInit) {
-		this(fastInit, RunContext.getProfileId());
-	}
 	
 	public CalendarManager(boolean fastInit, UserProfile.Id targetProfileId) {
 		super(fastInit, targetProfileId);
@@ -1975,9 +1966,8 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
-		UserProfile.Id targetPid = getTargetProfileId();
-		
 		if(RunContext.isWebTopAdmin()) return;
+		UserProfile.Id targetPid = getTargetProfileId();
 		
 		// Skip rights check if running user is resource's owner
 		UserProfile.Id ownerPid = calendarToOwner(calendarId);
@@ -1997,18 +1987,19 @@ public class CalendarManager extends BaseManager {
 		if(core.isShareFolderPermitted(shareId, action)) return;
 		//if(core.isShareFolderPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
 		
-		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, RunContext.getProfileId().toString());
+		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
 	}
 	
 	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
 		if(RunContext.isWebTopAdmin()) return;
+		UserProfile.Id targetPid = getTargetProfileId();
 		
 		// Skip rights check if running user is resource's owner
 		UserProfile.Id ownerPid = calendarToOwner(calendarId);
-		if(ownerPid.equals(getTargetProfileId())) return;
+		if(ownerPid.equals(targetPid)) return;
 		
 		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(getTargetProfileId());
+		CoreManager core = WT.getCoreManager(targetPid);
 		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
 		if(wildcardShareId != null) {
 			if(core.isShareElementsPermitted(wildcardShareId, action)) return;
@@ -2021,7 +2012,7 @@ public class CalendarManager extends BaseManager {
 		if(core.isShareElementsPermitted(shareId, action)) return;
 		//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
 		
-		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, RunContext.getProfileId().toString());
+		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
 	}
 	
 	private UserProfile.Id findCalendarOwner(int calendarId) throws WTException {

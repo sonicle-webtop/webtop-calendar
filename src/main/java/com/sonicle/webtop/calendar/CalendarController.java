@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseController;
 import com.sonicle.webtop.core.sdk.BaseReminder;
@@ -78,7 +79,7 @@ public class CalendarController extends BaseController implements IControllerHan
 
 	@Override
 	public List<BaseReminder> returnReminders(DateTime now) {
-		CalendarManager manager = new CalendarManager(true);
+		CalendarManager manager = new CalendarManager(true, RunContext.getRunProfileId());
 		return manager.getRemindersToBeNotified(now);
 	}
 }

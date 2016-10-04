@@ -67,15 +67,19 @@ public class PublicService extends BasePublicService {
 	public static final String PUBPATH_CONTEXT_EVENT = "event";
 	
 	private CalendarManager manager;
-
+	
 	@Override
 	public void initialize() throws Exception {
-		manager = new CalendarManager(true);
+		manager = (CalendarManager)WT.getServiceManager(SERVICE_ID);
 	}
 
 	@Override
 	public void cleanup() throws Exception {
 		manager = null;
+	}
+	
+	private WebTopSession getWts() {
+		return getEnv().getWebTopSession();
 	}
 	
 	@Override

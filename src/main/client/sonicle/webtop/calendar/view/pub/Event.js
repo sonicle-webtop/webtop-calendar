@@ -47,14 +47,17 @@ Ext.define('Sonicle.webtop.calendar.view.pub.Event', {
 	
 	mys: null,
 	
-	initComponent: function() {
-		var me = this,
-				vm = me.getViewModel();
+	constructor: function(cfg) {
+		var me = this;
+		me.callParent([cfg]);
 		
-		WTU.applyFormulas(vm, {
+		WTU.applyFormulas(me.getVM(), {
 			foIsWhereEmpty: WTF.isEmptyFormula('record', 'where')
 		});
-		
+	},
+	
+	initComponent: function() {
+		var me = this;
 		me.callParent(arguments);
 		
 		me.add({

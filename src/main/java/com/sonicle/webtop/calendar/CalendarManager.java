@@ -610,7 +610,7 @@ public class CalendarManager extends BaseManager {
 			con = WT.getConnection(SERVICE_ID);
 			
 			OEvent original = edao.selectById(con, ekey.originalEventId);
-			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
+			if(original == null) throw new WTException("Unable to retrieve original event [{0}]", ekey.originalEventId);
 			checkRightsOnCalendarFolder(original.getCalendarId(), "READ"); // Rights check!
 			
 			VSchedulerEvent se = edao.view(con, ekey.eventId);
@@ -625,7 +625,7 @@ public class CalendarManager extends BaseManager {
 				
 			} else if(type.equals(EVENT_RECURRING)) {
 				ORecurrence rec = rdao.select(con, se.getRecurrenceId());
-				if(rec == null) throw new WTException("Unable to retrieve recurrence [{}]", ekey.originalEventId);
+				if(rec == null) throw new WTException("Unable to retrieve recurrence [{0}]", ekey.originalEventId);
 				
 				evt = createEvent(eventKey, EventBase.RecurringInfo.RECURRING, se);
 				int eventDays = calculateEventLengthInDays(se);
@@ -1837,7 +1837,7 @@ public class CalendarManager extends BaseManager {
 			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(fromList, event.getAttendees());
 			
 			OEventAttendee oatt = null;
-			for(EventAttendee att : changeSet.created) {
+			for(EventAttendee att : changeSet.inserted) {
 				oatt = new OEventAttendee();
 				oatt.fillFrom(att);
 				oatt.setAttendeeId(IdentifierUtils.getUUID());

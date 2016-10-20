@@ -49,20 +49,18 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	fieldTitle: 'name',
 	modelName: 'Sonicle.webtop.calendar.model.Calendar',
 	
-	constructor: function(config) {
+	constructor: function(cfg) {
 		var me = this;
 		me.visibilityName = Ext.id(null, 'visibility-');
 		me.showmeName = Ext.id(null, 'showme-');
+		me.callParent([cfg]);
 		
-		me.config.viewModel = {
-			formulas: {
-				visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
-				showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
-				isDefault: WTF.checkboxBind('record', 'isDefault'),
-				invitation: WTF.checkboxBind('record', 'invitation')
-			}
-		};
-		me.callParent([config]);
+		WTU.applyFormulas(me.getVM(), {
+			visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
+			showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
+			isDefault: WTF.checkboxBind('record', 'isDefault'),
+			invitation: WTF.checkboxBind('record', 'invitation')
+		});
 	},
 	
 	initComponent: function() {

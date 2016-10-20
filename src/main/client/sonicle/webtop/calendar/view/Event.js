@@ -67,8 +67,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	fieldTitle: 'title',
 	modelName: 'Sonicle.webtop.calendar.model.Event',
 	
-	viewModel: {
-		formulas: {
+	constructor: function(cfg) {
+		var me = this;
+		me.callParent([cfg]);
+		
+		WTU.applyFormulas(me.getVM(), {
 			startDate: {
 				bind: {bindTo: '{record.startDate}'},
 				get: function(val) {
@@ -124,7 +127,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			isRRWeekly: WTF.equalsFormula('record', 'rrType', 'W'),
 			isRRMonthly: WTF.equalsFormula('record', 'rrType', 'M'),
 			isRRYearly: WTF.equalsFormula('record', 'rrType', 'Y')
-		}
+		});
 	},
 	
 	initComponent: function() {

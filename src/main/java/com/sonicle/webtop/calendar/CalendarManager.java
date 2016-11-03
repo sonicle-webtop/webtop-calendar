@@ -1422,8 +1422,10 @@ public class CalendarManager extends BaseManager {
 			SchedulerEvent se = null;
 			List<OCalendar> cals = calDao.selectByDomain(con, domainId);
 			for(OCalendar cal : cals) {
-				OUser user = userDao.selectByDomainUser(ccon, cal.getDomainId(), cal.getUserId());
-				if(user == null) throw new WTException("User [{0}] not found", DomainAccount.buildName(cal.getDomainId(), cal.getUserId()));
+				final UserProfile.Id pid = new UserProfile.Id(cal.getDomainId(), cal.getUserId());
+				final OUser user = userDao.selectByDomainUser(ccon, cal.getDomainId(), cal.getUserId());
+				if(user == null) throw new WTException("User [{0}] not found", pid.toString());
+				final UserProfile.Data udata = WT.getUserData(pid);
 				
 				for(VSchedulerEvent vse : edao.viewByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
 					vse.updateCalculatedFields();
@@ -1443,7 +1445,7 @@ public class CalendarManager extends BaseManager {
 				for(VSchedulerEvent vse : edao.viewRecurringByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
 					vse.updateCalculatedFields();
 					se = new SchedulerEvent(vse);
-					instances = calculateRecurringInstances(se, fromDate, toDate, user.getTimeZone());
+					instances = calculateRecurringInstances(se, fromDate, toDate, udata.getTimeZone());
 					
 					try {
 						map = new HashMap<>();

@@ -562,7 +562,7 @@ public class Service extends BaseService {
 				
 				Event evt = JsEvent.buildEventInstance(pl.data);
 				CoreManager core = WT.getCoreManager();
-				evt.setOrganizer(core.getUserCompleteEmailAddress(up.getId()));
+				evt.setOrganizer(core.getUserData().getFullEmailAddress());
 				
 				manager.addEvent(evt);
 				new JsonResult().printTo(out);

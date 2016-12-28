@@ -65,7 +65,7 @@ public class CalendarController extends BaseController implements IControllerHan
 		try {
 			manager.addBuiltInCalendar();
 		} catch(WTOperationException ex) {
-			// Do nothing...
+			logger.debug(ex.getMessage());
 		} catch(WTException ex) {
 			throw ex;
 		}

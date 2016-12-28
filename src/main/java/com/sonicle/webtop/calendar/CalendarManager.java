@@ -290,8 +290,7 @@ public class CalendarManager extends BaseManager {
 		
 		try {
 			checkRightsOnCalendarRoot(item.getProfileId(), "MANAGE");
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			item.setBuiltIn(false);
 			item = doInsertCalendar(con, item);
@@ -328,8 +327,7 @@ public class CalendarManager extends BaseManager {
 		
 		try {
 			checkRightsOnCalendarRoot(getTargetProfileId(), "MANAGE");
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			item = dao.selectBuiltInByDomainUser(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if(item != null) throw new WTOperationException("Built-in calendar already present");
@@ -372,8 +370,7 @@ public class CalendarManager extends BaseManager {
 		try {
 			checkRightsOnCalendarFolder(item.getCalendarId(), "UPDATE");
 			
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			if(item.getIsDefault()) dao.resetIsDefaultByDomainUser(con, item.getDomainId(), item.getUserId());
 			dao.update(con, item);
 			DbUtils.commitQuietly(con);
@@ -398,8 +395,7 @@ public class CalendarManager extends BaseManager {
 		try {
 			checkRightsOnCalendarFolder(calendarId, "DELETE");
 			
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			dao.deleteById(con, calendarId);
 			doDeleteEventsByCalendar(con, calendarId);
 			
@@ -653,8 +649,7 @@ public class CalendarManager extends BaseManager {
 		
 		try {
 			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			InsertResult insert = doEventInsert(con, event, true, true);
 			DbUtils.commitQuietly(con);
@@ -687,8 +682,7 @@ public class CalendarManager extends BaseManager {
 		
 		try {
 			EventKey ekey = new EventKey(event.getKey());
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			OEvent original = edao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
@@ -788,8 +782,7 @@ public class CalendarManager extends BaseManager {
 			event.setStartDate(startDate);
 			event.setEndDate(endDate);
 			
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			InsertResult insert = doEventInsert(con, event, true, true);
 			DbUtils.commitQuietly(con);
@@ -812,8 +805,7 @@ public class CalendarManager extends BaseManager {
 		
 		try {
 			EventKey ekey = new EventKey(eventKey);
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			OEvent originalEvent = edao.selectById(con, ekey.originalEventId);
 			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
@@ -856,8 +848,7 @@ public class CalendarManager extends BaseManager {
 		
 		try {
 			EventKey ekey = new EventKey(eventKey);
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			OEvent originalEvent = evtdao.selectById(con, ekey.originalEventId);
 			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
@@ -957,8 +948,7 @@ public class CalendarManager extends BaseManager {
 			// it belongs to the recurring event
 			EventKey ekey = new EventKey(eventKey);
 			if(ekey.originalEventId.equals(ekey.eventId)) throw new WTException("Cannot restore an event that is not broken");
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			RecurrenceBrokenDAO rbdao = RecurrenceBrokenDAO.getInstance();
 			
@@ -985,8 +975,7 @@ public class CalendarManager extends BaseManager {
 		Connection con = null;
 		
 		try {
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			EventBase evt = getEvent(eventKey);
 			if(copy || (targetCalendarId != evt.getCalendarId())) {
@@ -1104,8 +1093,7 @@ public class CalendarManager extends BaseManager {
 		try {
 			EventKey ekey = new EventKey(eventKey);
 			ReminderGenId rid = new ReminderGenId(reminderId);
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			EventDAO edao = EventDAO.getInstance();
 			PostponedReminderDAO prdao = PostponedReminderDAO.getInstance();
@@ -1147,8 +1135,7 @@ public class CalendarManager extends BaseManager {
 		try {
 			EventKey ekey = new EventKey(eventKey);
 			ReminderGenId rid = new ReminderGenId(reminderId);
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			PostponedReminderDAO prdao = PostponedReminderDAO.getInstance();
 			
@@ -1252,8 +1239,7 @@ public class CalendarManager extends BaseManager {
 			}
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", parsed.size()));
 			
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			if(mode.equals("copy")) {
 				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Cleaning previous events..."));
@@ -1327,8 +1313,7 @@ public class CalendarManager extends BaseManager {
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", parsed.size()));
 			
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Importing..."));
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			int count = 0;
 			for(ParseResult parse : parsed) {
 				parse.event.setCalendarId(calendarId);
@@ -1480,8 +1465,7 @@ public class CalendarManager extends BaseManager {
 		Connection con = null;
 		
 		try {
-			con = WT.getConnection(SERVICE_ID);
-			con.setAutoCommit(false);
+			con = WT.getConnection(SERVICE_ID, false);
 			
 			DateTime from = now.withTimeAtStartOfDay();
 			DateTime remindOn = null;

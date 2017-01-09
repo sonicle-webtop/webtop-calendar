@@ -330,7 +330,10 @@ public class CalendarManager extends BaseManager {
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			item = dao.selectBuiltInByDomainUser(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
-			if(item != null) throw new WTOperationException("Built-in calendar already present");
+			if(item != null) {
+				logger.debug("Built-in category already present");
+				return null;
+			}
 			
 			item = new OCalendar();
 			item.setDomainId(getTargetProfileId().getDomainId());

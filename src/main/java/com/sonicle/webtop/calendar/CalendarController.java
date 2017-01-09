@@ -39,7 +39,6 @@ import com.sonicle.webtop.core.sdk.BaseController;
 import com.sonicle.webtop.core.sdk.BaseReminder;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.sdk.WTOperationException;
 import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesProfiles;
 import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesReminders;
 import java.util.List;
@@ -64,8 +63,6 @@ public class CalendarController extends BaseController implements IControllerHan
 		// Adds built-in calendar
 		try {
 			manager.addBuiltInCalendar();
-		} catch(WTOperationException ex) {
-			logger.debug(ex.getMessage());
 		} catch(WTException ex) {
 			throw ex;
 		}

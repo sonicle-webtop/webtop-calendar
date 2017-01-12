@@ -39,6 +39,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.field.ColorComboBox',
 		'WTA.ux.data.EmptyModel',
 		'WTA.ux.data.ValueModel',
+		'WTA.ux.field.RecipientSuggestCombo',
 		'WTA.ux.field.SuggestCombo',
 		'WTA.model.ActivityLkp',
 		'WTA.model.CausalLkp',
@@ -535,8 +536,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}, {
 						dataIndex: 'recipient',
 						editor: {
-							xtype: 'textfield'
+							xtype: 'wtrcptsuggestcombo',
+							matchFieldWidth: false,
+							listConfig: {
+								width: 300,
+								minWidth: 300,
+								resizable: true
+							}
 						},
+						renderer: Ext.util.Format.htmlEncode,
 						header: me.mys.res('event.gp-attendees.recipient.lbl'),
 						flex: 1
 					}, {

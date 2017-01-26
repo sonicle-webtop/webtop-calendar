@@ -39,6 +39,7 @@ import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
+import org.jooq.tools.StringUtils;
 
 /**
  *
@@ -61,6 +62,7 @@ public class JsSchedulerEvent {
 	public Boolean isReadOnly;
 	public Boolean isRecurring;
 	public Boolean isBroken;
+	public Boolean hasComments;
 	public String folderName;
 	public String _rights;
 	public String _profileId;
@@ -96,11 +98,12 @@ public class JsSchedulerEvent {
 		color = calendar.getColor();
 		location = (keepDataPrivate) ? "" : event.getLocation();
 		isPrivate = event.getIsPrivate();
-		reminder = event.getReminder();
+		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
 		isRecurring = event.getIsRecurring();
 		isBroken = event.getIsBroken();
+		hasComments = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();
 		_profileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();

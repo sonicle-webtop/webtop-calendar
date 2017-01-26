@@ -196,6 +196,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						reminderIconCls: 'fa fa-bell-o',
 						recurrenceIconCls: 'fa fa-refresh',
 						recurrenceBrokenIconCls: 'fa fa-chain-broken',
+						commentsIconCls: 'fa fa-commenting-o',
 						todayText: me.res('socal.today'),
 						moreText: me.res('socal.more'),
 						ddCreateEventText: me.res('socal.ddcreateevent'),

@@ -47,7 +47,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.view.Calendar',
 		'Sonicle.webtop.calendar.view.Event',
 		'Sonicle.webtop.calendar.view.CalendarChooser',
-		'Sonicle.webtop.calendar.Api'
+		'Sonicle.webtop.calendar.ServiceApi'
 	],
 	mixins: [
 		'WTA.mixin.FoldersTree'
@@ -58,7 +58,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	getApiInstance: function() {
 		var me = this;
-		if (!me.api) me.api = Ext.create('Sonicle.webtop.calendar.Api', {service: me});
+		if (!me.api) me.api = Ext.create('Sonicle.webtop.calendar.ServiceApi', {service: me});
 		return me.api;
 	},
 	

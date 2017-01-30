@@ -31,8 +31,8 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.Api', {
-	extend: 'WTA.sdk.BaseServiceApi',
+Ext.define('Sonicle.webtop.calendar.ServiceApi', {
+	extend: 'WTA.sdk.ServiceApi',
 	
 	addEvent: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts) {
 		this.service.addEvent(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts);

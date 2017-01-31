@@ -191,6 +191,22 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							me.refreshActivities();
 						}
 					}
+				}),
+				WTF.lookupCombo('calendarId', 'name', {
+					xtype: 'socolorcombo',
+					reference: 'fldcalendar',
+					bind: '{record.calendarId}',
+					store: {
+						autoLoad: true,
+						model: me.mys.preNs('model.CalendarLkp'),
+						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
+					},
+					colorField: 'color',
+					listeners: {
+						select: function(s, rec) {
+							me.onCalendarSelect(rec);
+						}
+					}
 				})
 			]
 		});
@@ -274,31 +290,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
 					boxLabel: me.mys.res('event.fld-allDay.lbl')
-				}, {
-					xtype: 'socolorcombo',
-					reference: 'fldcalendar',
-					bind: '{record.calendarId}',
-					typeAhead: false,
-					queryMode: 'local',
-					forceSelection: true,
-					selectOnFocus: true,
-					store: {
-						autoLoad: true,
-						model: me.mys.preNs('model.CalendarLkp'),
-						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
-					},
-					valueField: 'calendarId',
-					displayField: 'name',
-					colorField: 'color',
-					labelWidth: 70,
-					fieldLabel: me.mys.res('event.fld-calendar.lbl'),
-					margin: 0,
-					flex: 1,
-					listeners: {
-						select: function(s, rec) {
-							me.onCalendarSelect(rec);
-						}
-					}
 				}]
 			}, {
 				xtype: 'fieldcontainer',

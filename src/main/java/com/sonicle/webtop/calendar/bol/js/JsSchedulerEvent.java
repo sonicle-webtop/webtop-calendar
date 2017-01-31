@@ -60,9 +60,10 @@ public class JsSchedulerEvent {
 	public Boolean isPrivate;
 	public Integer reminder;
 	public Boolean isReadOnly;
+	public Boolean hasAtts;
 	public Boolean isRecurring;
 	public Boolean isBroken;
-	public Boolean hasComments;
+	public Boolean hasCmts;
 	public String folderName;
 	public String _rights;
 	public String _profileId;
@@ -101,9 +102,10 @@ public class JsSchedulerEvent {
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
+		hasAtts = false;
 		isRecurring = event.getIsRecurring();
 		isBroken = event.getIsBroken();
-		hasComments = !StringUtils.isBlank(event.getDescription());
+		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();
 		_profileId = new UserProfile.Id(calendar.getDomainId(), calendar.getUserId()).toString();

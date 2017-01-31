@@ -77,6 +77,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		me.setToolbar(Ext.create({
 			xtype: 'toolbar',
+			referenceHolder: true,
 			items: [
 				'-',
 				me.getAction('printScheduler'),
@@ -91,7 +92,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAction('dweekview'),
 				me.getAction('monthview'),
 				'->',
-				Ext.create({
+				{
 					xtype: 'textfield',
 					width: 200,
 					triggers: {
@@ -109,231 +110,247 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							}
 						}
 					}
-				})
+				}
 			]
 		}));
 		
 		me.setToolComponent(Ext.create({
 			xtype: 'panel',
 			layout: 'border',
+			referenceHolder: true,
 			title: me.getName(),
 			items: [{
-					region: 'north',
-					xtype: 'panel',
-					layout: 'center',
-					header: false,
+				region: 'north',
+				xtype: 'panel',
+				layout: 'center',
+				header: false,
+				border: false,
+				height: 305,
+				items: [{
+					xtype: 'somulticalendar',
+					reference: 'multical',
 					border: false,
-					height: 305,
-					items: [
-						me.addRef('multical', Ext.create({
-							xtype: 'somulticalendar',
-							border: false,
-							startDay: WT.getStartDay(),
-							highlightMode: me.getVar('view'),
-							width: 184, //TODO: valutare un sistema di misura affidabile
-							height: 298,
-							store: {
-								model: 'Sonicle.webtop.calendar.model.MultiCalDate',
-								proxy: WTF.proxy(me.ID, 'GetSchedulerDates', 'dates', {autoAbort: true})
-							},
-							listeners: {
-								change: function(s, nv) {
-									me.getRef('scheduler').setStartDate(nv);
-								}
-							}
-						}))
-					]
-				},
-				me.addRef('folderstree', Ext.create({
-					region: 'center',
-					xtype: 'treepanel',
-					border: false,
-					useArrows: true,
-					rootVisible: false,
+					startDay: WT.getStartDay(),
+					highlightMode: me.getVar('view'),
+					dayText: me.res('multical.dayText'),
+					weekText: me.res('multical.weekText'),
+					width: 184, //TODO: valutare un sistema di misura affidabile
+					height: 298,
 					store: {
-						autoLoad: true,
-						autoSync: true,
-						model: 'Sonicle.webtop.calendar.model.FolderNode',
-						proxy: WTF.apiProxy(me.ID, 'ManageFoldersTree', 'children', {
-							writer: {
-								allowSingle: false // Make update/delete using array payload
-							}
-						}),
-						root: {
-							id: 'root',
-							expanded: true
-						},
-						listeners: {
-							write: function(s,op) {
-								me.reloadEvents();
-							}
-						}
+						model: 'Sonicle.webtop.calendar.model.MultiCalDate',
+						proxy: WTF.proxy(me.ID, 'GetSchedulerDates', 'dates', {autoAbort: true})
 					},
-					hideHeaders: true,
 					listeners: {
-						checkchange: function(n, ck) {
-							me.showHideFolder(n, ck);
-						},
-						itemcontextmenu: function(s, rec, itm, i, e) {
-							if(rec.get('_type') === 'root') {
-								WT.showContextMenu(e, me.getRef('cxmRootFolder'), {folder: rec});
-							} else {
-								WT.showContextMenu(e, me.getRef('cxmFolder'), {folder: rec});
-							}
+						change: function(s, nv) {
+							me.scheduler().setStartDate(nv);
 						}
 					}
-				}))
-			]
+				}]
+			}, {
+				region: 'center',
+				xtype: 'treepanel',
+				reference: 'trfolders',
+				border: false,
+				useArrows: true,
+				rootVisible: false,
+				store: {
+					autoLoad: true,
+					autoSync: true,
+					model: 'Sonicle.webtop.calendar.model.FolderNode',
+					proxy: WTF.apiProxy(me.ID, 'ManageFoldersTree', 'children', {
+						writer: {
+							allowSingle: false // Make update/delete using array payload
+						}
+					}),
+					root: {
+						id: 'root',
+						expanded: true
+					},
+					listeners: {
+						write: function(s,op) {
+							me.reloadEvents();
+						}
+					}
+				},
+				hideHeaders: true,
+				listeners: {
+					checkchange: function(n, ck) {
+						me.showHideFolder(n, ck);
+					},
+					itemcontextmenu: function(s, rec, itm, i, e) {
+						if(rec.get('_type') === 'root') {
+							WT.showContextMenu(e, me.getRef('cxmRootFolder'), {folder: rec});
+						} else {
+							WT.showContextMenu(e, me.getRef('cxmFolder'), {folder: rec});
+						}
+					}
+				}
+			}]
 		}));
 		
 		me.setMainComponent(Ext.create({
 			xtype: 'container',
 			layout: 'card',
+			referenceHolder: true,
 			activeItem: 0,
-			items: [
-				me.addRef('scheduler', Ext.create({
-					xtype: 'calendarpanel',
-					itemId: 'scheduler',
-					activeView: me.getVar('view'),
-					startDay: WT.getStartDay(),
-					use24HourTime: WT.getUse24HourTime(),
-					timezone: WT.getTimezone(),
-					viewCfg: {
-						timezoneIconCls: 'fa fa-globe',
-						privateIconCls: 'fa fa-lock',
-						reminderIconCls: 'fa fa-bell-o',
-						recurrenceIconCls: 'fa fa-refresh',
-						recurrenceBrokenIconCls: 'fa fa-chain-broken',
-						commentsIconCls: 'fa fa-commenting-o',
-						todayText: me.res('socal.today'),
-						moreText: me.res('socal.more'),
-						ddCreateEventText: me.res('socal.ddcreateevent'),
-						ddCopyEventText: me.res('socal.ddcopyevent'),
-						ddMoveEventText: me.res('socal.ddmoveevent'),
-						ddResizeEventText: me.res('socal.ddresizeevent'),
-						ddDateFormat: 'j/m',
-						scrollStartHour: Math.max(me.getVar('workdayStart').getHours()-1, 0),
-						businessHoursStart: me.getVar('workdayStart').getHours(),
-						businessHoursEnd: me.getVar('workdayEnd').getHours()
-					},
-					monthViewCfg: {
-						showHeader: true,
-						showWeekLinks: true,
-						showWeekNumbers: true
-					},
-					store: {
-						autoSync: true,
-						model: 'Sonicle.calendar.data.EventModel',
-						proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true}),
-						listeners: {
-							write: function() {
-								me.getRef('multical').getStore().load();
-							}
-						}
-					},
+			items: [{
+				xtype: 'calendarpanel',
+				reference: 'scheduler',
+				activeView: me.getVar('view'),
+				startDay: WT.getStartDay(),
+				use24HourTime: WT.getUse24HourTime(),
+				timezone: WT.getTimezone(),
+				viewCfg: {
+					timezoneIconCls: 'fa fa-globe',
+					privateIconCls: 'fa fa-lock',
+					reminderIconCls: 'fa fa-bell-o',
+					attendeesIconCls: 'fa fa-users',
+					recurrenceIconCls: 'fa fa-refresh',
+					recurrenceBrokenIconCls: 'fa fa-chain-broken',
+					commentsIconCls: 'fa fa-commenting-o',
+					todayText: me.res('scheduler.today'),
+					moreText: me.res('scheduler.more'),
+					ddCreateEventText: me.res('scheduler.ddcreateevent'),
+					ddCopyEventText: me.res('scheduler.ddcopyevent'),
+					ddMoveEventText: me.res('scheduler.ddmoveevent'),
+					ddResizeEventText: me.res('scheduler.ddresizeevent'),
+					ddDateFormat: 'j/m',
+					scrollStartHour: Math.max(me.getVar('workdayStart').getHours()-1, 0),
+					businessHoursStart: me.getVar('workdayStart').getHours(),
+					businessHoursEnd: me.getVar('workdayEnd').getHours()
+				},
+				monthViewCfg: {
+					showHeader: true,
+					showWeekLinks: true,
+					showWeekNumbers: true
+				},
+				store: {
+					autoSync: true,
+					model: 'Sonicle.calendar.data.EventModel',
+					proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true}),
 					listeners: {
-						contextmenu: function(s,e) {
-							WT.showContextMenu(e, me.getRef('cxmScheduler'));
-						},
-						rangeselect: function(s,dates,onComplete) {
-							onComplete();
-							var cal = me.getSelectedFolder(me.getRef('folderstree'));
-							if(cal) me.addEventUI(cal, dates.startDate, dates.endDate, false);
-						},
-						eventdblclick: function(s, rec) {
-							if(rec && !me.isEventRO(rec)) {
-								var er = me.toRightsObj(rec.get('_rights'));
-								me.openEventUI(er.UPDATE, rec);
-							}
-						},
-						daydblclick: function(s, dt, ad) {
-							var cal = me.getSelectedFolder(me.getRef('folderstree')),
-									soDate = Sonicle.Date,
-									start, end;
-							if(cal) {
-								if(ad) {
-									start = soDate.copyTime(me.getVar('workdayStart'), dt);
-									end = soDate.copyTime(me.getVar('workdayEnd'), dt);
-								} else {
-									start = dt;
-									end = soDate.add(dt, {minutes: 30});
-								}
-								me.addEventUI(cal, start, end, ad);
-							}
-						},
-						eventcontextmenu: function(s, rec, el, e) {
-							WT.showContextMenu(e, me.getRef('cxmEvent'), {event: rec});
+						write: function() {
+							me.multical().getStore().load();
 						}
 					}
-				})),
-				me.addRef('results', Ext.create({
-					xtype: 'grid',
-					itemId: 'results',
-					store: {
-						model: 'Sonicle.webtop.calendar.model.GridEvent',
-						proxy: WTF.apiProxy(me.ID, 'ManageGridEvents', 'events', {
-							extraParams: {
-								query: null
-							}
-						})
+				},
+				listeners: {
+					contextmenu: function(s,e) {
+						WT.showContextMenu(e, me.getRef('cxmScheduler'));
 					},
-					columns: [{
-						xtype: 'soiconcolumn',
-						getIconCls: function(v,rec) {
-							var ico = 'single-event';
-							if(rec.get('isBroken')) ico = 'broken-event';
-							if(rec.get('isRecurring')) ico = 'recurring-event';
-							return WTF.cssIconCls(me.XID, ico, 'xs');
-						},
-						iconSize: WTU.imgSizeToPx('xs'),
-						width: 40
-					}, {
-						xtype: 'socolorcolumn',
-						dataIndex: 'folderName',
-						colorField: 'color',
-						displayField: 'folderName',
-						header: me.res('event.fld-calendar.lbl'),
-						width: 100
-					}, {
-						dataIndex: 'startDate',
-						xtype: 'datecolumn',
-						format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
-						header: me.res('event.fld-startDate.lbl'),
-						width: 150
-					}, {
-						dataIndex: 'endDate',
-						xtype: 'datecolumn',
-						format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
-						header: me.res('event.fld-endDate.lbl'),
-						width: 150
-					}, {
-						dataIndex: 'title',
-						header: me.res('event.fld-title.lbl'),
-						flex: 1
-					}, {
-						dataIndex: 'location',
-						header: me.res('event.fld-location.lbl'),
-						flex: 1
-					}],
-					tools: [{
-						type: 'close',
-						callback: function() {
-							me._activateMain('scheduler');
+					rangeselect: function(s,dates,onComplete) {
+						onComplete();
+						var cal = me.getSelectedFolder(me.trFolders());
+						if(cal) me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
+					},
+					eventdblclick: function(s, rec) {
+						if(rec && !me.isEventRO(rec)) {
+							var er = me.toRightsObj(rec.get('_rights'));
+							me.openEventUI(er.UPDATE, rec.get('id'));
 						}
-					}],
-					listeners: {
-						rowdblclick: function(s, rec) {
-							//TODO: handle edit permission
-							if(!me.isEventRO(rec)) me.editEvent(rec.get('id'));
+					},
+					daydblclick: function(s, dt, ad) {
+						var cal = me.getSelectedFolder(me.trFolders()),
+								soDate = Sonicle.Date,
+								start, end;
+						if(cal) {
+							if(ad) {
+								start = soDate.copyTime(me.getVar('workdayStart'), dt);
+								end = soDate.copyTime(me.getVar('workdayEnd'), dt);
+							} else {
+								start = dt;
+								end = soDate.add(dt, {minutes: 30});
+							}
+							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end, ad);
+						}
+					},
+					eventcontextmenu: function(s, rec, el, e) {
+						WT.showContextMenu(e, me.getRef('cxmEvent'), {event: rec});
+					}
+				}
+			}, {
+				xtype: 'grid',
+				reference: 'gpresults',
+				store: {
+					model: 'Sonicle.webtop.calendar.model.GridEvent',
+					proxy: WTF.apiProxy(me.ID, 'ManageGridEvents', 'events', {
+						extraParams: {
+							query: null
+						}
+					})
+				},
+				columns: [{
+					xtype: 'soiconcolumn',
+					getIconCls: function(v,rec) {
+						var ico = 'single-event';
+						if(rec.get('isBroken')) ico = 'broken-event';
+						if(rec.get('isRecurring')) ico = 'recurring-event';
+						return WTF.cssIconCls(me.XID, ico, 'xs');
+					},
+					iconSize: WTU.imgSizeToPx('xs'),
+					width: 40
+				}, {
+					xtype: 'socolorcolumn',
+					dataIndex: 'folderName',
+					colorField: 'color',
+					displayField: 'folderName',
+					header: me.res('event.fld-calendar.lbl'),
+					width: 100
+				}, {
+					dataIndex: 'startDate',
+					xtype: 'datecolumn',
+					format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
+					header: me.res('event.fld-startDate.lbl'),
+					width: 150
+				}, {
+					dataIndex: 'endDate',
+					xtype: 'datecolumn',
+					format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
+					header: me.res('event.fld-endDate.lbl'),
+					width: 150
+				}, {
+					dataIndex: 'title',
+					header: me.res('event.fld-title.lbl'),
+					flex: 1
+				}, {
+					dataIndex: 'location',
+					header: me.res('event.fld-location.lbl'),
+					flex: 1
+				}],
+				tools: [{
+					type: 'close',
+					callback: function() {
+						me.getMainComponent().setActiveItem(me.scheduler());
+						me._activateMain(me.scheduler());
+					}
+				}],
+				listeners: {
+					rowdblclick: function(s, rec) {
+						if (!me.isEventRO(rec)) {
+							var er = me.toRightsObj(rec.get('_rights'));
+							me.openEventUI(er.UPDATE, rec.get('id'));
+							//TODO: popolare il campo _rights nella risposta server
 						}
 					}
-				}))
-			]
+				}
+			}]
 		}));
 	},
 	
+	multical: function() {
+		return this.getToolComponent().lookupReference('multical');
+	},
+	
 	trFolders: function() {
-		return this.getRef('folderstree');
+		return this.getToolComponent().lookupReference('trfolders');
+	},
+	
+	scheduler: function() {
+		return this.getMainComponent().lookupReference('scheduler');
+	},
+	
+	gpResults: function() {
+		return this.getMainComponent().lookupReference('gpresults');
 	},
 	
 	initActions: function() {
@@ -413,32 +430,32 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('sharing.tit'),
 			iconCls: WTF.cssIconCls(WT.XID, 'sharing', 'xs'),
 			handler: function() {
-				var node = me.getSelectedNode(me.getRef('folderstree'));
+				var node = me.getSelectedNode(me.trFolders());
 				if(node) me.editShare(node.getId());
 			}
 		});
 		me.addAction('addCalendar', {
 			handler: function() {
-				var node = me.getSelectedFolder(me.getRef('folderstree'));
-				if(node) me.addCalendarUI(node);
+				var node = me.getSelectedFolder(me.trFolders());
+				if(node) me.addCalendarUI(node.get('_domainId'), node.get('_userId'));
 			}
 		});
 		me.addAction('editCalendar', {
 			handler: function() {
-				var node = me.getSelectedFolder(me.getRef('folderstree'));
-				if(node) me.editCalendarUI(node);
+				var node = me.getSelectedFolder(me.trFolders());
+				if(node) me.editCalendarUI(node.get('_calId'));
 			}
 		});
 		me.addAction('deleteCalendar', {
 			handler: function() {
-				var node = me.getSelectedFolder(me.getRef('folderstree'));
+				var node = me.getSelectedFolder(me.trFolders());
 				if(node) me.deleteCalendarUI(node);
 			}
 		});
 		me.addAction('importEvents', {
 			handler: function() {
-				var node = me.getSelectedFolder(me.getRef('folderstree'));
-				if(node) me.importEventsUI(node);
+				var node = me.getSelectedFolder(me.trFolders());
+				if(node) me.importEventsUI(node.get('_calId'));
 			}
 		});
 		/*
@@ -463,7 +480,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						//me.unwait();
 					},
 					fileuploaded: function(up, file, json) {
-						var node = me.getSelectedFolder(me.getRef('folderstree'));
+						var node = me.getSelectedFolder(me.trFolders());
 						if(node) me.importICal(node.get('_calId'), json.data.uploadId);
 					}
 				}
@@ -473,20 +490,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAction('viewAllFolders', {
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
-				me.showHideAllFolders(me.getSelectedRootFolder(me.getRef('folderstree')), true);
+				me.showHideAllFolders(me.getSelectedRootFolder(me.trFolders()), true);
 			}
 		});
 		me.addAction('viewNoneFolders', {
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
-				me.showHideAllFolders(me.getSelectedRootFolder(me.getRef('folderstree')), false);
+				me.showHideAllFolders(me.getSelectedRootFolder(me.trFolders()), false);
 			}
 		});
 		me.addAction('addEvent', {
 			handler: function() {
-				var cal = me.getSelectedFolder(me.getRef('folderstree')),
-						day = me.getRef('multical').getValue();
-				if(cal) me.addEventAtUI(cal, day);
+				var cal = me.getSelectedFolder(me.trFolders()),
+						day = me.multical().getValue();
+				if(cal) me.addEventAtUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), day);
 			}
 		});
 		me.addAction('openEvent', {
@@ -495,7 +512,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				var rec = WTU.itselfOrFirst(e.menuData.event), er;
 				if(rec) {
 					er = me.toRightsObj(rec.get('_rights'));
-					me.openEventUI(er.UPDATE, rec);
+					me.openEventUI(er.UPDATE, rec.get('id'));
 				}
 			}
 		});
@@ -504,7 +521,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			iconCls: 'wt-icon-delete-xs',
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
-				if(rec) me.deleteEventUI(rec);
+				if(rec) me.deleteEventUI(rec.get('id'), rec.get('title'), rec.get('isRecurring'));
 			}
 		});
 		me.addAction('restoreEvent', {
@@ -512,19 +529,19 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			iconCls: 'wt-icon-restore-xs',
 			handler: function(s,e) {
 				var rec = e.menuData.event;
-				if(rec) me.confirmRestoreEvent(rec);
+				if(rec) me.restoreEventUI(rec.get('id'));
 			}
 		});
 		me.addAction('copyEvent', {
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
-				if(rec) me.moveEventUI(true, rec);
+				if(rec) me.moveEventUI(true, rec.get('id'), rec.get('calendarId'), rec.get('_profileId'));
 			}
 		});
 		me.addAction('moveEvent', {
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
-				if(rec) me.moveEventUI(false, rec);
+				if(rec) me.moveEventUI(false, rec.get('id'), rec.get('calendarId'), rec.get('_profileId'));
 			}
 		});
 		me.addAction('printScheduler', {
@@ -532,12 +549,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			tooltip: WT.res('act-print.lbl'),
 			iconCls: 'wt-icon-print-xs',
 			handler: function() {
-				var sched = me.getRef('scheduler'),
+				var sched = me.scheduler(),
 						bounds = sched.getActiveView().getViewBounds(),
 						params = {
 							startDate: Ext.Date.format(bounds.start, 'Y-m-d'),
 							endDate: Ext.Date.format(bounds.end, 'Y-m-d'),
-							view: me.getRef('multical').getHighlightMode()
+							view: me.multical().getHighlightMode()
 						},
 						url = WTF.processBinUrl(me.ID, 'PrintScheduler', params);
 				Sonicle.URLMgr.openFile(url, {filename: 'agenda', newWindow: true});
@@ -549,17 +566,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			handler: function(s,e) {
 				var rec = e.menuData.event;
 				if(rec) me.printEventsDetail([rec.getId()]);
-			}
-		});
-		
-		
-		
-		me.addAction('printEvents', {
-			text: WT.res('act-print.lbl'),
-			iconCls: 'wt-icon-print-xs',
-			handler: function() {
-				//TODO: implementare stampa
-				WT.warn('TODO');
 			}
 		});
 	},
@@ -633,8 +639,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					text: me.res('copyormove.lbl'),
 					menu: {
 						items: [
-							me.getAction('copyEvent'),
-							me.getAction('moveEvent')
+							me.getAction('moveEvent'),
+							me.getAction('copyEvent')
 						]
 					}
 				},
@@ -647,7 +653,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var rec = s.menuData.event,
-							ro = me.isEventRO(rec);
+							ro = me.isEventRO(rec),
 							er = me.toRightsObj(rec.get('_rights')),
 							brk = (rec.get('isBroken') === true);
 					me.getAction('openEvent').setDisabled(ro);
@@ -660,13 +666,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	onActivate: function() {
 		var me = this,
-				scheduler = me.getRef('scheduler');
+				scheduler = me.scheduler();
 		
 		if(me.needsReload) {
 			me.needsReload = false;
 			if(scheduler.getStore().loadCount === 0) { // The first time...
 				//...skip multical, it's already updated with now date
-				scheduler.setStartDate(me.getRef('multical').getValue());
+				scheduler.setStartDate(me.multical().getValue());
 			} else {
 				me.reloadEvents();
 			}
@@ -688,23 +694,25 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	reloadEvents: function() {
 		var me = this;
 		if(me.isActive()) {
-			me.getRef('multical').getStore().load();
-			me.getRef('scheduler').getStore().load();
+			me.multical().getStore().load();
+			me.scheduler().getStore().load();
 		} else {
 			me.needsReload = true;
 		}
 	},
 	
 	changeView: function(view) {
-		var me = this;
-		me._activateMain('scheduler');
-		me.getRef('multical').setHighlightMode(view);
-		me.getRef('scheduler').setActiveView(view);
+		var me = this,
+				sched = me.scheduler();
+		me._activateMain(sched);
+		me.multical().setHighlightMode(view);
+		sched.setActiveView(view);
 	},
 	
 	moveDate: function(direction) {
-		this._activateMain('scheduler');
-		var mc = this.getRef('multical');
+		var me = this,
+				mc = me.multical();
+		me._activateMain(me.scheduler());
 		if(direction === 0) {
 			mc.setToday();
 		} else if(direction === -1) {
@@ -714,18 +722,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}
 	},
 	
-	addCalendarUI: function(node) {
+	addCalendarUI: function(domainId, userId) {
 		var me = this;
-		me.addCalendar(node.get('_domainId'), node.get('_userId'), {
+		me.addCalendar(domainId, userId, {
 			callback: function(success, model) {
 				if(success) me.loadFolderNode(model.get('_profileId'));
 			}
 		});
 	},
 	
-	editCalendarUI: function(node) {
+	editCalendarUI: function(calendarId) {
 		var me = this;
-		me.editCalendar(node.get('_calId'), {
+		me.editCalendar(calendarId, {
 			callback: function(success, model) {
 				if(success) me.loadFolderNode(model.get('_profileId'));
 			}
@@ -738,47 +746,46 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, this);
 	},
 	
-	importEventsUI: function(node) {
+	importEventsUI: function(calendarId) {
 		var me = this;
-		me.importEvents(node.get('_calId'), {
+		me.importEvents(calendarId, {
 			callback: function(success) {
 				if(success) me.reloadEvents();
 			}
 		});
 	},
 	
-	addEventUI: function(cal, start, end, allDay) {
+	addEventUI: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay) {
 		var me = this;
-		me.addEvent(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end, allDay, {
+		me.addEvent(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, {
 			callback: function(success) {
 				if(success) me.reloadEvents();
 			}
 		});
 	},
 	
-	addEventAtUI: function(cal, day) {
+	addEventAtUI: function(ownerId, calendarId, isPrivate, busy, reminder, day) {
 		var me = this;
-		me.addEventAt(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), day, {
+		me.addEventAt(ownerId, calendarId, isPrivate, busy, reminder, day, {
 			callback: function(success) {
 				if(success) me.reloadEvents();
 			}
 		});
 	},
 	
-	openEventUI: function(edit, evt) {
+	openEventUI: function(edit, id) {
 		var me = this;
-		me.openEvent(edit, evt.get('id'), {
+		me.openEvent(edit, id, {
 			callback: function(success) {
 				if(success && edit) me.reloadEvents();
 			}
 		});
 	},
 	
-	deleteEventUI: function(rec) {
-		var me = this,
-				id = rec.get('id');
+	deleteEventUI: function(id, title, isRecurring) {
+		var me = this;
 		
-		if(rec.get('isRecurring')) {
+		if(isRecurring) {
 			me.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid) {
 				if(bid === 'ok') {
 					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
@@ -790,7 +797,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			}, me);
 		} else {
-			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(rec.get('title'), 40)), function(bid) {
+			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(title, 40)), function(bid) {
 				if(bid === 'yes') {
 					me.deleteEvent(id, 'this', {
 						callback: function(succ) {
@@ -802,11 +809,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}
 	},
 	
-	eventRestoreUI: function(evt) {
+	restoreEventUI: function(id) {
 		var me = this;
 		WT.confirm(me.res('event.recurring.confirm.restore'), function(bid) {
 			if(bid === 'yes') {
-				me.restoreEvent(evt.get('id'), {
+				me.restoreEvent(id, {
 					callback: function(success) {
 						if(success) me.reloadEvents();
 					}
@@ -815,12 +822,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, me);
 	},
 	
-	moveEventUI: function(copy, evt) {
+	moveEventUI: function(copy, id, calendarId, profileId) {
 		var me = this,
-				vct = me.createCalendarChooser(copy, evt.get('_profileId'), evt.get('calendarId'));
+				vct = me.createCalendarChooser(copy, profileId, calendarId);
 		
 		vct.getView().on('viewok', function(s) {
-			me.moveEvent(copy, evt.get('id'), s.getVMData().calendarId, {
+			me.moveEvent(copy, id, s.getVMData().calendarId, {
 				callback: function(success) {
 					if(success) me.reloadEvents();
 				}
@@ -907,7 +914,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	openEvent: function(edit, eventId, opts) {
+	openEvent: function(edit, id, opts) {
 		opts = opts || {};
 		var me = this,
 				vct = WT.createView(me.ID, 'view.Event'),
@@ -919,20 +926,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		vct.show(false, function() {
 			vct.getView().begin(mode, {
 				data: {
-					id: eventId
+					id: id
 				}
 			});
 		});
 	},
 	
-	deleteEvent: function(eventId, target, opts) {
+	deleteEvent: function(id, target, opts) {
 		opts = opts || {};
 		var me = this;
 		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
 			params: {
 				crud: 'delete',
 				target: target,
-				id: eventId
+				id: id
 			},
 			callback: function(success, o) {
 				Ext.callback(opts.callback, opts.scope, [success, o]);
@@ -940,13 +947,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	restoreEvent: function(eventId, opts) {
+	restoreEvent: function(id, opts) {
 		opts = opts || {};
 		var me = this;
 		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
 			params: {
 				crud: 'restore',
-				id: eventId
+				id: id
 			},
 			callback: function(success, json) {
 				Ext.callback(opts.callback, opts.scope, [success, json]);
@@ -954,7 +961,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	moveEvent: function(copy, eventId, targetCalendarId, opts) {
+	moveEvent: function(copy, id, targetCalendarId, opts) {
 		opts = opts || {};
 		var me = this;
 		
@@ -962,7 +969,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			params: {
 				crud: 'move',
 				copy: copy,
-				id: eventId,
+				id: id,
 				targetCalendarId: targetCalendarId
 			},
 			callback: function(success, json) {
@@ -1017,10 +1024,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	searchEvents: function(query) {
 		var me = this,
-				gp = me.getRef('results');
+				gp = me.gpResults();
 		
 		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), query));
-		me._activateMain('results');
+		me._activateMain(gp);
 		WTU.loadWithExtraParams(gp.getStore(), {
 			query: query
 		});
@@ -1033,8 +1040,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	/*
 	 * @private
 	 */
-	_activateMain: function(id) {
-		this.getMainComponent().getLayout().setActiveItem(id);
+	_activateMain: function(cmp) {
+		this.getMainComponent().setActiveItem(cmp);
 	},
 	
 	/*

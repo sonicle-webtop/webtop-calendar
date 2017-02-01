@@ -71,7 +71,9 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 						fn: me.onBlurAutoSave,
 						scope: me
 					}
-				}/*,
+				},
+				needReload: true
+				/*,
 				validator: function(value) {
 					var end = me.getFieldValue('workdayEnd');
 					//if(!end) return true;
@@ -91,7 +93,9 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 						fn: me.onBlurAutoSave,
 						scope: me
 					}
-				}/*,
+				},
+				needReload: true
+				/*,
 				validator: function(value) {
 					var start = me.getFieldValue('workdayStart');
 					//if(!start) return true;

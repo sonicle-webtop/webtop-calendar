@@ -38,7 +38,7 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.bol.model.EventBase;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.core.CoreLocaleKey;
 import com.sonicle.webtop.core.app.CoreManifest;
 import com.sonicle.webtop.core.app.WT;
@@ -61,7 +61,7 @@ import org.joda.time.format.DateTimeFormatter;
 public class TplHelper {
 	private static final String SERVICE_ID = "com.sonicle.webtop.calendar";
 	
-	public static String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, EventBase event, String crud) {
+	public static String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, Event event, String crud) {
 		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
 		StringBuilder sb = new StringBuilder();
 		
@@ -78,7 +78,7 @@ public class TplHelper {
 		return NotificationHelper.buildSubject(locale, SERVICE_ID, MessageFormat.format(pattern, sb.toString()));
 	}
 	
-	public static String buildEventInvitationBodyTpl(Locale locale, String dateFormat, String timeFormat, EventBase event, String crud, String recipientEmail, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+	public static String buildEventInvitationBodyTpl(Locale locale, String dateFormat, String timeFormat, Event event, String crud, String recipientEmail, String servicePublicUrl) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
@@ -159,7 +159,7 @@ public class TplHelper {
 		return map;
 	}
 	
-	public static String buildResponseUpdateEmailSubject(Locale locale, EventBase event, EventAttendee attendee) {
+	public static String buildResponseUpdateEmailSubject(Locale locale, Event event, EventAttendee attendee) {
 		String pattern;
 		if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
 			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED);
@@ -173,7 +173,7 @@ public class TplHelper {
 		return MessageFormat.format(pattern, event.getTitle());
 	}
 	
-	public static String buildResponseUpdateBodyTpl(Locale locale, String dateFormat, String timeFormat, EventBase event, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+	public static String buildResponseUpdateBodyTpl(Locale locale, String dateFormat, String timeFormat, Event event, String servicePublicUrl) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));

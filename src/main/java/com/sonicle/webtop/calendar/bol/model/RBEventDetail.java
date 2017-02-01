@@ -81,7 +81,7 @@ public class RBEventDetail {
 	public String organizer;
 	public ArrayList<Attendee> attendees;
 	
-	public RBEventDetail(CoreManager core, RRuleStringify rrStringify, OCalendar calendar, Event event) throws WTException {
+	public RBEventDetail(CoreManager core, RRuleStringify rrStringify, OCalendar calendar, EventInstance event) throws WTException {
 		this.calendarId = event.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = calendar.getColor();

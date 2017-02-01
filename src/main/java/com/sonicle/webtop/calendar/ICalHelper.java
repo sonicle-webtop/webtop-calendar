@@ -33,8 +33,7 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.bol.model.EventBase;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import java.io.OutputStream;
 import java.net.URI;
@@ -44,7 +43,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.model.Calendar;
@@ -56,7 +54,6 @@ import net.fortuna.ical4j.model.parameter.Role;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.CalScale;
 import net.fortuna.ical4j.model.property.Description;
-import net.fortuna.ical4j.model.property.DtStamp;
 import net.fortuna.ical4j.model.property.LastModified;
 import net.fortuna.ical4j.model.property.Location;
 import net.fortuna.ical4j.model.property.Method;
@@ -68,7 +65,6 @@ import net.fortuna.ical4j.model.property.Transp;
 import net.fortuna.ical4j.model.property.Uid;
 import net.fortuna.ical4j.model.property.Version;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 
@@ -426,11 +422,11 @@ public class ICalHelper {
 		return "-//" + company + "//" + product + "//EN";
 	}
 	
-	public static void exportICal(String prodId, ArrayList<EventBase> events, OutputStream os) throws Exception {
+	public static void exportICal(String prodId, ArrayList<Event> events, OutputStream os) throws Exception {
 		exportICal(prodId, false, events, os);
 	}
 	
-	public static void exportICal(String prodId, boolean methodCancel, ArrayList<EventBase> events, OutputStream os) throws Exception {
+	public static void exportICal(String prodId, boolean methodCancel, ArrayList<Event> events, OutputStream os) throws Exception {
 		//org.joda.time.DateTime now = DateTimeUtils.now();
 		
 		Calendar ical = new Calendar();
@@ -443,7 +439,7 @@ public class ICalHelper {
 			ical.getProperties().add(Method.REQUEST);
 		}
 		
-		for(EventBase event : events) {
+		for(Event event : events) {
 			ical.getComponents().add(exportEvent(event));
 		}
 		
@@ -451,7 +447,7 @@ public class ICalHelper {
 		outputter.output(ical, os);
 	}
 	
-	public static VEvent exportEvent(EventBase event) throws Exception {
+	public static VEvent exportEvent(Event event) throws Exception {
 		org.joda.time.DateTimeZone etz = org.joda.time.DateTimeZone.forID(event.getTimezone());
 		Date start = ICal4jUtils.toICal4jDateTime(event.getStartDate(), etz);
 		Date end = ICal4jUtils.toICal4jDateTime(event.getEndDate(), etz);
@@ -499,7 +495,7 @@ public class ICalHelper {
 		return ve;
 	}
 	
-	public static RRule exportEventRecurrence(EventBase event) throws ParseException {
+	public static RRule exportEventRecurrence(Event event) throws ParseException {
 		return new RRule(event.getRecurrence().getRRule());
 	}
 	
@@ -555,11 +551,11 @@ public class ICalHelper {
 	}
 	
 	public static class ParseResult {
-		EventBase event;
+		Event event;
 		ArrayList<LocalDate> excludedDates;
 		LocalDate overwritesRecurringInstance;
 		
-		public ParseResult(EventBase event, ArrayList<LocalDate> excludedDates, LocalDate overwritesRecurringInstance) {
+		public ParseResult(Event event, ArrayList<LocalDate> excludedDates, LocalDate overwritesRecurringInstance) {
 			this.event = event;
 			this.excludedDates = excludedDates;
 			this.overwritesRecurringInstance = overwritesRecurringInstance;

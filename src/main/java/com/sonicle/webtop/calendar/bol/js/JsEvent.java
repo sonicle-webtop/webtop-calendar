@@ -35,9 +35,9 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
-import com.sonicle.webtop.calendar.bol.model.EventBase;
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventAttendee;
+import com.sonicle.webtop.calendar.bol.model.EventInstance;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import java.util.ArrayList;
 import org.joda.time.DateTimeZone;
@@ -97,7 +97,7 @@ public class JsEvent {
 	public String _recurringInfo;
 	public String _profileId;
 	
-	public JsEvent(Event event, String ownerPid) {
+	public JsEvent(EventInstance event, String ownerPid) {
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(eventTz);
 		
@@ -173,8 +173,8 @@ public class JsEvent {
 		_profileId = ownerPid;
 	}
 	
-	public static Event buildEventInstance(JsEvent jse) {
-		Event event = new Event(jse.id);
+	public static EventInstance buildEventInstance(JsEvent jse) {
+		EventInstance event = new EventInstance(jse.id);
 		event.setEventId(jse.eventId);
 		event.setCalendarId(jse.calendarId);
 		

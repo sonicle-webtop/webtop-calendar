@@ -63,12 +63,12 @@ import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventInstance;
 import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
-import com.sonicle.webtop.calendar.io.EventICalFileReader;
+import com.sonicle.webtop.calendar.io.EventICalReader;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
 import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
@@ -489,7 +489,7 @@ public class Service extends BaseService {
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
 				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
 				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
-				manager.cloneEvent(EventKey.buildKey(pl.data.eventId, pl.data.originalEventId), newStart, newEnd);
+				manager.cloneEventInstance(EventKey.buildKey(pl.data.eventId, pl.data.originalEventId), newStart, newEnd);
 				
 				new JsonResult().printTo(out);
 				
@@ -499,7 +499,7 @@ public class Service extends BaseService {
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
 				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
 				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
-				manager.updateEvent(pl.data.id, newStart, newEnd, pl.data.title);
+				manager.updateEventInstance(pl.data.id, newStart, newEnd, pl.data.title);
 				
 				new JsonResult().printTo(out);
 				
@@ -507,13 +507,13 @@ public class Service extends BaseService {
 				String uid = ServletUtils.getStringParameter(request, "id", true);
 				String target = ServletUtils.getStringParameter(request, "target", "this");
 				
-				manager.deleteEvent(target, uid);
+				manager.deleteEventInstance(target, uid);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals("restore")) {
 				String uid = ServletUtils.getStringParameter(request, "id", true);
 				
-				manager.restoreEvent(uid);
+				manager.restoreEventInstance(uid);
 				new JsonResult().printTo(out);
 			} else if(crud.equals("search")) {
 				String query = ServletUtils.getStringParameter(request, "query", true);
@@ -548,9 +548,9 @@ public class Service extends BaseService {
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
-				String id = ServletUtils.getStringParameter(request, "id", true);
+				String eventKey = ServletUtils.getStringParameter(request, "id", true);
 				
-				Event evt = manager.getEvent(id);
+				EventInstance evt = manager.getEventInstance(eventKey);
 				UserProfile.Id ownerId = manager.getCalendarOwner(evt.getCalendarId());
 				item = new JsEvent(evt, ownerId.toString());
 				new JsonResult(item).printTo(out);
@@ -560,7 +560,7 @@ public class Service extends BaseService {
 				
 				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
 				
-				Event evt = JsEvent.buildEventInstance(pl.data);
+				EventInstance evt = JsEvent.buildEventInstance(pl.data);
 				CoreManager core = WT.getCoreManager();
 				evt.setOrganizer(core.getUserData().getFullEmailAddress());
 				
@@ -571,8 +571,8 @@ public class Service extends BaseService {
 				String target = ServletUtils.getStringParameter(request, "target", "this");
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				Event evt = JsEvent.buildEventInstance(pl.data);
-				manager.editEvent(target, evt);
+				EventInstance evt = JsEvent.buildEventInstance(pl.data);
+				manager.editEventInstance(target, evt);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.MOVE)) {
@@ -580,7 +580,7 @@ public class Service extends BaseService {
 				Integer calendarId = ServletUtils.getIntParameter(request, "targetCalendarId", true);
 				boolean copy = ServletUtils.getBooleanParameter(request, "copy", false);
 				
-				manager.moveEvent(copy, id, calendarId);
+				manager.moveEventInstance(copy, id, calendarId);
 				new JsonResult().printTo(out);
 			}
 			
@@ -783,7 +783,7 @@ public class Service extends BaseService {
 			if(upl == null) throw new WTException("Uploaded file not found [{0}]", uploadId);
 			File file = new File(WT.getTempFolder(), upl.getUploadId());
 			
-			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
+			EventICalReader rea = new EventICalReader(up.getTimeZone());
 			
 			if(op.equals("do")) {
 				Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
@@ -883,10 +883,10 @@ public class Service extends BaseService {
 			//rrs.setDateFormat();
 			//rrs.setTimeFormat();
 			
-			Event event = null;
+			EventInstance event = null;
 			OCalendar calendar = null;
 			for(String key : keys) {
-				event = manager.getEvent(key);
+				event = manager.getEventInstance(key);
 				calendar = manager.getCalendar(event.getCalendarId());
 				items.add(new RBEventDetail(core, rrs, calendar, event));
 			}

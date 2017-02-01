@@ -38,7 +38,7 @@ import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsPubEvent;
-import com.sonicle.webtop.calendar.bol.model.EventBase;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.app.WT;
@@ -92,7 +92,7 @@ public class PublicService extends BasePublicService {
 				if(path.getContext().equals(PUBPATH_CONTEXT_EVENT)) {
 					EventUrlPath eventUrlPath = new EventUrlPath(path.getRemainingPath());
 
-					EventBase event = null;
+					Event event = null;
 					if(!StringUtils.isBlank(eventUrlPath.getPublicUid())) {
 						
 						if(eventUrlPath.isActionReply()) {
@@ -105,7 +105,7 @@ public class PublicService extends BasePublicService {
 							event = manager.updateEventAttendeeResponse(eventUrlPath.getPublicUid(), aid, responseStatus);
 							
 						} else {
-							event = manager.getEventByPublicUid(eventUrlPath.getPublicUid());
+							event = manager.getEventByPublicUid2(eventUrlPath.getPublicUid());
 						}
 					}
 					
@@ -144,23 +144,23 @@ public class PublicService extends BasePublicService {
 		}
 	}
 	
-	private String buildEventData(OCalendar calendar, EventBase event) {
+	private String buildEventData(OCalendar calendar, Event event) {
 		JsPubEvent js = new JsPubEvent();
 		js.id = 1;
 		js.title = event.getTitle();
-		js.when = buildWhenString(event);
+		js.when = buildWhenString(calendar, event);
 		js.timezone = event.getTimezone();
 		js.where = event.getLocation();
 		js.whereUrl = TplHelper.buildGoogleMapsUrl(event.getLocation());
 		js.calendar = calendar.getName();
-		js.organizer = buildOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
+		js.organizer = event.getOrganizer();
+		//js.organizer = buildOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
 		js.attendees = buildAttendees(js.id, event);
 		return JsonResult.GSON.toJson(js);
 	}
 	
-	private String buildWhenString(EventBase event) {
-		UserProfile.Id profileId = new UserProfile.Id(event.getCalendarProfileId());
-		CoreUserSettings cus = new CoreUserSettings(profileId);
+	private String buildWhenString(OCalendar calendar, Event event) {
+		CoreUserSettings cus = new CoreUserSettings(calendar.getProfileId());
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter dtFmt = DateTimeUtils.createFormatter(pattern, etz);
@@ -171,7 +171,7 @@ public class PublicService extends BasePublicService {
 		return StringUtils.defaultString(WT.getUserData(organizerPid).getDisplayName(), organizerPid.toString());
 	}
 	
-	private ArrayList<JsPubEvent.Attendee> buildAttendees(int id, EventBase event) {
+	private ArrayList<JsPubEvent.Attendee> buildAttendees(int id, Event event) {
 		ArrayList<JsPubEvent.Attendee> attendees = new ArrayList<>();
 		for(EventAttendee attendee : event.getAttendees()) {
 			attendees.add(new JsPubEvent.Attendee(id, attendee));
@@ -179,11 +179,11 @@ public class PublicService extends BasePublicService {
 		return attendees;
 	}
 	
-	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, OCalendar calendar, EventBase event) throws IOException, TemplateException {
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, OCalendar calendar, Event event) throws IOException, TemplateException {
 		writeEventPage(request, response, wts, view, calendar, event, new JsWTSPublic.Vars());
 	}
 	
-	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, OCalendar calendar, EventBase event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, OCalendar calendar, Event event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
 		vars.put("view", view);
 		vars.put("eventData", buildEventData(calendar, event));
 		writePage(response, wts, vars, ServletUtils.getBaseURL(request));

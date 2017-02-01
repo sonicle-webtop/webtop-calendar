@@ -33,22 +33,15 @@
  */
 package com.sonicle.webtop.calendar.io;
 
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.core.util.LogEntries;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import org.joda.time.LocalDate;
 
 /**
  *
  * @author malbinola
  */
-public class EventReadResult {
-	public Event event;
-	public ArrayList<LocalDate> excludedDates;
-	public LocalDate overwritesRecurringInstance;
-	
-	public EventReadResult(Event event, ArrayList<LocalDate> excludedDates, LocalDate overwritesRecurringInstance) {
-		this.event = event;
-		this.excludedDates = excludedDates;
-		this.overwritesRecurringInstance = overwritesRecurringInstance;
-	}
+public interface EventReader {
+	public ArrayList<EventReadResult> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException;
 }

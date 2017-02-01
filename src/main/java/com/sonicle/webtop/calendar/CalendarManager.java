@@ -41,7 +41,7 @@ import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.security.DomainAccount;
-import com.sonicle.webtop.calendar.bol.model.EventBase;
+import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
 import com.sonicle.webtop.calendar.bol.OCalendar;
@@ -52,7 +52,8 @@ import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.bol.model.Event;
+import com.sonicle.webtop.calendar.bol.model.EventInstance;
+import com.sonicle.webtop.calendar.bol.model.EventInstance.RecurringInfo;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
@@ -60,7 +61,7 @@ import com.sonicle.webtop.calendar.dal.EventAttendeeDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
-import com.sonicle.webtop.calendar.io.EventFileReader;
+import com.sonicle.webtop.calendar.io.EventICalReader;
 import com.sonicle.webtop.calendar.io.EventReadResult;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
@@ -134,6 +135,9 @@ import org.supercsv.cellprocessor.joda.FmtDateTime;
 import org.supercsv.io.CsvMapWriter;
 import org.supercsv.io.ICsvMapWriter;
 import org.supercsv.prefs.CsvPreference;
+import com.sonicle.webtop.calendar.io.EventReader;
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 /**
  *
@@ -592,52 +596,66 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public EventBase getEventByPublicUid(String publicUid) throws WTException {
-		String eventKey = eventKeyByPublicUid(publicUid);
-		if(eventKey == null) return null;
-		return getEvent(eventKey);
+	public String getEventInstanceKey(int eventId) throws WTException {
+		EventDAO edao = EventDAO.getInstance();
+		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			
+			OEvent oevt = edao.selectById(con, eventId);
+			if(oevt == null) throw new WTException("Unable to retrieve event [{0}]", eventId);
+			
+			//TODO: completare implementazione differenziando eventi singoli, broken ed istanze ricorrenti...
+			return EventKey.buildKey(oevt.getEventId(), oevt.getEventId());
+		
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
 	}
 	
-	public Event getEvent(String eventKey) throws WTException {
+	public Integer getEventId(String publicUid) throws WTException {
+		EventDAO edao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			
+			return edao.selectIdByPublicUid(con, publicUid);
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public Event getEvent(int eventId) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
 		EventAttendeeDAO adao = EventAttendeeDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			EventKey ekey = new EventKey(eventKey);
 			con = WT.getConnection(SERVICE_ID);
 			
-			OEvent original = edao.selectById(con, ekey.originalEventId);
-			if(original == null) throw new WTException("Unable to retrieve original event [{0}]", ekey.originalEventId);
-			checkRightsOnCalendarFolder(original.getCalendarId(), "READ"); // Rights check!
+			OEvent oevt = edao.selectById(con, eventId);
+			if(oevt == null) throw new WTException("Unable to retrieve event [{0}]", eventId);
+			checkRightsOnCalendarFolder(oevt.getCalendarId(), "READ"); // Rights check!
 			
-			VSchedulerEvent se = edao.view(con, ekey.eventId);
-			se.updateCalculatedFields(); // TODO: Serve??????????????????????
-			if(se == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
-			
-			Event evt = null;
-			String type = guessEventType(ekey, original);
-			if(type.equals(EVENT_NORMAL)) {
-				evt = createEvent(eventKey, EventBase.RecurringInfo.SINGLE, se);
-				evt.setAttendees(createEventAttendeeList(adao.selectByEvent(con, se.getEventId())));
-				
-			} else if(type.equals(EVENT_RECURRING)) {
-				ORecurrence rec = rdao.select(con, se.getRecurrenceId());
-				if(rec == null) throw new WTException("Unable to retrieve recurrence [{0}]", ekey.originalEventId);
-				
-				evt = createEvent(eventKey, EventBase.RecurringInfo.RECURRING, se);
-				int eventDays = calculateEventLengthInDays(se);
-				evt.setStartDate(evt.getStartDate().withDate(ekey.instanceDate));
-				evt.setEndDate(evt.getEndDate().withDate(evt.getStartDate().plusDays(eventDays).toLocalDate()));
-				evt.setRecurrence(createEventRecurrence(rec));
-				
-			} else if(type.equals(EVENT_BROKEN)) {
-				//TODO: recuperare il record ricorrenza per verifica?
-				evt = createEvent(eventKey, EventBase.RecurringInfo.BROKEN, se);
-				evt.setAttendees(createEventAttendeeList(adao.selectByEvent(con, se.getEventId())));
+			List<OEventAttendee> oatts = adao.selectByEvent(con, eventId);
+			ORecurrence orec = null;
+			if (oevt.getRecurrenceId() != null) {
+				orec = rdao.select(con, oevt.getRecurrenceId());
+				if(orec == null) throw new WTException("Unable to retrieve recurrence [{0}]", oevt.getRecurrenceId());
 			}
 			
+			Event evt = createEvent(oevt);
+			evt.setAttendees(createEventAttendeeList(oatts));
+			evt.setRecurrence(createEventRecurrence(orec));
 			return evt;
 			
 		} catch(SQLException | DAOException ex) {
@@ -647,7 +665,72 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public void addEvent(EventBase event) throws WTException {
+	public Event getEvent(String publicUid) throws WTException {
+		Integer eventId = getEventId(publicUid);
+		if(eventId == null) throw new WTException("Unable to retrieve event by public uid [{0}]", publicUid);
+		return getEvent(eventId);
+	}
+	
+	public Event getEventByPublicUid2(String publicUid) throws WTException {
+		String eventKey = eventKeyByPublicUid(publicUid);
+		if(eventKey == null) return null;
+		return getEventInstance(eventKey);
+	}
+	
+	public EventInstance getEventInstance(String eventKey) throws WTException {
+		EventDAO edao = EventDAO.getInstance();
+		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
+		EventAttendeeDAO adao = EventAttendeeDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			EventKey ek = new EventKey(eventKey);
+			con = WT.getConnection(SERVICE_ID);
+			
+			OEvent original = edao.selectById(con, ek.originalEventId);
+			if(original == null) throw new WTException("Unable to retrieve original event [{0}]", ek.originalEventId);
+			checkRightsOnCalendarFolder(original.getCalendarId(), "READ"); // Rights check!
+			
+			VSchedulerEvent sevt = edao.view(con, ek.eventId);
+			sevt.updateCalculatedFields(); // TODO: Serve??????????????????????
+			if(sevt == null) throw new WTException("Unable to retrieve event [{}]", ek.eventId);
+			
+			EventInstance evti = null;
+			String type = guessEventType(ek, original);
+			if(type.equals(EVENT_NORMAL)) {
+				evti = createEventInstance(eventKey, RecurringInfo.SINGLE, sevt);
+				evti.setAttendees(createEventAttendeeList(adao.selectByEvent(con, sevt.getEventId())));
+				
+			} else if(type.equals(EVENT_RECURRING)) {
+				ORecurrence rec = rdao.select(con, sevt.getRecurrenceId());
+				if(rec == null) throw new WTException("Unable to retrieve recurrence [{0}]", ek.originalEventId);
+				
+				evti = createEventInstance(eventKey, RecurringInfo.RECURRING, sevt);
+				int eventDays = calculateEventLengthInDays(sevt);
+				evti.setStartDate(evti.getStartDate().withDate(ek.instanceDate));
+				evti.setEndDate(evti.getEndDate().withDate(evti.getStartDate().plusDays(eventDays).toLocalDate()));
+				evti.setRecurrence(createEventRecurrence(rec));
+				
+			} else if(type.equals(EVENT_BROKEN)) {
+				//TODO: recuperare il record ricorrenza per verifica?
+				evti = createEventInstance(eventKey, RecurringInfo.BROKEN, sevt);
+				evti.setAttendees(createEventAttendeeList(adao.selectByEvent(con, sevt.getEventId())));
+			}
+			
+			return evti;
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public Event addEvent(Event event) throws WTException {
+		return addEvent(event, true);
+	}
+	
+	public Event addEvent(Event event, boolean notifyAttendees) throws WTException {
 		Connection con = null;
 		
 		try {
@@ -660,12 +743,19 @@ public class CalendarManager extends BaseManager {
 			
 			//TODO: gestire le notifiche invito per gli eventi ricorrenti
 			// Handle attendees invitation
-			if(!insert.attendees.isEmpty()) { // Checking it here avoids unuseful calls!
-				if(insert.recurrence == null) {
+			if (notifyAttendees && !insert.attendees.isEmpty()) { // Checking it here avoids unuseful calls!
+				if (insert.recurrence == null) {
 					String eventKey = EventKey.buildKey(insert.event.getEventId(), insert.event.getEventId());
-					notifyAttendees(Crud.CREATE, getEvent(eventKey));
+					notifyAttendees(Crud.CREATE, getEventInstance(eventKey));
+				} else {
+					logger.warn("Attendees notification within recurrence is not supported");
 				}
 			}
+			
+			Event evt = createEvent(insert.event);
+			evt.setAttendees(createEventAttendeeList(insert.attendees));
+			evt.setRecurrence(createEventRecurrence(insert.recurrence));
+			return evt;
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -678,7 +768,24 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public void editEvent(String target, Event event) throws WTException {
+	public Event addEventFromICal(int calendarId, InputStream is) throws WTException {
+		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		
+		ArrayList<EventReadResult> parsed = null;
+		try {
+			EventICalReader rea = new EventICalReader(udata.getTimeZone());
+			parsed = rea.listEvents(new LogEntries(), is);
+		} catch(IOException | UnsupportedOperationException ex) {
+			throw new WTException(ex);
+		}
+		if (parsed.size() > 1) throw new WTException("Stream must contain at least one event");
+		
+		Event event = parsed.get(0).event;
+		event.setCalendarId(calendarId);
+		return addEvent(event, false);
+	}
+	
+	public void editEventInstance(String target, EventInstance event) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
 		Connection con = null;
@@ -701,7 +808,7 @@ public class CalendarManager extends BaseManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 					// Handle attendees invitation
-					notifyAttendees(Crud.UPDATE, getEvent(event.getKey()));
+					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
 				}
 				
 			} else if(type.equals(EVENT_BROKEN)) {
@@ -714,7 +821,7 @@ public class CalendarManager extends BaseManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
 					// Handle attendees invitation
-					notifyAttendees(Crud.UPDATE, getEvent(event.getKey()));
+					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
 				}
 				
 			} else if(type.equals(EVENT_RECURRING)) {
@@ -775,11 +882,11 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public void cloneEvent(String eventKey, DateTime startDate, DateTime endDate) throws WTException {
+	public void cloneEventInstance(String eventKey, DateTime startDate, DateTime endDate) throws WTException {
 		Connection con = null;
 		
 		try {
-			EventBase event = getEvent(eventKey);
+			Event event = getEventInstance(eventKey);
 			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
 			
 			event.setStartDate(startDate);
@@ -802,7 +909,7 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public void updateEvent(String eventKey, DateTime startDate, DateTime endDate, String title) throws WTException {
+	public void updateEventInstance(String eventKey, DateTime startDate, DateTime endDate, String title) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -827,7 +934,7 @@ public class CalendarManager extends BaseManager {
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(evt.getEventId()));
 				// Handle attendees invitation
-				notifyAttendees(Crud.UPDATE, getEvent(eventKey));
+				notifyAttendees(Crud.UPDATE, getEventInstance(eventKey));
 				
 			} else {
 				throw new WTException("Unable to move recurring event instance [{}]", ekey.eventId);
@@ -844,7 +951,7 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public void deleteEvent(String target, String eventKey) throws WTException {
+	public void deleteEventInstance(String target, String eventKey) throws WTException {
 		EventDAO evtdao = EventDAO.getInstance();
 		RecurrenceDAO recdao = RecurrenceDAO.getInstance();
 		Connection con = null;
@@ -857,7 +964,7 @@ public class CalendarManager extends BaseManager {
 			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
 			checkRightsOnCalendarElements(originalEvent.getCalendarId(), "DELETE");
 			
-			EventBase evtBase = getEvent(eventKey); // Gets event for later use
+			Event evtBase = getEventInstance(eventKey); // Gets event for later use
 			
 			String type = guessEventType(ekey, originalEvent);
 			if(type.equals(EVENT_NORMAL)) {
@@ -928,20 +1035,7 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	private void doDeleteEvent(Connection con, int eventId) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		edao.logicDeleteById(con, eventId, createRevisionTimestamp());
-		//TODO: cancellare reminder
-		//TODO: se ricorrenza, eliminare tutte le broken dove newid!=null ??? Non servi più dato che verifico il D dell'evento ricorrente
-	}
-	
-	private int doDeleteEventsByCalendar(Connection con, int calendarId) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		return edao.logicDeleteByCalendarId(con, calendarId, createRevisionTimestamp());
-		//TODO: cancellare reminder
-	}
-	
-	public void restoreEvent(String eventKey) throws WTException {
+	public void restoreEventInstance(String eventKey) throws WTException {
 		Connection con = null;
 		
 		try {
@@ -974,13 +1068,13 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public void moveEvent(boolean copy, String eventKey, int targetCalendarId) throws WTException {
+	public void moveEventInstance(boolean copy, String eventKey, int targetCalendarId) throws WTException {
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			EventBase evt = getEvent(eventKey);
+			Event evt = getEventInstance(eventKey);
 			if(copy || (targetCalendarId != evt.getCalendarId())) {
 				checkRightsOnCalendarElements(targetCalendarId, "CREATE"); // Rights check!
 				
@@ -1198,17 +1292,17 @@ public class CalendarManager extends BaseManager {
 		return createEventAttendeeList(attendees);
 	}
 	
-	public EventBase updateEventAttendeeResponse(String eventUid, String attendeeUid, String response) throws Exception {
+	public Event updateEventAttendeeResponse(String eventPublicUid, String attendeeUid, String response) throws Exception {
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			SchedulerEvent ve = getSchedulerEventByUid(con, eventUid);
+			SchedulerEvent ve = getSchedulerEventByUid(con, eventPublicUid);
 			
 			EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
 			int ret = eadao.updateAttendeeResponse(con, attendeeUid, ve.getEventId(), response);
 			if(ret == 1) {
-				EventBase evtBase = getEvent(ve.getKey());
+				Event evtBase = getEventInstance(ve.getKey());
 				notifyOrganizer(getLocale(), evtBase, attendeeUid);
 				return evtBase;
 			} else {
@@ -1222,7 +1316,7 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public LogEntries importEvents(int calendarId, EventFileReader rea, File file, String mode) throws WTException {
+	public LogEntries importEvents(int calendarId, EventReader rea, File file, String mode) throws WTException {
 		LogEntries log = new LogEntries();
 		HashMap<String, OEvent> uidMap = new HashMap<>();
 		Connection con = null;
@@ -1234,11 +1328,15 @@ public class CalendarManager extends BaseManager {
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started at {0}", new DateTime()));
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Reading source file..."));
 			ArrayList<EventReadResult> parsed = null;
+			FileInputStream fis = null;
 			try {
-				parsed = rea.listEvents(log, file);
+				fis = new FileInputStream(file);
+				parsed = rea.listEvents(log, fis);
 			} catch(IOException | UnsupportedOperationException ex) {
 				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
 				throw new WTException(ex);
+			} finally {
+				IOUtils.closeQuietly(fis);
 			}
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", parsed.size()));
 			
@@ -1505,7 +1603,7 @@ public class CalendarManager extends BaseManager {
 		return alerts;
 	}
 	
-	private void notifyOrganizer(Locale locale, EventBase event, String attendeeId) {
+	private void notifyOrganizer(Locale locale, Event event, String attendeeId) {
 		String targetDomainId = getTargetProfileId().getDomainId();
 		CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
 		String dateFormat = cus.getShortDateFormat();
@@ -1538,7 +1636,7 @@ public class CalendarManager extends BaseManager {
 		}	
 	}
 	
-	private void notifyAttendees(String crud, EventBase event) {
+	private void notifyAttendees(String crud, Event event) {
 		try {
 			// Finds attendees to be notified...
 			ArrayList<EventAttendee> toBeNotified = new ArrayList<>();
@@ -1559,7 +1657,7 @@ public class CalendarManager extends BaseManager {
 				ByteArrayOutputStream baos = null;
 				try {
 					baos = new ByteArrayOutputStream();
-					ArrayList<EventBase> events = new ArrayList<>();
+					ArrayList<Event> events = new ArrayList<>();
 					events.add(event);
 					String prodId = ICalHelper.buildProdId(WT.getPlatformName(), "Calendar");
 					ICalHelper.exportICal(prodId, methodCancel, events, baos);
@@ -1769,7 +1867,7 @@ public class CalendarManager extends BaseManager {
 		return item;
 	}
 	
-	private InsertResult doEventInsert(Connection con, EventBase event, boolean recurrence, boolean attendees) throws WTException {
+	private InsertResult doEventInsert(Connection con, Event event, boolean insertRecurrence, boolean insertAttendees) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
@@ -1783,7 +1881,7 @@ public class CalendarManager extends BaseManager {
 		oevt.setEventId(evtDao.getSequence(con).intValue());
 		
 		ArrayList<OEventAttendee> oatts = new ArrayList<>();
-		if(attendees && event.hasAttendees()) {
+		if(insertAttendees && event.hasAttendees()) {
 			OEventAttendee oatt = null;
 			for(EventAttendee att : event.getAttendees()) {
 				oatt = new OEventAttendee();
@@ -1796,7 +1894,7 @@ public class CalendarManager extends BaseManager {
 		}
 		
 		ORecurrence orec = null;
-		if(recurrence && event.hasRecurrence()) {
+		if(insertRecurrence && event.hasRecurrence()) {
 			orec = new ORecurrence();
 			orec.fillFrom(event.getRecurrence(), oevt.getStartDate(), oevt.getEndDate(), oevt.getTimezone());
 			orec.setRecurrenceId(recDao.getSequence(con).intValue());
@@ -1812,7 +1910,7 @@ public class CalendarManager extends BaseManager {
 		return new InsertResult(oevt, orec, oatts);
 	}
 	
-	private OEvent doEventUpdate(Connection con, OEvent originalEvent, EventBase event, boolean attendees) throws WTException {
+	private OEvent doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean attendees) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
 		DateTime revision = createRevisionTimestamp();
@@ -1847,7 +1945,20 @@ public class CalendarManager extends BaseManager {
 		return originalEvent;
 	}
 	
-	private void doMoveEvent(Connection con, boolean copy, EventBase event, int targetCalendarId) throws WTException {
+	private void doDeleteEvent(Connection con, int eventId) throws WTException {
+		EventDAO edao = EventDAO.getInstance();
+		edao.logicDeleteById(con, eventId, createRevisionTimestamp());
+		//TODO: cancellare reminder
+		//TODO: se ricorrenza, eliminare tutte le broken dove newid!=null ??? Non servi più dato che verifico il D dell'evento ricorrente
+	}
+	
+	private int doDeleteEventsByCalendar(Connection con, int calendarId) throws WTException {
+		EventDAO edao = EventDAO.getInstance();
+		return edao.logicDeleteByCalendarId(con, calendarId, createRevisionTimestamp());
+		//TODO: cancellare reminder
+	}
+	
+	private void doMoveEvent(Connection con, boolean copy, Event event, int targetCalendarId) throws WTException {
 		if(copy) {
 			event.setCalendarId(targetCalendarId);
 			doEventInsert(con, event, true, true);
@@ -2028,47 +2139,71 @@ public class CalendarManager extends BaseManager {
 		return event;
 	}
 	
-	private Event createEvent(String key, EventBase.RecurringInfo recurringInfo, VSchedulerEvent se) {
-		Event event = new Event(key, recurringInfo, se);
-		event.setEventId(se.getEventId());
-		event.setPublicUid(se.getPublicUid());
-		event.setCalendarId(se.getCalendarId());
-		event.setStartDate(se.getStartDate());
-		event.setEndDate(se.getEndDate());
-		event.setTimezone(se.getTimezone());
-		event.setAllDay(se.getAllDay());
-		event.setTitle(se.getTitle());
-		event.setDescription(se.getDescription());
-		event.setLocation(se.getLocation());
-		event.setIsPrivate(se.getIsPrivate());
-		event.setBusy(se.getBusy());
-		event.setReminder(se.getReminder());
-		event.setOrganizer(se.getOrganizer());
-		event.setActivityId(se.getActivityId());
-		event.setCustomerId(se.getCustomerId());
-		event.setStatisticId(se.getStatisticId());
-		event.setCausalId(se.getCausalId());
-		event.setRevisionTimestamp(se.getRevisionTimestamp());
-		return event;
+	private Event createEvent(OEvent oevt) {
+		Event evt = new Event();
+		evt.setEventId(oevt.getEventId());
+		evt.setCalendarId(oevt.getCalendarId());
+		evt.setRevisionTimestamp(oevt.getRevisionTimestamp());
+		evt.setPublicUid(oevt.getPublicUid());
+		evt.setStartDate(oevt.getStartDate());
+		evt.setEndDate(oevt.getEndDate());
+		evt.setTimezone(oevt.getTimezone());
+		evt.setAllDay(oevt.getAllDay());
+		evt.setOrganizer(oevt.getOrganizer());
+		evt.setTitle(oevt.getTitle());
+		evt.setDescription(oevt.getDescription());
+		evt.setLocation(oevt.getLocation());
+		evt.setIsPrivate(oevt.getIsPrivate());
+		evt.setBusy(oevt.getBusy());
+		evt.setReminder(oevt.getReminder());
+		evt.setActivityId(oevt.getActivityId());
+		evt.setCustomerId(oevt.getCustomerId());
+		evt.setStatisticId(oevt.getStatisticId());
+		evt.setCausalId(oevt.getCausalId());
+		return evt;
 	}
 	
-	private Recurrence createEventRecurrence(ORecurrence recurrence) {
+	private EventInstance createEventInstance(String key, RecurringInfo recurringInfo, VSchedulerEvent se) {
+		EventInstance evti = new EventInstance(key, recurringInfo);
+		evti.setEventId(se.getEventId());
+		evti.setCalendarId(se.getCalendarId());
+		evti.setRevisionTimestamp(se.getRevisionTimestamp());
+		evti.setPublicUid(se.getPublicUid());
+		evti.setStartDate(se.getStartDate());
+		evti.setEndDate(se.getEndDate());
+		evti.setTimezone(se.getTimezone());
+		evti.setAllDay(se.getAllDay());
+		evti.setOrganizer(se.getOrganizer());
+		evti.setTitle(se.getTitle());
+		evti.setDescription(se.getDescription());
+		evti.setLocation(se.getLocation());
+		evti.setIsPrivate(se.getIsPrivate());
+		evti.setBusy(se.getBusy());
+		evti.setReminder(se.getReminder());
+		evti.setActivityId(se.getActivityId());
+		evti.setCustomerId(se.getCustomerId());
+		evti.setStatisticId(se.getStatisticId());
+		evti.setCausalId(se.getCausalId());
+		return evti;
+	}
+	
+	private Recurrence createEventRecurrence(ORecurrence orec) {
+		if (orec == null) return null;
 		Recurrence rec = new Recurrence();
-		
-		rec.setType(recurrence.getType());
-		rec.setDailyFreq(recurrence.getDailyFreq());
-		rec.setWeeklyFreq(recurrence.getWeeklyFreq());
-		rec.setWeeklyDay1(recurrence.getWeeklyDay_1());
-		rec.setWeeklyDay2(recurrence.getWeeklyDay_2());
-		rec.setWeeklyDay3(recurrence.getWeeklyDay_3());
-		rec.setWeeklyDay4(recurrence.getWeeklyDay_4());
-		rec.setWeeklyDay5(recurrence.getWeeklyDay_5());
-		rec.setWeeklyDay6(recurrence.getWeeklyDay_6());
-		rec.setWeeklyDay7(recurrence.getWeeklyDay_7());
-		rec.setMonthlyFreq(recurrence.getMonthlyFreq());
-		rec.setMonthlyDay(recurrence.getMonthlyDay());
-		rec.setYearlyFreq(recurrence.getYearlyFreq());
-		rec.setYearlyDay(recurrence.getYearlyDay());
+		rec.setType(orec.getType());
+		rec.setDailyFreq(orec.getDailyFreq());
+		rec.setWeeklyFreq(orec.getWeeklyFreq());
+		rec.setWeeklyDay1(orec.getWeeklyDay_1());
+		rec.setWeeklyDay2(orec.getWeeklyDay_2());
+		rec.setWeeklyDay3(orec.getWeeklyDay_3());
+		rec.setWeeklyDay4(orec.getWeeklyDay_4());
+		rec.setWeeklyDay5(orec.getWeeklyDay_5());
+		rec.setWeeklyDay6(orec.getWeeklyDay_6());
+		rec.setWeeklyDay7(orec.getWeeklyDay_7());
+		rec.setMonthlyFreq(orec.getMonthlyFreq());
+		rec.setMonthlyDay(orec.getMonthlyDay());
+		rec.setYearlyFreq(orec.getYearlyFreq());
+		rec.setYearlyDay(orec.getYearlyDay());
 		
 		/*
 		if(recurrence.getRepeat() != null) {
@@ -2084,19 +2219,19 @@ public class CalendarManager extends BaseManager {
 		}
 		*/
 		
-		rec.setUntilDate(recurrence.getUntilDate());
-		if(recurrence.isEndRepeat()) {
+		rec.setUntilDate(orec.getUntilDate());
+		if(orec.isEndRepeat()) {
 			rec.setEndsMode(Recurrence.ENDS_MODE_REPEAT);
-			rec.setRepeatTimes(recurrence.getRepeat());
-		} else if(recurrence.isEndUntil()) {
+			rec.setRepeatTimes(orec.getRepeat());
+		} else if(orec.isEndUntil()) {
 			rec.setEndsMode(Recurrence.ENDS_MODE_UNTIL);
-		} else if(recurrence.isEndNever()) {
+		} else if(orec.isEndNever()) {
 			rec.setEndsMode(Recurrence.ENDS_MODE_NEVER);
 		} else {
 			throw new WTRuntimeException("Unable to set a valid endMode");
 		}
 		
-		rec.setRRule(recurrence.getRule());
+		rec.setRRule(orec.getRule());
 		return rec;
 	}
 	

@@ -31,65 +31,56 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
-
-import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.bol.model.Event;
-import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
-import org.joda.time.DateTime;
+package com.sonicle.webtop.calendar.bol.model;
 
 /**
  *
  * @author malbinola
  */
-public class OEvent extends Events {
-	public final static String REV_STATUS_NEW = "N";
-	public final static String REV_STATUS_MODIFIED = "M";
-	public final static String REV_STATUS_DELETED = "D";
+public class EventInstance extends Event {
+	protected String key;
+	protected RecurringInfo recurringInfo;
 	
-	public OEvent() {
+	public EventInstance(String key) {
+		this.key = key;
+	}
+	
+	public EventInstance(String key, RecurringInfo recurringInfo) {
 		super();
-		setReadOnly(false);
-		setRevisionStatus(REV_STATUS_NEW);
+		this.key = key;
+		this.recurringInfo = recurringInfo;
 	}
 	
-	public void fillFrom(Event event) {
-		setCalendarId(event.getCalendarId());
-		
-		setStartDate(event.getStartDate());
-		setEndDate(event.getEndDate());
-		setTimezone(event.getTimezone());
-		setAllDay(event.getAllDay());
-		ensureCoherence(this);
-		
-		setTitle(event.getTitle());
-		setDescription(event.getDescription());
-		setLocation(event.getLocation());
-		setIsPrivate(event.getIsPrivate());
-		setBusy(event.getBusy());
-		setReminder(event.getReminder());
-		setActivityId(event.getActivityId());
-		setCustomerId(event.getCustomerId());
-		setStatisticId(event.getStatisticId());
-		setCausalId(event.getCausalId());
-		setOrganizer(event.getOrganizer());
-		setRevisionTimestamp(event.getRevisionTimestamp());
-		setPublicUid(event.getPublicUid());
+	public String getKey() {
+		return key;
 	}
 	
-	public static void ensureCoherence(OEvent event) {
-		// Ensure start < end
-		if(event.getStartDate().compareTo(event.getEndDate()) > 0) {
-			// Swap dates...
-			DateTime dt = event.getEndDate();
-			event.setEndDate(event.getStartDate());
-			event.setStartDate(dt);
-		}
-		
-		// If event is all day, take max time as possible
-		if(event.getAllDay()) {
-			event.setStartDate(event.getStartDate().withTimeAtStartOfDay());
-			event.setEndDate(DateTimeUtils.withTimeAtEndOfDay(event.getEndDate()));
+	public void setKey(String value) {
+		key = value;
+	}
+	
+	public RecurringInfo getRecurringInfo() {
+		return recurringInfo;
+	}
+	
+	public static enum RecurringInfo {
+		SINGLE {
+			@Override
+			public String toString() {
+				return "single";
+			}
+		},
+		BROKEN {
+			@Override
+			public String toString() {
+				return "broken";
+			}
+		},
+		RECURRING {
+			@Override
+			public String toString() {
+				return "recurring";
+			}
 		}
 	}
 }

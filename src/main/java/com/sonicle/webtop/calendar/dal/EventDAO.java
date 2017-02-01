@@ -78,6 +78,17 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
+	public Integer selectIdByPublicUid(Connection con, String publicUid) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(EVENTS.EVENT_ID)
+			.from(EVENTS)
+			.where(
+					EVENTS.PUBLIC_UID.equal(publicUid)
+			)
+			.fetchOne(0, Integer.class);
+	}
+	
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		OEvent.ensureCoherence(item);

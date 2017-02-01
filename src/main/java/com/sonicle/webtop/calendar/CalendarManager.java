@@ -61,7 +61,7 @@ import com.sonicle.webtop.calendar.dal.EventAttendeeDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
-import com.sonicle.webtop.calendar.io.EventICalReader;
+import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.io.EventReadResult;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
@@ -135,9 +135,10 @@ import org.supercsv.cellprocessor.joda.FmtDateTime;
 import org.supercsv.io.CsvMapWriter;
 import org.supercsv.io.ICsvMapWriter;
 import org.supercsv.prefs.CsvPreference;
-import com.sonicle.webtop.calendar.io.EventReader;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import net.fortuna.ical4j.model.Calendar;
+import com.sonicle.webtop.calendar.io.EventFileReader;
 
 /**
  *
@@ -768,16 +769,11 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public Event addEventFromICal(int calendarId, InputStream is) throws WTException {
+	public Event addEventFromICal(int calendarId, Calendar ical) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		
-		ArrayList<EventReadResult> parsed = null;
-		try {
-			EventICalReader rea = new EventICalReader(udata.getTimeZone());
-			parsed = rea.listEvents(new LogEntries(), is);
-		} catch(IOException | UnsupportedOperationException ex) {
-			throw new WTException(ex);
-		}
+		EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
+		ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
 		if (parsed.size() > 1) throw new WTException("Stream must contain at least one event");
 		
 		Event event = parsed.get(0).event;
@@ -1316,7 +1312,7 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public LogEntries importEvents(int calendarId, EventReader rea, File file, String mode) throws WTException {
+	public LogEntries importEvents(int calendarId, EventFileReader rea, File file, String mode) throws WTException {
 		LogEntries log = new LogEntries();
 		HashMap<String, OEvent> uidMap = new HashMap<>();
 		Connection con = null;
@@ -1328,15 +1324,11 @@ public class CalendarManager extends BaseManager {
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started at {0}", new DateTime()));
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Reading source file..."));
 			ArrayList<EventReadResult> parsed = null;
-			FileInputStream fis = null;
 			try {
-				fis = new FileInputStream(file);
-				parsed = rea.listEvents(log, fis);
+				parsed = rea.listEvents(log, file);
 			} catch(IOException | UnsupportedOperationException ex) {
 				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
 				throw new WTException(ex);
-			} finally {
-				IOUtils.closeQuietly(fis);
 			}
 			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", parsed.size()));
 			

@@ -68,7 +68,7 @@ import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
 import com.sonicle.webtop.calendar.bol.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
-import com.sonicle.webtop.calendar.io.EventICalReader;
+import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
 import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
@@ -783,7 +783,7 @@ public class Service extends BaseService {
 			if(upl == null) throw new WTException("Uploaded file not found [{0}]", uploadId);
 			File file = new File(WT.getTempFolder(), upl.getUploadId());
 			
-			EventICalReader rea = new EventICalReader(up.getTimeZone());
+			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
 			
 			if(op.equals("do")) {
 				Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);

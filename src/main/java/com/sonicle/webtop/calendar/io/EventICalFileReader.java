@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -83,16 +84,15 @@ import org.joda.time.LocalDate;
  *
  * @author malbinola
  */
-public class EventICalReader implements EventReader {
-	private DateTimeZone defaultTz;
+public class EventICalFileReader implements EventFileReader {
+	private final DateTimeZone defaultTz;
 	
-	public EventICalReader(DateTimeZone defaultTz) {
+	public EventICalFileReader(DateTimeZone defaultTz) {
 		this.defaultTz = defaultTz;
 	}
 	
-	/*
 	@Override
-	public ArrayList<EventReadResult> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException {
+	public ArrayList<EventReadResult> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException{
 		FileInputStream fis = null;
 		try {
 			fis = new FileInputStream(file);
@@ -101,23 +101,24 @@ public class EventICalReader implements EventReader {
 			IOUtils.closeQuietly(fis);
 		}
 	}
-	*/
 	
-	@Override
-	public ArrayList<EventReadResult> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException {
-		// See http://www.kanzaki.com/docs/ical/
-		ArrayList<EventReadResult> results = new ArrayList<>();
-		
+	public ArrayList<EventReadResult> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException, WTException {
 		Calendar cal = null;
 		try {
 			cal = ICalendarUtils.parseRelaxed(is);
 		} catch(ParserException ex) {
 			throw new UnsupportedOperationException(ex);
 		}
+		return readCalendar(log, cal);
+	}
+	
+	public ArrayList<EventReadResult> readCalendar(LogEntries log, Calendar calendar) throws WTException {
+		// See http://www.kanzaki.com/docs/ical/
+		ArrayList<EventReadResult> results = new ArrayList<>();
 		
 		VEvent ve = null;
 		LogEntries velog = null;
-		for(Iterator xi = cal.getComponents().iterator(); xi.hasNext();) {
+		for(Iterator xi = calendar.getComponents().iterator(); xi.hasNext();) {
 			Component component = (Component) xi.next();
 			if (component instanceof VEvent) {
 				ve = (VEvent)component;
@@ -136,7 +137,7 @@ public class EventICalReader implements EventReader {
 		return results;
 	}
 	
-	public EventReadResult readVEvent(LogEntries log, VEvent ve) throws Exception {
+	public EventReadResult readVEvent(LogEntries log, VEvent ve) throws WTException {
 		Event event = new Event();
 		ArrayList<LocalDate> excludedDates = null;
 		LocalDate overwritesRecurringInstance = null;
@@ -260,7 +261,7 @@ public class EventICalReader implements EventReader {
 		return new EventReadResult(event, excludedDates, overwritesRecurringInstance);
 	}
 	
-	private Recurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) throws Exception {
+	private Recurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) {
 		Recurrence rec = new Recurrence();
 		
 		Recur recur = rr.getRecur();
@@ -340,7 +341,7 @@ public class EventICalReader implements EventReader {
 		return rec;
 	}
 	
-	private List<LocalDate> parseVEventExDate(LogEntries log, ExDate ex) throws Exception {
+	private List<LocalDate> parseVEventExDate(LogEntries log, ExDate ex) {
 		ArrayList<LocalDate> dates = new ArrayList<>();
 		Iterator it = ex.getDates().iterator();
 		while(it.hasNext()) {
@@ -349,7 +350,7 @@ public class EventICalReader implements EventReader {
 		return dates;
 	}
 	
-	private String parseVEventOrganizer(LogEntries log, Organizer org) throws Exception {
+	private String parseVEventOrganizer(LogEntries log, Organizer org) throws UnsupportedEncodingException, WTException {
 		InternetAddress ia = null;
 		// See http://www.kanzaki.com/docs/ical/organizer.html
 		

@@ -33,15 +33,16 @@
  */
 package com.sonicle.webtop.calendar.io;
 
+import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.LogEntries;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 /**
  *
  * @author malbinola
  */
-public interface EventReader {
-	public ArrayList<EventReadResult> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException;
+public interface EventFileReader {
+	public ArrayList<EventReadResult> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException;
 }

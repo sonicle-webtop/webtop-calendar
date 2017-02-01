@@ -774,7 +774,7 @@ public class CalendarManager extends BaseManager {
 		
 		EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
 		ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
-		if (parsed.size() > 1) throw new WTException("Stream must contain at least one event");
+		if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
 		
 		Event event = parsed.get(0).event;
 		event.setCalendarId(calendarId);

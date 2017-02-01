@@ -914,7 +914,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	openEvent: function(edit, id, opts) {
+	openEvent: function(edit, ekey, opts) {
 		opts = opts || {};
 		var me = this,
 				vct = WT.createView(me.ID, 'view.Event'),
@@ -926,20 +926,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		vct.show(false, function() {
 			vct.getView().begin(mode, {
 				data: {
-					id: id
+					id: ekey
 				}
 			});
 		});
 	},
 	
-	deleteEvent: function(id, target, opts) {
+	deleteEvent: function(ekey, target, opts) {
 		opts = opts || {};
 		var me = this;
 		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
 			params: {
 				crud: 'delete',
 				target: target,
-				id: id
+				id: ekey
 			},
 			callback: function(success, o) {
 				Ext.callback(opts.callback, opts.scope, [success, o]);
@@ -947,13 +947,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	restoreEvent: function(id, opts) {
+	restoreEvent: function(ekey, opts) {
 		opts = opts || {};
 		var me = this;
 		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
 			params: {
 				crud: 'restore',
-				id: id
+				id: ekey
 			},
 			callback: function(success, json) {
 				Ext.callback(opts.callback, opts.scope, [success, json]);
@@ -961,7 +961,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	moveEvent: function(copy, id, targetCalendarId, opts) {
+	moveEvent: function(copy, ekey, targetCalendarId, opts) {
 		opts = opts || {};
 		var me = this;
 		
@@ -969,7 +969,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			params: {
 				crud: 'move',
 				copy: copy,
-				id: id,
+				id: ekey,
 				targetCalendarId: targetCalendarId
 			},
 			callback: function(success, json) {

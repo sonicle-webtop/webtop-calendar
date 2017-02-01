@@ -67,7 +67,7 @@ public class EventDAO extends BaseDAO {
 		return nextID;
 	}
 	
-	public OEvent selectById(Connection con, Integer eventId) throws DAOException {
+	public OEvent selectById(Connection con, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -78,15 +78,28 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public Integer selectIdByPublicUid(Connection con, String publicUid) throws DAOException {
+	public OEvent selectAliveById(Connection con, int eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(EVENTS)
+			.where(
+					EVENTS.EVENT_ID.equal(eventId)
+					.and(EVENTS.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+			)
+			.fetchOneInto(OEvent.class);
+	}
+	
+	public List<Integer> selectAliveIdsByPublicUid(Connection con, String publicUid) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(EVENTS.EVENT_ID)
 			.from(EVENTS)
 			.where(
 					EVENTS.PUBLIC_UID.equal(publicUid)
+					.and(EVENTS.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
-			.fetchOne(0, Integer.class);
+			.fetchInto(Integer.class);
 	}
 	
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {

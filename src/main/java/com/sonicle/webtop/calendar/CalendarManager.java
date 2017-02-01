@@ -624,8 +624,10 @@ public class CalendarManager extends BaseManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			
-			return edao.selectIdByPublicUid(con, publicUid);
+			List<Integer> ids = edao.selectAliveIdsByPublicUid(con, publicUid);
+			if (ids.isEmpty()) return null;
+			if (ids.size() != 1) throw new WTException("Multiple events found [{0}]", publicUid);
+			return ids.get(0);
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -643,8 +645,8 @@ public class CalendarManager extends BaseManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			OEvent oevt = edao.selectById(con, eventId);
-			if(oevt == null) throw new WTException("Unable to retrieve event [{0}]", eventId);
+			OEvent oevt = edao.selectAliveById(con, eventId);
+			if(oevt == null) return null;
 			checkRightsOnCalendarFolder(oevt.getCalendarId(), "READ"); // Rights check!
 			
 			List<OEventAttendee> oatts = adao.selectByEvent(con, eventId);
@@ -668,7 +670,7 @@ public class CalendarManager extends BaseManager {
 	
 	public Event getEvent(String publicUid) throws WTException {
 		Integer eventId = getEventId(publicUid);
-		if(eventId == null) throw new WTException("Unable to retrieve event by public uid [{0}]", publicUid);
+		if(eventId == null) return null;
 		return getEvent(eventId);
 	}
 	

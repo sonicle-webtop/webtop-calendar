@@ -34,7 +34,34 @@
 Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	extend: 'WTA.sdk.ServiceApi',
 	
+	/**
+	 * Opens an event for viewing it.
+	 * @param {Object} evt An object containing event data.
+	 * @param {String} evt.ekey The event key identifier.
+	 * @param {Object} opts An object containing configuration.
+	 */
+	openEvent: function(evt, opts) {
+		opts = opts || {};
+		this.service.openEvent(false, evt.ekey, {
+			callback: opts.callback
+		});
+	},
+	
+	/**
+	 * Opens an event for editing it.
+	 * @param {Object} evt An object containing event data.
+	 * @param {String} evt.ekey The event key identifier.
+	 * @param {Object} opts An object containing configuration.
+	 */
+	editEvent: function(evt, opts) {
+		opts = opts || {};
+		this.service.openEvent(true, evt.ekey, {
+			callback: opts.callback
+		});
+	},
+	
 	addEvent: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts) {
+		opts = opts || {};
 		this.service.addEvent(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts);
 	}
 });

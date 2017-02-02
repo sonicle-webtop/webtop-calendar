@@ -80,6 +80,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			referenceHolder: true,
 			items: [
 				'-',
+				me.getAction('refresh'),
 				me.getAction('printScheduler'),
 				'-',
 				me.getAction('today'),
@@ -369,6 +370,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		
+		me.addAction('refresh', {
+			text: '',
+			tooltip: WT.res('act-refresh.lbl'),
+			iconCls: 'wt-icon-refresh-xs',
+			handler: function() {
+				me.reloadEvents();
+			}
+		});
 		me.addAction('today', {
 			handler: function() {
 				me.moveDate(0);

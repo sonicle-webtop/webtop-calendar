@@ -37,7 +37,7 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
+import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
 import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -76,10 +76,10 @@ public abstract class AbstractAgenda extends AbstractReport {
 		
 		// Expands all events
 		HashMap<Integer, OCalendar> calendars = new HashMap<>();
-		ArrayList<SchedulerEvent> events = new ArrayList<>();
+		ArrayList<SchedulerEventInstance> events = new ArrayList<>();
 		for(CalendarManager.CalendarEvents ce : calendarEvents) {
 			calendars.put(ce.calendar.getCalendarId(), ce.calendar);
-			for(SchedulerEvent se : ce.events) {
+			for(SchedulerEventInstance se : ce.events) {
 				if(se.getRecurrenceId() == null) {
 					events.add(se);
 				} else {
@@ -89,9 +89,9 @@ public abstract class AbstractAgenda extends AbstractReport {
 		}
 		
 		// Sorts events by their startDate
-		Collections.sort(events, new Comparator<SchedulerEvent>() {
+		Collections.sort(events, new Comparator<SchedulerEventInstance>() {
 			@Override
-			public int compare(final SchedulerEvent se1, final SchedulerEvent se2) {
+			public int compare(final SchedulerEventInstance se1, final SchedulerEventInstance se2) {
 				return se1.getStartDate().compareTo(se2.getStartDate());
 			}
 		});
@@ -110,7 +110,7 @@ public abstract class AbstractAgenda extends AbstractReport {
 		}
 		
 		// Arranges events by day...
-		for(SchedulerEvent se : events) {
+		for(SchedulerEventInstance se : events) {
 			for(int i=0; i<days; i++) {
 				dayDateFrom = fromDate.plusDays(i);
 				if(isInDay(utz, dayDateFrom, se)) {
@@ -143,15 +143,15 @@ public abstract class AbstractAgenda extends AbstractReport {
 		setDataSource(createBeanCollection(new Data(utz, fromDate.toLocalDate(), toDate.minusDays(1).toLocalDate(), dayDates, daysSpanningEvents, daysEvents)));
 	}
 	
-	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {
+	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEventInstance se) {
 		return DateTimeUtils.startsInDay(dayDate, se.getStartDate().withZone(utz));
 	}
 	
-	private boolean endsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {
+	private boolean endsInDay(DateTimeZone utz, DateTime dayDate, SchedulerEventInstance se) {
 		return DateTimeUtils.endsInDay(dayDate, se.getEndDate().withZone(utz));
 	}
 	
-	private boolean isInDay(DateTimeZone utz, DateTime dayDate, SchedulerEvent se) {
+	private boolean isInDay(DateTimeZone utz, DateTime dayDate, SchedulerEventInstance se) {
 		// NB: dayDate must be at midnight!!
 		DateTime dayDateTo = dayDate.plusDays(1);
 		DateTime start = se.getStartDate().withZone(utz);

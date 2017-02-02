@@ -35,6 +35,13 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	extend: 'WTA.sdk.ServiceApi',
 	
 	/**
+	 * Force a reload for the current view.
+	 */
+	reloadEvents: function() {
+		this.service.reloadEvents();
+	},
+	
+	/**
 	 * Opens an event for viewing it.
 	 * @param {Object} evt An object containing event data.
 	 * @param {String} evt.ekey The event key identifier.

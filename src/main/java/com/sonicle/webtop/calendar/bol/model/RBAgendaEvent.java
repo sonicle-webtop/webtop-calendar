@@ -58,7 +58,7 @@ public class RBAgendaEvent {
 	public Integer spanLeft;
 	public Integer spanRight;
 	
-	public RBAgendaEvent(OCalendar calendar, SchedulerEvent event, Integer spanLeft, Integer spanRight) {
+	public RBAgendaEvent(OCalendar calendar, SchedulerEventInstance event, Integer spanLeft, Integer spanRight) {
 		this.calendarId = calendar.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = calendar.getHexColor();

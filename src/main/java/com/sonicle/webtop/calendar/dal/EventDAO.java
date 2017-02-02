@@ -38,9 +38,11 @@ import com.sonicle.webtop.calendar.bol.OEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
 import com.sonicle.webtop.calendar.jooq.tables.Events;
+import com.sonicle.webtop.calendar.jooq.tables.EventsAttendees;
 import com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
@@ -50,6 +52,7 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import static org.jooq.impl.DSL.*;
 
 /**
  *
@@ -85,7 +88,10 @@ public class EventDAO extends BaseDAO {
 			.from(EVENTS)
 			.where(
 					EVENTS.EVENT_ID.equal(eventId)
-					.and(EVENTS.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+					.and(
+						EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+						.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					)
 			)
 			.fetchOneInto(OEvent.class);
 	}
@@ -97,7 +103,10 @@ public class EventDAO extends BaseDAO {
 			.from(EVENTS)
 			.where(
 					EVENTS.PUBLIC_UID.equal(publicUid)
-					.and(EVENTS.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+					.and(
+						EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+						.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					)
 			)
 			.fetchInto(Integer.class);
 	}
@@ -230,7 +239,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public VSchedulerEvent view(Connection con, int eventId) throws DAOException {
+	public VSchedulerEvent viewById(Connection con, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
 		Events eve = EVENTS.as("eve");
@@ -300,8 +309,9 @@ public class EventDAO extends BaseDAO {
 	
 	public List<VSchedulerEvent> viewDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
+		
 		Events eve = EVENTS.as("eve");
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
 		Field<Integer> originalEventId = dsl
 			.select(eve.EVENT_ID)
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
@@ -310,6 +320,8 @@ public class EventDAO extends BaseDAO {
 				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
+		
+		//Field<Boolean> hasAttendees = field("false", Boolean.class).as("has_attendees");
 		
 		return dsl
 			.select(
@@ -360,9 +372,9 @@ public class EventDAO extends BaseDAO {
 	
 	public List<VSchedulerEvent> viewByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
-		Events eve = EVENTS.as("eve");
 		
+		Events eve = EVENTS.as("eve");
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
 		Field<Integer> originalEventId = dsl
 			.select(eve.EVENT_ID)
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
@@ -372,6 +384,14 @@ public class EventDAO extends BaseDAO {
 			)
 			.asField("original_event_id");
 		
+		Field<Boolean> hasAttendees = field(exists(
+			selectOne()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
+			)
+		)).as("has_attendees");
+		
 		return dsl
 			.select(
 				EVENTS.fields()
@@ -379,7 +399,8 @@ public class EventDAO extends BaseDAO {
 			.select(
 				originalEventId,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
-				CALENDARS.USER_ID.as("calendar_user_id")
+				CALENDARS.USER_ID.as("calendar_user_id"),
+				hasAttendees
 				/*
 				DSL.coalesce(
 						dsl.select(eve.EVENT_ID)
@@ -427,9 +448,9 @@ public class EventDAO extends BaseDAO {
 	
 	public List<VSchedulerEvent> searchByCalendarQuery(Connection con, Integer calendarId, String query) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
-		Events eve = EVENTS.as("eve");
 		
+		Events eve = EVENTS.as("eve");
+		RecurrencesBroken rbk = RECURRENCES_BROKEN.as("rbk");
 		Field<Integer> originalEventId = dsl
 			.select(eve.EVENT_ID)
 			.from(rbk.join(eve).on(rbk.EVENT_ID.equal(eve.EVENT_ID)))
@@ -438,6 +459,8 @@ public class EventDAO extends BaseDAO {
 				.and(eve.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
 			)
 			.asField("original_event_id");
+		
+		Field<Boolean> hasAttendees = field("false", Boolean.class).as("has_attendees");
 		
 		return dsl
 			.select(

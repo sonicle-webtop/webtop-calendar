@@ -49,7 +49,7 @@ import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
+import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
@@ -455,7 +455,7 @@ public class Service extends BaseService {
 				
 				// Get events for each visible folder
 				JsSchedulerEvent jse = null;
-				List<SchedulerEvent> recInstances = null;
+				List<SchedulerEventInstance> recInstances = null;
 				List<CalendarManager.CalendarEvents> foldEvents = null;
 				Integer[] checked = getCheckedFolders();
 				for(CalendarRoot root : getCheckedRoots()) {
@@ -465,14 +465,14 @@ public class Service extends BaseService {
 						CalendarFolder fold = folders.get(ce.calendar.getCalendarId());
 						if(fold == null) continue;
 						
-						for(SchedulerEvent evt : ce.events) {
+						for(SchedulerEventInstance evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
 								jse = new JsSchedulerEvent(ce.calendar, evt, up.getId(), utz);
 								jse._rights = fold.getElementsPerms().toString();
 								items.add(jse);
 							} else {
 								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
-								for(SchedulerEvent recInstance : recInstances) {
+								for(SchedulerEventInstance recInstance : recInstances) {
 									jse = new JsSchedulerEvent(ce.calendar, recInstance, up.getId(), utz);
 									jse._rights = fold.getElementsPerms().toString();
 									items.add(jse);
@@ -524,7 +524,7 @@ public class Service extends BaseService {
 					calEvts = manager.searchSchedulerEvents(root.getOwnerProfileId(), checked, "%"+query+"%");
 					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
-						for(SchedulerEvent evt : ce.events) {
+						for(SchedulerEventInstance evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
 								items.add(new JsSchedulerEvent(ce.calendar, evt, up.getId(), utz));
 							}
@@ -607,7 +607,7 @@ public class Service extends BaseService {
 					calEvts = manager.searchSchedulerEvents(root.getOwnerProfileId(), checked, "%"+query+"%");
 					// Iterates over calendar->events
 					for(CalendarManager.CalendarEvents ce : calEvts) {
-						for(SchedulerEvent evt : ce.events) {
+						for(SchedulerEventInstance evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
 								items.add(new JsSchedulerEvent(ce.calendar, evt, up.getId(), utz));
 							}

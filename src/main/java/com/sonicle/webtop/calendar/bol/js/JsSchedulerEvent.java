@@ -35,7 +35,7 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEvent;
+import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -70,7 +70,7 @@ public class JsSchedulerEvent {
 	
 	public JsSchedulerEvent() {}
 	
-	public JsSchedulerEvent(OCalendar calendar, SchedulerEvent event, UserProfile.Id profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(OCalendar calendar, SchedulerEventInstance event, UserProfile.Id profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		
 		// Determine if keep event data private
@@ -102,7 +102,7 @@ public class JsSchedulerEvent {
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
-		hasAtts = false;
+		hasAtts = event.getHasAttendees();
 		isRecurring = event.getIsRecurring();
 		isBroken = event.getIsBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());

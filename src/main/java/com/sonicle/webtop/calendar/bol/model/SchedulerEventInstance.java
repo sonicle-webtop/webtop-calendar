@@ -31,91 +31,38 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-package com.sonicle.webtop.calendar.bol;
+package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.rits.cloning.Cloner;
+import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
+import org.joda.time.DateTimeZone;
 
 /**
  *
  * @author malbinola
  */
-public class VSchedulerEvent extends OEvent {
-	private Integer originalEventId;
-	private String calendarDomainId;
-	private String calendarUserId;
-	private Boolean hasAttendees;
-	private Boolean isRecurring;
-	private Boolean isBroken;
+public class SchedulerEventInstance extends VSchedulerEvent {
+	private String key;
 	
-	public VSchedulerEvent() {
+	public SchedulerEventInstance() {
 		super();
 	}
 	
-	public Integer getOriginalEventId() {
-		return originalEventId;
+	public SchedulerEventInstance(VSchedulerEvent event) {
+		super();
+		new Cloner().copyPropertiesOfInheritedClass(event, this);
+		key = EventKey.buildKey(event.getEventId(), event.getOriginalEventId());
 	}
 
-	public void setOriginalEventId(Integer originalEventId) {
-		this.originalEventId = originalEventId;
+	public String getKey() {
+		return key;
 	}
 	
-	public String getCalendarDomainId() {
-		return calendarDomainId;
-	}
-
-	public void setCalendarDomainId(String calendarDomainId) {
-		this.calendarDomainId = calendarDomainId;
+	public void setKey(String value) {
+		key = value;
 	}
 	
-	public String getCalendarUserId() {
-		return calendarUserId;
-	}
-
-	public void setCalendarUserId(String calendarUserId) {
-		this.calendarUserId = calendarUserId;
-	}
-	
-	public UserProfile.Id getCalendarProfileId() {
-		return new UserProfile.Id(calendarDomainId, calendarUserId);
-	}
-	
-	public Boolean getHasAttendees() {
-		return hasAttendees;
-	}
-
-	public void setHasAttendees(Boolean hasAttendees) {
-		this.hasAttendees = hasAttendees;
-	}
-	
-	public Boolean getIsRecurring() {
-		return isRecurring;
-	}
-
-	public void setIsRecurring(Boolean isRecurring) {
-		this.isRecurring = isRecurring;
-	}
-	
-	public Boolean getIsBroken() {
-		return isBroken;
-	}
-
-	public void setIsBroken(Boolean isBroken) {
-		this.isBroken = isBroken;
-	}
-	
-	public void updateCalculatedFields() {
-		if(getRecurrenceId() == null) {
-			isRecurring = false;
-			if(originalEventId == null) {
-				originalEventId = getEventId();
-				isBroken = false;
-			} else {
-				isBroken = true;
-			}
-		} else {
-			isRecurring = true;
-			originalEventId = getEventId();
-			isBroken = false;
-		}
+	public DateTimeZone getDateTimeZone() {
+		return DateTimeZone.forID(getTimezone());
 	}
 }

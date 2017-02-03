@@ -56,32 +56,32 @@ public class EventAttendeeDAO extends BaseDAO {
 	public List<OEventAttendee> selectByEvent(Connection con, Integer eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-				.select()
-				.from(EVENTS_ATTENDEES)
-				.where(
-						EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
-				)
-				.orderBy(
-						EVENTS_ATTENDEES.RECIPIENT_TYPE.asc(),
-						EVENTS_ATTENDEES.RECIPIENT.asc()
-				)
-				.fetchInto(OEventAttendee.class);
+			.select()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
+			)
+			.orderBy(
+				EVENTS_ATTENDEES.RECIPIENT_TYPE.asc(),
+				EVENTS_ATTENDEES.RECIPIENT.asc()
+			)
+			.fetchInto(OEventAttendee.class);
 	}
 	
 	public List<OEventAttendee> selectByEventNotify(Connection con, Integer eventId, boolean notify) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-				.select()
-				.from(EVENTS_ATTENDEES)
-				.where(
-						EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
-						.and(EVENTS_ATTENDEES.NOTIFY.equal(notify))
-				)
-				.orderBy(
-						EVENTS_ATTENDEES.RECIPIENT_TYPE.asc(),
-						EVENTS_ATTENDEES.RECIPIENT.asc()
-				)
-				.fetchInto(OEventAttendee.class);
+			.select()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(eventId)
+				.and(EVENTS_ATTENDEES.NOTIFY.equal(notify))
+			)
+			.orderBy(
+				EVENTS_ATTENDEES.RECIPIENT_TYPE.asc(),
+				EVENTS_ATTENDEES.RECIPIENT.asc()
+			)
+			.fetchInto(OEventAttendee.class);
 	}
 	
 	public int insert(Connection con, OEventAttendee item) throws DAOException {
@@ -105,14 +105,26 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateAttendeeResponse(Connection con, String attendeeId, Integer eventId, String response) throws DAOException {
+	public int updateAttendeeResponseByIdEvent(Connection con, String responseStatus, String attendeeId, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS_ATTENDEES)
-			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, response)
+			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, responseStatus)
 			.where(
 				EVENTS_ATTENDEES.ATTENDEE_ID.equal(attendeeId)
-				.and(EVENTS_ATTENDEES.EVENT_ID.equal(eventId)))
+				.and(EVENTS_ATTENDEES.EVENT_ID.equal(eventId))
+			)
+			.execute();
+	}
+	
+	public int updateAttendeeResponseByIds(Connection con, String responseStatus, List<String> attendeeIds) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS_ATTENDEES)
+			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, responseStatus)
+			.where(
+				EVENTS_ATTENDEES.ATTENDEE_ID.in(attendeeIds)
+			)
 			.execute();
 	}
 	

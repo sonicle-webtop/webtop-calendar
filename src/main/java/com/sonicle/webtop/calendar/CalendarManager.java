@@ -139,6 +139,12 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import net.fortuna.ical4j.model.Calendar;
 import com.sonicle.webtop.calendar.io.EventFileReader;
+import com.sonicle.webtop.core.util.ICalendarUtils;
+import net.fortuna.ical4j.model.Parameter;
+import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.parameter.PartStat;
+import net.fortuna.ical4j.model.property.Attendee;
+import net.fortuna.ical4j.model.property.Method;
 
 /**
  *
@@ -153,6 +159,8 @@ public class CalendarManager extends BaseManager {
 	public static final String TARGET_THIS = "this";
 	public static final String TARGET_SINCE = "since";
 	public static final String TARGET_ALL = "all";
+	public static final String SUGGESTION_EVENT_TITLE = "eventtitle";
+	public static final String SUGGESTION_EVENT_LOCATION = "eventlocation";
 	
 	private final HashMap<Integer, UserProfile.Id> cacheCalendarToOwner = new HashMap<>();
 	private final Object shareCacheLock = new Object();
@@ -162,6 +170,10 @@ public class CalendarManager extends BaseManager {
 	
 	public CalendarManager(boolean fastInit, UserProfile.Id targetProfileId) {
 		super(fastInit, targetProfileId);
+	}
+	
+	private String getProductName() {
+		return WT.getPlatformName() + " Calendar";
 	}
 	
 	public static DateTime parseYmdHmsWithZone(String date, String time, DateTimeZone tz) {
@@ -674,10 +686,166 @@ public class CalendarManager extends BaseManager {
 		return getEvent(eventId);
 	}
 	
-	public Event getEventByPublicUid2(String publicUid) throws WTException {
-		String eventKey = eventKeyByPublicUid(publicUid);
-		if(eventKey == null) return null;
-		return getEventInstance(eventKey);
+	public Event addEvent(Event event) throws WTException {
+		return addEvent(event, true);
+	}
+	
+	public Event addEvent(Event event, boolean notifyAttendees) throws WTException {
+		Connection con = null;
+		
+		try {
+			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
+			con = WT.getConnection(SERVICE_ID, false);
+			
+			InsertResult insert = doEventInsert(con, event, true, true);
+			DbUtils.commitQuietly(con);
+			writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
+			
+			CoreManager core = WT.getCoreManager(getTargetProfileId());
+			storeAsSuggestion(core, SUGGESTION_EVENT_TITLE, event.getTitle());
+			storeAsSuggestion(core, SUGGESTION_EVENT_LOCATION, event.getLocation());
+			
+			//TODO: gestire le notifiche invito per gli eventi ricorrenti
+			// Handle attendees invitation
+			if (notifyAttendees && !insert.attendees.isEmpty()) { // Checking it here avoids unuseful calls!
+				if (insert.recurrence == null) {
+					String eventKey = EventKey.buildKey(insert.event.getEventId(), insert.event.getEventId());
+					notifyAttendees(Crud.CREATE, getEventInstance(eventKey));
+				} else {
+					logger.warn("Attendees notification within recurrence is not supported");
+				}
+			}
+			
+			Event evt = createEvent(insert.event);
+			evt.setAttendees(createEventAttendeeList(insert.attendees));
+			evt.setRecurrence(createEventRecurrence(insert.recurrence));
+			return evt;
+			
+		} catch(SQLException | DAOException ex) {
+			DbUtils.rollbackQuietly(con);
+			throw new WTException(ex, "DB error");
+		} catch(Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public Event addEventFromICal(int calendarId, Calendar ical) throws WTException {
+		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		
+		EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
+		ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
+		if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
+		
+		Event event = parsed.get(0).event;
+		event.setCalendarId(calendarId);
+		return addEvent(event, false);
+	}
+	
+	public void updateEventFromICal(Calendar ical) throws WTException {
+		VEvent ve = ICalendarUtils.getVEvent(ical);
+		if (ve == null) throw new WTException("Calendar does not contain any event");
+		
+		String uid = ve.getUid().getValue(); 
+		if (StringUtils.isBlank(uid)) throw new WTException("Event does not provide a valid Uid");
+		
+		Event evt = getEvent(uid);
+		
+		if (ical.getMethod().equals(Method.REPLY)) {
+			Attendee att = ICalendarUtils.getAttendee(ve);
+			if (att == null) throw new WTException("Event does not provide any attendee");
+			
+			PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
+			String responseStatus = ICalHelper.partStatToResponseStatus(partStat);
+			List<String> updatedAttIds = updateEventAttendeeResponseByRecipient(evt, att.getCalAddress().getSchemeSpecificPart(), responseStatus);
+			if (!updatedAttIds.isEmpty()) {
+				evt = getEvent(evt.getEventId());
+				for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
+			}
+			
+		} else if (ical.getMethod().equals(Method.CANCEL)) {
+			deleteEvent(evt.getEventId());
+			
+		} else {
+			throw new WTException("Unsupported Calendar's method");
+		}
+	}
+	
+	private void deleteEvent(int eventId) throws WTException {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			doDeleteEvent(con, eventId);
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	private List<String> updateEventAttendeeResponseByRecipient(Event event, String recipient, String responseStatus) throws WTException {
+		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID, false);
+			
+			// Find matching attendees
+			ArrayList<String> matchingIds = new ArrayList<>();
+			List<OEventAttendee> atts = eadao.selectByEvent(con, event.getEventId());
+			for (OEventAttendee att : atts) {
+				final InternetAddress ia = MailUtils.buildInternetAddress(att.getRecipient());
+				if (ia == null) continue;
+				
+				if (StringUtils.equals(ia.getAddress(), recipient)) matchingIds.add(att.getAttendeeId());
+			}
+			
+			// Update responses
+			int ret = eadao.updateAttendeeResponseByIds(con, responseStatus, matchingIds);
+			if (matchingIds.size() == ret) {
+				DbUtils.commitQuietly(con);
+				return matchingIds;
+			} else {
+				DbUtils.rollbackQuietly(con);
+				return new ArrayList<>();
+			}
+			
+		} catch(SQLException | DAOException ex) {
+			DbUtils.rollbackQuietly(con);
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public Event updateEventAttendeeResponse(String eventPublicUid, String attendeeUid, String responseStatus) throws WTException {
+		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			Event evt = getEvent(eventPublicUid);
+			if (evt == null) throw new WTException("Event not found [{0}]", eventPublicUid);
+			
+			con = WT.getConnection(SERVICE_ID);
+			
+			int ret = eadao.updateAttendeeResponseByIdEvent(con, responseStatus, attendeeUid, evt.getEventId());
+			if(ret == 1) {
+				evt = getEvent(evt.getEventId());
+				notifyOrganizer(getLocale(), evt, attendeeUid);
+				return evt;
+			} else {
+				return null;
+			}
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
 	}
 	
 	public EventInstance getEventInstance(String eventKey) throws WTException {
@@ -729,64 +897,13 @@ public class CalendarManager extends BaseManager {
 		}
 	}
 	
-	public Event addEvent(Event event) throws WTException {
-		return addEvent(event, true);
-	}
-	
-	public Event addEvent(Event event, boolean notifyAttendees) throws WTException {
-		Connection con = null;
-		
-		try {
-			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
-			con = WT.getConnection(SERVICE_ID, false);
-			
-			InsertResult insert = doEventInsert(con, event, true, true);
-			DbUtils.commitQuietly(con);
-			writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
-			
-			//TODO: gestire le notifiche invito per gli eventi ricorrenti
-			// Handle attendees invitation
-			if (notifyAttendees && !insert.attendees.isEmpty()) { // Checking it here avoids unuseful calls!
-				if (insert.recurrence == null) {
-					String eventKey = EventKey.buildKey(insert.event.getEventId(), insert.event.getEventId());
-					notifyAttendees(Crud.CREATE, getEventInstance(eventKey));
-				} else {
-					logger.warn("Attendees notification within recurrence is not supported");
-				}
-			}
-			
-			Event evt = createEvent(insert.event);
-			evt.setAttendees(createEventAttendeeList(insert.attendees));
-			evt.setRecurrence(createEventRecurrence(insert.recurrence));
-			return evt;
-			
-		} catch(SQLException | DAOException ex) {
-			DbUtils.rollbackQuietly(con);
-			throw new WTException(ex, "DB error");
-		} catch(Exception ex) {
-			DbUtils.rollbackQuietly(con);
-			throw ex;
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	public Event addEventFromICal(int calendarId, Calendar ical) throws WTException {
-		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
-		
-		EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
-		ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
-		if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
-		
-		Event event = parsed.get(0).event;
-		event.setCalendarId(calendarId);
-		return addEvent(event, false);
-	}
-	
-	public void editEventInstance(String target, EventInstance event) throws WTException {
+	public void updateEventInstance(String target, EventInstance event) throws WTException {
+		//CoreManager core = WT.getCoreManager(getTargetProfileId());
 		EventDAO edao = EventDAO.getInstance();
 		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
 		Connection con = null;
+		
+		//TODO: gestire i suggerimenti (titolo + luogo)
 		
 		try {
 			EventKey ekey = new EventKey(event.getKey());
@@ -805,6 +922,10 @@ public class CalendarManager extends BaseManager {
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
+					
 					// Handle attendees invitation
 					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
 				}
@@ -818,6 +939,10 @@ public class CalendarManager extends BaseManager {
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
+					
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
+					
 					// Handle attendees invitation
 					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
 				}
@@ -834,6 +959,9 @@ public class CalendarManager extends BaseManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, insert.event.getLocation());
 					
 				} else if(target.equals(TARGET_SINCE)) {
 					// 1 - Resize original recurrence (sets until date at the day before date)
@@ -853,6 +981,9 @@ public class CalendarManager extends BaseManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 					writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
+					
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, insert.event.getLocation());
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - Updates recurring event data (dates must be preserved) (+revision)
@@ -1290,30 +1421,6 @@ public class CalendarManager extends BaseManager {
 		return createEventAttendeeList(attendees);
 	}
 	
-	public Event updateEventAttendeeResponse(String eventPublicUid, String attendeeUid, String response) throws Exception {
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			SchedulerEventInstance ve = getSchedulerEventByUid(con, eventPublicUid);
-			
-			EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
-			int ret = eadao.updateAttendeeResponse(con, attendeeUid, ve.getEventId(), response);
-			if(ret == 1) {
-				Event evtBase = getEventInstance(ve.getKey());
-				notifyOrganizer(getLocale(), evtBase, attendeeUid);
-				return evtBase;
-			} else {
-				return null;
-			}
-			
-		} catch(Exception ex) {
-			throw ex;
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
 	public LogEntries importEvents(int calendarId, EventFileReader rea, File file, String mode) throws WTException {
 		LogEntries log = new LogEntries();
 		HashMap<String, OEvent> uidMap = new HashMap<>();
@@ -1595,7 +1702,7 @@ public class CalendarManager extends BaseManager {
 		return alerts;
 	}
 	
-	private void notifyOrganizer(Locale locale, Event event, String attendeeId) {
+	private void notifyOrganizer(Locale locale, Event event, String updatedAttendeeId) {
 		String targetDomainId = getTargetProfileId().getDomainId();
 		CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
 		String dateFormat = cus.getShortDateFormat();
@@ -1605,12 +1712,12 @@ public class CalendarManager extends BaseManager {
 			// Find the attendee (in event) that has updated its response
 			EventAttendee targetAttendee = null;
 			for(EventAttendee attendee : event.getAttendees()) {
-				if(attendee.getAttendeeId().equals(attendeeId)) {
+				if(attendee.getAttendeeId().equals(updatedAttendeeId)) {
 					targetAttendee = attendee;
 					break;
 				}
 			}
-			if(targetAttendee == null) throw new WTException("Attendee not found [{0}]", attendeeId);
+			if(targetAttendee == null) throw new WTException("Attendee not found [{0}]", updatedAttendeeId);
 			
 			InternetAddress from = WT.getNotificationAddress(targetDomainId);
 			InternetAddress to = MailUtils.buildInternetAddress(event.getOrganizer());
@@ -1645,18 +1752,11 @@ public class CalendarManager extends BaseManager {
 				boolean methodCancel = crud.equals(Crud.DELETE);
 				
 				// Creates ical content
-				String icalText = null;
-				ByteArrayOutputStream baos = null;
-				try {
-					baos = new ByteArrayOutputStream();
-					ArrayList<Event> events = new ArrayList<>();
-					events.add(event);
-					String prodId = ICalHelper.buildProdId(WT.getPlatformName(), "Calendar");
-					ICalHelper.exportICal(prodId, methodCancel, events, baos);
-					icalText = baos.toString("UTF8");
-				} finally {
-					IOUtils.closeQuietly(baos);
-				}
+				ArrayList<Event> events = new ArrayList<>();
+				events.add(event);
+				String prodId = ICalendarUtils.buildProdId(getProductName());
+				Calendar ical = ICalHelper.exportICal(prodId, methodCancel, events);
+				String icalText = ICalendarUtils.calendarToString(ical);
 				
 				// Creates message parts
 				String filename = WT.getPlatformName().toLowerCase() + "-invite.ics";
@@ -2261,6 +2361,11 @@ public class CalendarManager extends BaseManager {
 	
 	private DateTime createRevisionTimestamp() {
 		return DateTime.now(DateTimeZone.UTC);
+	}
+	
+	private void storeAsSuggestion(CoreManager coreMgr, String context, String value) {
+		if (StringUtils.isBlank(value)) return;
+		coreMgr.addServiceStoreEntry(SERVICE_ID, context, value.toUpperCase(), value);
 	}
 	
 	public static class InsertResult {

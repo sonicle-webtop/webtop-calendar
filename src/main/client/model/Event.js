@@ -101,53 +101,63 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.hasMany('attendees', 'Sonicle.webtop.calendar.model.EventAttendee')
 	],
 	
+	setStart: function(date) {
+		var me = this,
+				dt = Ext.isDate(date) ? date : new Date(),
+				end = me.get('endDate');
+		
+		me.set('startDate', dt);
+		if (!Ext.isDate(end)) return;
+		if (dt > end) me.set('endDate', dt);
+	},
+	
+	setEnd: function(date) {
+		var me = this,
+				dt = Ext.isDate(date) ? date : new Date(),
+				sta = me.get('startDate');
+		
+		me.set('endDate', dt);
+		if (!Ext.isDate(sta)) return;
+		if (dt < sta) me.set('startDate', dt);
+	},
+	
 	setStartDate: function(date) {
 		var me = this,
-				end = me.get('endDate'), dt;
-		dt = me.setDatePart('startDate', date);
-		if(!Ext.isDate(dt) || !Ext.isDate(end)) return;
-		if(dt > end) me.set('endDate', dt);
+				dt = Ext.isDate(date) ? date : new Date(),
+				end = me.get('endDate'), v;
+		
+		v = me.setDatePart('startDate', dt);
+		if (!Ext.isDate(end)) return;
+		if (v > end) me.set('endDate', v);
 	},
 	
 	setStartTime: function(date) {
 		var me = this,
-				end = me.get('endDate'), dt;
-		dt = me.setTimePart('startDate', date);
-		if(!Ext.isDate(dt) || !Ext.isDate(end)) return;
-		if(dt > end) me.set('endDate', dt);
+				dt = Ext.isDate(date) ? date : new Date(),
+				end = me.get('endDate'), v;
+		
+		v = me.setTimePart('startDate', dt);
+		if (!Ext.isDate(end)) return;
+		if (v > end) me.set('endDate', v);
 	},
 	
 	setEndDate: function(date) {
 		var me = this,
-				sta = me.get('startDate'), dt;
-		dt = me.setDatePart('endDate', date);
-		if(!Ext.isDate(dt) || !Ext.isDate(sta)) return;
-		if(dt < sta) me.set('startDate', dt);
+				dt = Ext.isDate(date) ? date : new Date(),
+				sta = me.get('startDate'), v;
+		
+		v = me.setDatePart('endDate', dt);
+		if (!Ext.isDate(sta)) return;
+		if (v < sta) me.set('startDate', v);
 	},
 	
 	setEndTime: function(date) {
 		var me = this,
-				sta = me.get('startDate'), dt;
-		dt = me.setTimePart('endDate', date);
-		if(!Ext.isDate(dt) || !Ext.isDate(sta)) return;
-		if(dt < sta) me.set('startDate', dt);
-	},
-	
-	setDatePart: function(field, date) {
-		var me = this,
-				v = me.get(field), dt;
-		if(!Ext.isDate(date) || !Ext.isDate(v)) return;
-		dt = Sonicle.Date.copyDate(date, v);
-		me.set(field, dt);
-		return dt;
-	},
-	
-	setTimePart: function(field, date) {
-		var me = this,
-				v = me.get(field), dt;
-		if(!Ext.isDate(date) || !Ext.isDate(v)) return;
-		dt = Sonicle.Date.copyTime(date, v);
-		me.set(field, dt);
-		return dt;
+				dt = Ext.isDate(date) ? date : new Date(),
+				sta = me.get('startDate'), v;
+		
+		v = me.setTimePart('endDate', dt);
+		if (!Ext.isDate(sta)) return;
+		if (v < sta) me.set('startDate', v);
 	}
 });

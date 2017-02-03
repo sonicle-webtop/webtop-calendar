@@ -68,6 +68,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	fieldTitle: 'title',
 	modelName: 'Sonicle.webtop.calendar.model.Event',
 	
+	suspendPlanningRefresh: 0,
+	
 	constructor: function(cfg) {
 		var me = this;
 		me.callParent([cfg]);
@@ -223,7 +225,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				reference: 'fldtitle',
 				bind: '{record.title}',
 				sid: me.mys.ID,
-				suggestionContext: 'eventcalendar',
+				suggestionContext: 'eventtitle',
+				//suggestionContext: 'eventcalendar',
 				fieldLabel: me.mys.res('event.fld-title.lbl'),
 				anchor: '100%',
 				listeners: {
@@ -235,7 +238,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				xtype: 'wtsuggestcombo',
 				bind: '{record.location}',
 				sid: me.mys.ID,
-				suggestionContext: 'report_idcalendar', //TODO: verificare nome contesto
+				suggestionContext: 'eventlocation',
+				//suggestionContext: 'report_idcalendar', //TODO: verificare nome contesto
 				fieldLabel: me.mys.res('event.fld-location.lbl'),
 				anchor: '100%',
 				plugins: [
@@ -530,9 +534,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							xtype: 'wtrcptsuggestcombo',
 							matchFieldWidth: false,
 							listConfig: {
-								width: 300,
-								minWidth: 300,
-								resizable: true
+								width: 350,
+								minWidth: 350
 							}
 						},
 						renderer: Ext.util.Format.htmlEncode,
@@ -542,7 +545,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						dataIndex: 'recipientType',
 						renderer: WTF.resColRenderer({
 							id: me.mys.ID,
-							key: 'store.attendeeRcptType'
+							key: 'store.attendeeRcptType',
+							keepcase: true
 						}),
 						editor: Ext.create(WTF.localCombo('id', 'desc', {
 							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRcptType', {
@@ -555,7 +559,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						dataIndex: 'responseStatus',
 						renderer: WTF.resColRenderer({
 							id: me.mys.ID,
-							key: 'store.attendeeRespStatus'
+							key: 'store.attendeeRespStatus',
+							keepcase: true
 						}),
 						editor: Ext.create(WTF.localCombo('id', 'desc', {
 							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
@@ -611,20 +616,28 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					reference: 'gpplanning',
 					itemId: 'planning',
 					enableLocking: true,
+					selModel: {
+						type: 'spreadsheet',
+						columnSelect: true,
+						checkboxSelect: false,
+						cellSelect: false,
+						rowSelect: false
+					},
 					store: {
 						model: 'WTA.ux.data.EmptyModel',
 						proxy: WTF.proxy(me.mys.ID, 'GetPlanning', 'data'),
 						listeners: {
 							metachange: function(s, meta) {
-								if(meta.colsInfo) {
+								if (meta.colsInfo) {
 									// In order to draw a better view we need to nest grid columns (hours) 
 									// belonging to same day date under the same master header.
 									// So we need to create a nested structure identifying useful columns.
 									
 									var colsInfo = [];
 									Ext.iterate(meta.colsInfo, function(col,i) {
-										if(col.dataIndex === 'recipient') {
+										if (col.dataIndex === 'recipient') {
 											col.header = me.mys.res('event.gp-planning.recipient.lbl');
+											col.lockable = false;
 											col.locked = true;
 											col.width = 200;
 											
@@ -636,18 +649,20 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 												clsPrefix: 'wtcal-planning-',
 												moreCls: (col.overlaps) ? 'wtcal-planning-overlaps' : null
 											});
+											col.resizable = false;
 											col.lockable = false;
 											col.sortable = false;
 											col.hideable = false;
 											col.menuDisabled = true;
 											col.draggable = false;
-											col.width = 55;
+											col.flex = 1;
 											
 											// Nest this column under right day date
-											if(colsInfo[colsInfo.length-1].date !== col.date) {
+											if (colsInfo[colsInfo.length-1].date !== col.date) {
 												colsInfo.push({
 													date: col.date,
 													text: col.date,
+													lockable: false,
 													columns: []
 												});
 											}
@@ -661,12 +676,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					},
 					columns: [],
 					tbar: [
-						me.addAction('refreshPlanning', {
+						me.addAction('reloadPlanning', {
 							text: WT.res('act-refresh.lbl'),
 							tooltip: null,
 							iconCls: 'wt-icon-refresh-xs',
 							handler: function() {
-								me.refreshPlanning();
+								me.reloadPlanning();
 							}
 						}),
 						'-',
@@ -706,7 +721,18 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					],
 					listeners: {
 						activate: function() {
-							me.refreshPlanning();
+							me.reloadPlanning();
+						},
+						selectionchange: function(s, sel) {
+							var dates = me.getPlanningSelectionDates(sel);
+							if (dates) {
+								me.suspendPlanningRefresh++;
+								me.getModel().setStart(dates[0]);
+								me.getModel().setEnd(dates[1]);
+								Ext.defer(function(){
+									me.suspendPlanningRefresh--;
+								}, 100);
+							}
 						}
 					}
 				}
@@ -1070,6 +1096,21 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		this.lref('fldcausal').getStore().load();
 	},
 	
+	getPlanningSelectionDates: function(sel) {
+		var min, max, fmt = 'Y-m-d H:i';
+		Ext.iterate(sel.selectedColumns, function(col) {
+			if (!min) min = col.dataIndex;
+			if (!max) max = col.dataIndex;
+			if (col.dataIndex < min) min = col.dataIndex;
+			if (col.dataIndex > max) max = col.dataIndex;
+		});
+		if (min && max) {
+			return [Ext.Date.parseDate(min, fmt), Ext.Date.parseDate(max, fmt)];
+		} else {
+			return null;
+		}
+	},
+	
 	updateCalendarFilters: function() {
 		this.lref('fldcalendar').getStore().addFilter({
 			property: '_profileId',
@@ -1087,7 +1128,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	onDatesChanged: function() {
-		if(this.isPlanningActive()) this.refreshPlanning();
+		var me = this;
+		if ((me.suspendPlanningRefresh === 0) && me.isPlanningActive()) me.reloadPlanning();
 	},
 	
 	onCustomerChanged: function() {
@@ -1181,28 +1223,19 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	addAttendee: function() {
 		var me = this,
-				grid = me.lref('tabinvitation.gpattendees'),
-				sto = grid.getStore(),
-				re = grid.getPlugin('rowediting'),
+				gp = me.lref('tabinvitation.gpattendees'),
+				sto = gp.getStore(),
+				re = gp.getPlugin('rowediting'),
 				cal = me.lref('fldcalendar').getSelection(),
 				rec;
-		/*
-		rowEditing.cancelEdit();
-		rec = Ext.create('Sonicle.webtop.calendar.model.EventAttendee', {
-			recipientType: 'N',
-			responseStatus: 'needsAction',
-			notify: (cal) ? cal.get('invitation') : false
-		});
-		sto.insert(0, rec);
-		rowEditing.startEdit(0, 0);
-		*/
+		
 		re.cancelEdit();
-		rec = sto.add(Ext.create('Sonicle.webtop.calendar.model.EventAttendee', {
+		rec = sto.add(sto.createModel({
+			notify: (cal) ? cal.get('invitation') : false,
 			recipientType: 'N',
-			responseStatus: 'needsAction',
-			notify: (cal) ? cal.get('invitation') : false
+			responseStatus: 'needsAction'
 		}))[0];
-		re.startEdit(rec);
+		re.startEdit(rec, 1);
 	},
 	
 	deleteAttendee: function(rec) {
@@ -1223,7 +1256,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		return (this.lref('tabinvitation').getLayout().getActiveItem().getItemId() === 'planning');
 	},
 	
-	refreshPlanning: function() {
+	reloadPlanning: function() {
 		var me = this,
 				sto = me.lref('tabinvitation.gpplanning').getStore(),
 				model = me.getModel(),

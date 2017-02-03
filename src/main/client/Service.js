@@ -296,7 +296,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					colorField: 'color',
 					displayField: 'folderName',
 					header: me.res('event.fld-calendar.lbl'),
-					width: 100
+					width: 150
 				}, {
 					dataIndex: 'startDate',
 					xtype: 'datecolumn',
@@ -369,7 +369,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.erpExport();
 			}
 		});
-		
 		me.addAction('refresh', {
 			text: '',
 			tooltip: WT.res('act-refresh.lbl'),

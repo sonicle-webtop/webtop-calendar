@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
+import com.sonicle.webtop.core.util.ICalendarUtils;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -418,33 +419,24 @@ public class ICalHelper {
 		return !StringUtils.equals(transparency.getValue(), "TRANSPARENT");
 	}
 	
-	public static String buildProdId(String company, String product) {
-		return "-//" + company + "//" + product + "//EN";
+	public static Calendar exportICal(String prodId, ArrayList<Event> events) throws Exception {
+		return exportICal(prodId, false, events);
 	}
 	
-	public static void exportICal(String prodId, ArrayList<Event> events, OutputStream os) throws Exception {
-		exportICal(prodId, false, events, os);
-	}
-	
-	public static void exportICal(String prodId, boolean methodCancel, ArrayList<Event> events, OutputStream os) throws Exception {
+	public static Calendar exportICal(String prodId, boolean methodCancel, ArrayList<Event> events) throws Exception {
 		//org.joda.time.DateTime now = DateTimeUtils.now();
-		
-		Calendar ical = new Calendar();
-		ical.getProperties().add(new ProdId(prodId));
-		ical.getProperties().add(Version.VERSION_2_0);
-		ical.getProperties().add(CalScale.GREGORIAN);
-		if(methodCancel) {
-			ical.getProperties().add(Method.CANCEL);
+		Calendar ical = null;
+		if (methodCancel) {
+			ical = ICalendarUtils.newCalendar(prodId, Method.CANCEL);
 		} else {
-			ical.getProperties().add(Method.REQUEST);
+			ical = ICalendarUtils.newCalendar(prodId, Method.REQUEST);
 		}
 		
 		for(Event event : events) {
 			ical.getComponents().add(exportEvent(event));
 		}
 		
-		CalendarOutputter outputter = new CalendarOutputter();
-		outputter.output(ical, os);
+		return ical;
 	}
 	
 	public static VEvent exportEvent(Event event) throws Exception {
@@ -519,18 +511,33 @@ public class ICalHelper {
 		}
 		
 		// Evaluates attendee response status
-		String status = attendee.getResponseStatus();
-		if(StringUtils.equals(status, EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
-			att.getParameters().add(PartStat.ACCEPTED);
-		} else if(StringUtils.equals(status, EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
-			att.getParameters().add(PartStat.TENTATIVE);
-		} else if(StringUtils.equals(status, EventAttendee.RESPONSE_STATUS_DECLINED)) {
-			att.getParameters().add(PartStat.DECLINED);
-		} else {
-			att.getParameters().add(PartStat.NEEDS_ACTION);
-		}
+		att.getParameters().add(responseStatusToPartStat(attendee.getResponseStatus()));
 		
 		return att;
+	}
+	
+	public static PartStat responseStatusToPartStat(String responseStatus) {
+		if(StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
+			return PartStat.ACCEPTED;
+		} else if(StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
+			return PartStat.TENTATIVE;
+		} else if(StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_DECLINED)) {
+			return PartStat.DECLINED;
+		} else {
+			return PartStat.NEEDS_ACTION;
+		}
+	}
+	
+	public static String partStatToResponseStatus(PartStat partStat) {
+		if (partStat.equals(PartStat.ACCEPTED)) {
+			return EventAttendee.RESPONSE_STATUS_ACCEPTED;
+		} else if (partStat.equals(PartStat.TENTATIVE)) {
+			return EventAttendee.RESPONSE_STATUS_TENTATIVE;
+		} else if (partStat.equals(PartStat.DECLINED)) {
+			return EventAttendee.RESPONSE_STATUS_DECLINED;
+		} else {
+			return EventAttendee.RESPONSE_STATUS_NEEDSACTION;
+		}
 	}
 	
 	public static MimeBodyPart createInvitationICalPart(String icalText, String filename) throws MessagingException {

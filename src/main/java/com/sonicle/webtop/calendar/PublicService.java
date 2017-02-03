@@ -105,7 +105,7 @@ public class PublicService extends BasePublicService {
 							event = manager.updateEventAttendeeResponse(eventUrlPath.getPublicUid(), aid, responseStatus);
 							
 						} else {
-							event = manager.getEventByPublicUid2(eventUrlPath.getPublicUid());
+							event = manager.getEvent(eventUrlPath.getPublicUid());
 						}
 					}
 					

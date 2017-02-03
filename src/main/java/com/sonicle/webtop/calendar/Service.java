@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
@@ -105,6 +106,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
@@ -572,7 +574,7 @@ public class Service extends BaseService {
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
 				EventInstance evt = JsEvent.buildEventInstance(pl.data);
-				manager.editEventInstance(target, evt);
+				manager.updateEventInstance(target, evt);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.MOVE)) {
@@ -683,9 +685,10 @@ public class Service extends BaseService {
 	}
 	
 	public void processGetPlanning(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		Connection con = null;
-		ArrayList<MapItem> items = new ArrayList<>();
 		CoreUserSettings cus = getEnv().getCoreUserSettings();
+		CoreManager core = WT.getCoreManager();
+		ArrayList<MapItem> items = new ArrayList<>();
+		Connection con = null;
 		
 		try {
 			String eventStartDate = ServletUtils.getStringParameter(request, "startDate", true);
@@ -738,23 +741,18 @@ public class Service extends BaseService {
 				item = new MapItem();
 				item.put("recipient", attendee.recipient);
 				
-				user = guessUserByAttendee(attendee.recipient);
-				if(user != null) {
+				user = guessUserByAttendee(core, attendee.recipient);
+				if (user != null) {
 					profileId = new UserProfile.Id(user.getDomainId(), user.getUserId());
 					busyHours = manager.calculateAvailabilitySpans(60, profileId, eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
 					for(String hourKey : hours) {
-						if(busyHours.contains(hourKey)) {
-							item.put(hourKey, "busy");
-						} else {
-							item.put(hourKey, "free");
-						}
+						item.put(hourKey, busyHours.contains(hourKey) ? "busy" : "free");
 					}
 				} else {
 					for(String hourKey : hours) {
 						item.put(hourKey, "unknown");
 					}
 				}
-				
 				items.add(item);
 			}
 			
@@ -922,16 +920,19 @@ public class Service extends BaseService {
 				.printedBy(ud.getDisplayName());
 	}
 	
-	private OUser guessUserByAttendee(String recipient) {
+	private OUser guessUserByAttendee(CoreManager core, String recipient) {
 		Connection con = null;
 		
 		try {
-			//TODO: gestire definitivamente il campo attendee.recipient... lookup per email???
-			UserProfile.Id profileId = new UserProfile.Id(recipient);
+			InternetAddress ia = MailUtils.buildInternetAddress(recipient);
+			if (ia == null) return null;
+			List<UserProfile.Id> pids = core.listUserIdsByEmail(recipient);
+			if (pids.isEmpty()) return null;
+			UserProfile.Id pid = pids.get(0);
 			
 			con = WT.getCoreConnection();
 			UserDAO udao = UserDAO.getInstance();
-			return udao.selectByDomainUser(con, profileId.getDomainId(), profileId.getUserId());
+			return udao.selectByDomainUser(con, pid.getDomainId(), pid.getUserId());
 		
 		} catch(WTRuntimeException ex) {
 			return null;

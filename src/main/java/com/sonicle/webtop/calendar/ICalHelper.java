@@ -540,22 +540,6 @@ public class ICalHelper {
 		}
 	}
 	
-	public static MimeBodyPart createInvitationAttachmentPart(String icalText, String filename) throws MessagingException {
-		MimeBodyPart part = new MimeBodyPart();
-		part.setText(icalText, "UTF-8");
-		part.setHeader("Content-type", "application/ics");
-		part.setFileName(filename);
-		return part;
-	}
-	
-	public static MimeBodyPart createInvitationPart(boolean cancel, String icalText) throws MessagingException {
-		String method = cancel ? "CANCEL" : "REQUEST";
-		MimeBodyPart part = new MimeBodyPart();
-		part.setText(icalText, "UTF-8");
-		part.setHeader("Content-type", "text/calendar; charset=UTF-8; method=" + method);
-		return part;
-	}
-	
 	public static class ParseResult {
 		Event event;
 		ArrayList<LocalDate> excludedDates;

@@ -1778,8 +1778,8 @@ public class CalendarManager extends BaseManager {
 				
 				// Creates message parts
 				String filename = WT.getPlatformName().toLowerCase() + "-invite.ics";
-				MimeBodyPart attPart = ICalHelper.createInvitationAttachmentPart(icalText, filename);
-				MimeBodyPart calendarPart = ICalHelper.createInvitationPart(methodCancel, icalText);
+				MimeBodyPart attPart = ICalendarUtils.createInvitationAttachmentPart(icalText, filename);
+				MimeBodyPart calendarPart = ICalendarUtils.createInvitationCalendarPart(methodCancel, icalText);
 				
 				String source = NotificationHelper.buildSource(getLocale(), SERVICE_ID);
 				String subject = TplHelper.buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, event, crud);

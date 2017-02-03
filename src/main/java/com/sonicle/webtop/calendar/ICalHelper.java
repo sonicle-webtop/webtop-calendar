@@ -48,10 +48,13 @@ import javax.mail.internet.MimeBodyPart;
 import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.Date;
+import net.fortuna.ical4j.model.ParameterList;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.Cn;
+import net.fortuna.ical4j.model.parameter.CuType;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.parameter.Role;
+import net.fortuna.ical4j.model.parameter.Rsvp;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.CalScale;
 import net.fortuna.ical4j.model.property.Description;
@@ -445,9 +448,11 @@ public class ICalHelper {
 		Date end = ICal4jUtils.toICal4jDateTime(event.getEndDate(), etz);
 		VEvent ve = new VEvent(start, end, event.getTitle());
 		
+		//TODO: consider TRANSP:TRANSPARENT
+		
 		// LastModified
 		ICal4jUtils.addProperty(ve, new LastModified(ICal4jUtils.createDateTime(event.getRevisionTimestamp().withZone(DateTimeZone.UTC))));
-		ICal4jUtils.addProperty(ve, new Sequence(1));
+		ICal4jUtils.addProperty(ve, new Sequence(0));
 		
 		// Uid
 		ICal4jUtils.addProperty(ve, new Uid(event.getPublicUid()));
@@ -493,25 +498,30 @@ public class ICalHelper {
 	
 	public static Attendee exportEventAttendee(EventAttendee attendee) throws Exception {
 		Attendee att = new Attendee();
-		
+		ParameterList params=att.getParameters();
 		// Evaluates attendee details
 		// Joins email and common name (CN)
 		String mailto = MessageFormat.format("mailto:{0}", attendee.getAddress());
 		att.setCalAddress(URI.create(mailto));
 		if(!StringUtils.isBlank(attendee.getCN())) {
-			att.getParameters().add(new Cn(attendee.getCN()));
+			params.add(new Cn(attendee.getCN()));
 		}
 		
 		// Evaluates attendee role
 		String rpcType = attendee.getRecipientType();
 		if(StringUtils.equals(rpcType, EventAttendee.RECIPIENT_TYPE_NECESSARY)) {
-			att.getParameters().add(Role.REQ_PARTICIPANT);
+			params.add(Role.REQ_PARTICIPANT);
 		} else {
-			att.getParameters().add(Role.OPT_PARTICIPANT);
+			params.add(Role.OPT_PARTICIPANT);
 		}
 		
+		//TODO: added for email invite
+		//need to separate export and email interaction
+		params.add(CuType.INDIVIDUAL);
+		params.add(Rsvp.TRUE);
+		
 		// Evaluates attendee response status
-		att.getParameters().add(responseStatusToPartStat(attendee.getResponseStatus()));
+		params.add(responseStatusToPartStat(attendee.getResponseStatus()));
 		
 		return att;
 	}

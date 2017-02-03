@@ -685,6 +685,7 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public Event addEvent(Event event, boolean notifyAttendees) throws WTException {
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		Connection con = null;
 		
 		try {
@@ -695,7 +696,6 @@ public class CalendarManager extends BaseManager {
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 			
-			CoreManager core = WT.getCoreManager(getTargetProfileId());
 			storeAsSuggestion(core, SUGGESTION_EVENT_TITLE, event.getTitle());
 			storeAsSuggestion(core, SUGGESTION_EVENT_LOCATION, event.getLocation());
 			
@@ -739,6 +739,8 @@ public class CalendarManager extends BaseManager {
 	}
 	
 	public void updateEventFromICal(Calendar ical) throws WTException {
+		Connection con = null;
+		
 		VEvent ve = ICalendarUtils.getVEvent(ical);
 		if (ve == null) throw new WTException("Calendar does not contain any event");
 		
@@ -747,7 +749,34 @@ public class CalendarManager extends BaseManager {
 		
 		Event evt = getEvent(uid);
 		
-		if (ical.getMethod().equals(Method.REPLY)) {
+		if (ical.getMethod().equals(Method.REQUEST)) {
+			EventDAO edao = EventDAO.getInstance();
+			final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+			
+			EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
+			ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
+			if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
+			
+			Event parsedEvent = parsed.get(0).event;
+			
+			try {
+				checkRightsOnCalendarElements(evt.getCalendarId(), "UPDATE");
+				
+				con = WT.getConnection(SERVICE_ID, false);
+				OEvent original = edao.selectById(con, evt.getEventId());
+				doEventUpdate(con, original, parsedEvent, true);
+				
+				DbUtils.commitQuietly(con);
+				writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+
+			} catch(SQLException | DAOException ex) {
+				DbUtils.rollbackQuietly(con);
+				throw new WTException(ex, "DB error");
+			} finally {
+				DbUtils.closeQuietly(con);
+			}
+			
+		} else if (ical.getMethod().equals(Method.REPLY)) {
 			Attendee att = ICalendarUtils.getAttendee(ve);
 			if (att == null) throw new WTException("Event does not provide any attendee");
 			
@@ -760,24 +789,19 @@ public class CalendarManager extends BaseManager {
 			}
 			
 		} else if (ical.getMethod().equals(Method.CANCEL)) {
-			deleteEvent(evt.getEventId());
+			
+			try {
+				con = WT.getConnection(SERVICE_ID);
+				doDeleteEvent(con, evt.getEventId());
+
+			} catch(SQLException | DAOException ex) {
+				throw new WTException(ex, "DB error");
+			} finally {
+				DbUtils.closeQuietly(con);
+			}
 			
 		} else {
-			throw new WTException("Unsupported Calendar's method");
-		}
-	}
-	
-	private void deleteEvent(int eventId) throws WTException {
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			doDeleteEvent(con, eventId);
-			
-		} catch(SQLException | DAOException ex) {
-			throw new WTException(ex, "DB error");
-		} finally {
-			DbUtils.closeQuietly(con);
+			throw new WTException("Unsupported Calendar's method [{0}]", ical.getMethod().toString());
 		}
 	}
 	
@@ -1754,8 +1778,8 @@ public class CalendarManager extends BaseManager {
 				
 				// Creates message parts
 				String filename = WT.getPlatformName().toLowerCase() + "-invite.ics";
-				MimeBodyPart icsPart = ICalHelper.createInvitationICalPart(icalText, filename);
-				MimeBodyPart calendarPart = ICalHelper.createInvitationCalendarPart(methodCancel, icalText, filename);
+				MimeBodyPart attPart = ICalHelper.createInvitationAttachmentPart(icalText, filename);
+				MimeBodyPart calendarPart = ICalHelper.createInvitationPart(methodCancel, icalText);
 				
 				String source = NotificationHelper.buildSource(getLocale(), SERVICE_ID);
 				String subject = TplHelper.buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, event, crud);
@@ -1769,7 +1793,7 @@ public class CalendarManager extends BaseManager {
 						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
 						final String html = TplHelper.buildInvitationTpl(getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
 						try {
-							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{icsPart, calendarPart});
+							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{attPart, calendarPart});
 						} catch(MessagingException ex) {
 							logger.warn("Unable to send notification to attendee {}", to.toString());
 						}

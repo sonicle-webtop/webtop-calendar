@@ -51,6 +51,7 @@ CREATE TABLE "calendar"."events" (
 "calendar_id" int4 NOT NULL,
 "revision_status" varchar(1) NOT NULL,
 "revision_timestamp" timestamptz(6) NOT NULL,
+"revision_sequence" int4 DEFAULT 0 NOT NULL,
 "public_uid" varchar(255) NOT NULL,
 "recurrence_id" int4,
 "read_only" bool NOT NULL,

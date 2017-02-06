@@ -36,10 +36,10 @@ Ext.define('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 	
 	model: 'WTA.model.Simple',
 	data: [
-		['needsAction', ''],
-		['declined', ''],
-		['tentative', ''],
-		['accepted', '']
+		['NA', ''],
+		['DE', ''],
+		['TE', ''],
+		['AC', '']
 	],
 	
 	constructor: function(cfg) {

@@ -51,10 +51,11 @@ public class EventAttendee {
 	public static final String RECIPIENT_ROLE_CHAIR = "CHA";
 	public static final String RECIPIENT_ROLE_OPTIONAL = "OPT";
 	public static final String RECIPIENT_ROLE_REQUIRED = "REQ";
-	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
-	public static final String RESPONSE_STATUS_DECLINED = "declined";
-	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
-	public static final String RESPONSE_STATUS_ACCEPTED = "accepted";
+	public static final String RESPONSE_STATUS_NEEDSACTION = "NA"; //NA
+	public static final String RESPONSE_STATUS_DECLINED = "DE"; //DE
+	public static final String RESPONSE_STATUS_TENTATIVE = "TE"; //TE
+	public static final String RESPONSE_STATUS_ACCEPTED = "AC"; //AC
+	
 	public static final String RESPONSE_STATUS_NONE = "none"; // Synonym of needsAction
 	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
 	

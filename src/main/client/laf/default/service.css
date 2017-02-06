@@ -25,10 +25,10 @@
 .wtcal-icon-single-event-xs { background-image: url('event-single_16.png') !important; }
 .wtcal-icon-recurring-event-xs { background-image: url('event-recurring_16.png') !important; }
 .wtcal-icon-broken-event-xs { background-image: url('event-broken_16.png') !important; }
-.wtcal-icon-response-needsAction-xs { background-image: url('response-needsAction_16.png') !important; }
-.wtcal-icon-response-accepted-xs { background-image: url('response-accepted_16.png') !important; }
-.wtcal-icon-response-declined-xs { background-image: url('response-declined_16.png') !important; }
-.wtcal-icon-response-tentative-xs { background-image: url('response-tentative_16.png') !important; }
+.wtcal-icon-response-NA-xs { background-image: url('response-needsAction_16.png') !important; }
+.wtcal-icon-response-AC-xs { background-image: url('response-accepted_16.png') !important; }
+.wtcal-icon-response-DE-xs { background-image: url('response-declined_16.png') !important; }
+.wtcal-icon-response-TE-xs { background-image: url('response-tentative_16.png') !important; }
 
 .wtcal-tree-default {
 	font-weight: bold;

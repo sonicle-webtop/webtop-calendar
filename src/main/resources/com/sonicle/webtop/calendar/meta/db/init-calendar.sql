@@ -86,7 +86,7 @@ CREATE TABLE "calendar"."events_attendees" (
 "recipient" varchar(320) NOT NULL,
 "recipient_type" varchar(3) NOT NULL,
 "recipient_role" varchar(3) NOT NULL,
-"response_status" varchar(20) NOT NULL,
+"response_status" varchar(2) NOT NULL,
 "notify" bool NOT NULL
 )
 WITH (OIDS=FALSE)

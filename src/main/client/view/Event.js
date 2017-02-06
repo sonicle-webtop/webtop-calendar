@@ -1248,7 +1248,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			notify: (cal) ? cal.get('invitation') : false,
 			recipientType: 'IND',
 			recipientRole: 'REQ',
-			responseStatus: 'needsAction'
+			responseStatus: 'NA'
 		}))[0];
 		re.startEdit(rec, 1);
 	},

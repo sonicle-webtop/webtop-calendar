@@ -103,7 +103,7 @@ public class JsSchedulerEvent {
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
-		hasTz = !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
+		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.getHasAttendees();
 		isRecurring = event.getIsRecurring();
 		isBroken = event.getIsBroken();

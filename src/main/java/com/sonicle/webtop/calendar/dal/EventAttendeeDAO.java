@@ -34,7 +34,6 @@
 package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;

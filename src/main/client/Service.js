@@ -200,7 +200,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				activeView: me.getVar('view'),
 				startDay: WT.getStartDay(),
 				use24HourTime: WT.getUse24HourTime(),
-				timezone: WT.getTimezone(),
 				viewCfg: {
 					timezoneIconCls: 'fa fa-globe',
 					privateIconCls: 'fa fa-lock',

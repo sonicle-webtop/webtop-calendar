@@ -163,6 +163,7 @@ public class JsEvent {
 			attendee.attendeeId = att.getAttendeeId();
 			attendee.recipient = att.getRecipient();
 			attendee.recipientType = att.getRecipientType();
+			attendee.recipientRole = att.getRecipientRole();
 			attendee.responseStatus = att.getResponseStatus();
 			attendee.notify = att.getNotify();
 			attendees.add(attendee);
@@ -237,6 +238,7 @@ public class JsEvent {
 			attendee.setAttendeeId(jsa.attendeeId);
 			attendee.setRecipient(jsa.recipient);
 			attendee.setRecipientType(jsa.recipientType);
+			attendee.setRecipientRole(jsa.recipientRole);
 			attendee.setResponseStatus(jsa.responseStatus);
 			attendee.setNotify(jsa.notify);
 			event.getAttendees().add(attendee);

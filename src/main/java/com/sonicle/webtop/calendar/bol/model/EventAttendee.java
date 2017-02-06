@@ -33,6 +33,7 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
+import com.sonicle.commons.MailUtils;
 import java.util.ArrayList;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
@@ -45,9 +46,11 @@ import org.jooq.tools.StringUtils;
  * @author malbinola
  */
 public class EventAttendee {
-	public static final String RECIPIENT_TYPE_NECESSARY = "N";
-	public static final String RECIPIENT_TYPE_OPTIONAL = "O";
-	public static final String RECIPIENT_TYPE_RESOURCE = "R";
+	public static final String RECIPIENT_TYPE_INDIVIDUAL = "IND";
+	public static final String RECIPIENT_TYPE_RESOURCE = "RES";
+	public static final String RECIPIENT_ROLE_CHAIR = "CHA";
+	public static final String RECIPIENT_ROLE_OPTIONAL = "OPT";
+	public static final String RECIPIENT_ROLE_REQUIRED = "REQ";
 	public static final String RESPONSE_STATUS_NEEDSACTION = "needsAction";
 	public static final String RESPONSE_STATUS_DECLINED = "declined";
 	public static final String RESPONSE_STATUS_TENTATIVE = "tentative";
@@ -56,9 +59,9 @@ public class EventAttendee {
 	public static final String RESPONSE_STATUS_REFUSED = "refused"; // Synonym of declined
 	
 	protected String attendeeId;
-	//protected String displayName;
 	protected String recipient;
 	protected String recipientType;
+	protected String recipientRole;
 	protected String responseStatus;
 	protected Boolean notify;
 	
@@ -92,8 +95,16 @@ public class EventAttendee {
 		return recipientType;
 	}
 
-	public void setRecipientType(String value) {
-		recipientType = value;
+	public void setRecipientType(String recipientType) {
+		this.recipientType = recipientType;
+	}
+	
+	public String getRecipientRole() {
+		return recipientRole;
+	}
+
+	public void setRecipientRole(String recipientRole) {
+		this.recipientRole = recipientRole;
 	}
 
 	public String getResponseStatus() {
@@ -118,6 +129,7 @@ public class EventAttendee {
 			.append(getAttendeeId())
 			.append(getRecipient())
 			.append(getRecipientType())
+			.append(getRecipientRole())
 			.append(getResponseStatus())
 			.append(getNotify())
 			.toHashCode();
@@ -138,12 +150,7 @@ public class EventAttendee {
 	}
 	
 	public boolean hasEmailRecipient() {
-		try {
-			InternetAddress email = new InternetAddress(getRecipient());
-			return true;
-		} catch(Exception ex) {
-			return false;
-		}
+		return MailUtils.buildInternetAddress(getRecipient()) != null;
 	}
 	
 	public class AttendeeList extends ArrayList<EventAttendee> {

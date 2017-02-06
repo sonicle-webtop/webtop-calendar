@@ -31,18 +31,21 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
-	extend: 'WTA.ux.data.BaseModel',
+Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptRole', {
+	extend: 'Ext.data.ArrayStore',
 	
-	identifier: 'negativestring',
-	idProperty: 'attendeeId',
-	fields: [
-		WTF.fkField('string'),
-		WTF.field('attendeeId', 'string', false),
-		WTF.field('recipient', 'string', false),
-		WTF.field('recipientType', 'string', false),
-		WTF.field('recipientRole', 'string', false),
-		WTF.field('responseStatus', 'string', false),
-		WTF.field('notify', 'boolean', false)
-	]
+	model: 'WTA.model.Simple',
+	data: [
+		['REQ', ''],
+		['OPT', ''],
+		['CHA', '']
+	],
+	
+	constructor: function(cfg) {
+		var me = this;
+		Ext.each(me.config.data, function(row) {
+			row[1] = WT.res('com.sonicle.webtop.calendar', 'store.attendeeRcptRole.'+row[0]);
+		});
+		me.callParent([cfg]);
+	}
 });

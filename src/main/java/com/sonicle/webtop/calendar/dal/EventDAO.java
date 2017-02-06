@@ -116,6 +116,7 @@ public class EventDAO extends BaseDAO {
 		OEvent.ensureCoherence(item);
 		item.setRevisionStatus(OEvent.REV_STATUS_NEW);
 		item.setRevisionTimestamp(revisionTimestamp);
+		item.setRevisionSequence(0);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)

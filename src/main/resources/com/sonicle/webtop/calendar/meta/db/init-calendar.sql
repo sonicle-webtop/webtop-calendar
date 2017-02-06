@@ -84,7 +84,8 @@ CREATE TABLE "calendar"."events_attendees" (
 "attendee_id" varchar(36) NOT NULL,
 "event_id" int4,
 "recipient" varchar(320),
-"recipient_type" varchar(20),
+"recipient_type" varchar(3),
+"recipient_role" varchar(3),
 "response_status" varchar(20),
 "notify" bool
 )

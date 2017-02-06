@@ -58,6 +58,7 @@ public class JsPubEvent {
 	public static class Attendee extends JsFkModel {
 		public String name;
 		public String type;
+		public String role;
 		public String response;
 		
 		public Attendee() {}
@@ -67,6 +68,7 @@ public class JsPubEvent {
 			//TODO: completare il campo email con l'indirizzo di posta
 			name = attendee.getRecipient();
 			type = attendee.getRecipientType();
+			role = attendee.getRecipientRole();
 			response = attendee.getResponseStatus();
 		}
 	}

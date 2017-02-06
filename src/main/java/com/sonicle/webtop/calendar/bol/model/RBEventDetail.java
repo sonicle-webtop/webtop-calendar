@@ -257,10 +257,12 @@ public class RBEventDetail {
 	public static class Attendee {
 		public String recipient;
 		public String recipientType;
+		public String recipientRole;
 		
 		public Attendee(EventAttendee att) {
 			recipient = att.getRecipient();
 			recipientType = att.getRecipientType();
+			recipientRole = att.getRecipientRole();
 		}
 		
 		public String getRecipient() {

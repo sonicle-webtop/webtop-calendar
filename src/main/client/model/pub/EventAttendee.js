@@ -41,6 +41,7 @@ Ext.define('Sonicle.webtop.calendar.model.pub.EventAttendee', {
 		//WTF.roField('attendeeId', 'string'),
 		WTF.roField('name', 'string'),
 		WTF.roField('type', 'string'),
+		WTF.roField('role', 'string'),
 		WTF.roField('response', 'string')
 	]
 });

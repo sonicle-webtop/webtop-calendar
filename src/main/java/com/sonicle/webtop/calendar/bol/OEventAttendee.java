@@ -50,6 +50,7 @@ public class OEventAttendee extends EventsAttendees {
 		setAttendeeId(attendee.getAttendeeId());
 		setRecipient(attendee.getRecipient());
 		setRecipientType(attendee.getRecipientType());
+		setRecipientRole(attendee.getRecipientRole());
 		setResponseStatus(attendee.getResponseStatus());
 		setNotify(attendee.getNotify());
 	}

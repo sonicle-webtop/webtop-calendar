@@ -37,10 +37,8 @@ Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptType', {
 	
 	model: 'WTA.model.Simple',
 	data: [
-		['G', ''],
-		['N', ''],
-		['O', ''],
-		['R', '']
+		['IND', ''],
+		['RES', '']
 	],
 	
 	constructor: function(cfg) {

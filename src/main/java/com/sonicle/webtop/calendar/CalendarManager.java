@@ -2356,6 +2356,7 @@ public class CalendarManager extends BaseManager {
 		att.setAttendeeId(attendee.getAttendeeId());
 		att.setRecipient(attendee.getRecipient());
 		att.setRecipientType(attendee.getRecipientType());
+		att.setRecipientRole(attendee.getRecipientRole());
 		att.setResponseStatus(attendee.getResponseStatus());
 		att.setNotify(attendee.getNotify());
 		return att;

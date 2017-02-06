@@ -520,26 +520,48 @@ public class ICalHelper {
 		// http://www.kanzaki.com/docs/ical/cutype.html
 		params.add(recipientTypeToCuType(attendee.getRecipientType()));
 		
+		// Role: attendee participation role
+		// http://www.kanzaki.com/docs/ical/role.html
+		params.add(recipientRoleToRole(attendee.getRecipientRole()));
+		
 		// PartStat: participation status for the calendar user
 		// http://www.kanzaki.com/docs/ical/partstat.html
 		params.add(responseStatusToPartStat(attendee.getResponseStatus()));
-		
-		// Role: attendee participation role
-		// http://www.kanzaki.com/docs/ical/role.html
-		String rpcType = attendee.getRecipientType();
-		if(StringUtils.equals(rpcType, EventAttendee.RECIPIENT_TYPE_NECESSARY)) {
-			params.add(Role.REQ_PARTICIPANT);
-		} else {
-			params.add(Role.OPT_PARTICIPANT);
-		}
 		
 		if (method) params.add(Rsvp.TRUE);
 		
 		return att;
 	}
 	
+	public static Role recipientRoleToRole(String recipientRole) {
+		if (StringUtils.equals(recipientRole, EventAttendee.RECIPIENT_ROLE_CHAIR)) {
+			return Role.CHAIR;
+		} else if (StringUtils.equals(recipientRole, EventAttendee.RECIPIENT_ROLE_REQUIRED)) {
+			return Role.REQ_PARTICIPANT;
+		} else if (StringUtils.equals(recipientRole, EventAttendee.RECIPIENT_ROLE_OPTIONAL)) {
+			return Role.OPT_PARTICIPANT;
+		} else {
+			return Role.REQ_PARTICIPANT;
+		}
+	}
+	
+	public static String roleToRecipientRole(Role role) {
+		if (role != null) {
+			if (role.equals(Role.CHAIR)) {
+				return EventAttendee.RECIPIENT_ROLE_CHAIR;
+			} else if (role.equals(Role.REQ_PARTICIPANT)) {
+				return EventAttendee.RECIPIENT_ROLE_REQUIRED;
+			} else if (role.equals(Role.REQ_PARTICIPANT)) {
+				return EventAttendee.RECIPIENT_ROLE_OPTIONAL;
+			}
+		}
+		return EventAttendee.RECIPIENT_ROLE_OPTIONAL;
+	}
+	
 	public static CuType recipientTypeToCuType(String recipientType) {
-		if(StringUtils.equals(recipientType, EventAttendee.RECIPIENT_TYPE_RESOURCE)) {
+		if (StringUtils.equals(recipientType, EventAttendee.RECIPIENT_TYPE_INDIVIDUAL)) {
+			return CuType.INDIVIDUAL;
+		} else if (StringUtils.equals(recipientType, EventAttendee.RECIPIENT_TYPE_RESOURCE)) {
 			return CuType.RESOURCE;
 		} else {
 			return CuType.INDIVIDUAL;
@@ -547,13 +569,16 @@ public class ICalHelper {
 	}
 	
 	public static String cuTypeToRecipientType(CuType cuType) {
-		if (cuType.equals(CuType.RESOURCE)) {
-			return EventAttendee.RECIPIENT_TYPE_RESOURCE;
-		} else if (cuType.equals(CuType.ROOM)) {
-			return EventAttendee.RECIPIENT_TYPE_RESOURCE;
-		} else {
-			return EventAttendee.RECIPIENT_TYPE_NECESSARY;
+		if (cuType != null) {
+			if (cuType.equals(CuType.INDIVIDUAL)) {
+				return EventAttendee.RECIPIENT_TYPE_INDIVIDUAL;
+			} else if (cuType.equals(CuType.RESOURCE)) {
+				return EventAttendee.RECIPIENT_TYPE_RESOURCE;
+			} else if (cuType.equals(CuType.ROOM)) {
+				return EventAttendee.RECIPIENT_TYPE_RESOURCE;
+			}
 		}
+		return EventAttendee.RECIPIENT_TYPE_RESOURCE;
 	}
 	
 	public static PartStat responseStatusToPartStat(String responseStatus) {

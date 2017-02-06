@@ -554,7 +554,21 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							})
 						})),
 						header: me.mys.res('event.gp-attendees.recipientType.lbl'),
-						width: 180
+						width: 150
+					}, {
+						dataIndex: 'recipientRole',
+						renderer: WTF.resColRenderer({
+							id: me.mys.ID,
+							key: 'store.attendeeRcptRole',
+							keepcase: true
+						}),
+						editor: Ext.create(WTF.localCombo('id', 'desc', {
+							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRcptRole', {
+								autoLoad: true
+							})
+						})),
+						header: me.mys.res('event.gp-attendees.recipientRole.lbl'),
+						width: 100
 					}, {
 						dataIndex: 'responseStatus',
 						renderer: WTF.resColRenderer({
@@ -1232,7 +1246,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		re.cancelEdit();
 		rec = sto.add(sto.createModel({
 			notify: (cal) ? cal.get('invitation') : false,
-			recipientType: 'N',
+			recipientType: 'IND',
+			recipientRole: 'REQ',
 			responseStatus: 'needsAction'
 		}))[0];
 		re.startEdit(rec, 1);

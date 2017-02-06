@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.io;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.ICal4jUtils;
+import com.sonicle.webtop.calendar.ICalHelper;
 import com.sonicle.webtop.calendar.bol.model.Event;
 import com.sonicle.webtop.calendar.bol.model.EventAttendee;
 import com.sonicle.webtop.calendar.bol.model.Recurrence;
@@ -66,6 +67,7 @@ import net.fortuna.ical4j.model.WeekDay;
 import net.fortuna.ical4j.model.WeekDayList;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.Cn;
+import net.fortuna.ical4j.model.parameter.CuType;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.parameter.Role;
 import net.fortuna.ical4j.model.property.Attendee;
@@ -387,17 +389,13 @@ public class EventICalFileReader implements EventFileReader {
 			//log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Attendee must have a valid address [{0}]", attendee.toString()));
 		}
 		
+		// Evaluates cuType
+		CuType cuType = (CuType)att.getParameter(Parameter.CUTYPE);
+		attendee.setRecipientType(ICalHelper.cuTypeToRecipientType(cuType));
+		
 		// Evaluates attendee role
 		Role role = (Role)att.getParameter(Parameter.ROLE);
-		if(role != null) {
-			if(role.equals(Role.REQ_PARTICIPANT)) {
-				attendee.setRecipientType(EventAttendee.RECIPIENT_TYPE_NECESSARY);
-			} else {
-				attendee.setRecipientType(EventAttendee.RECIPIENT_TYPE_OPTIONAL);
-			}
-		} else {
-			attendee.setRecipientType(EventAttendee.RECIPIENT_TYPE_OPTIONAL);
-		}
+		attendee.setRecipientRole(ICalHelper.roleToRecipientRole(role));
 		
 		// Evaluates attendee response status
 		PartStat partstat = (PartStat)att.getParameter(Parameter.PARTSTAT);

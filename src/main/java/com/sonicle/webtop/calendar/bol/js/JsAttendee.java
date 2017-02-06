@@ -45,6 +45,7 @@ public class JsAttendee {
 	public String attendeeId;
 	public String recipient;
 	public String recipientType;
+	public String recipientRole;
 	public String responseStatus;
 	public Boolean notify;
 	
@@ -56,11 +57,5 @@ public class JsAttendee {
 		public static JsAttendeeList fromJson(String value) {
 			return JsonResult.gson.fromJson(value, JsAttendeeList.class);
 		}
-		
-		/*
-		public static String toJson(CheckedCalendarGroups value) {
-			return JsonResult.gson.toJson(value, CheckedCalendarGroups.class);
-		}
-		*/
 	}
 }

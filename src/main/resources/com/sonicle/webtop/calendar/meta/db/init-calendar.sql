@@ -83,7 +83,7 @@ DROP TABLE IF EXISTS "calendar"."events_attendees";
 CREATE TABLE "calendar"."events_attendees" (
 "attendee_id" varchar(36) NOT NULL,
 "event_id" int4 NOT NULL,
-"recipient" varchar(320),
+"recipient" varchar(320) NOT NULL,
 "recipient_type" varchar(3) NOT NULL,
 "recipient_role" varchar(3) NOT NULL,
 "response_status" varchar(20) NOT NULL,

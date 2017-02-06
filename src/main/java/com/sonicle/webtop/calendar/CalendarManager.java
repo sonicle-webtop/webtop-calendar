@@ -134,6 +134,7 @@ import org.supercsv.prefs.CsvPreference;
 import net.fortuna.ical4j.model.Calendar;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.core.util.ICalendarUtils;
+import java.util.TimeZone;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.PartStat;
@@ -758,6 +759,7 @@ public class CalendarManager extends BaseManager {
 			if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
 			
 			Event parsedEvent = parsed.get(0).event;
+			parsedEvent.setCalendarId(evt.getCalendarId());
 			
 			try {
 				checkRightsOnCalendarElements(evt.getCalendarId(), "UPDATE");
@@ -1984,7 +1986,11 @@ public class CalendarManager extends BaseManager {
 		DateTime revision = createRevisionTimestamp();
 		
 		if(StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
-		if(StringUtils.isBlank(event.getPublicUid())) event.setPublicUid(IdentifierUtils.getUUID());
+		if(StringUtils.isBlank(event.getPublicUid())) {
+			final String uid = ICalendarUtils.buildUid(IdentifierUtils.getUUIDTimeBased(), WT.getDomainInternetName(getTargetProfileId().getDomainId()));
+			event.setPublicUid(uid);
+			//event.setPublicUid(IdentifierUtils.getUUID());
+		}
 		
 		OEvent oevt = new OEvent();
 		oevt.fillFrom(event);

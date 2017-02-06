@@ -436,34 +436,43 @@ public class ICalHelper {
 		}
 		
 		for(Event event : events) {
-			ical.getComponents().add(exportEvent(event));
+			ical.getComponents().add(exportEvent(true, event));
 		}
 		
 		return ical;
 	}
 	
-	public static VEvent exportEvent(Event event) throws Exception {
+	public static VEvent exportEvent(boolean method, Event event) throws Exception {
 		org.joda.time.DateTimeZone etz = org.joda.time.DateTimeZone.forID(event.getTimezone());
 		Date start = ICal4jUtils.toICal4jDateTime(event.getStartDate(), etz);
 		Date end = ICal4jUtils.toICal4jDateTime(event.getEndDate(), etz);
 		VEvent ve = new VEvent(start, end, event.getTitle());
 		
-		//TODO: consider TRANSP:TRANSPARENT
-		
-		// LastModified
-		ICal4jUtils.addProperty(ve, new LastModified(ICal4jUtils.createDateTime(event.getRevisionTimestamp().withZone(DateTimeZone.UTC))));
-		ICal4jUtils.addProperty(ve, new Sequence(0));
-		
-		// Uid
+		// Uid: globally unique identifier
+		// http://www.kanzaki.com/docs/ical/uid.html
 		ICal4jUtils.addProperty(ve, new Uid(event.getPublicUid()));
 		
-		// Description
+		// LastModified: the date and time of the last information revision
+		// http://www.kanzaki.com/docs/ical/lastModified.html
+		ICal4jUtils.addProperty(ve, new LastModified(ICal4jUtils.createDateTime(event.getRevisionTimestamp().withZone(DateTimeZone.UTC))));
+		
+		// Sequence: the revision sequence number
+		// http://www.kanzaki.com/docs/ical/sequence.html
+		ICal4jUtils.addProperty(ve, new Sequence(0));
+		
+		// Description: the complete description
+		// http://www.kanzaki.com/docs/ical/description.html
 		ICal4jUtils.addProperty(ve, new Description(event.getDescription()));
 		
-		// Location
+		// Location: the intended venue for the activity
+		// http://www.kanzaki.com/docs/ical/location.html
 		if(!StringUtils.isEmpty(event.getLocation())) {
 			ICal4jUtils.addProperty(ve, new Location(event.getLocation()));
 		}
+		
+		// Transparency: defines whether an event is transparent or not to busy time searches
+		// http://www.kanzaki.com/docs/ical/transp.html
+		ICal4jUtils.addProperty(ve, event.getBusy() ? Transp.OPAQUE : Transp.TRANSPARENT);
 		
 		// Organizer
 		String mailto = MessageFormat.format("mailto:{0}", event.getOrganizerAddress());
@@ -482,7 +491,7 @@ public class ICalHelper {
 		for(EventAttendee attendee : event.getAttendees()) {
 			try {
 				if(attendee.hasEmailRecipient()) {
-					ve.getProperties().add(exportEventAttendee(attendee));
+					ve.getProperties().add(exportEventAttendee(method, attendee));
 				}
 			} catch(URISyntaxException | AddressException ex) {
 				/* Do nothing...*/
@@ -496,18 +505,27 @@ public class ICalHelper {
 		return new RRule(event.getRecurrence().getRRule());
 	}
 	
-	public static Attendee exportEventAttendee(EventAttendee attendee) throws Exception {
+	public static Attendee exportEventAttendee(boolean method, EventAttendee attendee) throws Exception {
 		Attendee att = new Attendee();
 		ParameterList params=att.getParameters();
-		// Evaluates attendee details
-		// Joins email and common name (CN)
+		
+		// CN and email: attendee main details
 		String mailto = MessageFormat.format("mailto:{0}", attendee.getAddress());
 		att.setCalAddress(URI.create(mailto));
-		if(!StringUtils.isBlank(attendee.getCN())) {
+		if (!StringUtils.isBlank(attendee.getCN())) {
 			params.add(new Cn(attendee.getCN()));
 		}
 		
-		// Evaluates attendee role
+		// CuType: calendar user type (INDIVIDUAL, RESOURCE, etc...)
+		// http://www.kanzaki.com/docs/ical/cutype.html
+		params.add(recipientTypeToCuType(attendee.getRecipientType()));
+		
+		// PartStat: participation status for the calendar user
+		// http://www.kanzaki.com/docs/ical/partstat.html
+		params.add(responseStatusToPartStat(attendee.getResponseStatus()));
+		
+		// Role: attendee participation role
+		// http://www.kanzaki.com/docs/ical/role.html
 		String rpcType = attendee.getRecipientType();
 		if(StringUtils.equals(rpcType, EventAttendee.RECIPIENT_TYPE_NECESSARY)) {
 			params.add(Role.REQ_PARTICIPANT);
@@ -515,23 +533,35 @@ public class ICalHelper {
 			params.add(Role.OPT_PARTICIPANT);
 		}
 		
-		//TODO: added for email invite
-		//need to separate export and email interaction
-		params.add(CuType.INDIVIDUAL);
-		params.add(Rsvp.TRUE);
-		
-		// Evaluates attendee response status
-		params.add(responseStatusToPartStat(attendee.getResponseStatus()));
+		if (method) params.add(Rsvp.TRUE);
 		
 		return att;
 	}
 	
+	public static CuType recipientTypeToCuType(String recipientType) {
+		if(StringUtils.equals(recipientType, EventAttendee.RECIPIENT_TYPE_RESOURCE)) {
+			return CuType.RESOURCE;
+		} else {
+			return CuType.INDIVIDUAL;
+		}
+	}
+	
+	public static String cuTypeToRecipientType(CuType cuType) {
+		if (cuType.equals(CuType.RESOURCE)) {
+			return EventAttendee.RECIPIENT_TYPE_RESOURCE;
+		} else if (cuType.equals(CuType.ROOM)) {
+			return EventAttendee.RECIPIENT_TYPE_RESOURCE;
+		} else {
+			return EventAttendee.RECIPIENT_TYPE_NECESSARY;
+		}
+	}
+	
 	public static PartStat responseStatusToPartStat(String responseStatus) {
-		if(StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
+		if (StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
 			return PartStat.ACCEPTED;
-		} else if(StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
+		} else if (StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
 			return PartStat.TENTATIVE;
-		} else if(StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_DECLINED)) {
+		} else if (StringUtils.equals(responseStatus, EventAttendee.RESPONSE_STATUS_DECLINED)) {
 			return PartStat.DECLINED;
 		} else {
 			return PartStat.NEEDS_ACTION;

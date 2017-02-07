@@ -1084,14 +1084,30 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	onRrTypeChanged: function(v) {
 		var mo = this.getModel();
-		if (mo.get('rrType')) {
-			mo.setIfNull('rrWeeklyDay1', false);
-			mo.setIfNull('rrWeeklyDay2', false);
-			mo.setIfNull('rrWeeklyDay3', false);
-			mo.setIfNull('rrWeeklyDay4', false);
-			mo.setIfNull('rrWeeklyDay5', false);
-			mo.setIfNull('rrWeeklyDay6', false);
-			mo.setIfNull('rrWeeklyDay7', false);
+		mo.setIfNull('rrRepeatTimes', 1);
+		mo.setIfNull('rrUntilDate', Ext.Date.clone(mo.get('startDate')));
+		switch(mo.get('rrType')) {
+			case 'D':
+				mo.setIfNull('rrDailyFreq', 1);
+				break;
+			case 'W':
+				mo.setIfNull('rrWeeklyFreq', 1);
+				mo.setIfNull('rrWeeklyDay1', false);
+				mo.setIfNull('rrWeeklyDay2', false);
+				mo.setIfNull('rrWeeklyDay3', false);
+				mo.setIfNull('rrWeeklyDay4', false);
+				mo.setIfNull('rrWeeklyDay5', false);
+				mo.setIfNull('rrWeeklyDay6', false);
+				mo.setIfNull('rrWeeklyDay7', false);
+				break;
+			case 'M':
+				mo.setIfNull('rrMonthlyFreq', 1);
+				mo.setIfNull('rrMonthlyDay', 1);
+				break;
+			case 'Y':
+				mo.setIfNull('rrYearlyFreq', 1);
+				mo.setIfNull('rrYearlyDay', 1);
+				break;
 		}
 		mo.refreshValidatorsForRrType();
 	},

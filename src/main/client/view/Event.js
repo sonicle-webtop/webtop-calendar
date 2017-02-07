@@ -779,6 +779,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							margin: '0 0 15 0'
 						},
 						items: [{
+							bind: {
+								disabled: '{foIsRecurring}'
+							},
 							inputValue: '_',
 							boxLabel: WT.res('rr.type.none')
 						}, {
@@ -1133,10 +1136,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		//if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
 		me.updateCalendarFilters();
 		
-		// Gui updates...
-		me.lref('tabinvitation').setDisabled(mo.isRecurring());
-		me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || mo.isBroken());
-		
 		if(me.isMode(me.MODE_NEW)) {
 			owner.setDisabled(false);
 			me.getAction('delete').setDisabled(true);
@@ -1144,6 +1143,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		} else if(me.isMode(me.MODE_EDIT)) {
 			owner.setDisabled(true);
 			me.getAction('restore').setDisabled(!mo.isBroken());
+			me.lref('tabinvitation').setDisabled(mo.isRecurring());
+			me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || !mo.isRecurring());
 		}
 		
 		me.lref('fldtitle').focus(true);

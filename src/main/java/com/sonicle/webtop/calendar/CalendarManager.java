@@ -889,7 +889,7 @@ public class CalendarManager extends BaseManager {
 			EventInstance evti = null;
 			String type = guessEventType(ek, original);
 			if(type.equals(EVENT_NORMAL)) {
-				evti = createEventInstance(eventKey, RecurringInfo.SINGLE, sevt);
+				evti = createEventInstance(eventKey, RecurringInfo.NONE, sevt);
 				evti.setAttendees(createEventAttendeeList(adao.selectByEvent(con, sevt.getEventId())));
 				
 			} else if(type.equals(EVENT_RECURRING)) {

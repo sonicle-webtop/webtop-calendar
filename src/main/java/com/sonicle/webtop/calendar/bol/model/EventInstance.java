@@ -64,10 +64,10 @@ public class EventInstance extends Event {
 	}
 	
 	public static enum RecurringInfo {
-		SINGLE {
+		NONE {
 			@Override
 			public String toString() {
-				return "single";
+				return "none";
 			}
 		},
 		BROKEN {

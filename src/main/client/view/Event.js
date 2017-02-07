@@ -115,7 +115,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			isPrivate: WTF.checkboxBind('record', 'isPrivate'),
 			busy: WTF.checkboxBind('record', 'busy'),
 			rrType: WTF.checkboxGroupBind('record', 'rrType'),
-			rrDaylyType: WTF.checkboxGroupBind('record', 'rrDaylyType'),
+			rrDailyType: WTF.checkboxGroupBind('record', 'rrDailyType'),
 			rrWeeklyDay1: WTF.checkboxBind('record', 'rrWeeklyDay1'),
 			rrWeeklyDay2: WTF.checkboxBind('record', 'rrWeeklyDay2'),
 			rrWeeklyDay3: WTF.checkboxBind('record', 'rrWeeklyDay3'),
@@ -129,7 +129,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			isRRDayly: WTF.equalsFormula('record', 'rrType', 'D'),
 			isRRWeekly: WTF.equalsFormula('record', 'rrType', 'W'),
 			isRRMonthly: WTF.equalsFormula('record', 'rrType', 'M'),
-			isRRYearly: WTF.equalsFormula('record', 'rrType', 'Y')
+			isRRYearly: WTF.equalsFormula('record', 'rrType', 'Y'),
+			foIsRecurring: WTF.equalsFormula('record', '_recurringInfo', 'recurring')
 		});
 	},
 	
@@ -263,7 +264,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'datefield',
 					bind: {
 						value: '{startDate}',
-						disabled: '{record._isRecurring}'
+						disabled: '{foIsRecurring}'
 					},
 					startDay: WT.getStartDay(),
 					margin: '0 5 0 0',
@@ -306,7 +307,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'datefield',
 					bind: {
 						value: '{endDate}',
-						disabled: '{record._isRecurring}'
+						disabled: '{foIsRecurring}'
 					},
 					startDay: WT.getStartDay(),
 					margin: '0 5 0 0',
@@ -507,7 +508,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			})]
 		});
 		invitation = Ext.create({
-			xtype: 'panel',
+			xtype: 'container',
 			reference: 'tabinvitation',
 			referenceHolder: true,
 			title: me.mys.res('event.invitation.tit'),
@@ -554,7 +555,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							})
 						})),
 						header: me.mys.res('event.gp-attendees.recipientType.lbl'),
-						width: 150
+						width: 110
 					}, {
 						dataIndex: 'recipientRole',
 						renderer: WTF.resColRenderer({
@@ -568,7 +569,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							})
 						})),
 						header: me.mys.res('event.gp-attendees.recipientRole.lbl'),
-						width: 100
+						width: 110
 					}, {
 						dataIndex: 'responseStatus',
 						renderer: WTF.resColRenderer({
@@ -582,7 +583,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							})
 						})),
 						header: me.mys.res('event.gp-attendees.responseStatus.lbl'),
-						width: 100
+						width: 110
 					}],
 					plugins: [
 						Ext.create('Ext.grid.plugin.RowEditing', {
@@ -620,6 +621,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							}
 						}
 					],
+					border: false,
 					listeners: {
 						selectionchange: function(s,recs) {
 							me.getAction('deleteAttendee').setDisabled(!recs.length);
@@ -733,6 +735,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							}
 						}
 					],
+					border: false,
 					listeners: {
 						activate: function() {
 							me.reloadPlanning();
@@ -753,19 +756,18 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			]
 		});
 		recurrence = Ext.create({
-			xtype: 'panel',
+			xtype: 'wtpanel',
 			reference: 'tabrecurrence',
 			itemId: 'recurrence',
-			//layout: 'anchor',
-			bodyPadding: 5,
 			title: me.mys.res('event.recurrence.tit'),
+			layout: 'vbox',
 			items: [{
 				xtype: 'container',
-				layout: 'column',
+				layout: 'hbox',
 				items: [{
-					xtype: 'form',
+					xtype: 'wtform',
+					modelValidation: true,
 					layout: 'anchor',
-					width: 120,
 					items: [{
 						xtype: 'radiogroup',
 						bind: {
@@ -792,11 +794,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							inputValue: 'Y',
 							boxLabel: WT.res('rr.type.yearly')
 						}]
-					}]
+					}],
+					width: 120
 				}, {
-					xtype: 'form',
+					xtype: 'wtform',
 					layout: 'anchor',
-					columnWidth: 1,
+					modelValidation: true,
 					items: [{
 						xtype: 'displayfield' // none row
 					}, {
@@ -813,11 +816,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						items: [{
 							xtype: 'radiogroup',
 							bind: {
-								value: '{rrDaylyType}'
+								value: '{rrDailyType}'
 							},
 							columns: [80, 60, 80, 150],
 							items: [{
-								name: 'rrDaylyType',
+								name: 'rrDailyType',
 								inputValue: '1',
 								boxLabel: WT.res('rr.type.daily.type.1')
 							}, {
@@ -833,14 +836,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								margin: '0 5 0 0',
 								listeners: {
 									change: function() {
-										me.getModel().set('rrDaylyType', '1');
+										me.getModel().set('rrDailyType', '1');
 									}
 								}
 							}, {
 								xtype: 'label',
 								text: WT.res('rr.type.daily.freq')
 							}, {
-								name: 'rrDaylyType',
+								name: 'rrDailyType',
 								inputValue: '2',
 								boxLabel: WT.res('rr.type.daily.type.2')
 							}]
@@ -983,10 +986,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							displayField: 'desc',
 							width: 120
 						}]
-					}]
-				}]
+					}],
+					flex: 1
+				}],
+				flex: 1
 			}, {
-				xtype: 'form',
+				xtype: 'wtform',
+				modelValidation: true,
 				layout: 'anchor',
 				items: [{
 					xtype: 'radiogroup',
@@ -1034,11 +1040,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						}
 					}],
 					fieldLabel: WT.res('rr.end')
-				}]
+				}],
+				height: 40
 			}]
 		});
 		
-		me.add(Ext.create({
+		me.add({
 			region: 'center',
 			xtype: 'container',
 			layout: {
@@ -1048,16 +1055,17 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			items: [
 				main,
 				{
-					xtype: 'tabpanel',
-					flex: 1,
+					xtype: 'wttabpanel',
 					activeTab: 0,
 					items: [
 						appointment,
 						invitation,
 						recurrence
-					]
-			}]
-		}));
+					],
+					flex: 1
+				}
+			]
+		});
 		
 		//me.updateCalendarFilters();
 		//me.updateActivityParams(false);
@@ -1069,12 +1077,37 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		vm.bind('{record.endDate}', me.onDatesChanged, me);
 		vm.bind('{record.timezone}', me.onDatesChanged, me);
 		vm.bind('{record.customerId}', me.onCustomerChanged, me);
+		vm.bind('{record.rrType}', me.onRrTypeChanged, me);
+		vm.bind('{record.rrEndsMode}', me.onRrEndsModeChanged, me);
+		vm.bind('{record.rrDailyType}', me.onRrDailyTypeChanged, me);
+	},
+	
+	onRrTypeChanged: function(v) {
+		var mo = this.getModel();
+		if (mo.get('rrType')) {
+			mo.setIfNull('rrWeeklyDay1', false);
+			mo.setIfNull('rrWeeklyDay2', false);
+			mo.setIfNull('rrWeeklyDay3', false);
+			mo.setIfNull('rrWeeklyDay4', false);
+			mo.setIfNull('rrWeeklyDay5', false);
+			mo.setIfNull('rrWeeklyDay6', false);
+			mo.setIfNull('rrWeeklyDay7', false);
+		}
+		mo.refreshValidatorsForRrType();
+	},
+	
+	onRrEndsModeChanged: function(v) {
+		this.getModel().refreshValidatorsForRrEndsMode();
+	},
+	
+	onRrDailyTypeChanged: function(v) {
+		this.getModel().refreshValidatorsForRrDailyType();
 	},
 	
 	onViewLoad: function(s, success) {
 		if(!success) return;
 		var me = this,
-				model = me.getModel(),
+				mo = me.getModel(),
 				owner = me.lref('fldowner');
 		
 		// Overrides autogenerated string id by extjs...
@@ -1083,8 +1116,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		me.updateCalendarFilters();
 		
 		// Gui updates...
-		me.lref('tabinvitation').setDisabled(!model.get('_isSingle') && !model.get('_isBroken'));
-		me.lref('tabrecurrence').setDisabled(!model.get('_isSingle') && !model.get('_isRecurring'));
+		me.lref('tabinvitation').setDisabled(mo.isRecurring());
+		me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || mo.isBroken());
 		
 		if(me.isMode(me.MODE_NEW)) {
 			owner.setDisabled(false);
@@ -1092,7 +1125,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			me.getAction('restore').setDisabled(true);
 		} else if(me.isMode(me.MODE_EDIT)) {
 			owner.setDisabled(true);
-			me.getAction('restore').setDisabled(!(model.get('_isBroken') === true));
+			me.getAction('restore').setDisabled(!mo.isBroken());
 		}
 		
 		me.lref('fldtitle').focus(true);
@@ -1155,7 +1188,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this,
 				rec = me.getModel();
 		
-		if(rec.get('_isRecurring') === true) {
+		if(rec.isRecurring()) {
 			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid) {
 				if(bid === 'ok') {
 					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']),
@@ -1196,7 +1229,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			});
 		};
 		
-		if(rec.get('_isRecurring') === true) {
+		if(rec.isRecurring()) {
 			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.delete'), function(bid) {
 				if(bid === 'ok') {
 					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);

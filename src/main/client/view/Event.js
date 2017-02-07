@@ -1084,8 +1084,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	onRrTypeChanged: function(v) {
 		var mo = this.getModel();
-		mo.setIfNull('rrRepeatTimes', 1);
-		mo.setIfNull('rrUntilDate', Ext.Date.clone(mo.get('startDate')));
+		if (mo.get('rrType') !== '_') {
+			mo.setIfNull('rrRepeatTimes', 1);
+			mo.setIfNull('rrUntilDate', Ext.Date.clone(mo.get('startDate')));
+		}
 		switch(mo.get('rrType')) {
 			case 'D':
 				mo.setIfNull('rrDailyFreq', 1);

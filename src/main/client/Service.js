@@ -95,22 +95,24 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				'->',
 				{
 					xtype: 'textfield',
-					width: 200,
+					tooltip: me.res('textfield.tip'),
+					plugins: ['sofieldtooltip'],
 					triggers: {
 						search: {
 							cls: Ext.baseCSSPrefix + 'form-search-trigger',
 							handler: function(s) {
-								me.searchEvents(s.getValue());
+								me.queryEvents(s.getValue());
 							}
 						}
 					},
 					listeners: {
 						specialkey: function(s, e) {
 							if(e.getKey() === e.ENTER) {
-								me.searchEvents(s.getValue());
+								me.queryEvents(s.getValue());
 							}
 						}
-					}
+					},
+					width: 200
 				}
 			]
 		}));
@@ -1029,15 +1031,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		Sonicle.URLMgr.openFile(url, {filename: 'events-detail', newWindow: true});
 	},
 	
-	searchEvents: function(query) {
+	queryEvents: function(txt) {
 		var me = this,
 				gp = me.gpResults();
-		
-		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), query));
-		me._activateMain(gp);
-		WTU.loadWithExtraParams(gp.getStore(), {
-			query: query
-		});
+		if (!Ext.isEmpty(txt)) {
+			gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), txt));
+			me._activateMain(gp);
+			WTU.loadWithExtraParams(gp.getStore(), {
+				query: txt
+			});
+		}
 	},
 	
 	isEventRO: function(rec) {

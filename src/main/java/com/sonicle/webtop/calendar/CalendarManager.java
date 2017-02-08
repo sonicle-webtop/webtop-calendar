@@ -135,6 +135,7 @@ import net.fortuna.ical4j.model.Calendar;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import java.util.TimeZone;
+import javax.mail.Session;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.PartStat;
@@ -1749,7 +1750,7 @@ public class CalendarManager extends BaseManager {
 			String customBody = TplHelper.buildResponseUpdateBodyTpl(locale, dateFormat, timeFormat, event, servicePublicUrl);
 			
 			String html = TplHelper.buildResponseUpdateTpl(locale, source, event.getTitle(), customBody, targetAttendee);
-			WT.sendEmail(getTargetProfileId(), true, from, to, subject, html);
+			WT.sendEmail(getMailSession(), true, from, to, subject, html);
 		} catch(Exception ex) {
 			logger.warn("Unable to notify organizer", ex);
 		}	
@@ -1766,6 +1767,7 @@ public class CalendarManager extends BaseManager {
 			if(!toBeNotified.isEmpty()) {
 				UserProfile.Data ud = WT.getUserData(getTargetProfileId());
 				CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
+				Session session=getMailSession();
 				String dateFormat = cus.getShortDateFormat();
 				String timeFormat = cus.getShortTimeFormat();
 				
@@ -1795,7 +1797,7 @@ public class CalendarManager extends BaseManager {
 						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
 						final String html = TplHelper.buildInvitationTpl(getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
 						try {
-							WT.sendEmail(getTargetProfileId(), true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{attPart, calendarPart});
+							WT.sendEmail(session, true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{attPart, calendarPart});
 						} catch(MessagingException ex) {
 							logger.warn("Unable to send notification to attendee {}", to.toString());
 						}

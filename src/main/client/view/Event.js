@@ -1140,9 +1140,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			owner.setDisabled(false);
 			me.getAction('delete').setDisabled(true);
 			me.getAction('restore').setDisabled(true);
-		} else if(me.isMode(me.MODE_EDIT)) {
+		} else if(me.isMode(me.MODE_VIEW)) {
+			me.getAction('saveClose').setDisabled(true);
+			me.getAction('delete').setDisabled(true);
+			me.getAction('restore').setDisabled(true);
 			owner.setDisabled(true);
+		} else if(me.isMode(me.MODE_EDIT)) {
 			me.getAction('restore').setDisabled(!mo.isBroken());
+			owner.setDisabled(true);
 			me.lref('tabinvitation').setDisabled(mo.isRecurring());
 			me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || !mo.isRecurring());
 		}

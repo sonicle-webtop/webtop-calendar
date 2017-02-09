@@ -893,6 +893,60 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
+	prepareEventNewData: function(evt) {
+		var me = this,
+				rn = me.getF3MyRoot(me.trFolders()),
+				n = me.getF3FolderByRoot(rn),
+				obj = {};
+		
+		obj._profileId = rn.get('_pid');
+		obj.calendarId = n.get('_calId');
+		
+		// TODO: abilitare supporto all'inserimento nel calendari condivisi
+		
+		/*
+		if (!Ext.isDefined(evt.calendarId)) {
+			var rn = me.getF3MyRoot(),
+					n = me.getF3FolderByRoot(rn);
+			if (!n) Ext.raise('errorrrrrrrr');
+			obj._profileId = rn.get('_pid');
+			obj.calendarId = n.get('_calId');
+		} else {
+			Ext.raise('Not yet supported');
+			obj.calendarId = evt.calendarId;
+		}
+		*/
+		
+		obj.startDate = Ext.isDefined(evt.startDate) ? evt.startDate : new Date();
+		obj.endDate = Ext.isDefined(evt.endDate) ? evt.endDate : new Date();
+		obj.timezone = Ext.isDefined(evt.timezone) ? evt.timezone : WT.getVar('timezone');
+		if (Ext.isDefined(evt.allDay)) obj.allDay = evt.allDay;
+		if (Ext.isDefined(evt.title)) obj.title = evt.title;
+		if (Ext.isDefined(evt.description)) obj.description = evt.description;
+		if (Ext.isDefined(evt.location)) obj.location = evt.location;
+		if (Ext.isDefined(evt.isPrivate)) obj.isPrivate = evt.isPrivate;
+		if (Ext.isDefined(evt.busy)) obj.busy = evt.busy;
+		if (Ext.isDefined(evt.reminder)) obj.reminder = evt.reminder;
+		return obj;
+	},
+	
+	addEvent2: function(evt, opts) {
+		evt = evt || {};
+		opts = opts || {};
+		var me = this,
+				data = me.prepareEventNewData(evt),
+				vct = WT.createView(me.ID, 'view.Event');	
+		
+		vct.getView().on('viewsave', function(s, success, model) {
+			Ext.callback(opts.callback, opts.scope || me, [success, model]);
+		});
+		vct.show(false, function() {
+			vct.getView().begin('new', {
+				data: data
+			});
+		});
+	},
+	
 	addEventAt: function(ownerId, calendarId, isPrivate, busy, reminder, day, opts) {
 		var date = Sonicle.Date.copyTime(new Date(), day);
 		this.addEvent(ownerId, calendarId, isPrivate, busy, reminder, date, date, false, opts);

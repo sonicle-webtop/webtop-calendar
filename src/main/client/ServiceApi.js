@@ -42,15 +42,37 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	},
 	
 	/**
+	 * Adds a new event.
+	 * @param {Object} evt An object containing event data.
+	 * @param {Date} [evt.startDate] The start date-time.
+	 * @param {Date} [evt.endDate] The end date-time.
+	 * @param {Boolean} [evt.timezone] The timezone identifier.
+	 * @param {Boolean} [evt.allDay]
+	 * @param {String} [evt.title]
+	 * @param {String} [evt.description]
+	 * @param {String} [evt.location]
+	 * @param {Boolean} [evt.isPrivate]
+	 * @param {Boolean} [evt.busy]
+	 * @param {Integer} [evt.reminder]
+	 * @param {Object} cfg An object containing configuration.
+	 */
+	addEvent: function(evt, cfg) {
+		cfg = cfg || {};
+		this.service.addEvent2(evt, {
+			callback: cfg.callback
+		});
+	},
+	
+	/**
 	 * Opens an event for viewing it.
 	 * @param {Object} evt An object containing event data.
 	 * @param {String} evt.ekey The event key identifier.
-	 * @param {Object} opts An object containing configuration.
+	 * @param {Object} cfg An object containing configuration.
 	 */
-	openEvent: function(evt, opts) {
-		opts = opts || {};
+	openEvent: function(evt, cfg) {
+		cfg = cfg || {};
 		this.service.openEvent(false, evt.ekey, {
-			callback: opts.callback
+			callback: cfg.callback
 		});
 	},
 	
@@ -58,17 +80,12 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	 * Opens an event for editing it.
 	 * @param {Object} evt An object containing event data.
 	 * @param {String} evt.ekey The event key identifier.
-	 * @param {Object} opts An object containing configuration.
+	 * @param {Object} cfg An object containing configuration.
 	 */
-	editEvent: function(evt, opts) {
-		opts = opts || {};
+	editEvent: function(evt, cfg) {
+		cfg = cfg || {};
 		this.service.openEvent(true, evt.ekey, {
-			callback: opts.callback
+			callback: cfg.callback
 		});
-	},
-	
-	addEvent: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts) {
-		opts = opts || {};
-		this.service.addEvent(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts);
 	}
 });

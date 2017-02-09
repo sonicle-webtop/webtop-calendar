@@ -54,12 +54,17 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	 * @param {Boolean} [evt.isPrivate]
 	 * @param {Boolean} [evt.busy]
 	 * @param {Integer} [evt.reminder]
-	 * @param {Object} cfg An object containing configuration.
+	 * @param {Object} opts An object containing configuration.
+	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
+	 * @param {Object} [opts.scope] The callback method scope.
+	 * @param {Boolean} [opts.dirty] The dirty state of the model.
 	 */
-	addEvent: function(evt, cfg) {
-		cfg = cfg || {};
+	addEvent: function(evt, opts) {
+		opts = opts || {};
 		this.service.addEvent2(evt, {
-			callback: cfg.callback
+			callback: opts.callback,
+			scope: opts.scope,
+			dirty: opts.dirty
 		});
 	},
 	
@@ -67,12 +72,15 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	 * Opens an event for viewing it.
 	 * @param {Object} evt An object containing event data.
 	 * @param {String} evt.ekey The event key identifier.
-	 * @param {Object} cfg An object containing configuration.
+	 * @param {Object} opts An object containing configuration.
+	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
+	 * @param {Object} [opts.scope] The callback method scope.
 	 */
-	openEvent: function(evt, cfg) {
-		cfg = cfg || {};
+	openEvent: function(evt, opts) {
+		opts = opts || {};
 		this.service.openEvent(false, evt.ekey, {
-			callback: cfg.callback
+			callback: opts.callback,
+			scope: opts.scope
 		});
 	},
 	
@@ -80,12 +88,15 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	 * Opens an event for editing it.
 	 * @param {Object} evt An object containing event data.
 	 * @param {String} evt.ekey The event key identifier.
-	 * @param {Object} cfg An object containing configuration.
+	 * @param {Object} opts An object containing configuration.
+	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
+	 * @param {Object} [opts.scope] The callback method scope.
 	 */
-	editEvent: function(evt, cfg) {
-		cfg = cfg || {};
+	editEvent: function(evt, opts) {
+		opts = opts || {};
 		this.service.openEvent(true, evt.ekey, {
-			callback: cfg.callback
+			callback: opts.callback,
+			scope: opts.scope
 		});
 	}
 });

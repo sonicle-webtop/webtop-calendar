@@ -942,7 +942,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		vct.show(false, function() {
 			vct.getView().begin('new', {
-				data: data
+				data: data,
+				dirty: opts.dirty
 			});
 		});
 	},

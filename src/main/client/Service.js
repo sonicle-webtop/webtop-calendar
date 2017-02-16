@@ -1052,7 +1052,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				});
 		
 		vwc.getView().on('dosuccess', function() {
-			Ext.callback(opts.callback, opts.scope || me, true);
+			Ext.callback(opts.callback, opts.scope || me, [true]);
 		});
 		vwc.show();
 	},

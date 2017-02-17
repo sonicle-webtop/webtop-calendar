@@ -242,8 +242,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					},
 					rangeselect: function(s,dates,onComplete) {
 						onComplete();
-						var cal = me.getSelectedFolder(me.trFolders());
-						if(cal) me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, false);
+						var cal = me.getSelectedFolder(me.trFolders()),
+								soDate = Sonicle.Date,
+								ad;
+						if(cal) {
+							ad = soDate.isMidnight(dates.startDate) && soDate.isMidnight(dates.endDate);
+							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, ad);
+						}
 					},
 					eventdblclick: function(s, rec) {
 						if(rec && !me.isEventRO(rec)) {

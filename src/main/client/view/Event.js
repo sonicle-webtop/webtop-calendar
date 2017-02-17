@@ -282,19 +282,33 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'button',
 					iconCls: 'wtcal-icon-now-xs',
 					tooltip: me.mys.res('event.btn-now.tip'),
-					handler: function() {
-						me.getModel().setStartTime(new Date());
-					},
 					bind: {
 						disabled: '{fldallDay.checked}'
+					},
+					handler: function() {
+						me.getModel().setStartTime(new Date());
 					}
 				}, {
 					xtype: 'checkbox',
-					reference: 'fldallDay', // Publishes field into viewmodel...
+					reference: 'fldallDay',
 					bind: '{allDay}',
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
-					boxLabel: me.mys.res('event.fld-allDay.lbl')
+					boxLabel: me.mys.res('event.fld-allDay.lbl'),
+					handler: function(s,nv) {
+						var mo = me.getModel(),
+								soDate = Sonicle.Date,
+								dt = null;
+						if (nv === true) {
+							dt = soDate.setTime(new Date(), 0, 0, 0);
+							mo.setStartTime(dt);
+							mo.setEndTime(dt);
+						} else {
+							dt = me.mys.getVar('workdayStart');
+							mo.setStartTime(dt);
+							mo.setEndTime(soDate.add(dt, {minutes: 30}));
+						}
+					}
 				}]
 			}, {
 				xtype: 'fieldcontainer',
@@ -325,11 +339,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'button',
 					iconCls: 'wtcal-icon-now-xs',
 					tooltip: me.mys.res('event.btn-now.tip'),
-					handler: function() {
-						me.getModel().setEndTime(new Date());
-					},
 					bind: {
 						disabled: '{fldallDay.checked}'
+					},
+					handler: function() {
+						me.getModel().setEndTime(new Date());
 					}
 				}, {
 					xtype: 'combo',

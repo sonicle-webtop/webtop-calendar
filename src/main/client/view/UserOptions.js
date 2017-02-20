@@ -37,6 +37,29 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 		'Sonicle.webtop.calendar.store.View',
 		'Sonicle.webtop.calendar.store.ReminderDelivery'
 	],
+	
+	viewModel: {
+		formulas: {
+			foWorkdayStart: {
+				bind: {bindTo: '{record.workdayStart}'},
+				get: function(val) {
+					return val;
+				},
+				set: function(val) {
+					this.get('record').setWorkdayStart(val);
+				}
+			},
+			foWorkdayEnd: {
+				bind: {bindTo: '{record.workdayEnd}'},
+				get: function(val) {
+					return val;
+				},
+				set: function(val) {
+					this.get('record').setWorkdayEnd(val);
+				}
+			}
+		}
+	},
 		
 	initComponent: function() {
 		var me = this;
@@ -61,9 +84,10 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 				}
 			}), {
 				xtype: 'timefield',
-				bind: '{record.workdayStart}',
+				bind: '{foWorkdayStart}',
 				format: 'H:i',
 				increment : 60,
+				snapToIncrement: true,
 				fieldLabel: WT.res(me.ID, 'opts.main.fld-workdayStart.lbl'),
 				width: 220,
 				listeners: {
@@ -83,9 +107,10 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 				}*/
 			}, {
 				xtype: 'timefield',
-				bind: '{record.workdayEnd}',
+				bind: '{foWorkdayEnd}',
 				format: 'H:i',
 				increment : 60,
+				snapToIncrement: true,
 				fieldLabel: WT.res(me.ID, 'opts.main.fld-workdayEnd.lbl'),
 				width: 220,
 				listeners: {

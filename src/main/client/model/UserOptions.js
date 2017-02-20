@@ -40,14 +40,25 @@ Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
 		WTF.field('workdayStart', 'date', false, {dateFormat: 'H:i'}),
 		WTF.field('workdayEnd', 'date', false, {dateFormat: 'H:i'}),
 		WTF.field('eventReminderDelivery', 'string', false)
-	]
-	/*
-	validators: {
-		workdayStart: function(val, rec) {
-			console.log('validate workdayStart');
-			return val < rec.get('workdayEnd');
-			//return true;
-		}
+	],
+	
+	setWorkdayStart: function(date) {
+		var me = this,
+				soDate = Sonicle.Date,
+				end = me.get('workdayEnd');
+		me.set('workdayStart', date);
+		if (!soDate.isMidnight(end) && (date >= end)) {
+			me.set('workdayEnd', soDate.add(date, {hours: 1}));
+		} 
+	},
+	
+	setWorkdayEnd: function(date) {
+		var me = this,
+				soDate = Sonicle.Date,
+				sta = me.get('workdayStart');
+		me.set('workdayEnd', date);
+		if (!soDate.isMidnight(date) && (date <= sta)) {
+			me.set('workdayStart', soDate.add(date, {hours: -1}));
+		} 
 	}
-	*/
 });

@@ -1,5 +1,4 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+/* 
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,18 +26,18 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.io;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.ICal4jUtils;
 import com.sonicle.webtop.calendar.ICalHelper;
-import com.sonicle.webtop.calendar.bol.model.Event;
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.bol.model.Recurrence;
+import com.sonicle.webtop.calendar.model.Event;
+import com.sonicle.webtop.calendar.model.EventAttendee;
+import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;
@@ -263,22 +262,22 @@ public class EventICalFileReader implements EventFileReader {
 		return new EventReadResult(event, excludedDates, overwritesRecurringInstance);
 	}
 	
-	private Recurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) {
-		Recurrence rec = new Recurrence();
+	private EventRecurrence parseVEventRRule(LogEntries log, RRule rr, org.joda.time.DateTimeZone etz) {
+		EventRecurrence rec = new EventRecurrence();
 		
 		Recur recur = rr.getRecur();
 		String freq = recur.getFrequency();
 		if(freq.equals(Recur.DAILY)) {
 			WeekDayList dayList = recur.getDayList();
 			if(!dayList.isEmpty()) {
-				rec.setType(Recurrence.TYPE_DAILY_FERIALI);
+				rec.setType(EventRecurrence.TYPE_DAILY_FERIALI);
 			} else {
-				rec.setType(Recurrence.TYPE_DAILY);
+				rec.setType(EventRecurrence.TYPE_DAILY);
 				int dfreq = (recur.getInterval() == -1) ? 1 : recur.getInterval();
 				rec.setDailyFreq(dfreq);
 			}
 		} else if(freq.equals(Recur.WEEKLY)) {
-			rec.setType(Recurrence.TYPE_WEEKLY);
+			rec.setType(EventRecurrence.TYPE_WEEKLY);
 			
 			int wfreq = (recur.getInterval() == -1) ? 1 : recur.getInterval();
 			rec.setWeeklyFreq(wfreq);
@@ -304,7 +303,7 @@ public class EventICalFileReader implements EventFileReader {
 				}
 			}
 		} else if(freq.equals(Recur.MONTHLY)) {
-			rec.setType(Recurrence.TYPE_MONTHLY);
+			rec.setType(EventRecurrence.TYPE_MONTHLY);
 			
 			int mfreq = recur.getInterval();
 			rec.setMonthlyFreq(mfreq);
@@ -314,7 +313,7 @@ public class EventICalFileReader implements EventFileReader {
 				rec.setMonthlyDay((Integer)o);
 			}
 		} else if(freq.equals(Recur.YEARLY)) {
-			rec.setType(Recurrence.TYPE_YEARLY);
+			rec.setType(EventRecurrence.TYPE_YEARLY);
 			
 			NumberList monthList = recur.getMonthList();
 			for(Object o : monthList) {
@@ -330,13 +329,13 @@ public class EventICalFileReader implements EventFileReader {
 		}
 		
 		if(recur.getCount() != -1) {
-			rec.setEndsMode(Recurrence.ENDS_MODE_REPEAT);
+			rec.setEndsMode(EventRecurrence.ENDS_MODE_REPEAT);
 			rec.setRepeatTimes(recur.getCount());
 		} else if(recur.getUntil() == null) {
-			rec.setEndsMode(Recurrence.ENDS_MODE_NEVER);
+			rec.setEndsMode(EventRecurrence.ENDS_MODE_NEVER);
 		} else {
 			org.joda.time.DateTime dt = new org.joda.time.DateTime(recur.getUntil(), etz);
-			rec.setEndsMode(Recurrence.ENDS_MODE_UNTIL);
+			rec.setEndsMode(EventRecurrence.ENDS_MODE_UNTIL);
 			rec.setUntilDate(dt.withTimeAtStartOfDay());
 		}
 		

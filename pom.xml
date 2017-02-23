@@ -9,20 +9,22 @@
 	
 	<parent>
 		<groupId>com.sonicle.webtop</groupId>
-		<artifactId>webtop-superpom-service-sdk</artifactId>
-		<version>1.0</version>
+		<artifactId>webtop-superpom-service</artifactId>
+		<version>1</version>
 	</parent>
 	
 	<properties>
-		<maven.compiler.source>1.7</maven.compiler.source>
-		<maven.compiler.target>1.7</maven.compiler.target>
-		
 		<!-- WEBTOP SERVICE CONFIGURATION -->
 		<webtop.service.package>com.sonicle.webtop.calendar</webtop.service.package>
 		<webtop.service.jsPackage>Sonicle.webtop.calendar</webtop.service.jsPackage>
 	</properties>
 	
 	<dependencies>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>webtop-calendar-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>com.sonicle.commons</groupId>
 			<artifactId>sonicle-commons</artifactId>

@@ -1,5 +1,4 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+/* 
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,15 +26,15 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.commons.LangUtils;
 import com.sonicle.webtop.calendar.ICal4jUtils;
-import com.sonicle.webtop.calendar.bol.model.Recurrence;
+import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
 import com.sonicle.webtop.core.sdk.WTException;
 import net.fortuna.ical4j.model.Recur;
@@ -55,22 +54,22 @@ public class ORecurrence extends Recurrences {
 		super();
 	}
 	
-	public void fillFrom(Recurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
+	public void fillFrom(EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimeZone);
 		
 		setStartDate(eventStartDate);
 		
-		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_DAILY)) {
+		if(StringUtils.equals(rec.getType(), EventRecurrence.TYPE_DAILY)) {
 			setType(rec.getType());
 			setDailyFreq(rec.getDailyFreq());
-		} else if(StringUtils.equals(rec.getType(), Recurrence.TYPE_DAILY_FERIALI)) {
+		} else if(StringUtils.equals(rec.getType(), EventRecurrence.TYPE_DAILY_FERIALI)) {
 			setType(rec.getType());
 		} else {
 			// Reset fields...
 			setDailyFreq(null);
 		}
 			
-		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_WEEKLY)) {
+		if(StringUtils.equals(rec.getType(), EventRecurrence.TYPE_WEEKLY)) {
 			setType(rec.getType());
 			setWeeklyFreq(rec.getWeeklyFreq());
 			setWeeklyDay_1(LangUtils.coalesce(rec.getWeeklyDay1(), false));
@@ -92,7 +91,7 @@ public class ORecurrence extends Recurrences {
 			setWeeklyDay_7(null);
 		}
 		
-		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_MONTHLY)) {
+		if(StringUtils.equals(rec.getType(), EventRecurrence.TYPE_MONTHLY)) {
 			setType(rec.getType());
 			setMonthlyFreq(rec.getMonthlyFreq());
 			setMonthlyDay(rec.getMonthlyDay());
@@ -103,7 +102,7 @@ public class ORecurrence extends Recurrences {
 			setMonthlyDay(null);
 		}
 		
-		if(StringUtils.equals(rec.getType(), Recurrence.TYPE_YEARLY)) {
+		if(StringUtils.equals(rec.getType(), EventRecurrence.TYPE_YEARLY)) {
 			setType(rec.getType());
 			setYearlyFreq(rec.getYearlyFreq());
 			setYearlyDay(rec.getYearlyDay());
@@ -116,11 +115,11 @@ public class ORecurrence extends Recurrences {
 		}
 		
 		RRule rr = null;
-		if(StringUtils.equals(rec.getEndsMode(), Recurrence.ENDS_MODE_NEVER)) {
+		if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_NEVER)) {
 			rr = applyEndNever(etz, false);
-		} else if(StringUtils.equals(rec.getEndsMode(), Recurrence.ENDS_MODE_REPEAT)) {
+		} else if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_REPEAT)) {
 			rr = applyEndRepeat(rec.getRepeatTimes(), eventStartDate, eventEndDate, etz, false);
-		} else if(StringUtils.equals(rec.getEndsMode(), Recurrence.ENDS_MODE_UNTIL)) {
+		} else if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_UNTIL)) {
 			rr = applyEndUntil(rec.getUntilDate(), etz, false);
 		} else {
 			throw new RuntimeException("Recurrence end-mode unknown or undefined");
@@ -169,11 +168,11 @@ public class ORecurrence extends Recurrences {
 		try {
 			rec = new Recur();
 			
-			if(StringUtils.equals(getType(), Recurrence.TYPE_DAILY)) {
+			if(StringUtils.equals(getType(), EventRecurrence.TYPE_DAILY)) {
 				rec.setFrequency(Recur.DAILY);
 				rec.setInterval(getDailyFreq());
 			
-			} else if(StringUtils.equals(getType(), Recurrence.TYPE_DAILY_FERIALI)) {
+			} else if(StringUtils.equals(getType(), EventRecurrence.TYPE_DAILY_FERIALI)) {
 				rec.setFrequency(Recur.WEEKLY);
 				rec.setInterval(1);
 				rec.getDayList().add(WeekDay.MO);
@@ -182,7 +181,7 @@ public class ORecurrence extends Recurrences {
 				rec.getDayList().add(WeekDay.TH);
 				rec.getDayList().add(WeekDay.FR);
 			
-			} else if(StringUtils.equals(getType(), Recurrence.TYPE_WEEKLY)) {
+			} else if(StringUtils.equals(getType(), EventRecurrence.TYPE_WEEKLY)) {
 				rec.setFrequency(Recur.WEEKLY);
 				rec.setInterval(getWeeklyFreq());
 				if(getWeeklyDay_1()) rec.getDayList().add(WeekDay.MO);
@@ -193,12 +192,12 @@ public class ORecurrence extends Recurrences {
 				if(getWeeklyDay_6()) rec.getDayList().add(WeekDay.SA);
 				if(getWeeklyDay_7()) rec.getDayList().add(WeekDay.SU);
 				
-			} else if(StringUtils.equals(getType(), Recurrence.TYPE_MONTHLY)) {
+			} else if(StringUtils.equals(getType(), EventRecurrence.TYPE_MONTHLY)) {
 				rec.setFrequency(Recur.MONTHLY);
 				rec.setInterval(getMonthlyFreq());
 				rec.getMonthDayList().add(getMonthlyDay());
 				
-			} else if(StringUtils.equals(getType(), Recurrence.TYPE_YEARLY)) {
+			} else if(StringUtils.equals(getType(), EventRecurrence.TYPE_YEARLY)) {
 				rec.setFrequency(Recur.YEARLY);
 				rec.setInterval(1); // GUI is not currently able to handle different value
 				rec.getMonthList().add(getYearlyFreq());

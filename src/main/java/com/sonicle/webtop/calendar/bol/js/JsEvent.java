@@ -1,5 +1,4 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+/* 
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,18 +26,16 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.CalendarManager;
-import com.sonicle.webtop.calendar.bol.model.Event;
-import com.sonicle.webtop.calendar.bol.model.EventAttendee;
-import com.sonicle.webtop.calendar.bol.model.EventInstance;
-import com.sonicle.webtop.calendar.bol.model.Recurrence;
+import com.sonicle.webtop.calendar.model.EventAttendee;
+import com.sonicle.webtop.calendar.model.EventInstance;
+import com.sonicle.webtop.calendar.model.EventRecurrence;
 import java.util.ArrayList;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -121,17 +118,17 @@ public class JsEvent {
 		statisticId = event.getStatisticId();
 		causalId = event.getCausalId();
 		
-		Recurrence rec = event.getRecurrence();
+		EventRecurrence rec = event.getRecurrence();
 		if(rec == null) {
 			rrType = REC_TYPE_NONE;
 			rrDailyType = REC_DAILY_TYPE_DAY;
-			rrEndsMode = Recurrence.ENDS_MODE_NEVER;
+			rrEndsMode = EventRecurrence.ENDS_MODE_NEVER;
 		} else {
-			if(rec.getType().equals(Recurrence.TYPE_DAILY) || rec.getType().equals(Recurrence.TYPE_DAILY_FERIALI)) {
-				rrType = Recurrence.TYPE_DAILY;
+			if(rec.getType().equals(EventRecurrence.TYPE_DAILY) || rec.getType().equals(EventRecurrence.TYPE_DAILY_FERIALI)) {
+				rrType = EventRecurrence.TYPE_DAILY;
 				rrDailyType = REC_DAILY_TYPE_DAY;
-			} else if(rec.getType().equals(Recurrence.TYPE_DAILY_FERIALI)) {
-				rrType = Recurrence.TYPE_DAILY;
+			} else if(rec.getType().equals(EventRecurrence.TYPE_DAILY_FERIALI)) {
+				rrType = EventRecurrence.TYPE_DAILY;
 				rrDailyType = REC_DAILY_TYPE_FERIALI;
 			} else {
 				rrType = rec.getType();
@@ -186,8 +183,8 @@ public class JsEvent {
 		event.setDatesAndTimes(
 				jse.allDay,
 				jse.timezone,
-				CalendarManager.parseYmdHmsWithZone(jse.startDate, eventTz),
-				CalendarManager.parseYmdHmsWithZone(jse.endDate, eventTz)
+				DateTimeUtils.parseYmdHmsWithZone(jse.startDate, eventTz),
+				DateTimeUtils.parseYmdHmsWithZone(jse.endDate, eventTz)
 		);
 		
 		event.setTitle(jse.title);
@@ -202,13 +199,13 @@ public class JsEvent {
 		event.setCausalId(jse.causalId);
 		
 		if(!jse.rrType.equals(REC_TYPE_NONE)) {
-			Recurrence rec = new Recurrence();
+			EventRecurrence rec = new EventRecurrence();
 			
-			if(jse.rrType.equals(Recurrence.TYPE_DAILY)) {
+			if(jse.rrType.equals(EventRecurrence.TYPE_DAILY)) {
 				if(jse.rrDailyType.equals(REC_DAILY_TYPE_DAY)) {
-					rec.setType(Recurrence.TYPE_DAILY);
+					rec.setType(EventRecurrence.TYPE_DAILY);
 				} else if(jse.rrDailyType.equals(REC_DAILY_TYPE_FERIALI)) {
-					rec.setType(Recurrence.TYPE_DAILY_FERIALI);
+					rec.setType(EventRecurrence.TYPE_DAILY_FERIALI);
 				}
 			} else {
 				rec.setType(jse.rrType);
@@ -228,7 +225,7 @@ public class JsEvent {
 			rec.setYearlyDay(jse.rrYearlyDay);
 			rec.setEndsMode(jse.rrEndsMode);
 			rec.setRepeatTimes(jse.rrRepeatTimes);
-			rec.setUntilDate((jse.rrUntilDate != null) ? CalendarManager.parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null);
+			rec.setUntilDate((jse.rrUntilDate != null) ? DateTimeUtils.parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null);
 			event.setRecurrence(rec);
 		}
 		

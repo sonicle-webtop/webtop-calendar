@@ -1,5 +1,4 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+/* 
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,17 +26,17 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.rpt;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
-import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
+import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -48,7 +47,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -75,7 +73,7 @@ public abstract class AbstractAgenda extends AbstractReport {
 		}
 		
 		// Expands all events
-		HashMap<Integer, OCalendar> calendars = new HashMap<>();
+		HashMap<Integer, Calendar> calendars = new HashMap<>();
 		ArrayList<SchedulerEventInstance> events = new ArrayList<>();
 		for(CalendarManager.CalendarEvents ce : calendarEvents) {
 			calendars.put(ce.calendar.getCalendarId(), ce.calendar);
@@ -114,7 +112,7 @@ public abstract class AbstractAgenda extends AbstractReport {
 			for(int i=0; i<days; i++) {
 				dayDateFrom = fromDate.plusDays(i);
 				if(isInDay(utz, dayDateFrom, se)) {
-					OCalendar calendar = calendars.get(se.getCalendarId());
+					Calendar calendar = calendars.get(se.getCalendarId());
 					boolean spanning = true;
 					Integer spanLeft = null, spanRight  = null;
 					if(!se.getAllDay() && startsInDay(utz, dayDateFrom, se) && endsInDay(utz, dayDateFrom, se)) {

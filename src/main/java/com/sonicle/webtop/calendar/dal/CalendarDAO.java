@@ -1,5 +1,4 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+/* 
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,9 +26,9 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.dal;
 
@@ -60,15 +59,15 @@ public class CalendarDAO extends BaseDAO {
 		return nextID;
 	}
 	
-	public boolean existByIdDomainUser(Connection con, Integer calendarId, String domainId, String userId) throws DAOException {
+	public boolean existByIdProfile(Connection con, Integer calendarId, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.selectCount()
 			.from(CALENDARS)
 			.where(
-					CALENDARS.CALENDAR_ID.equal(calendarId)
-					.and(CALENDARS.DOMAIN_ID.equal(domainId))
-					.and(CALENDARS.USER_ID.equal(userId))
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+				.and(CALENDARS.DOMAIN_ID.equal(domainId))
+				.and(CALENDARS.USER_ID.equal(userId))
 			)
 			.fetchOne(0, Integer.class) == 1;
 	}
@@ -79,7 +78,7 @@ public class CalendarDAO extends BaseDAO {
 			.select()
 			.from(CALENDARS)
 			.where(
-					CALENDARS.CALENDAR_ID.equal(calendarId)
+				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
 			.fetchOneInto(Owner.class);
 	}
@@ -90,7 +89,7 @@ public class CalendarDAO extends BaseDAO {
 			.select()
 			.from(CALENDARS)
 			.where(
-					CALENDARS.CALENDAR_ID.equal(calendarId)
+				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
 			.fetchOneInto(OCalendar.class);
 	}
@@ -98,76 +97,76 @@ public class CalendarDAO extends BaseDAO {
 	public List<OCalendar> selectByDomain(Connection con, String domainId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-				.select()
-				.from(CALENDARS)
-				.where(
-						CALENDARS.DOMAIN_ID.equal(domainId)
-				)
-				.orderBy(
-						CALENDARS.BUILT_IN.desc(),
-						CALENDARS.NAME.asc()
-				)
-				.fetchInto(OCalendar.class);
+			.select()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+			)
+			.orderBy(
+				CALENDARS.BUILT_IN.desc(),
+				CALENDARS.NAME.asc()
+			)
+			.fetchInto(OCalendar.class);
 	}
 	
-	public List<OCalendar> selectByDomainUser(Connection con, String domainId, String userId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-				.select()
-				.from(CALENDARS)
-				.where(
-						CALENDARS.DOMAIN_ID.equal(domainId)
-						.and(CALENDARS.USER_ID.equal(userId))
-				)
-				.orderBy(
-						CALENDARS.BUILT_IN.desc(),
-						CALENDARS.NAME.asc()
-				)
-				.fetchInto(OCalendar.class);
-	}
-	
-	public List<OCalendar> selectByDomainUserIn(Connection con, String domainId, String userId, Integer[] calendars) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-				.select()
-				.from(CALENDARS)
-				.where(
-						CALENDARS.DOMAIN_ID.equal(domainId)
-						.and(CALENDARS.USER_ID.equal(userId))
-						.and(CALENDARS.CALENDAR_ID.in(calendars))
-				)
-				.orderBy(
-						CALENDARS.BUILT_IN.desc(),
-						CALENDARS.NAME.asc()
-				)
-				.fetchInto(OCalendar.class);
-	}
-	
-	public OCalendar selectBuiltInByDomainUser(Connection con, String domainId, String userId) throws DAOException {
+	public List<OCalendar> selectByProfile(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
 			.from(CALENDARS)
 			.where(
-					CALENDARS.DOMAIN_ID.equal(domainId)
-					.and(CALENDARS.USER_ID.equal(userId))
-					.and(CALENDARS.BUILT_IN.equal(true))
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+			)
+			.orderBy(
+				CALENDARS.BUILT_IN.desc(),
+				CALENDARS.NAME.asc()
+			)
+			.fetchInto(OCalendar.class);
+	}
+	
+	public List<OCalendar> selectByProfileIn(Connection con, String domainId, String userId, Integer[] calendars) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+				.and(CALENDARS.CALENDAR_ID.in(calendars))
+			)
+			.orderBy(
+				CALENDARS.BUILT_IN.desc(),
+				CALENDARS.NAME.asc()
+			)
+			.fetchInto(OCalendar.class);
+	}
+	
+	public OCalendar selectBuiltInByProfile(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+				.and(CALENDARS.BUILT_IN.equal(true))
 			)
 			.fetchOneInto(OCalendar.class);
 	}
 
-	public List<OCalendar> selectNoBuiltInByDomainUser(Connection con, String domainId, String userId) throws DAOException {
+	public List<OCalendar> selectNoBuiltInByProfile(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-				.select()
-				.from(CALENDARS)
-				.where(
-						CALENDARS.DOMAIN_ID.equal(domainId)
-						.and(CALENDARS.USER_ID.equal(userId))
-						.and(CALENDARS.BUILT_IN.equal(false))
-				)
-				.orderBy(CALENDARS.NAME)
-				.fetchInto(OCalendar.class);
+			.select()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+				.and(CALENDARS.BUILT_IN.equal(false))
+			)
+			.orderBy(CALENDARS.NAME)
+			.fetchInto(OCalendar.class);
 	}
 	
 	public int insert(Connection con, OCalendar item) throws DAOException {
@@ -209,7 +208,7 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int resetIsDefaultByDomainUser(Connection con, String domainId, String userId) throws DAOException {
+	public int resetIsDefaultByProfile(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(CALENDARS)
@@ -221,11 +220,24 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteById(Connection con, Integer calendarId) throws DAOException {
+	public int deleteById(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-				.delete(CALENDARS)
-				.where(CALENDARS.CALENDAR_ID.equal(calendarId))
-				.execute();
+			.delete(CALENDARS)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
+			.execute();
+	}
+	
+	public int deleteByProfile(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+			)
+			.execute();
 	}
 }

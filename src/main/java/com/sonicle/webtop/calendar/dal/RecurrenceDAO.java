@@ -1,5 +1,4 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+/* 
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,20 +26,22 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_RECURRENCES;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 
 /**
  *
@@ -66,7 +67,7 @@ public class RecurrenceDAO extends BaseDAO {
 			.select()
 			.from(RECURRENCES)
 			.where(
-					RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
+				RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
 			)
 			.fetchOneInto(ORecurrence.class);
 	}
@@ -113,7 +114,27 @@ public class RecurrenceDAO extends BaseDAO {
 			.update(RECURRENCES)
 			.set(RECURRENCES.RULE, rr)
 			.where(
-					RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
+				RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
+			)
+			.execute();
+	}
+	
+	public int deleteByCalendarId(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(RECURRENCES)
+			.where(
+				RECURRENCES.RECURRENCE_ID.in(
+					DSL.select(
+						EVENTS.RECURRENCE_ID
+					)
+					.from(EVENTS)
+					.where(
+						EVENTS.CALENDAR_ID.equal(calendarId)
+						.and(EVENTS.REVISION_STATUS.isNotNull())
+						.and(EVENTS.RECURRENCE_ID.isNotNull())
+					)
+				)				
 			)
 			.execute();
 	}

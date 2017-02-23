@@ -32,11 +32,11 @@ CREATE TABLE "calendar"."calendars" (
 "description" varchar(100),
 "color" varchar(20),
 "sync" varchar(1) NOT NULL,
+"is_private" bool DEFAULT false NOT NULL,
+"is_default" bool DEFAULT false NOT NULL,
 "busy" bool DEFAULT false NOT NULL,
 "reminder" int4,
-"invitation" bool DEFAULT true NOT NULL,
-"is_private" bool DEFAULT false NOT NULL,
-"is_default" bool DEFAULT false NOT NULL
+"invitation" bool DEFAULT true NOT NULL
 )
 WITH (OIDS=FALSE)
 

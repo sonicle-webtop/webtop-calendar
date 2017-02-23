@@ -1,5 +1,4 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
+/* 
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,9 +26,9 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar;
 
@@ -62,14 +61,15 @@ import com.sonicle.webtop.calendar.bol.js.JsErpExportStart;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
-import com.sonicle.webtop.calendar.bol.model.CalendarFolder;
-import com.sonicle.webtop.calendar.bol.model.CalendarRoot;
-import com.sonicle.webtop.calendar.bol.model.EventInstance;
+import com.sonicle.webtop.calendar.model.CalendarFolder;
+import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
-import com.sonicle.webtop.calendar.bol.model.EventKey;
+import com.sonicle.webtop.calendar.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
+import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
 import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
@@ -205,7 +205,7 @@ public class Service extends BaseService {
 			for(CalendarRoot root : roots.values()) {
 				foldersByRoot.put(root.getShareId(), new ArrayList<CalendarFolder>());
 				if(root instanceof MyCalendarRoot) {
-					for(OCalendar cal : manager.listCalendars()) {
+					for(Calendar cal : manager.listCalendars()) {
 						MyCalendarFolder fold = new MyCalendarFolder(root.getShareId(), cal);
 						foldersByRoot.get(root.getShareId()).add(fold);
 						folders.put(cal.getCalendarId(), fold);
@@ -236,7 +236,7 @@ public class Service extends BaseService {
 					CalendarRoot root = roots.get(node);
 					
 					if(root instanceof MyCalendarRoot) {
-						for(OCalendar cal : manager.listCalendars()) {
+						for(Calendar cal : manager.listCalendars()) {
 							MyCalendarFolder folder = new MyCalendarFolder(node, cal);
 							children.add(createFolderNode(folder, root.getPerms()));
 						}
@@ -317,7 +317,7 @@ public class Service extends BaseService {
 		try {
 			for(CalendarRoot root : roots.values()) {
 				if(root instanceof MyCalendarRoot) {
-					for(OCalendar cal : manager.listCalendars()) {
+					for(Calendar cal : manager.listCalendars()) {
 						items.add(new JsCalendarLkp(cal));
 					}
 				} else {
@@ -369,7 +369,7 @@ public class Service extends BaseService {
 	}
 	
 	public void processManageCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		OCalendar item = null;
+		Calendar item = null;
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
@@ -380,7 +380,7 @@ public class Service extends BaseService {
 				new JsonResult(item).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
-				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				Payload<MapItem, Calendar> pl = ServletUtils.getPayload(request, Calendar.class);
 				
 				item = manager.addCalendar(pl.data);
 				updateFoldersCache();
@@ -388,13 +388,13 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				Payload<MapItem, Calendar> pl = ServletUtils.getPayload(request, Calendar.class);
 				
 				manager.updateCalendar(pl.data);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
-				Payload<MapItem, OCalendar> pl = ServletUtils.getPayload(request, OCalendar.class);
+				Payload<MapItem, Calendar> pl = ServletUtils.getPayload(request, Calendar.class);
 				
 				manager.deleteCalendar(pl.data.getCalendarId());
 				updateFoldersCache();
@@ -418,8 +418,8 @@ public class Service extends BaseService {
 			// Defines boundaries
 			String start = ServletUtils.getStringParameter(request, "startDate", true);
 			String end = ServletUtils.getStringParameter(request, "endDate", true);
-			DateTime fromDate = CalendarManager.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
-			DateTime toDate = CalendarManager.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
+			DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
+			DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
 			// Get events for each visible group
 			Integer[] checked = getCheckedFolders();
@@ -452,8 +452,8 @@ public class Service extends BaseService {
 				String to = ServletUtils.getStringParameter(request, "endDate", true);
 				
 				// Defines view boundary 
-				DateTime fromDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
-				DateTime toDate = CalendarManager.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
+				DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+				DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
 				// Get events for each visible folder
 				JsSchedulerEvent jse = null;
@@ -489,8 +489,8 @@ public class Service extends BaseService {
 				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
-				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
-				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
+				DateTime newStart = DateTimeUtils.parseYmdHmsWithZone(pl.data.startDate, etz);
+				DateTime newEnd = DateTimeUtils.parseYmdHmsWithZone(pl.data.endDate, etz);
 				manager.cloneEventInstance(EventKey.buildKey(pl.data.eventId, pl.data.originalEventId), newStart, newEnd);
 				
 				new JsonResult().printTo(out);
@@ -499,8 +499,8 @@ public class Service extends BaseService {
 				Payload<MapItem, JsSchedulerEvent.Update> pl = ServletUtils.getPayload(request, JsSchedulerEvent.Update.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
-				DateTime newStart = CalendarManager.parseYmdHmsWithZone(pl.data.startDate, etz);
-				DateTime newEnd = CalendarManager.parseYmdHmsWithZone(pl.data.endDate, etz);
+				DateTime newStart = DateTimeUtils.parseYmdHmsWithZone(pl.data.startDate, etz);
+				DateTime newEnd = DateTimeUtils.parseYmdHmsWithZone(pl.data.endDate, etz);
 				manager.updateEventInstance(pl.data.id, newStart, newEnd, pl.data.title);
 				
 				new JsonResult().printTo(out);
@@ -698,8 +698,8 @@ public class Service extends BaseService {
 			
 			// Parses string parameters
 			DateTimeZone eventTz = DateTimeZone.forID(timezone);
-			DateTime eventStartDt = CalendarManager.parseYmdHmsWithZone(eventStartDate, eventTz);
-			DateTime eventEndDt = CalendarManager.parseYmdHmsWithZone(eventEndDate, eventTz);
+			DateTime eventStartDt = DateTimeUtils.parseYmdHmsWithZone(eventStartDate, eventTz);
+			DateTime eventEndDt = DateTimeUtils.parseYmdHmsWithZone(eventEndDate, eventTz);
 			
 			UserProfile up = getEnv().getProfile();
 			DateTimeZone profileTz = up.getTimeZone();
@@ -807,7 +807,7 @@ public class Service extends BaseService {
 			String view = ServletUtils.getStringParameter(request, "view", "w5");
 			String from = ServletUtils.getStringParameter(request, "startDate", true);
 			
-			DateTime startDate = CalendarManager.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+			DateTime startDate = DateTimeUtils.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
 			
 			ReportConfig.Builder builder = reportConfigBuilder();
 			DateTime fromDate = null, toDate = null;
@@ -882,7 +882,7 @@ public class Service extends BaseService {
 			//rrs.setTimeFormat();
 			
 			EventInstance event = null;
-			OCalendar calendar = null;
+			Calendar calendar = null;
 			for(String key : keys) {
 				event = manager.getEventInstance(key);
 				calendar = manager.getCalendar(event.getCalendarId());
@@ -961,7 +961,7 @@ public class Service extends BaseService {
 		// Folder description part
 		if(sharing.getLevel() == 1) {
 			int calId = Integer.valueOf(cid.getToken(1));
-			OCalendar calendar = manager.getCalendar(calId);
+			Calendar calendar = manager.getCalendar(calId);
 			sb.append("/");
 			sb.append((calendar != null) ? calendar.getName() : cid.getToken(1));
 		}
@@ -1025,7 +1025,7 @@ public class Service extends BaseService {
 	}
 	
 	private ExtTreeNode createFolderNode(CalendarFolder folder, SharePermsRoot rootPerms) {
-		OCalendar cal = folder.getCalendar();
+		Calendar cal = folder.getCalendar();
 		String id = new CompositeId().setTokens(folder.getShareId(), cal.getCalendarId()).toString();
 		boolean visible = checkedFolders.contains(cal.getCalendarId());
 		ExtTreeNode node = new ExtTreeNode(id, cal.getName(), true);
@@ -1040,8 +1040,8 @@ public class Service extends BaseService {
 		node.put("_color", cal.getColor());
 		node.put("_visible", visible);
 		node.put("_isPrivate", cal.getIsPrivate());
-		node.put("_busy", cal.getBusy());
-		node.put("_reminder", cal.getReminder());
+		node.put("_busy", cal.getDefaultBusy());
+		node.put("_reminder", cal.getDefaultReminder());
 		
 		List<String> classes = new ArrayList<>();
 		if(cal.getIsDefault()) classes.add("wtcal-tree-default");

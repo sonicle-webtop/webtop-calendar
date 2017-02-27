@@ -370,6 +370,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAction('toolbox', 'erpExport', {
+			tooltip: null,
 			iconCls: 'wtcal-icon-export-xs',
 			handler: function() {
 				me.erpExport();
@@ -442,6 +443,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAction('editSharing', {
 			text: WT.res('sharing.tit'),
+			tooltip: null,
 			iconCls: WTF.cssIconCls(WT.XID, 'sharing', 'xs'),
 			handler: function() {
 				var node = me.getSelectedNode(me.trFolders());
@@ -449,24 +451,28 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAction('addCalendar', {
+			tooltip: null,
 			handler: function() {
 				var node = me.getSelectedFolder(me.trFolders());
 				if(node) me.addCalendarUI(node.get('_domainId'), node.get('_userId'));
 			}
 		});
 		me.addAction('editCalendar', {
+			tooltip: null,
 			handler: function() {
 				var node = me.getSelectedFolder(me.trFolders());
 				if(node) me.editCalendarUI(node.get('_calId'));
 			}
 		});
 		me.addAction('deleteCalendar', {
+			tooltip: null,
 			handler: function() {
 				var node = me.getSelectedFolder(me.trFolders());
 				if(node) me.deleteCalendarUI(node);
 			}
 		});
 		me.addAction('importEvents', {
+			tooltip: null,
 			handler: function() {
 				var node = me.getSelectedFolder(me.trFolders());
 				if(node) me.importEventsUI(node.get('_calId'));
@@ -502,18 +508,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}));
 		*/
 		me.addAction('viewAllFolders', {
+			tooltip: null,
 			iconCls: 'wt-icon-select-all-xs',
 			handler: function() {
 				me.showHideAllFolders(me.getSelectedRootFolder(me.trFolders()), true);
 			}
 		});
 		me.addAction('viewNoneFolders', {
+			tooltip: null,
 			iconCls: 'wt-icon-select-none-xs',
 			handler: function() {
 				me.showHideAllFolders(me.getSelectedRootFolder(me.trFolders()), false);
 			}
 		});
 		me.addAction('addEvent', {
+			tooltip: null,
 			handler: function() {
 				var cal = me.getSelectedFolder(me.trFolders()),
 						day = me.multical().getValue();
@@ -522,6 +531,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAction('openEvent', {
 			text: WT.res('act-open.lbl'),
+			tooltip: null,
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event), er;
 				if(rec) {
@@ -532,6 +542,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAction('deleteEvent', {
 			text: WT.res('act-delete.lbl'),
+			tooltip: null,
 			iconCls: 'wt-icon-delete-xs',
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
@@ -540,6 +551,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAction('restoreEvent', {
 			text: WT.res('act-restore.lbl'),
+			tooltip: null,
 			iconCls: 'wt-icon-restore-xs',
 			handler: function(s,e) {
 				var rec = e.menuData.event;
@@ -547,12 +559,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAction('copyEvent', {
+			tooltip: null,
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
 				if(rec) me.moveEventUI(true, rec.get('id'), rec.get('calendarId'), rec.get('_profileId'));
 			}
 		});
 		me.addAction('moveEvent', {
+			tooltip: null,
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
 				if(rec) me.moveEventUI(false, rec.get('id'), rec.get('calendarId'), rec.get('_profileId'));
@@ -576,6 +590,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAction('printEvent', {
 			text: WT.res('act-print.lbl'),
+			tooltip: null,
 			iconCls: 'wt-icon-print-xs',
 			handler: function(s,e) {
 				var rec = e.menuData.event;

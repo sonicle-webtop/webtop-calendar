@@ -875,7 +875,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			vct.getView().begin('new', {
 				data: {
 					domainId: domainId,
-					userId: userId
+					userId: userId,
+					sync: me.getVar('defaultCalendarSync')
 				}
 			});
 		});

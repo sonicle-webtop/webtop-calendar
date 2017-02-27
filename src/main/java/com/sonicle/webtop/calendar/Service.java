@@ -50,9 +50,9 @@ import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
-import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
+import com.sonicle.webtop.calendar.bol.js.JsCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
@@ -165,6 +165,7 @@ public class Service extends BaseService {
 	public ServiceVars returnServiceVars() {
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 		ServiceVars co = new ServiceVars();
+		co.put("defaultCalendarSync", ss.getDefaultCalendarSync().toString());
 		co.put("view", us.getView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));
@@ -377,26 +378,26 @@ public class Service extends BaseService {
 				Integer id = ServletUtils.getIntParameter(request, "id", true);
 				
 				item = manager.getCalendar(id);
-				new JsonResult(item).printTo(out);
+				new JsonResult(new JsCalendar(item)).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
-				Payload<MapItem, Calendar> pl = ServletUtils.getPayload(request, Calendar.class);
+				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				item = manager.addCalendar(pl.data);
+				item = manager.addCalendar(JsCalendar.buildFolder(pl.data));
 				updateFoldersCache();
 				toggleCheckedFolder(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				Payload<MapItem, Calendar> pl = ServletUtils.getPayload(request, Calendar.class);
+				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				manager.updateCalendar(pl.data);
+				manager.updateCalendar(JsCalendar.buildFolder(pl.data));
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {
-				Payload<MapItem, Calendar> pl = ServletUtils.getPayload(request, Calendar.class);
+				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				manager.deleteCalendar(pl.data.getCalendarId());
+				manager.deleteCalendar(pl.data.calendarId);
 				updateFoldersCache();
 				new JsonResult().printTo(out);
 			}

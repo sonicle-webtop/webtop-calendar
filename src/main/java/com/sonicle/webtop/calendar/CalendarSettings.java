@@ -39,28 +39,35 @@ package com.sonicle.webtop.calendar;
 public class CalendarSettings {
 	
 	/**
-	 * [user][dbdefault]
+	 * [system+domain][default-only]
+	 * [enum]
+	 * The default value of the sync field for new calendars.
+	 */
+	public static final String CALENDAR_SYNC = "calendar.sync";
+	
+	/**
+	 * [user][default]
 	 * [string]
 	 * Calendar view ("d" day, "w5" work week, "w" week, "dw" double-week, "m" month)
 	 */
 	public static final String VIEW = "view";
 	
 	/**
-	 * [user][dbdefault]
+	 * [user][default]
 	 * [string]
 	 * Workday hours start time
 	 */
 	public static final String WORKDAY_START = "workday.start";
 	
 	/**
-	 * [user][dbdefault]
+	 * [user][default]
 	 * [string]
 	 * Workday hours end time
 	 */
 	public static final String WORKDAY_END = "workday.end";
 	
 	/**
-	 * [user][dbdefault]
+	 * [user][default]
 	 * [string]
 	 * Set anniversary reminder delivery mode
 	 */

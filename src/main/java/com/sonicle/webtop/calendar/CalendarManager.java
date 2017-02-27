@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.MailUtils;
@@ -131,6 +132,7 @@ import org.supercsv.io.ICsvMapWriter;
 import org.supercsv.prefs.CsvPreference;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.Sync;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import javax.mail.Session;
 import net.fortuna.ical4j.model.Parameter;
@@ -339,6 +341,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				return null;
 			}
 			
+			CalendarServiceSettings ss = new CalendarServiceSettings(SERVICE_ID, getTargetProfileId().getDomainId());
+			
 			Calendar cal = new Calendar();
 			cal.setDomainId(getTargetProfileId().getDomainId());
 			cal.setUserId(getTargetProfileId().getUserId());
@@ -346,7 +350,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cal.setName(WT.getPlatformName());
 			cal.setDescription("");
 			cal.setColor("#FFFFFF");
-			cal.setSync(Calendar.SYNC_OFF);
+			cal.setSync(ss.getDefaultCalendarSync());
 			cal.setIsPrivate(false);
 			cal.setIsDefault(true);
 			cal.setDefaultBusy(false);
@@ -2014,7 +2018,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		cal.setName(ocal.getName());
 		cal.setDescription(ocal.getDescription());
 		cal.setColor(ocal.getColor());
-		cal.setSync(ocal.getSync());
+		cal.setSync(EnumUtils.forValue(Sync.class, ocal.getSync()));
+		//cal.setSync(ocal.getSync());
 		cal.setIsPrivate(ocal.getIsPrivate());
 		cal.setIsDefault(ocal.getIsDefault());
 		cal.setDefaultBusy(ocal.getBusy());
@@ -2033,7 +2038,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		ocal.setName(cal.getName());
 		ocal.setDescription(cal.getDescription());
 		ocal.setColor(cal.getColor());
-		ocal.setSync(cal.getSync());
+		ocal.setSync(EnumUtils.getValue(cal.getSync()));
+		//ocal.setSync(cal.getSync());
 		ocal.setIsPrivate(cal.getIsPrivate());
 		ocal.setIsDefault(cal.getIsDefault());
 		ocal.setBusy(cal.getDefaultBusy());

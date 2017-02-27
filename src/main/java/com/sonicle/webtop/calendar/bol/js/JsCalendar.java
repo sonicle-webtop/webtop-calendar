@@ -31,28 +31,62 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-Ext.define('Sonicle.webtop.calendar.model.Calendar', {
-	extend: 'WTA.ux.data.BaseModel',
-	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
+package com.sonicle.webtop.calendar.bol.js;
+
+import com.sonicle.commons.EnumUtils;
+import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.Sync;
+
+/**
+ *
+ * @author malbinola
+ */
+public class JsCalendar {
+	public Integer calendarId;
+	public String domainId;
+	public String userId;
+	public Boolean builtIn;
+	public String name;
+	public String description;
+	public String color;
+	public String sync;
+	public Boolean isPrivate;
+	public Boolean isDefault;
+	public Boolean busy;
+	public Integer reminder;
+	public Boolean invitation;
 	
-	identifier: 'negative',
-	idProperty: 'calendarId',
-	fields: [
-		WTF.field('calendarId', 'int', false),
-		WTF.field('domainId', 'string', false),
-		WTF.field('userId', 'string', false),
-		WTF.field('name', 'string', false),
-		WTF.field('description', 'string', true),
-		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
-		WTF.field('sync', 'string', false, {defaultValue: 'O'}),
-		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
-		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
-		WTF.field('busy', 'boolean', false, {defaultValue: false}),
-		WTF.field('reminder', 'int', true),
-		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
-		// Read-only fields
-		WTF.calcField('_profileId', 'string', ['domainId', 'userId'], function(v, rec) {
-			return rec.get('userId') + '@' + rec.get('domainId');
-		})
-	]
-});
+	public JsCalendar(Calendar cal) {
+		calendarId = cal.getCalendarId();
+		domainId = cal.getDomainId();
+		userId = cal.getUserId();
+		builtIn = cal.getBuiltIn();
+		name = cal.getName();
+		description = cal.getDescription();
+		color = cal.getColor();
+		sync = EnumUtils.getValue(cal.getSync());
+		isPrivate = cal.getIsPrivate();
+		isDefault = cal.getIsDefault();
+		busy = cal.getDefaultBusy();
+		reminder = cal.getDefaultReminder();
+		invitation = cal.getDefaultSendInvitation();
+	}
+	
+	public static Calendar buildFolder(JsCalendar js) {
+		Calendar cat = new Calendar();
+		cat.setCalendarId(js.calendarId);
+		cat.setDomainId(js.domainId);
+		cat.setUserId(js.userId);
+		cat.setBuiltIn(js.builtIn);
+		cat.setName(js.name);
+		cat.setDescription(js.description);
+		cat.setColor(js.color);
+		cat.setSync(EnumUtils.forValue(Sync.class, js.sync));
+		cat.setIsPrivate(js.isPrivate);
+		cat.setIsDefault(js.isDefault);
+		cat.setDefaultBusy(js.busy);
+		cat.setDefaultReminder(js.reminder);
+		cat.setDefaultSendInvitation(js.invitation);
+		return cat;
+	}
+}

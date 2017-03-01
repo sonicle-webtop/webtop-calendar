@@ -297,6 +297,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					hideEmptyLabel: true,
 					boxLabel: me.mys.res('event.fld-allDay.lbl'),
 					handler: function(s,nv) {
+						// It seems that the handler method and the change event
+						// will fire without any user interaction (eg. binding);
+						// so we need to deactivate the code below durin loading.
+						if (me.modelLoading) return;
+						// ---
 						var mo = me.getModel(),
 								soDate = Sonicle.Date,
 								dt = null;

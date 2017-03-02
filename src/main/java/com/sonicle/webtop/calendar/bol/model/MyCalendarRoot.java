@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.model.CalendarRoot;
-import com.sonicle.webtop.core.bol.model.SharePermsRoot;
+import com.sonicle.webtop.core.model.SharePermsRoot;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 
 /**

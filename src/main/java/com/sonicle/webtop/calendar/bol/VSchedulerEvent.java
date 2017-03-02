@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 
 /**
  *
@@ -74,8 +74,8 @@ public class VSchedulerEvent extends OEvent {
 		this.calendarUserId = calendarUserId;
 	}
 	
-	public UserProfile.Id getCalendarProfileId() {
-		return new UserProfile.Id(calendarDomainId, calendarUserId);
+	public UserProfileId getCalendarProfileId() {
+		return new UserProfileId(calendarDomainId, calendarUserId);
 	}
 	
 	public Boolean getHasAttendees() {

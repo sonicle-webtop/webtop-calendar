@@ -89,6 +89,7 @@ import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import com.sonicle.webtop.core.util.LogEntries;
@@ -173,7 +174,7 @@ public class Service extends BaseService {
 	}
 	
 	private void initFolders() throws Exception {
-		UserProfile.Id pid = getEnv().getProfile().getId();
+		UserProfileId pid = getEnv().getProfile().getId();
 		synchronized(roots) {
 			updateRootFoldersCache();
 			updateFoldersCache();
@@ -189,7 +190,7 @@ public class Service extends BaseService {
 	}
 	
 	private void updateRootFoldersCache() throws WTException {
-		UserProfile.Id pid = getEnv().getProfile().getId();
+		UserProfileId pid = getEnv().getProfile().getId();
 		synchronized(roots) {
 			roots.clear();
 			roots.put(MyCalendarRoot.SHARE_ID, new MyCalendarRoot(pid));
@@ -554,7 +555,7 @@ public class Service extends BaseService {
 				String eventKey = ServletUtils.getStringParameter(request, "id", true);
 				
 				EventInstance evt = manager.getEventInstance(eventKey);
-				UserProfile.Id ownerId = manager.getCalendarOwner(evt.getCalendarId());
+				UserProfileId ownerId = manager.getCalendarOwner(evt.getCalendarId());
 				item = new JsEvent(evt, ownerId.toString());
 				new JsonResult(item).printTo(out);
 				
@@ -735,7 +736,7 @@ public class Service extends BaseService {
 			
 			// Collects attendees availability...
 			OUser user = null;
-			UserProfile.Id profileId = null;
+			UserProfileId profileId = null;
 			LinkedHashSet<String> busyHours = null;
 			MapItem item = null;
 			for(JsAttendee attendee : attendees) {
@@ -744,7 +745,7 @@ public class Service extends BaseService {
 				
 				user = guessUserByAttendee(core, attendee.recipient);
 				if (user != null) {
-					profileId = new UserProfile.Id(user.getDomainId(), user.getUserId());
+					profileId = new UserProfileId(user.getDomainId(), user.getUserId());
 					busyHours = manager.calculateAvailabilitySpans(60, profileId, eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
 					for(String hourKey : hours) {
 						item.put(hourKey, busyHours.contains(hourKey) ? "busy" : "free");
@@ -927,9 +928,9 @@ public class Service extends BaseService {
 		try {
 			InternetAddress ia = MailUtils.buildInternetAddress(recipient);
 			if (ia == null) return null;
-			List<UserProfile.Id> pids = core.listUserIdsByEmail(recipient);
+			List<UserProfileId> pids = core.listUserIdsByEmail(recipient);
 			if (pids.isEmpty()) return null;
-			UserProfile.Id pid = pids.get(0);
+			UserProfileId pid = pids.get(0);
 			
 			con = WT.getCoreConnection();
 			UserDAO udao = UserDAO.getInstance();

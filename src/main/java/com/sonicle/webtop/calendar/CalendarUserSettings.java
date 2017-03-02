@@ -35,7 +35,7 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.web.json.JsonResult;
 import static com.sonicle.webtop.calendar.CalendarSettings.*;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 import java.util.HashSet;
 import org.joda.time.LocalTime;
 
@@ -46,7 +46,7 @@ import org.joda.time.LocalTime;
 public class CalendarUserSettings extends BaseUserSettings {
 	private CalendarServiceSettings css;
 	
-	public CalendarUserSettings(String serviceId, UserProfile.Id profileId) {
+	public CalendarUserSettings(String serviceId, UserProfileId profileId) {
 		super(serviceId, profileId);
 		css = new CalendarServiceSettings(serviceId, profileId.getDomainId());
 	}

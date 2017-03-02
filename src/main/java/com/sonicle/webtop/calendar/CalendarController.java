@@ -37,7 +37,7 @@ import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseController;
 import com.sonicle.webtop.core.sdk.BaseReminder;
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesProfiles;
 import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesReminders;
@@ -57,7 +57,7 @@ public class CalendarController extends BaseController implements IControllerHan
 	}
 	
 	@Override
-	public void addProfile(UserProfile.Id profileId) throws WTException {
+	public void addProfile(UserProfileId profileId) throws WTException {
 		CalendarManager manager = new CalendarManager(true, profileId);
 		
 		// Adds built-in calendar
@@ -70,7 +70,7 @@ public class CalendarController extends BaseController implements IControllerHan
 	}
 	
 	@Override
-	public void removeProfile(UserProfile.Id profileId, boolean deep) throws WTException {
+	public void removeProfile(UserProfileId profileId, boolean deep) throws WTException {
 		CalendarManager manager = new CalendarManager(false, profileId);
 		manager.eraseData(deep);
 	}
@@ -81,7 +81,7 @@ public class CalendarController extends BaseController implements IControllerHan
 		return manager.getRemindersToBeNotified(now);
 	}
 	
-	private void setCategoryCheckedState(UserProfile.Id profileId, int calendarId, boolean checked) {
+	private void setCategoryCheckedState(UserProfileId profileId, int calendarId, boolean checked) {
 		CalendarUserSettings tus = new CalendarUserSettings(SERVICE_ID, profileId);
 		CalendarUserSettings.CheckedFolders cf = tus.getCheckedCalendarFolders();
 		if (checked) {

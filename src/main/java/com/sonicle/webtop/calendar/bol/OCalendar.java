@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Calendars;
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 
 /**
  *
@@ -41,7 +41,7 @@ import com.sonicle.webtop.core.sdk.UserProfile;
  */
 public class OCalendar extends Calendars {
     
-	public UserProfile.Id getProfileId() {
-		return new UserProfile.Id(getDomainId(), getUserId());
+	public UserProfileId getProfileId() {
+		return new UserProfileId(getDomainId(), getUserId());
 	}
 }

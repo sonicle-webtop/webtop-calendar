@@ -133,6 +133,7 @@ import org.supercsv.prefs.CsvPreference;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.Sync;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import javax.mail.Session;
 import net.fortuna.ical4j.model.Parameter;
@@ -157,13 +158,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public static final String SUGGESTION_EVENT_TITLE = "eventtitle";
 	public static final String SUGGESTION_EVENT_LOCATION = "eventlocation";
 	
-	private final HashMap<Integer, UserProfile.Id> cacheCalendarToOwner = new HashMap<>();
+	private final HashMap<Integer, UserProfileId> cacheCalendarToOwner = new HashMap<>();
 	private final Object shareCacheLock = new Object();
-	private final HashMap<UserProfile.Id, String> cacheOwnerToRootShare = new HashMap<>();
-	private final HashMap<UserProfile.Id, String> cacheOwnerToWildcardFolderShare = new HashMap<>();
+	private final HashMap<UserProfileId, String> cacheOwnerToRootShare = new HashMap<>();
+	private final HashMap<UserProfileId, String> cacheOwnerToWildcardFolderShare = new HashMap<>();
 	private final HashMap<Integer, String> cacheCalendarToFolderShare = new HashMap<>();
 	
-	public CalendarManager(boolean fastInit, UserProfile.Id targetProfileId) {
+	public CalendarManager(boolean fastInit, UserProfileId targetProfileId) {
 		super(fastInit, targetProfileId);
 	}
 	
@@ -198,7 +199,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			List<Calendar> cals = null;
 			if(share.hasWildcard()) {
-				UserProfile.Id ownerId = core.userUidToProfileId(share.getUserUid());
+				UserProfileId ownerId = core.userUidToProfileId(share.getUserUid());
 				cals = listCalendars(ownerId);
 			} else {
 				cals = Arrays.asList(getCalendar(Integer.valueOf(share.getInstance())));
@@ -230,7 +231,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		core.updateSharing(SERVICE_ID, GROUPNAME_CALENDAR, sharing);
 	}
 	
-	public UserProfile.Id getCalendarOwner(int calendarId) throws WTException {
+	public UserProfileId getCalendarOwner(int calendarId) throws WTException {
 		return calendarToOwner(calendarId);
 	}
 	
@@ -239,7 +240,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return listCalendars(getTargetProfileId());
 	}
 	
-	private List<Calendar> listCalendars(UserProfile.Id pid) throws WTException {
+	private List<Calendar> listCalendars(UserProfileId pid) throws WTException {
 		CalendarDAO caldao = CalendarDAO.getInstance();
 		ArrayList<Calendar> items = new ArrayList<>();
 		Connection con = null;
@@ -428,7 +429,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return listEventsDates(root.getOwnerProfileId(), calendars, fromDate, toDate, userTz);
 	}
 	
-	public List<DateTime> listEventsDates(UserProfile.Id pid, Integer[] calendars, DateTime fromDate, DateTime toDate, DateTimeZone userTz) throws WTException {
+	public List<DateTime> listEventsDates(UserProfileId pid, Integer[] calendars, DateTime fromDate, DateTime toDate, DateTimeZone userTz) throws WTException {
 		Connection con = null;
 		HashSet<DateTime> dates = new HashSet<>();
 		CalendarDAO cdao = CalendarDAO.getInstance();
@@ -498,7 +499,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return listSchedulerEvents(root.getOwnerProfileId(), calendars, fromDate, toDate);
 	}
 	
-	public List<CalendarEvents> listSchedulerEvents(UserProfile.Id pid, Integer[] calendars, DateTime fromDate, DateTime toDate) throws WTException {
+	public List<CalendarEvents> listSchedulerEvents(UserProfileId pid, Integer[] calendars, DateTime fromDate, DateTime toDate) throws WTException {
 		Connection con = null;
 		ArrayList<CalendarEvents> calEvts = new ArrayList<>();
 		CalendarDAO cdao = CalendarDAO.getInstance();
@@ -535,7 +536,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public List<CalendarEvents> searchSchedulerEvents(UserProfile.Id pid, Integer[] calendars, String query) throws WTException {
+	public List<CalendarEvents> searchSchedulerEvents(UserProfileId pid, Integer[] calendars, String query) throws WTException {
 		Connection con = null;
 		ArrayList<CalendarEvents> grpEvts = new ArrayList<>();
 		CalendarDAO cdao = CalendarDAO.getInstance();
@@ -1267,7 +1268,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public LinkedHashSet<String> calculateAvailabilitySpans(int minRange, UserProfile.Id pid, DateTime fromDate, DateTime toDate, DateTimeZone userTz, boolean busy) throws WTException {
+	public LinkedHashSet<String> calculateAvailabilitySpans(int minRange, UserProfileId pid, DateTime fromDate, DateTime toDate, DateTimeZone userTz, boolean busy) throws WTException {
 		Connection con = null;
 		LinkedHashSet<String> hours = new LinkedHashSet<>();
 		CalendarDAO cdao = CalendarDAO.getInstance();
@@ -1475,7 +1476,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			HashMap<String, Object> map = null;
 			List<OCalendar> cals = calDao.selectByDomain(con, domainId);
 			for(OCalendar cal : cals) {
-				final UserProfile.Id pid = new UserProfile.Id(cal.getDomainId(), cal.getUserId());
+				final UserProfileId pid = new UserProfileId(cal.getDomainId(), cal.getUserId());
 				final OUser user = userDao.selectByDomainUser(ccon, cal.getDomainId(), cal.getUserId());
 				if(user == null) throw new WTException("User [{0}] not found", pid.toString());
 				final UserProfile.Data udata = WT.getUserData(pid);
@@ -1538,7 +1539,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID, false);
-			UserProfile.Id pid = getTargetProfileId();
+			UserProfileId pid = getTargetProfileId();
 			
 			// Erase events and related tables
 			if (deep) {
@@ -1573,7 +1574,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	public List<BaseReminder> getRemindersToBeNotified(DateTime now) {
 		ArrayList<BaseReminder> alerts = new ArrayList<>();
-		HashMap<UserProfile.Id, Boolean> byEmailCache = new HashMap<>();
+		HashMap<UserProfileId, Boolean> byEmailCache = new HashMap<>();
 		EventDAO edao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -2176,7 +2177,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	
 	
-	private UserProfile.Id findCalendarOwner(int calendarId) throws WTException {
+	private UserProfileId findCalendarOwner(int calendarId) throws WTException {
 		Connection con = null;
 		
 		try {
@@ -2184,7 +2185,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			CalendarDAO dao = CalendarDAO.getInstance();
 			Owner owner = dao.selectOwnerById(con, calendarId);
 			if(owner == null) throw new WTException("Calendar not found [{0}]", calendarId);
-			return new UserProfile.Id(owner.getDomainId(), owner.getUserId());
+			return new UserProfileId(owner.getDomainId(), owner.getUserId());
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -2204,7 +2205,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				cacheOwnerToRootShare.put(root.getOwnerProfileId(), root.getShareId());
 				for(OShare folder : core.listIncomingShareFolders(root.getShareId(), GROUPNAME_CALENDAR)) {
 					if(folder.hasWildcard()) {
-						UserProfile.Id ownerId = core.userUidToProfileId(folder.getUserUid());
+						UserProfileId ownerId = core.userUidToProfileId(folder.getUserUid());
 						cacheOwnerToWildcardFolderShare.put(ownerId, folder.getShareId().toString());
 					} else {
 						cacheCalendarToFolderShare.put(Integer.valueOf(folder.getInstance()), folder.getShareId().toString());
@@ -2216,14 +2217,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private String ownerToRootShareId(UserProfile.Id owner) {
+	private String ownerToRootShareId(UserProfileId owner) {
 		synchronized(shareCacheLock) {
 			if(!cacheOwnerToRootShare.containsKey(owner)) buildShareCache();
 			return cacheOwnerToRootShare.get(owner);
 		}
 	}
 	
-	private String ownerToWildcardFolderShareId(UserProfile.Id ownerPid) {
+	private String ownerToWildcardFolderShareId(UserProfileId ownerPid) {
 		synchronized(shareCacheLock) {
 			if(!cacheOwnerToWildcardFolderShare.containsKey(ownerPid) && cacheOwnerToRootShare.isEmpty()) buildShareCache();
 			return cacheOwnerToWildcardFolderShare.get(ownerPid);
@@ -2237,13 +2238,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private UserProfile.Id calendarToOwner(int calendarId) {
+	private UserProfileId calendarToOwner(int calendarId) {
 		synchronized(cacheCalendarToOwner) {
 			if(cacheCalendarToOwner.containsKey(calendarId)) {
 				return cacheCalendarToOwner.get(calendarId);
 			} else {
 				try {
-					UserProfile.Id owner = findCalendarOwner(calendarId);
+					UserProfileId owner = findCalendarOwner(calendarId);
 					cacheCalendarToOwner.put(calendarId, owner);
 					return owner;
 				} catch(WTException ex) {
@@ -2253,8 +2254,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void checkRightsOnCalendarRoot(UserProfile.Id ownerPid, String action) throws WTException {
-		UserProfile.Id targetPid = getTargetProfileId();
+	private void checkRightsOnCalendarRoot(UserProfileId ownerPid, String action) throws WTException {
+		UserProfileId targetPid = getTargetProfileId();
 		
 		if(RunContext.isWebTopAdmin()) return;
 		if(ownerPid.equals(targetPid)) return;
@@ -2270,10 +2271,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
 		if(RunContext.isWebTopAdmin()) return;
-		UserProfile.Id targetPid = getTargetProfileId();
+		UserProfileId targetPid = getTargetProfileId();
 		
 		// Skip rights check if running user is resource's owner
-		UserProfile.Id ownerPid = calendarToOwner(calendarId);
+		UserProfileId ownerPid = calendarToOwner(calendarId);
 		if(ownerPid.equals(targetPid)) return;
 		
 		// Checks rights on the wildcard instance (if present)
@@ -2295,10 +2296,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
 		if(RunContext.isWebTopAdmin()) return;
-		UserProfile.Id targetPid = getTargetProfileId();
+		UserProfileId targetPid = getTargetProfileId();
 		
 		// Skip rights check if running user is resource's owner
-		UserProfile.Id ownerPid = calendarToOwner(calendarId);
+		UserProfileId ownerPid = calendarToOwner(calendarId);
 		if(ownerPid.equals(targetPid)) return;
 		
 		// Checks rights on the wildcard instance (if present)

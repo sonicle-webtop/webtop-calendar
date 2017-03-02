@@ -34,7 +34,7 @@ package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.model.CalendarRoot;
 import com.sonicle.webtop.core.bol.model.SharePermsRoot;
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 
 /**
  *
@@ -43,7 +43,7 @@ import com.sonicle.webtop.core.sdk.UserProfile;
 public class MyCalendarRoot extends CalendarRoot {
 	public static final String SHARE_ID = "0";
 	
-	public MyCalendarRoot(UserProfile.Id ownerId) {
+	public MyCalendarRoot(UserProfileId ownerId) {
 		super(SHARE_ID, SharePermsRoot.full(), ownerId, null);
 	}
 }

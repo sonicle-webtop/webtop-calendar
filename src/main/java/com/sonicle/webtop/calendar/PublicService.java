@@ -35,7 +35,6 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
-import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsPubEvent;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttendee;
@@ -45,7 +44,7 @@ import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.WebTopSession;
 import com.sonicle.webtop.core.bol.js.JsWTSPublic;
 import com.sonicle.webtop.core.sdk.BasePublicService;
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
 import freemarker.template.TemplateException;
 import java.io.IOException;
@@ -154,7 +153,7 @@ public class PublicService extends BasePublicService {
 		js.whereUrl = TplHelper.buildGoogleMapsUrl(event.getLocation());
 		js.calendar = calendar.getName();
 		js.organizer = event.getOrganizer();
-		//js.organizer = buildOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
+		//js.organizer = buildOrganizer(new UserProfileId(event.getCalendarProfileId()));
 		js.attendees = buildAttendees(js.id, event);
 		return JsonResult.GSON.toJson(js);
 	}
@@ -167,7 +166,7 @@ public class PublicService extends BasePublicService {
 		return MessageFormat.format("{0} - {1}", dtFmt.print(event.getStartDate()), dtFmt.print(event.getEndDate()));
 	}
 	
-	private String buildOrganizer(UserProfile.Id organizerPid) {
+	private String buildOrganizer(UserProfileId organizerPid) {
 		return StringUtils.defaultString(WT.getUserData(organizerPid).getDisplayName(), organizerPid.toString());
 	}
 	
@@ -305,7 +304,7 @@ public class PublicService extends BasePublicService {
 		tpl.process(tplMap, response.getWriter());
 	}
 	
-	private String getOrganizer(UserProfile.Id profileId) {
+	private String getOrganizer(UserProfileId profileId) {
 		Connection con = null;
 		
 		try {
@@ -322,7 +321,7 @@ public class PublicService extends BasePublicService {
 	}
 	
 	private String buildWhenString99(EventBase se) {
-		UserProfile.Id profileId = new UserProfile.Id(se.getCalendarProfileId());
+		UserProfileId profileId = new UserProfileId(se.getCalendarProfileId());
 		CoreUserSettings cus = new CoreUserSettings(profileId);
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
 		DateTimeZone etz = DateTimeZone.forID(se.getTimezone());
@@ -333,7 +332,7 @@ public class PublicService extends BasePublicService {
 	private Map buildEventReplyMap(EventBase event) {
 		Map map = new HashMap();
 		String when = buildWhenString99(event);
-		String organizer = getOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
+		String organizer = getOrganizer(new UserProfileId(event.getCalendarProfileId()));
 		
 		map.put("title", event.getTitle());
 		map.put("when", when);
@@ -347,7 +346,7 @@ public class PublicService extends BasePublicService {
 	private Map buildEventViewMap(EventBase event) {
 		Map map = new HashMap();
 		String when = buildWhenString99(event);
-		String organizer = getOrganizer(new UserProfile.Id(event.getCalendarProfileId()));
+		String organizer = getOrganizer(new UserProfileId(event.getCalendarProfileId()));
 		
 		map.put("title", event.getTitle());
 		map.put("when", when);

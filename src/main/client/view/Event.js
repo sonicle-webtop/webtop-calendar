@@ -141,7 +141,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		Ext.apply(me, {
 			tbar: [
-				me.addAction('saveClose', {
+				me.addAct('saveClose', {
 					text: WT.res('act-saveClose.lbl'),
 					tooltip: null,
 					iconCls: 'wt-icon-saveClose-xs',
@@ -150,7 +150,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}
 				}),
 				'-',
-				me.addAction('delete', {
+				me.addAct('delete', {
 					text: null,
 					tooltip: WT.res('act-delete.lbl'),
 					iconCls: 'wt-icon-delete-xs',
@@ -158,7 +158,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.deleteEvent();
 					}
 				}),
-				me.addAction('restore', {
+				me.addAct('restore', {
 					text: null,
 					tooltip: WT.res('act-restore.lbl'),
 					iconCls: 'wt-icon-restore-xs',
@@ -168,7 +168,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					disabled: true
 				}),
 				'-',
-				me.addAction('print', {
+				me.addAct('print', {
 					text: null,
 					tooltip: WT.res('act-print.lbl'),
 					iconCls: 'wt-icon-print-xs',
@@ -233,7 +233,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				anchor: '100%',
 				listeners: {
 					enterkey: function() {
-						me.getAction('saveClose').execute();
+						me.getAct('saveClose').execute();
 					}
 				}
 			}, {
@@ -249,7 +249,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				],
 				listeners: {
 					enterkey: function() {
-						me.getAction('saveClose').execute();
+						me.getAct('saveClose').execute();
 					}
 				}
 			}, {
@@ -614,7 +614,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						})
 					],
 					tbar: [
-						me.addAction('addAttendee', {
+						me.addAct('addAttendee', {
 							text: WT.res('act-add.lbl'),
 							tooltip: null,
 							iconCls: 'wt-icon-add-xs',
@@ -622,7 +622,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								me.addAttendee();
 							}
 						}),
-						me.addAction('deleteAttendee', {
+						me.addAct('deleteAttendee', {
 							text: WT.res('act-delete.lbl'),
 							tooltip: null,
 							iconCls: 'wt-icon-delete-xs',
@@ -644,7 +644,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					border: false,
 					listeners: {
 						selectionchange: function(s,recs) {
-							me.getAction('deleteAttendee').setDisabled(!recs.length);
+							me.getAct('deleteAttendee').setDisabled(!recs.length);
 						}
 					}
 				}, {
@@ -712,7 +712,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					},
 					columns: [],
 					tbar: [
-						me.addAction('reloadPlanning', {
+						me.addAct('reloadPlanning', {
 							text: WT.res('act-refresh.lbl'),
 							tooltip: null,
 							iconCls: 'wt-icon-refresh-xs',
@@ -1167,15 +1167,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		if(me.isMode(me.MODE_NEW)) {
 			owner.setDisabled(false);
-			me.getAction('delete').setDisabled(true);
-			me.getAction('restore').setDisabled(true);
+			me.getAct('delete').setDisabled(true);
+			me.getAct('restore').setDisabled(true);
 		} else if(me.isMode(me.MODE_VIEW)) {
-			me.getAction('saveClose').setDisabled(true);
-			me.getAction('delete').setDisabled(true);
-			me.getAction('restore').setDisabled(true);
+			me.getAct('saveClose').setDisabled(true);
+			me.getAct('delete').setDisabled(true);
+			me.getAct('restore').setDisabled(true);
 			owner.setDisabled(true);
 		} else if(me.isMode(me.MODE_EDIT)) {
-			me.getAction('restore').setDisabled(!mo.isBroken());
+			me.getAct('restore').setDisabled(!mo.isBroken());
 			owner.setDisabled(true);
 			me.lref('tabinvitation').setDisabled(mo.isRecurring());
 			me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || !mo.isRecurring());
@@ -1272,7 +1272,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					target: target,
 					id: id
 				},
-				callback: function(success, o) {
+				callback: function(success) {
 					me.unwait();
 					if(success) {
 						me.fireEvent('viewsave', me, true, rec);
@@ -1309,7 +1309,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						crud: 'restore',
 						id: rec.get('id')
 					},
-					callback: function(success, o) {
+					callback: function(success) {
 						me.unwait();
 						if(success) {
 							me.fireEvent('viewsave', me, true, rec);

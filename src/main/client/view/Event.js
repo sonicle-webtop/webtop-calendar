@@ -244,9 +244,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				//suggestionContext: 'report_idcalendar', //TODO: verificare nome contesto
 				fieldLabel: me.mys.res('event.fld-location.lbl'),
 				anchor: '100%',
-				plugins: [
-					'soenterkeyplugin'
-				],
 				listeners: {
 					enterkey: function() {
 						me.getAction('saveClose').execute();

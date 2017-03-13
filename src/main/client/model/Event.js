@@ -209,7 +209,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 				break;
 		}
 		me.refreshValidatorsForRrEndsMode();
-		me.getValidation(true);
+		me.updateValidation();
 	},
 	
 	refreshValidatorsForRrEndsMode: function() {
@@ -226,7 +226,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 					break;
 			}
 		}
-		me.getValidation(true);
+		me.updateValidation();
 	},
 	
 	refreshValidatorsForRrDailyType: function() {
@@ -239,6 +239,6 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 					break;
 			}
 		}
-		me.getValidation(true);
+		me.updateValidation();
 	}
 });

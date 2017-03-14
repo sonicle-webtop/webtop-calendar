@@ -36,6 +36,7 @@ import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
+import com.sonicle.commons.web.DispositionType;
 import com.sonicle.commons.web.json.PayloadAsList;
 import com.sonicle.commons.web.json.Payload;
 import com.sonicle.commons.web.ServletUtils;
@@ -99,6 +100,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.text.MessageFormat;
@@ -628,59 +630,61 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processErpExportWizard(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	public void processExportForErp(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		UserProfile up = getEnv().getProfile();
 		
 		try {
-			String step = ServletUtils.getStringParameter(request, "step", true);
-			if(step.equals("start")) {
-				Payload<MapItem, JsErpExportStart> pl = ServletUtils.getPayload(request, JsErpExportStart.class);
+			String op = ServletUtils.getStringParameter(request, "op", true);
+			if (op.equals("do")) {
+				String fromDate = ServletUtils.getStringParameter(request, "fromDate", true);
+				String toDate = ServletUtils.getStringParameter(request, "toDate", true);
+				
 				DateTimeFormatter ymd = DateTimeUtils.createYmdFormatter(up.getTimeZone());
-				
 				erpWizard = new ErpExportWizard();
-				erpWizard.fromDate = ymd.parseDateTime(pl.data.fromDate).withTimeAtStartOfDay();
-				erpWizard.toDate = DateTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(pl.data.toDate));
+				erpWizard.fromDate = ymd.parseDateTime(fromDate).withTimeAtStartOfDay();
+				erpWizard.toDate = DateTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(toDate));
 				
-				new JsonResult().printTo(out);
-				
-			} else if(step.equals("end")) {
-				File file = WT.createTempFile();
 				LogEntries log = new LogEntries();
-				DateTimeFormatter ymd = DateTimeUtils.createFormatter("yyyyMMdd", up.getTimeZone());
-				DateTimeFormatter ymdhms = DateTimeUtils.createFormatter("yyyy-MM-dd HH:mm:ss", up.getTimeZone());
+				File file = WT.createTempFile();
 				
-				try (FileOutputStream fos = new FileOutputStream(file)) {
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started on {0}", ymdhms.print(new DateTime())));
-					manager.exportEvents(log, up.getDomainId(), erpWizard.fromDate, erpWizard.toDate, fos);
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended on {0}", ymdhms.print(new DateTime())));
-					erpWizard.file = file;
-					erpWizard.filename = MessageFormat.format(ERP_EXPORT_FILENAME, up.getDomainId(), ymd.print(erpWizard.fromDate), ymd.print(erpWizard.fromDate), "csv");
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "File ready: {0}", erpWizard.filename));
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Operation completed succesfully"));
-					new JsonResult(log.print()).printTo(out);
+				try {
+					DateTimeFormatter ymd2 = DateTimeUtils.createFormatter("yyyyMMdd", up.getTimeZone());
+					DateTimeFormatter ymdhms = DateTimeUtils.createFormatter("yyyy-MM-dd HH:mm:ss", up.getTimeZone());
 					
-				} catch(Exception ex1) {
-					ex1.printStackTrace();
-					new JsonResult(log.print()).setSuccess(false).printTo(out);
-				}
+					try (FileOutputStream fos = new FileOutputStream(file)) {
+						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started on {0}", ymdhms.print(new DateTime())));
+						manager.exportEvents(log, up.getDomainId(), erpWizard.fromDate, erpWizard.toDate, fos);
+						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended on {0}", ymdhms.print(new DateTime())));
+						erpWizard.file = file;
+						erpWizard.filename = MessageFormat.format(ERP_EXPORT_FILENAME, up.getDomainId(), ymd2.print(erpWizard.fromDate), ymd2.print(erpWizard.fromDate), "csv");
+						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "File ready: {0}", erpWizard.filename));
+						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Operation completed succesfully"));
+						new JsonResult(new JsWizardData(log.print())).printTo(out);
+					}
+				} catch(Throwable t) {
+					logger.error("Error generating export", t);
+					file.delete();
+					new JsonResult(new JsWizardData(log.print())).setSuccess(false).printTo(out);
+				}	
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error in action ErpExportWizard", ex);
-			new JsonResult(false, "Error").printTo(out);	
+			logger.error("Error in ExportForErp", ex);
+			new JsonResult(false, ex.getMessage()).printTo(out);
 		}
 	}
 	
-	public void processErpExportWizard(HttpServletRequest request, HttpServletResponse response) {
-		UserProfile up = getEnv().getProfile();
+	public void processExportForErp(HttpServletRequest request, HttpServletResponse response) {
 		try {
 			try(FileInputStream fis = new FileInputStream(erpWizard.file)) {
-				ServletUtils.writeFileStream(response, erpWizard.filename, fis, false);
+				OutputStream os = response.getOutputStream();
+				ServletUtils.setFileStreamHeaders(response, "application/octet-stream", DispositionType.ATTACHMENT, erpWizard.filename);
+				ServletUtils.setContentLengthHeader(response, erpWizard.file.length());
+				IOUtils.copy(fis, os);
 			}
 			
 		} catch(Exception ex) {
-			//TODO: logging
-			ex.printStackTrace();
+			logger.error("Error in ExportForErp", ex);
 		} finally {
 			erpWizard = null;
 		}

@@ -33,9 +33,6 @@
  */
 Ext.define('Sonicle.webtop.calendar.view.ErpExport', {
 	extend: 'WTA.sdk.WizardView',
-	requires: [
-		'Sonicle.webtop.calendar.model.ErpExport'
-	],
 	
 	dockableConfig: {
 		title: '{erpExport.tit}',
@@ -44,76 +41,85 @@ Ext.define('Sonicle.webtop.calendar.view.ErpExport', {
 		height: 250
 	},
 	useTrail: true,
-	doAction: 'ErpExportWizard',
-	pages: ['start','end'],
+	
+	showDoButton: true,
+	disableNavAtEnd: false,
+	disableNavOnSuccess: false,
+	endPageTitleText: '{exportwiz.end.tit}',
+	
+	viewModel: {
+		data: {
+			fromDate: null,
+			toDate: null
+		}
+	},
 	
 	initComponent: function() {
-		var me = this;
+		var me = this,
+				vm = me.getVM();
+		
+		vm.set('fromDate', new Date());
+		vm.set('toDate', new Date());
 		me.callParent(arguments);
 		me.on('beforenavigate', me.onBeforeNavigate);
 		me.on('dosuccess', function() {
-			//Sonicle.URLMgr.download('http://iso.esd.microsoft.com/W10IP/4B33E0680A465FBA52C09A34454D5EB6/Windows10_InsiderPreview_x64_IT-IT_10162.iso');
-			//Sonicle.URLMgr.download("service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true");
-			//window.open("service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true");
-			//Sonicle.URLMgr.download('service-request?service=com.sonicle.webtop.calendar&action=ExportWizard&nowriter=true');
-			Sonicle.URLMgr.download(WTF.processBinUrl(me.mys.ID, 'ErpExportWizard'));
+			Sonicle.URLMgr.download(WTF.processBinUrl(me.mys.ID, 'ExportForErp'));
 		});
 	},
 	
-	createPages: function() {
+	initPages: function() {
+		return ['s1', 'end'];
+	},
+	
+	initAction: function() {
+		return 'ExportForErp';
+	},
+	
+	createPages: function(path) {
 		var me = this;
 		return [{
-			itemId: 'start',
-			xtype: 'form',// perchè form?
-			viewModel: {
-				links: {
-					record: {
-						type: 'Sonicle.webtop.calendar.model.ErpExportStart',
-						create: true
-					}
-				}
-			},
-			modelValidation: true,
-			layout: 'anchor',
-			defaults: {
-				labelWidth: 80
-			},
+			itemId: 's1',
+			xtype: 'wtwizardpage',
+			reference: 's1',
 			items: [{
-				xtype: 'datefield',
-				bind: '{record.fromDate}',
-				width: 200,
-				fieldLabel: me.mys.res('erpExport.start.fld-fromDate.lbl')
-			}, {
-				xtype: 'datefield',
-				bind: '{record.toDate}',
-				width: 200,
-				fieldLabel: me.mys.res('erpExport.start.fld-toDate.lbl')
+				xtype: 'wtform',
+				items: [{
+					xtype: 'datefield',
+					bind: '{fromDate}',
+					allowBlank: false,
+					startDay: WT.getStartDay(),
+					format: WT.getShortDateFmt(),
+					fieldLabel: me.mys.res('erpExport.start.fld-fromDate.lbl'),
+					width: 220
+				}, {
+					xtype: 'datefield',
+					bind: '{toDate}',
+					allowBlank: false,
+					startDay: WT.getStartDay(),
+					format: WT.getShortDateFmt(),
+					fieldLabel: me.mys.res('erpExport.start.fld-toDate.lbl'),
+					width: 220
+				}]
 			}]
-		}].concat(me.callParent(arguments));
+		}, me.createEndPage()];
 	},
 	
 	onBeforeNavigate: function(s, dir, np, pp) {
 		if(dir === -1) return;
 		var me = this,
-				pcmp = me.getPageCmp(pp),
-				model;
-		if(pp === 'start') {
-			model = pcmp.getViewModel().data['record'];
-			if(model && model.isValid()) {
-				me.wait();
-				model.save({
-					callback: function(rec, op, success) {
-						me.unwait();
-						if(success) {
-							me.onNavigate(np);
-						} else {
-							WT.error(op.getError());
-						}
-					},
-					scope: me
-				});
-			}
-			return false;
+				ppcmp = me.getPageCmp(pp), ret;
+		
+		if(pp === 's1') {
+			ret = ppcmp.down('wtform').isValid();
+			if(!ret) return false;
 		}
+	},
+	
+	doOperationParams: function() {
+		var vm = this.getVM();
+		return {
+			fromDate: Ext.Date.format(vm.get('fromDate'), 'Y-m-d'),
+			toDate: Ext.Date.format(vm.get('toDate'), 'Y-m-d')
+		};
 	}
 });

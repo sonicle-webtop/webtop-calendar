@@ -1489,7 +1489,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						map.put("userId", user.getUserId());
 						map.put("descriptionId", user.getDisplayName());
 						fillExportMapBasic(map, con, sei);
-						fillExportMapDates(map, sei);
+						fillExportMapDates(map, udata.getTimeZone(), sei);
 						mapw.write(map, headers, processors);
 						
 					} catch(Exception ex) {
@@ -1507,7 +1507,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						map.put("descriptionId", user.getDisplayName());
 						fillExportMapBasic(map, con, sei);
 						for(SchedulerEventInstance inst : instances) {
-							fillExportMapDates(map, sei);
+							fillExportMapDates(map, udata.getTimeZone(), inst);
 							mapw.write(map, headers, processors);
 						}	
 						
@@ -1712,11 +1712,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return PathUtils.concatPaths(publicBaseUrl, s);
 	}
 	
-	private void fillExportMapDates(HashMap<String, Object> map, SchedulerEventInstance sei) throws Exception {
-		DateTime startDt = sei.getStartDate().withZone(DateTimeZone.UTC);
+	private void fillExportMapDates(HashMap<String, Object> map, DateTimeZone timezone, SchedulerEventInstance sei) throws Exception {
+		DateTime startDt = sei.getStartDate().withZone(timezone);
 		map.put("startDate", startDt);
 		map.put("startTime", startDt);
-		DateTime endDt = sei.getEndDate().withZone(DateTimeZone.UTC);
+		DateTime endDt = sei.getEndDate().withZone(timezone);
 		map.put("endDate", endDt);
 		map.put("endTime", endDt);
 		map.put("timezone", sei.getTimezone());

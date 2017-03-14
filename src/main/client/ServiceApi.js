@@ -43,25 +43,25 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	
 	/**
 	 * Adds a new event.
-	 * @param {Object} evt An object containing event data.
-	 * @param {Date} [evt.startDate] The start date-time.
-	 * @param {Date} [evt.endDate] The end date-time.
-	 * @param {Boolean} [evt.timezone] The timezone identifier.
-	 * @param {Boolean} [evt.allDay]
-	 * @param {String} [evt.title]
-	 * @param {String} [evt.description]
-	 * @param {String} [evt.location]
-	 * @param {Boolean} [evt.isPrivate]
-	 * @param {Boolean} [evt.busy]
-	 * @param {Integer} [evt.reminder]
+	 * @param {Object} data An object containing event data.
+	 * @param {Date} [data.startDate] The start date-time.
+	 * @param {Date} [data.endDate] The end date-time.
+	 * @param {Boolean} [data.timezone] The timezone identifier.
+	 * @param {Boolean} [data.allDay]
+	 * @param {String} [data.title]
+	 * @param {String} [data.description]
+	 * @param {String} [data.location]
+	 * @param {Boolean} [data.isPrivate]
+	 * @param {Boolean} [data.busy]
+	 * @param {Integer} [data.reminder]
 	 * @param {Object} opts An object containing configuration.
 	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
 	 * @param {Object} [opts.scope] The callback method scope.
 	 * @param {Boolean} [opts.dirty] The dirty state of the model.
 	 */
-	addEvent: function(evt, opts) {
+	addEvent: function(data, opts) {
 		opts = opts || {};
-		this.service.addEvent2(evt, {
+		this.service.addEvent2(data, {
 			callback: opts.callback,
 			scope: opts.scope,
 			dirty: opts.dirty
@@ -70,15 +70,15 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	
 	/**
 	 * Opens an event for viewing it.
-	 * @param {Object} evt An object containing event data.
-	 * @param {String} evt.ekey The event key identifier.
+	 * @param {Object} data An object containing event data.
+	 * @param {String} data.ekey The event key identifier.
 	 * @param {Object} opts An object containing configuration.
 	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
 	 * @param {Object} [opts.scope] The callback method scope.
 	 */
-	openEvent: function(evt, opts) {
+	openEvent: function(data, opts) {
 		opts = opts || {};
-		this.service.openEvent(false, evt.ekey, {
+		this.service.openEvent(false, data.ekey, {
 			callback: opts.callback,
 			scope: opts.scope
 		});
@@ -86,15 +86,15 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	
 	/**
 	 * Opens an event for editing it.
-	 * @param {Object} evt An object containing event data.
-	 * @param {String} evt.ekey The event key identifier.
+	 * @param {Object} data An object containing event data.
+	 * @param {String} data.ekey The event key identifier.
 	 * @param {Object} opts An object containing configuration.
 	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
 	 * @param {Object} [opts.scope] The callback method scope.
 	 */
-	editEvent: function(evt, opts) {
+	editEvent: function(data, opts) {
 		opts = opts || {};
-		this.service.openEvent(true, evt.ekey, {
+		this.service.openEvent(true, data.ekey, {
 			callback: opts.callback,
 			scope: opts.scope
 		});

@@ -52,7 +52,7 @@ Ext.define('Sonicle.webtop.calendar.view.pub.Event', {
 		me.callParent([cfg]);
 		
 		WTU.applyFormulas(me.getVM(), {
-			foIsWhereEmpty: WTF.isEmptyFormula('record', 'where')
+			foIsWhereEmpty: WTF.foIsEmpty('record', 'where')
 		});
 	},
 	

@@ -125,12 +125,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			rrWeeklyDay7: WTF.checkboxBind('record', 'rrWeeklyDay7'),
 			rrEndsMode: WTF.checkboxGroupBind('record', 'rrEndsMode'),
 			
-			isRRNone: WTF.equalsFormula('record', 'rrType', '_'),
-			isRRDayly: WTF.equalsFormula('record', 'rrType', 'D'),
-			isRRWeekly: WTF.equalsFormula('record', 'rrType', 'W'),
-			isRRMonthly: WTF.equalsFormula('record', 'rrType', 'M'),
-			isRRYearly: WTF.equalsFormula('record', 'rrType', 'Y'),
-			foIsRecurring: WTF.equalsFormula('record', '_recurringInfo', 'recurring')
+			isRRNone: WTF.foIsEqual('record', 'rrType', '_'),
+			isRRDayly: WTF.foIsEqual('record', 'rrType', 'D'),
+			isRRWeekly: WTF.foIsEqual('record', 'rrType', 'W'),
+			isRRMonthly: WTF.foIsEqual('record', 'rrType', 'M'),
+			isRRYearly: WTF.foIsEqual('record', 'rrType', 'Y'),
+			foIsRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring')
 		});
 	},
 	

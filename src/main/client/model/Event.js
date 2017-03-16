@@ -66,24 +66,132 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('customerId', 'string', true),
 		WTF.field('statisticId', 'string', true),
 		WTF.field('causalId', 'int', true),
-		WTF.field('rrEndsMode', 'string', false, {defaultValue: 'never'}),
-		WTF.field('rrRepeatTimes', 'int', true, {defaultValue: 1}),
-		WTF.field('rrUntilDate', 'date', true, {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.field('rrType', 'string', false, {defaultValue: '_'}),
-		WTF.field('rrDailyType', 'string', false, {defaultValue: '1'}),
-		WTF.field('rrDailyFreq', 'int', true, {defaultValue: 1}),
-		WTF.field('rrWeeklyFreq', 'int', true, {defaultValue: 1}),
-		WTF.field('rrWeeklyDay1', 'boolean', true, {defaultValue: false}),
-		WTF.field('rrWeeklyDay2', 'boolean', true, {defaultValue: false}),
-		WTF.field('rrWeeklyDay3', 'boolean', true, {defaultValue: false}),
-		WTF.field('rrWeeklyDay4', 'boolean', true, {defaultValue: false}),
-		WTF.field('rrWeeklyDay5', 'boolean', true, {defaultValue: false}),
-		WTF.field('rrWeeklyDay6', 'boolean', true, {defaultValue: false}),
-		WTF.field('rrWeeklyDay7', 'boolean', true, {defaultValue: false}),
-		WTF.field('rrMonthlyFreq', 'int', true, {defaultValue: 1}),
-		WTF.field('rrMonthlyDay', 'int', true, {defaultValue: 1}),
-		WTF.field('rrYearlyFreq', 'int', true, {defaultValue: 1}),
-		WTF.field('rrYearlyDay', 'int', true, {defaultValue: 1}),
+		WTF.field('rrDailyType', 'string', true, {
+			defaultValue: '1',
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['D']
+			}]
+		}),
+		WTF.field('rrDailyFreq', 'int', true, {
+			defaultValue: 1,
+			validators: ['wtcalrrdailyfreq']
+		}),
+		WTF.field('rrWeeklyFreq', 'int', true, {
+			defaultValue: 1,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrWeeklyDay1', 'boolean', true, {
+			defaultValue: false,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrWeeklyDay2', 'boolean', true, {
+			defaultValue: false,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrWeeklyDay3', 'boolean', true, {
+			defaultValue: false,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrWeeklyDay4', 'boolean', true, {
+			defaultValue: false,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrWeeklyDay5', 'boolean', true, {
+			defaultValue: false,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrWeeklyDay6', 'boolean', true, {
+			defaultValue: false,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrWeeklyDay7', 'boolean', true, {
+			defaultValue: false,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['W']
+			}]
+		}),
+		WTF.field('rrMonthlyFreq', 'int', true, {
+			defaultValue: 1,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['M']
+			}]
+		}),
+		WTF.field('rrMonthlyDay', 'int', true, {
+			defaultValue: 1,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['M']
+			}]
+		}),
+		WTF.field('rrYearlyFreq', 'int', true, {
+			defaultValue: 1,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['Y']
+			}]
+		}),
+		WTF.field('rrYearlyDay', 'int', true, {
+			defaultValue: 1,
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['Y']
+			}]
+		}),
+		WTF.field('rrEndsMode', 'string', true, {
+			defaultValue: 'never',
+			validators: [{
+				type: 'sopresence',
+				ifField: 'rrType',
+				ifValues: ['D','W','M','Y']
+			}]
+		}),
+		WTF.field('rrRepeatTimes', 'int', true, {
+			defaultValue: 1,
+			validators: ['wtcalrrrepeattimes']
+		}),
+		WTF.field('rrUntilDate', 'date', true, {
+			dateFormat: 'Y-m-d H:i:s',
+			validators: ['wtcalrruntildate']
+		}),
+		
 		// Read-only fields
 		WTF.roField('_profileId', 'string'),
 		WTF.roField('_recurringInfo', 'string', {defaultValue: 'none'})
@@ -163,82 +271,35 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		v = me.setTimePart('endDate', dt);
 		if (!Ext.isDate(sta)) return;
 		if (v < sta) me.set('startDate', v);
-	},
+	}
+});
+Ext.define('Sonicle.webtop.calendar.VRRRDailyFreq', {
+	extend: 'Ext.data.validator.Presence',
+	alias: 'data.validator.wtcalrrdailyfreq',
 	
-	refreshValidatorsForRrType: function() {
+	validate: function(v, rec) {
 		var me = this;
-		me.setFieldValidators('rrEndsMode');
-		me.setFieldValidators('rrRepeatTimes');
-		me.setFieldValidators('rrUntilDate');
-		me.setFieldValidators('rrDailyType');
-		me.setFieldValidators('rrDailyFreq');
-		me.setFieldValidators('rrWeeklyFreq');
-		me.setFieldValidators('rrWeeklyDay1');
-		me.setFieldValidators('rrWeeklyDay2');
-		me.setFieldValidators('rrWeeklyDay3');
-		me.setFieldValidators('rrWeeklyDay4');
-		me.setFieldValidators('rrWeeklyDay5');
-		me.setFieldValidators('rrWeeklyDay6');
-		me.setFieldValidators('rrWeeklyDay7');
-		me.setFieldValidators('rrMonthlyFreq');
-		me.setFieldValidators('rrMonthlyDay');
-		me.setFieldValidators('rrYearlyFreq');
-		me.setFieldValidators('rrYearlyDay');
-		switch(me.get('rrType')) {
-			case 'D':
-				me.setFieldValidators('rrDailyType', ['presence']);
-				me.refreshValidatorsForRrDailyType();
-				break;
-			case 'W':
-				me.setFieldValidators('rrWeeklyFreq', ['presence']);
-				me.setFieldValidators('rrWeeklyDay1', ['presence']);
-				me.setFieldValidators('rrWeeklyDay2', ['presence']);
-				me.setFieldValidators('rrWeeklyDay3', ['presence']);
-				me.setFieldValidators('rrWeeklyDay4', ['presence']);
-				me.setFieldValidators('rrWeeklyDay5', ['presence']);
-				me.setFieldValidators('rrWeeklyDay6', ['presence']);
-				me.setFieldValidators('rrWeeklyDay7', ['presence']);
-				break;
-			case 'M':
-				me.setFieldValidators('rrMonthlyFreq', ['presence']);
-				me.setFieldValidators('rrMonthlyDay', ['presence']);
-				break;
-			case 'Y':
-				me.setFieldValidators('rrYearlyFreq', ['presence']);
-				me.setFieldValidators('rrYearlyDay', ['presence']);
-				break;
-		}
-		me.refreshValidatorsForRrEndsMode();
-		me.updateValidation();
-	},
+		if (rec.get('rrType') === '_') return true;
+		return (rec.get('rrDailyType') === '1') ? me.callParent(arguments) : true;
+	}
+});
+Ext.define('Sonicle.webtop.calendar.VRRRepeatTimes', {
+	extend: 'Ext.data.validator.Presence',
+	alias: 'data.validator.wtcalrrrepeattimes',
 	
-	refreshValidatorsForRrEndsMode: function() {
+	validate: function(v, rec) {
 		var me = this;
-		me.setFieldValidators('rrRepeatTimes');
-		me.setFieldValidators('rrUntilDate');
-		if (me.get('rrType') !== '_') {
-			switch(me.get('rrEndsMode')) {
-				case 'repeat':
-					me.setFieldValidators('rrRepeatTimes', ['presence']);
-					break;
-				case 'until':
-					me.setFieldValidators('rrUntilDate', ['presence']);
-					break;
-			}
-		}
-		me.updateValidation();
-	},
+		if (rec.get('rrType') === '_') return true;
+		return (rec.get('rrEndsMode') === 'repeat') ? me.callParent(arguments) : true;
+	}
+});
+Ext.define('Sonicle.webtop.calendar.VRRUntilDate', {
+	extend: 'Ext.data.validator.Presence',
+	alias: 'data.validator.wtcalrruntildate',
 	
-	refreshValidatorsForRrDailyType: function() {
+	validate: function(v, rec) {
 		var me = this;
-		me.setFieldValidators('rrDailyFreq');
-		if (me.get('rrType') !== '_') {
-			switch(me.get('rrDailyType')) {
-				case '1':
-					me.setFieldValidators('rrDailyFreq', ['presence']);
-					break;
-			}
-		}
-		me.updateValidation();
+		if (rec.get('rrType') === '_') return true;
+		return (rec.get('rrEndsMode') === 'until') ? me.callParent(arguments) : true;
 	}
 });

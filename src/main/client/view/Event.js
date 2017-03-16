@@ -856,6 +856,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								margin: '0 5 0 0',
 								listeners: {
 									change: function() {
+										// It seems that the handler method and the change event
+										// will fire without any user interaction (eg. binding);
+										// so we need to deactivate the code below durin loading.
+										if (me.modelLoading) return;
 										me.getModel().set('rrDailyType', '1');
 									}
 								}
@@ -1038,6 +1042,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						margin: '0 5 0 0',
 						listeners: {
 							change: function() {
+								// It seems that the handler method and the change event
+								// will fire without any user interaction (eg. binding);
+								// so we need to deactivate the code below durin loading.
+								if (me.modelLoading) return;
 								me.getModel().set('rrEndsMode', 'repeat');
 							}
 						}
@@ -1055,6 +1063,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						width: 105,
 						listeners: {
 							select: function() {
+								// It seems that the handler method and the change event
+								// will fire without any user interaction (eg. binding);
+								// so we need to deactivate the code below durin loading.
+								if (me.modelLoading) return;
 								me.getModel().set('rrEndsMode', 'until');
 							}
 						}
@@ -1077,6 +1089,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				{
 					xtype: 'wttabpanel',
 					activeTab: 0,
+					deferredRender: false,
 					items: [
 						appointment,
 						invitation,
@@ -1099,7 +1112,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		vm.bind('{record.customerId}', me.onCustomerChanged, me);
 		vm.bind('{record.rrType}', me.onRrTypeChanged, me);
 		vm.bind('{record.rrEndsMode}', me.onRrEndsModeChanged, me);
-		vm.bind('{record.rrDailyType}', me.onRrDailyTypeChanged, me);
 	},
 	
 	onRrTypeChanged: function(v) {
@@ -1134,7 +1146,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					break;
 			}
 		}
-		mo.refreshValidatorsForRrType();
 	},
 	
 	onRrEndsModeChanged: function(v) {
@@ -1144,11 +1155,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			mo.setIfNull('rrRepeatTimes', 1);
 			mo.setIfNull('rrUntilDate', Ext.Date.clone(mo.get('startDate')));
 		}
-		me.getModel().refreshValidatorsForRrEndsMode();
-	},
-	
-	onRrDailyTypeChanged: function(v) {
-		this.getModel().refreshValidatorsForRrDailyType();
 	},
 	
 	onViewLoad: function(s, success) {

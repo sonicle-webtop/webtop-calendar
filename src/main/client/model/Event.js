@@ -279,7 +279,7 @@ Ext.define('Sonicle.webtop.calendar.VRRRDailyFreq', {
 	
 	validate: function(v, rec) {
 		var me = this;
-		if (rec.get('rrType') === '_') return true;
+		if (rec.get('rrType') !== 'D') return true;
 		return (rec.get('rrDailyType') === '1') ? me.callParent(arguments) : true;
 	}
 });

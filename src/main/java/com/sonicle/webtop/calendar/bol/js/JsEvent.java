@@ -124,17 +124,19 @@ public class JsEvent {
 			rrDailyType = REC_DAILY_TYPE_DAY;
 			rrEndsMode = EventRecurrence.ENDS_MODE_NEVER;
 		} else {
-			if(rec.getType().equals(EventRecurrence.TYPE_DAILY) || rec.getType().equals(EventRecurrence.TYPE_DAILY_FERIALI)) {
+			if(rec.getType().equals(EventRecurrence.TYPE_DAILY)) {
 				rrType = EventRecurrence.TYPE_DAILY;
 				rrDailyType = REC_DAILY_TYPE_DAY;
-			} else if(rec.getType().equals(EventRecurrence.TYPE_DAILY_FERIALI)) {
+				rrDailyFreq = rec.getDailyFreq();
+			} else if (rec.getType().equals(EventRecurrence.TYPE_DAILY_FERIALI)) {
 				rrType = EventRecurrence.TYPE_DAILY;
 				rrDailyType = REC_DAILY_TYPE_FERIALI;
+				rrDailyFreq = 1; // default value
 			} else {
 				rrType = rec.getType();
 				rrDailyType = REC_DAILY_TYPE_DAY;
+				rrDailyFreq = rec.getDailyFreq();
 			}
-			rrDailyFreq = rec.getDailyFreq();
 			rrWeeklyFreq = rec.getWeeklyFreq();
 			rrWeeklyDay1 = rec.getWeeklyDay1();
 			rrWeeklyDay2 = rec.getWeeklyDay2();
@@ -198,19 +200,21 @@ public class JsEvent {
 		event.setStatisticId(jse.statisticId);
 		event.setCausalId(jse.causalId);
 		
-		if(!jse.rrType.equals(REC_TYPE_NONE)) {
+		if (!jse.rrType.equals(REC_TYPE_NONE)) {
 			EventRecurrence rec = new EventRecurrence();
 			
-			if(jse.rrType.equals(EventRecurrence.TYPE_DAILY)) {
-				if(jse.rrDailyType.equals(REC_DAILY_TYPE_DAY)) {
+			if (jse.rrType.equals(EventRecurrence.TYPE_DAILY)) {
+				if (jse.rrDailyType.equals(REC_DAILY_TYPE_DAY)) {
 					rec.setType(EventRecurrence.TYPE_DAILY);
-				} else if(jse.rrDailyType.equals(REC_DAILY_TYPE_FERIALI)) {
+					rec.setDailyFreq(jse.rrDailyFreq);
+				} else {
 					rec.setType(EventRecurrence.TYPE_DAILY_FERIALI);
+					rec.setDailyFreq(null);
 				}
 			} else {
 				rec.setType(jse.rrType);
+				rec.setDailyFreq(jse.rrDailyFreq);
 			}
-			rec.setDailyFreq(jse.rrDailyFreq);
 			rec.setWeeklyFreq(jse.rrWeeklyFreq);
 			rec.setWeeklyDay1(jse.rrWeeklyDay1);
 			rec.setWeeklyDay2(jse.rrWeeklyDay2);

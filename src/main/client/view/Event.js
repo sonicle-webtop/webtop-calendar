@@ -266,6 +266,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						disabled: '{foIsRecurring}'
 					},
 					startDay: WT.getStartDay(),
+					format: WT.getShortDateFmt(),
 					margin: '0 5 0 0',
 					width: 105
 				}, {
@@ -328,6 +329,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						disabled: '{foIsRecurring}'
 					},
 					startDay: WT.getStartDay(),
+					format: WT.getShortDateFmt(),
 					margin: '0 5 0 0',
 					width: 105
 				}, {
@@ -1063,6 +1065,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						xtype: 'datefield',
 						bind: '{record.rrUntilDate}',
 						startDay: WT.getStartDay(),
+						format: WT.getShortDateFmt(),
 						width: 105,
 						listeners: {
 							select: function() {

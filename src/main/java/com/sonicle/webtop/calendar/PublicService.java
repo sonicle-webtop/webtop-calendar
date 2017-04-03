@@ -46,6 +46,7 @@ import com.sonicle.webtop.core.bol.js.JsWTSPublic;
 import com.sonicle.webtop.core.sdk.BasePublicService;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
+import com.sonicle.webtop.core.servlet.ServletHelper;
 import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -185,14 +186,14 @@ public class PublicService extends BasePublicService {
 	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, Calendar calendar, Event event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
 		vars.put("view", view);
 		vars.put("eventData", buildEventData(calendar, event));
-		writePage(response, wts, vars, ServletUtils.getBaseURL(request));
+		writePage(response, wts, vars, ServletHelper.getBaseUrl(request));
 	}
 	
 	private void writeErrorPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String reskey) throws IOException, TemplateException {
 		JsWTSPublic.Vars vars = new JsWTSPublic.Vars();
 		vars.put("view", "Error");
 		vars.put("reskey", reskey);
-		writePage(response, wts, vars, ServletUtils.getBaseURL(request));
+		writePage(response, wts, vars, ServletHelper.getBaseUrl(request));
 	}
 	
 	public static class EventUrlPath extends UrlPathTokens {

@@ -2105,6 +2105,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private EventRecurrence createEventRecurrence(ORecurrence orec) {
+		
+		/**
+		 * NB: aggiornare anche l'implementazione in Migration.java
+		 */
+		
 		if (orec == null) return null;
 		EventRecurrence rec = new EventRecurrence();
 		rec.setType(orec.getType());

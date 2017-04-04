@@ -55,6 +55,10 @@ public class ORecurrence extends Recurrences {
 	}
 	
 	public void fillFrom(EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
+		fillFrom(false, rec, eventStartDate, eventEndDate, eventTimeZone);
+	}
+	
+	public void fillFrom(boolean setRule, EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimeZone);
 		
 		setStartDate(eventStartDate);
@@ -116,11 +120,11 @@ public class ORecurrence extends Recurrences {
 		
 		RRule rr = null;
 		if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_NEVER)) {
-			rr = applyEndNever(etz, false);
+			rr = applyEndNever(etz, setRule);
 		} else if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_REPEAT)) {
-			rr = applyEndRepeat(rec.getRepeatTimes(), eventStartDate, eventEndDate, etz, false);
+			rr = applyEndRepeat(rec.getRepeatTimes(), eventStartDate, eventEndDate, etz, setRule);
 		} else if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_UNTIL)) {
-			rr = applyEndUntil(rec.getUntilDate(), etz, false);
+			rr = applyEndUntil(rec.getUntilDate(), etz, setRule);
 		} else {
 			throw new RuntimeException("Recurrence end-mode unknown or undefined");
 		}
@@ -233,6 +237,6 @@ public class ORecurrence extends Recurrences {
 	}
 	
 	public boolean isEndUntil() {
-		return !getPermanent() && (getRepeat() == null);
+		return !getPermanent() && (((getRepeat() == null) || (getRepeat() == 0)) && (getUntilDate() != null));
 	}
 }

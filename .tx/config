@@ -1,0 +1,32 @@
+[main]
+host = https://www.transifex.com
+
+[webtop-calendar.server_locale]
+file_filter = src/main/resources/com/sonicle/webtop/calendar/locale_<lang>.properties
+source_file = src/main/resources/com/sonicle/webtop/calendar/locale_en.properties
+source_lang = en
+type = PROPERTIES
+
+[webtop-calendar.client_locale]
+file_filter = src/main/client/locale_<lang>.properties
+source_file = src/main/client/locale_en.properties
+source_lang = en
+type = PROPERTIES
+
+[webtop-calendar.rpt_agendasummary]
+file_filter = src/main/reports/com/sonicle/webtop/calendar/rpt/agendasummary_<lang>.properties
+source_file = src/main/reports/com/sonicle/webtop/calendar/rpt/agendasummary_en.properties
+source_lang = en
+type = PROPERTIES
+
+[webtop-calendar.rpt_agendaweekx]
+file_filter = src/main/reports/com/sonicle/webtop/calendar/rpt/agendaweekX_<lang>.properties
+source_file = src/main/reports/com/sonicle/webtop/calendar/rpt/agendaweekX_en.properties
+source_lang = en
+type = PROPERTIES
+
+[webtop-calendar.rpt_eventsdetail]
+file_filter = src/main/reports/com/sonicle/webtop/calendar/rpt/eventsdetail_<lang>.properties
+source_file = src/main/reports/com/sonicle/webtop/calendar/rpt/eventsdetail_en.properties
+source_lang = en
+type = PROPERTIES

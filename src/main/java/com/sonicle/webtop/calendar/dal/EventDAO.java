@@ -110,6 +110,22 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(Integer.class);
 	}
 	
+	public List<Integer> selectAliveIdsByCalendarsPublicUid(Connection con, List<Integer> calendarIds, String publicUid) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(EVENTS.EVENT_ID)
+			.from(EVENTS)
+			.where(
+				EVENTS.CALENDAR_ID.in(calendarIds)
+				.and(EVENTS.PUBLIC_UID.equal(publicUid))
+				.and(
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+				)
+			)
+			.fetchInto(Integer.class);
+	}
+	
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		OEvent.ensureCoherence(item);

@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar.io;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.ICal4jUtils;
+import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.webtop.calendar.ICalHelper;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttendee;

@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import java.text.MessageFormat;
 import java.text.ParseException;

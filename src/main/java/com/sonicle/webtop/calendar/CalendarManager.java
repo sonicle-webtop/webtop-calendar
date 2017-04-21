@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
@@ -141,6 +142,7 @@ import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.Method;
+import org.apache.commons.codec.digest.DigestUtils;
 
 /**
  *
@@ -221,6 +223,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return folders;
 	}
 	
+	private List<Integer> listIncomingCalendarIds() throws WTException {
+		ArrayList<Integer> ids = new ArrayList<>();
+		for(CalendarRoot root : listIncomingCalendarRoots()) {
+			HashMap<Integer, CalendarFolder> folders = listIncomingCalendarFolders(root.getShareId());
+			ids.addAll(folders.keySet());
+		}
+		return ids;
+	}
+	
 	public Sharing getSharing(String shareId) throws WTException {
 		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		return core.getSharing(SERVICE_ID, GROUPNAME_CALENDAR, shareId);
@@ -231,8 +242,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		core.updateSharing(SERVICE_ID, GROUPNAME_CALENDAR, sharing);
 	}
 	
+	@Override
 	public UserProfileId getCalendarOwner(int calendarId) throws WTException {
 		return calendarToOwner(calendarId);
+	}
+	
+	public List<Integer> listCalendarIds() throws WTException {
+		ArrayList<Integer> ids = new ArrayList<>();
+		for(Calendar calendar : listCalendars()) {
+			ids.add(calendar.getCalendarId());
+		}
+		return ids;
 	}
 	
 	@Override
@@ -602,16 +622,45 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public Integer getEventId(String publicUid) throws WTException {
+	public Integer getEventId(GetEventScope scope, boolean forceOriginal, String publicUid) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		Connection con = null;
 		
 		try {
+			final String timeBasedPart = StringUtils.split(publicUid, ".", 2)[0];
+			final String internetName = WT.getDomainInternetName(getTargetProfileId().getDomainId());
+			
 			con = WT.getConnection(SERVICE_ID);
-			List<Integer> ids = edao.selectAliveIdsByPublicUid(con, publicUid);
-			if (ids.isEmpty()) return null;
-			if (ids.size() != 1) throw new WTException("Multiple events found [{0}]", publicUid);
-			return ids.get(0);
+			List<Integer> ids = null;
+			
+			if (scope.equals(GetEventScope.ALL)) {
+				ids = edao.selectAliveIdsByPublicUid(con, publicUid);
+				for(Integer id : ids) {
+					if (!forceOriginal || publicUid.equals(buildEventUid(timeBasedPart, id, internetName))) {
+						return id;
+					}
+				}
+				
+			} else {
+				if (scope.equals(GetEventScope.PERSONAL) || scope.equals(GetEventScope.PERSONAL_AND_INCOMING)) {
+					ids = edao.selectAliveIdsByCalendarsPublicUid(con, listCalendarIds(), publicUid);
+					for(Integer id : ids) {
+						if (!forceOriginal || publicUid.equals(buildEventUid(timeBasedPart, id, internetName))) {
+							return id;
+						}
+					}
+				}
+				if (scope.equals(GetEventScope.INCOMING) || scope.equals(GetEventScope.PERSONAL_AND_INCOMING)) {
+					ids = edao.selectAliveIdsByCalendarsPublicUid(con, listIncomingCalendarIds(), publicUid);
+					for(Integer id : ids) {
+						if (!forceOriginal || publicUid.equals(buildEventUid(timeBasedPart, id, internetName))) {
+							return id;
+						}
+					}
+				}
+			}	
+			
+			return null;
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -669,10 +718,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public Event getEvent(String publicUid) throws WTException {
-		Integer eventId = getEventId(publicUid);
-		if(eventId == null) return null;
-		return getEvent(eventId);
+	public Event getEvent(GetEventScope scope, boolean forceOriginal, String publicUid) throws WTException {
+		Integer eventId = getEventId(scope, forceOriginal, publicUid);
+		return (eventId == null) ? null : getEvent(eventId);
 	}
 	
 	@Override
@@ -737,25 +785,84 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
+	public void updateEventFromICalReply(net.fortuna.ical4j.model.Calendar ical) throws WTException {
+		VEvent ve = ICalendarUtils.getVEvent(ical);
+		if (ve == null) throw new WTException("Calendar does not contain any event");
+		
+		if (ical.getMethod().equals(Method.REPLY)) {
+			UserProfile.Data ud = WT.getUserData(getTargetProfileId());
+			
+			// Attendee -> Organizer
+			// The attendee replies to an event sending to the organizer a mail 
+			// message with an attached ical (the above param), properly configured.
+			// The ical should be kept untouched in the reply except for the 
+			// attendee list: it should contains only the references of the 
+			// attendee that replies to the invitation.
+			
+			String uid = ve.getUid().getValue();
+			if (ve == null) throw new WTException("Calendar does not contain any event");
+			
+			// Gets the event looking also into incoming calendars...
+			// (i can be the organizer of a meeting created for my boss that 
+			// share his calendar with me; all received replies must be bringed
+			// back to the event in the shared calendar)
+			//Event evt = getEvent(uid);
+			Event evt = getEvent(GetEventScope.PERSONAL_AND_INCOMING, true, uid);
+			if (evt == null) {
+				logger.debug("Event not found [{}]", uid);
+				return;
+			}
+			
+			boolean iAmOrganizer = StringUtils.equalsIgnoreCase(evt.getOrganizerAddress(), ud.getEmailAddress());
+			if (!iAmOrganizer) {
+				logger.debug("Only the organizer can update the reply [{}]", evt.getOrganizerAddress());
+				return;
+			}
+			
+			Attendee att = ICalendarUtils.getAttendee(ve);
+			if (att == null) throw new WTException("Event does not provide any attendees");
+			
+			// Extract response info...
+			PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
+			String responseStatus = ICalHelper.partStatToResponseStatus(partStat);
+			
+			List<String> updatedAttIds = updateEventAttendeeResponseByRecipient(evt, att.getCalAddress().getSchemeSpecificPart(), responseStatus);
+			if (!updatedAttIds.isEmpty()) {
+				evt = getEvent(evt.getEventId());
+				for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
+			}
+			
+		} else {
+			throw new WTException("Unsupported Calendar's method [{0}]", ical.getMethod().toString());
+		}
+	}
+	
+	@Override
 	public void updateEventFromICal(net.fortuna.ical4j.model.Calendar ical) throws WTException {
 		Connection con = null;
 		
 		VEvent ve = ICalendarUtils.getVEvent(ical);
 		if (ve == null) throw new WTException("Calendar does not contain any event");
 		
-		String uid = ve.getUid().getValue(); 
+		String uid = ve.getUid().getValue();
 		if (StringUtils.isBlank(uid)) throw new WTException("Event does not provide a valid Uid");
 		
-		Event evt = getEvent(uid);
-		
 		if (ical.getMethod().equals(Method.REQUEST)) {
+			// Organizer -> Attendee
+			// The organizer after updating the event details send a mail message
+			// to all attendees telling to update their saved information
+			
+			// Gets the event...
+			//Event evt = getEventForICalUpdate(uid);
+			Event evt = getEvent(GetEventScope.PERSONAL_AND_INCOMING, false, uid);
+			if (evt == null) throw new WTException("Event not found [{0}]", uid);
+			
 			EventDAO edao = EventDAO.getInstance();
 			final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 			
+			// Parse the ical using the code used in import
 			EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
 			ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
-			if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
-			
 			Event parsedEvent = parsed.get(0).event;
 			parsedEvent.setCalendarId(evt.getCalendarId());
 			
@@ -776,18 +883,49 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 		} else if (ical.getMethod().equals(Method.REPLY)) {
-			Attendee att = ICalendarUtils.getAttendee(ve);
-			if (att == null) throw new WTException("Event does not provide any attendee");
+			// Attendee -> Organizer
+			// The attendee replies to an event sending to the organizer a mail 
+			// message with an attached ical (the above param), properly configured.
+			// The ical should be kept untouched in the reply except for the 
+			// attendee list: it should contains only the references of the 
+			// attendee that replies to the invitation.
 			
+			Attendee att = ICalendarUtils.getAttendee(ve);
+			if (att == null) throw new WTException("Event does not provide any attendees");
+			
+			// Extract response info...
 			PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
 			String responseStatus = ICalHelper.partStatToResponseStatus(partStat);
+			
+			// Gets the event looking also into incoming calendars...
+			// (i can be the organizer of a meeting created for my boss that 
+			// share his calendar with me; all received replies must be bringed
+			// back to the event in the shared calendar)
+			//Event evt = getEvent(uid);
+			Event evt = getEvent(GetEventScope.PERSONAL_AND_INCOMING, true, uid);
+			if (evt == null) throw new WTException("Event not found [{0}]", uid);
+			
 			List<String> updatedAttIds = updateEventAttendeeResponseByRecipient(evt, att.getCalAddress().getSchemeSpecificPart(), responseStatus);
+			
+			// Commented to not send notification email in this case: 
+			// the organizer already knows this info, he updated 'manually' the 
+			// event by clicking the "Update event" button on the preview!
+			/*
 			if (!updatedAttIds.isEmpty()) {
 				evt = getEvent(evt.getEventId());
 				for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
 			}
+			*/
 			
 		} else if (ical.getMethod().equals(Method.CANCEL)) {
+			// Organizer -> Attendee
+			// The organizer after cancelling the event send a mail message
+			// to all attendees telling to update their saved information
+			
+			// Gets the event...
+			//Event evt = getEventForICalUpdate(uid);
+			Event evt = getEvent(GetEventScope.PERSONAL_AND_INCOMING, false, uid);
+			if (evt == null) throw new WTException("Event not found [{0}]", uid);
 			
 			try {
 				con = WT.getConnection(SERVICE_ID);
@@ -804,12 +942,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public Event updateEventAttendeeResponse(String eventPublicUid, String attendeeUid, String responseStatus) throws WTException {
+	public Event updateEventFromSite(String eventPublicUid, String attendeeUid, String responseStatus) throws WTException {
 		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			Event evt = getEvent(eventPublicUid);
+			Event evt = getEvent(GetEventScope.ALL, true, eventPublicUid);
 			if (evt == null) throw new WTException("Event not found [{0}]", eventPublicUid);
 			
 			con = WT.getConnection(SERVICE_ID);
@@ -844,11 +982,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				final InternetAddress ia = MailUtils.buildInternetAddress(att.getRecipient());
 				if (ia == null) continue;
 				
-				if (StringUtils.equals(ia.getAddress(), recipient)) matchingIds.add(att.getAttendeeId());
+				if (StringUtils.equalsIgnoreCase(ia.getAddress(), recipient)) matchingIds.add(att.getAttendeeId());
 			}
 			
 			// Update responses
 			int ret = eadao.updateAttendeeResponseByIds(con, responseStatus, matchingIds);
+			//TODO: aggiornare data evento?
+			
 			if (matchingIds.size() == ret) {
 				DbUtils.commitQuietly(con);
 				return matchingIds;
@@ -1644,6 +1784,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			String html = TplHelper.buildResponseUpdateTpl(locale, source, event.getTitle(), customBody, targetAttendee);
 			WT.sendEmail(getMailSession(), true, from, to, subject, html);
+			
 		} catch(Exception ex) {
 			logger.warn("Unable to notify organizer", ex);
 		}	
@@ -1882,22 +2023,41 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return createCalendar(ocal);
 	}
 	
+	private String buildEventUid(int eventId, String internetName) {
+		return buildEventUid(IdentifierUtils.getUUIDTimeBased(true), eventId, internetName);
+	}
+	
+	private String buildEventUid(String timeBasedPart, int eventId, String internetName) {
+		return buildEventUid(timeBasedPart, DigestUtils.md5Hex(String.valueOf(eventId)), internetName);
+	}
+	
+	private String buildEventUid(String timeBasedPart, String eventPart, String internetName) {
+		// Generates the uid joining a dynamic time-based string with one 
+		// calculated from the real event id. This may help in subsequent phases
+		// especially to determine if the event is original or is coming from 
+		// an invitation.
+		return ICalendarUtils.buildUid(timeBasedPart + "." + eventPart, internetName);
+	}
+	
 	private InsertResult doEventInsert(Connection con, Event event, boolean insertRecurrence, boolean insertAttendees) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 		DateTime revision = createRevisionTimestamp();
 		
-		if(StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
-		if(StringUtils.isBlank(event.getPublicUid())) {
-			final String uid = ICalendarUtils.buildUid(IdentifierUtils.getUUIDTimeBased(), WT.getDomainInternetName(getTargetProfileId().getDomainId()));
-			event.setPublicUid(uid);
+		final int eventId = evtDao.getSequence(con).intValue();
+		
+		if (StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
+		if (StringUtils.isBlank(event.getPublicUid())) {
+			//final String uid = ICalendarUtils.buildUid(IdentifierUtils.getUUIDTimeBased(), WT.getDomainInternetName(getTargetProfileId().getDomainId()));
+			//event.setPublicUid(uid);
+			event.setPublicUid(buildEventUid(eventId, WT.getDomainInternetName(getTargetProfileId().getDomainId())));
 			//event.setPublicUid(IdentifierUtils.getUUID());
 		}
 		
 		OEvent oevt = new OEvent();
 		oevt.fillFrom(event);
-		oevt.setEventId(evtDao.getSequence(con).intValue());
+		oevt.setEventId(eventId);
 		
 		ArrayList<OEventAttendee> oatts = new ArrayList<>();
 		if(insertAttendees && event.hasAttendees()) {

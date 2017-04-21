@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.commons.LangUtils;
-import com.sonicle.webtop.calendar.ICal4jUtils;
+import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
 import com.sonicle.webtop.core.sdk.WTException;

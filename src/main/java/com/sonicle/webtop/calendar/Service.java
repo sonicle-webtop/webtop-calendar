@@ -195,7 +195,8 @@ public class Service extends BaseService {
 		UserProfileId pid = getEnv().getProfile().getId();
 		synchronized(roots) {
 			roots.clear();
-			roots.put(MyCalendarRoot.SHARE_ID, new MyCalendarRoot(pid));
+			MyCalendarRoot myRoot = new MyCalendarRoot(pid);
+			roots.put(myRoot.getShareId(), myRoot);
 			for(CalendarRoot root : manager.listIncomingCalendarRoots()) {
 				roots.put(root.getShareId(), root);
 			}

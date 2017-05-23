@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2014 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
@@ -30,76 +30,32 @@
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
  * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
-package com.sonicle.webtop.calendar;
+package com.sonicle.webtop.calendar.bol.model;
+
+import com.sonicle.commons.web.json.JsonResult;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarSettings {
+public class CalendarFolderData {
+	public Boolean hidden;
+	public String color;
 	
-	/**
-	 * [system+domain][default-only]
-	 * [enum]
-	 * The default value of the sync field for new calendars.
-	 */
-	public static final String CALENDAR_SYNC = "calendar.sync";
+	public void update(CalendarFolderData data) {
+		hidden = data.hidden;
+		color = data.color;
+	}
 	
-	/**
-	 * [user][default]
-	 * [string]
-	 * Calendar view ("d" day, "w5" work week, "w" week, "dw" double-week, "m" month)
-	 */
-	public static final String VIEW = "view";
-	
-	/**
-	 * [user][default]
-	 * [string]
-	 * Workday hours start time
-	 */
-	public static final String WORKDAY_START = "workday.start";
-	
-	/**
-	 * [user][default]
-	 * [string]
-	 * Workday hours end time
-	 */
-	public static final String WORKDAY_END = "workday.end";
-	
-	/**
-	 * [user][default]
-	 * [string]
-	 * Set anniversary reminder delivery mode
-	 */
-	public static final String EVENT_REMINDER_DELIVERY = "event.reminder.delivery";
-	public static final String EVENT_REMINDER_DELIVERY_APP = "app";
-	public static final String EVENT_REMINDER_DELIVERY_EMAIL = "email";
-	
-	/**
-	 * [user]
-	 * [string]
-	 * Selected folder root node.
-	 */
-	public static final String SELECTED_CALENDAR_ROOTS = "calendar.roots.selected";
-	
-	/**
-	 * [user]
-	 * [string[]]
-	 * List of checked (or visible) folder root nodes.
-	 */
-	public static final String CHECKED_CALENDAR_ROOTS = "calendar.roots.checked";
-	
-	/**
-	 * [user]
-	 * [int[]]
-	 * List of checked (or visible) calendars.
-	 */
-	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
-	
-	/**
-	 * [user]
-	 * [object[]]
-	 * Custom data for the @ calendar folder.
-	 */
-	public static final String CALENDAR_FOLDER_DATA = "category.folder.data@{0}";
+	public boolean isNull() {
+		return (hidden == null) && (color == null);
+	}
+
+	public static CalendarFolderData fromJson(String value) {
+		return JsonResult.gson.fromJson(value, CalendarFolderData.class);
+	}
+
+	public static String toJson(CalendarFolderData value) {
+		return JsonResult.gson.toJson(value, CalendarFolderData.class);
+	}
 }

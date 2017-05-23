@@ -34,8 +34,10 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.web.json.JsonResult;
 import static com.sonicle.webtop.calendar.CalendarSettings.*;
+import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
 import com.sonicle.webtop.core.sdk.UserProfileId;
+import java.text.MessageFormat;
 import java.util.HashSet;
 import org.joda.time.LocalTime;
 
@@ -115,6 +117,21 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	public boolean setCheckedCalendarFolders(CheckedFolders value) {
 		return setObject(CHECKED_CALENDAR_FOLDERS, value, CheckedFolders.class);
+	}
+	
+	public CalendarFolderData getCalendarFolderData(int calendarId) {
+		final String key = MessageFormat.format(CALENDAR_FOLDER_DATA, calendarId);
+		return getObject(key, new CalendarFolderData(), CalendarFolderData.class);
+	}
+	
+	public boolean setCalendarFolderData(int calendarId, CalendarFolderData value) {
+		final String key = MessageFormat.format(CALENDAR_FOLDER_DATA, calendarId);
+		return setObject(key, value, CalendarFolderData.class);
+	}
+	
+	public boolean clearCalendarFolderData(int calendarId) {
+		final String key = MessageFormat.format(CALENDAR_FOLDER_DATA, calendarId);
+		return clear(key);
 	}
 	
 	public static class CheckedRoots extends HashSet<String> {

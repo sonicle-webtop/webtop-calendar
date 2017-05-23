@@ -33,8 +33,10 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarFolder;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
@@ -70,14 +72,14 @@ public class JsSchedulerEvent {
 	
 	public JsSchedulerEvent() {}
 	
-	public JsSchedulerEvent(Calendar calendar, SchedulerEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(CalendarFolder folder, SchedulerEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
+		Calendar calendar = folder.getCalendar();
 		
 		// Determine if keep event data private
 		boolean keepDataPrivate = false;
-		if(event.getIsPrivate()) {
-			UserProfileId ownerProfileId = new UserProfileId(calendar.getDomainId(), calendar.getUserId());
-			if(!ownerProfileId.equals(profileId)) {
+		if (event.getIsPrivate()) {
+			if (!calendar.getProfileId().equals(profileId)) {
 				keepDataPrivate = true;
 			}
 		}
@@ -97,6 +99,10 @@ public class JsSchedulerEvent {
 		
 		title = (keepDataPrivate) ? "***" : event.getTitle();
 		color = calendar.getColor();
+		if (folder.getData() != null) {
+			CalendarFolderData data = (CalendarFolderData)folder.getData();
+			if (!StringUtils.isBlank(data.color)) color = data.color;
+		}
 		location = (keepDataPrivate) ? "" : event.getLocation();
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
@@ -109,7 +115,8 @@ public class JsSchedulerEvent {
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();
-		_profileId = new UserProfileId(calendar.getDomainId(), calendar.getUserId()).toString();
+		_rights = folder.getElementsPerms().toString();
+		_profileId = calendar.getProfileId().toString();
 	}
 	
 	public static class Update {

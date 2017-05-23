@@ -60,8 +60,8 @@ public class RBAgendaEvent {
 	public RBAgendaEvent(Calendar calendar, SchedulerEventInstance event, Integer spanLeft, Integer spanRight) {
 		this.calendarId = calendar.getCalendarId();
 		this.calendarName = calendar.getName();
-		this.calendarColor = calendar.getHexColor();
-		this.calendarColorImage = JRHelper.colorAsImage(calendar.getHexColor());
+		this.calendarColor = Calendar.getHexColor(calendar.getColor());
+		this.calendarColorImage = JRHelper.colorAsImage(Calendar.getHexColor(calendar.getColor()));
 		this.eventKey = event.getKey();
 		this.eventId = event.getEventId();
 		this.startDate = event.getStartDate().toDate();

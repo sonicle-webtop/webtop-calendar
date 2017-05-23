@@ -32,7 +32,10 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarFolder;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -50,16 +53,24 @@ public class JsCalendarLkp {
 	public Integer reminder;
 	public Boolean invitation;
 	
-	public JsCalendarLkp(Calendar bean) {
-		calendarId = bean.getCalendarId();
-		domainId = bean.getDomainId();
-		userId = bean.getUserId();
-		name = bean.getName();
-		color = bean.getColor();
-		isPrivate = bean.getIsPrivate();
-		isDefault = bean.getIsDefault();
-		busy = bean.getDefaultBusy();
-		reminder = bean.getDefaultReminder();
-		invitation = bean.getDefaultSendInvitation();
+	public JsCalendarLkp(Calendar cal) {
+		calendarId = cal.getCalendarId();
+		domainId = cal.getDomainId();
+		userId = cal.getUserId();
+		name = cal.getName();
+		color = cal.getColor();
+		isPrivate = cal.getIsPrivate();
+		isDefault = cal.getIsDefault();
+		busy = cal.getDefaultBusy();
+		reminder = cal.getDefaultReminder();
+		invitation = cal.getDefaultSendInvitation();
+	}
+	
+	public JsCalendarLkp(CalendarFolder folder) {
+		this(folder.getCalendar());
+		if (folder.getData() != null) {
+			CalendarFolderData data = (CalendarFolderData)folder.getData();
+			if (!StringUtils.isBlank(data.color)) color = data.color;
+		}
 	}
 }

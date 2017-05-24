@@ -562,11 +562,11 @@ public class Service extends BaseService {
 						
 						for(SchedulerEventInstance evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
-								items.add(new JsSchedulerEvent(fold, evt, up.getId(), utz));
+								items.add(new JsSchedulerEvent(root, fold, evt, up.getId(), utz));
 							} else {
 								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
 								for(SchedulerEventInstance recInstance : recInstances) {
-									items.add(new JsSchedulerEvent(fold, recInstance, up.getId(), utz));
+									items.add(new JsSchedulerEvent(root, fold, recInstance, up.getId(), utz));
 								}
 							}
 						}
@@ -621,7 +621,7 @@ public class Service extends BaseService {
 						
 						for(SchedulerEventInstance evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
-								items.add(new JsSchedulerEvent(fold, evt, up.getId(), utz));
+								items.add(new JsSchedulerEvent(root, fold, evt, up.getId(), utz));
 							}
 						}
 					}
@@ -707,7 +707,7 @@ public class Service extends BaseService {
 						
 						for(SchedulerEventInstance evt : ce.events) {
 							if(evt.getRecurrenceId() == null) {
-								items.add(new JsSchedulerEvent(fold, evt, up.getId(), utz));
+								items.add(new JsSchedulerEvent(root, fold, evt, up.getId(), utz));
 							}
 						}
 					}

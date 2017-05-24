@@ -34,9 +34,12 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
+import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
+import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFolder;
+import com.sonicle.webtop.calendar.model.CalendarRoot;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
@@ -67,12 +70,13 @@ public class JsSchedulerEvent {
 	public Boolean isBroken;
 	public Boolean hasCmts;
 	public String folderName;
+	public String _owner;
 	public String _rights;
 	public String _profileId;
 	
 	public JsSchedulerEvent() {}
 	
-	public JsSchedulerEvent(CalendarFolder folder, SchedulerEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(CalendarRoot rootFolder, CalendarFolder folder, SchedulerEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
@@ -115,6 +119,7 @@ public class JsSchedulerEvent {
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();
+		_owner = (rootFolder instanceof MyCalendarRoot) ? "" : rootFolder.getDescription();
 		_rights = folder.getElementsPerms().toString();
 		_profileId = calendar.getProfileId().toString();
 	}

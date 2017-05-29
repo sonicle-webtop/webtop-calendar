@@ -1428,10 +1428,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID, false);
-			
 			Event evt = getEventInstance(eventKey);
-			if(copy || (targetCalendarId != evt.getCalendarId())) {
-				checkRightsOnCalendarElements(targetCalendarId, "CREATE"); // Rights check!
+			checkRightsOnCalendarFolder(evt.getCalendarId(), "READ");
+			
+			if (copy || (targetCalendarId != evt.getCalendarId())) {
+				checkRightsOnCalendarElements(targetCalendarId, "CREATE");
+				if (!copy) checkRightsOnCalendarElements(evt.getCalendarId(), "DELETE");
 				
 				doMoveEvent(con, copy, evt, targetCalendarId);
 				DbUtils.commitQuietly(con);

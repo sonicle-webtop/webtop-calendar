@@ -777,6 +777,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							er = me.toRightsObj(rec.get('_rights')),
 							brk = (rec.get('isBroken') === true);
 					me.getAct('openEvent').setDisabled(ro);
+					me.getAct('moveEvent').setDisabled(ro || !er.DELETE);
 					me.getAct('deleteEvent').setDisabled(ro || !er.DELETE);
 					me.getAct('restoreEvent').setDisabled(ro || !brk || !er.UPDATE);
 				}

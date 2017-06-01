@@ -471,6 +471,7 @@ public class Service extends BaseService {
 				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
 				manager.updateCalendar(JsCalendar.buildFolder(pl.data));
+				updateFoldersCache();
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.DELETE)) {

@@ -8,7 +8,7 @@
 	<property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
 	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
 	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
-	<style name="PageTitle" fontName="DejaVu Sans" fontSize="14"/>
+	<style name="PageTitle" fontName="DejaVu Sans" fontSize="12"/>
 	<style name="PageFooter" forecolor="#666666" fontName="Arimo" fontSize="8"/>
 	<style name="MemoTitle" fontName="DejaVu Sans" fontSize="12" isBold="true">
 		<box>

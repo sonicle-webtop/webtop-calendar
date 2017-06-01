@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar.rpt;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
+import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -57,12 +58,19 @@ import org.joda.time.LocalDate;
  * @author malbinola
  */
 public abstract class AbstractAgenda extends AbstractReport {
-	
+	//protected HashMap<Integer, CalendarFolderData> folderData;
 	abstract Collection<?> createBeanCollection(Data data);
 
 	public AbstractAgenda(ReportConfig config) {
 		super(config);
+		//this.folderData = new HashMap<>();
 	}
+	
+	/*
+	public void addFolderData(int calendarId, CalendarFolderData folderData) {
+		this.folderData.put(calendarId, folderData);
+	}
+	*/
 	
 	public void setDataSource(CalendarManager manager, DateTime fromDate, DateTime toDate, DateTimeZone utz, List<CalendarManager.CalendarEvents> calendarEvents) throws WTException {
 		int days = -1;

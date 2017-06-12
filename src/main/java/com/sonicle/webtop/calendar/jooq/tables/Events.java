@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> {
 
-	private static final long serialVersionUID = 88407733;
+	private static final long serialVersionUID = 1546406076;
 
 	/**
 	 * The reference instance of <code>calendar.events</code>
@@ -127,14 +127,14 @@ public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.
 	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.Integer> ACTIVITY_ID = createField("activity_id", org.jooq.impl.SQLDataType.INTEGER, this, "");
 
 	/**
-	 * The column <code>calendar.events.customer_id</code>.
+	 * The column <code>calendar.events.master_data_id</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> CUSTOMER_ID = createField("customer_id", org.jooq.impl.SQLDataType.VARCHAR.length(100), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> MASTER_DATA_ID = createField("master_data_id", org.jooq.impl.SQLDataType.VARCHAR.length(36), this, "");
 
 	/**
-	 * The column <code>calendar.events.statistic_id</code>.
+	 * The column <code>calendar.events.stat_master_data_id</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> STATISTIC_ID = createField("statistic_id", org.jooq.impl.SQLDataType.VARCHAR.length(100), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> STAT_MASTER_DATA_ID = createField("stat_master_data_id", org.jooq.impl.SQLDataType.VARCHAR.length(36), this, "");
 
 	/**
 	 * The column <code>calendar.events.causal_id</code>.

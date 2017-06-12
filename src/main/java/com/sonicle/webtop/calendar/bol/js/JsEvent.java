@@ -65,8 +65,8 @@ public class JsEvent {
 	public Boolean busy;
 	public Integer reminder;
 	public Integer activityId;
-	public String customerId;
-	public String statisticId;
+	public String masterDataId;
+	public String statMasterDataId;
 	public Integer causalId;
 	
 	public String rrEndsMode;
@@ -114,8 +114,8 @@ public class JsEvent {
 		busy = event.getBusy();
 		reminder = event.getReminder();
 		activityId = event.getActivityId();
-		customerId = event.getCustomerId();
-		statisticId = event.getStatisticId();
+		masterDataId = event.getMasterDataId();
+		statMasterDataId = event.getStatMasterDataId();
 		causalId = event.getCausalId();
 		
 		EventRecurrence rec = event.getRecurrence();
@@ -196,8 +196,8 @@ public class JsEvent {
 		event.setBusy(jse.busy);
 		event.setReminder(jse.reminder);
 		event.setActivityId(jse.activityId);
-		event.setCustomerId(jse.customerId);
-		event.setStatisticId(jse.statisticId);
+		event.setMasterDataId(jse.masterDataId);
+		event.setStatMasterDataId(jse.statMasterDataId);
 		event.setCausalId(jse.causalId);
 		
 		if (!jse.rrType.equals(REC_TYPE_NONE)) {

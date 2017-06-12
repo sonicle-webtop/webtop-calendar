@@ -80,8 +80,8 @@
 	<field name="isPrivate" class="java.lang.Boolean"/>
 	<field name="isBusy" class="java.lang.Boolean"/>
 	<field name="activityDescription" class="java.lang.String"/>
-	<field name="customerDescription" class="java.lang.String"/>
-	<field name="statisticDescription" class="java.lang.String"/>
+	<field name="masterDataDescription" class="java.lang.String"/>
+	<field name="statMasterDataDescription" class="java.lang.String"/>
 	<field name="causalDescription" class="java.lang.String"/>
 	<field name="organizer" class="java.lang.String"/>
 	<field name="attendees" class="java.util.List"/>
@@ -241,19 +241,19 @@
 			</textField>
 			<textField>
 				<reportElement style="FieldCaption" x="0" y="32" width="90" height="14" uuid="2df76896-dcfe-485b-b3ce-d28e66f0c5a1"/>
-				<textFieldExpression><![CDATA[$R{fld.customer}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$R{fld.masterData}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement style="FieldValue" x="90" y="32" width="300" height="14" uuid="423d8a26-dcd7-4cd1-b7b4-f3c786e63d92"/>
-				<textFieldExpression><![CDATA[$F{customerDescription}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{masterDataDescription}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement style="FieldCaption" x="0" y="46" width="90" height="14" uuid="c8474e80-9e15-4b2f-af9a-e5622436b263"/>
-				<textFieldExpression><![CDATA[$R{fld.statistic}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$R{fld.statMasterData}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement style="FieldValue" x="90" y="46" width="300" height="14" uuid="c0b15b19-4327-42c1-83e8-9d0094877d37"/>
-				<textFieldExpression><![CDATA[$F{statisticDescription}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{statMasterDataDescription}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement style="FieldCaption" x="0" y="60" width="90" height="14" uuid="890e2782-7172-425a-91d0-435f5ac48d16"/>

@@ -1,3 +1,4 @@
+@DataSource[default@com.sonicle.webtop.calendar]
 
 CREATE SCHEMA "calendar";
 
@@ -68,8 +69,8 @@ CREATE TABLE "calendar"."events" (
 "reminder" int4,
 "reminded_on" timestamptz(6),
 "activity_id" int4,
-"customer_id" varchar(100),
-"statistic_id" varchar(100),
+"master_data_id" varchar(36),
+"stat_master_data_id" varchar(36),
 "causal_id" int4
 )
 WITH (OIDS=FALSE)
@@ -183,3 +184,10 @@ ALTER TABLE "calendar"."recurrences" ADD PRIMARY KEY ("recurrence_id");
 -- Primary Key structure for table recurrences_broken
 -- ----------------------------
 ALTER TABLE "calendar"."recurrences_broken" ADD PRIMARY KEY ("event_id", "recurrence_id", "event_date");
+
+-- ----------------------------
+-- Align service version
+-- ----------------------------
+@DataSource[default@com.sonicle.webtop.core]
+DELETE FROM "core"."settings" WHERE ("settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("settings"."key" = 'manifest.version');
+INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.0.7');

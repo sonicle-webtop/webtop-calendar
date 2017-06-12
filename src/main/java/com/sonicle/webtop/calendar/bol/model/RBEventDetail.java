@@ -37,9 +37,9 @@ import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.RRuleStringify;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.CoreManager;
-import com.sonicle.webtop.core.bol.OActivity;
-import com.sonicle.webtop.core.bol.OCausal;
-import com.sonicle.webtop.core.bol.OCustomer;
+import com.sonicle.webtop.core.model.Activity;
+import com.sonicle.webtop.core.model.Causal;
+import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.JRHelper;
 import java.awt.Image;
@@ -73,16 +73,16 @@ public class RBEventDetail {
 	public Integer reminder;
 	public Integer activityId;
 	public String activityDescription;
-	public String customerId;
-	public String customerDescription;
-	public String statisticId;
-	public String statisticDescription;
+	public String masterDataId;
+	public String masterDataDescription;
+	public String statMasterDataId;
+	public String statMasterDataDescription;
 	public Integer causalId;
 	public String causalDescription;
 	public String organizer;
 	public ArrayList<Attendee> attendees;
 	
-	public RBEventDetail(CoreManager core, RRuleStringify rrStringify, Calendar calendar, EventInstance event) throws WTException {
+	public RBEventDetail(CoreManager coreMgr, RRuleStringify rrStringify, Calendar calendar, EventInstance event) throws WTException {
 		this.calendarId = event.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = calendar.getColor();
@@ -108,13 +108,13 @@ public class RBEventDetail {
 		this.isBusy = event.getBusy();
 		this.reminder = event.getReminder();
 		this.activityId = event.getActivityId();
-		this.activityDescription = lookupActivity(core, this.activityId);
-		this.customerId = event.getCustomerId();
-		this.customerDescription = lookupCustomer(core, this.customerId);
-		this.statisticId = event.getStatisticId();
-		this.statisticDescription = lookupCustomer(core, this.statisticId);
+		this.activityDescription = lookupActivityDescription(coreMgr, this.activityId);
+		this.masterDataId = event.getMasterDataId();
+		this.masterDataDescription = lookupMasterDataDescription(coreMgr, this.masterDataId);
+		this.statMasterDataId = event.getStatMasterDataId();
+		this.statMasterDataDescription = lookupMasterDataDescription(coreMgr, this.statMasterDataId);
 		this.causalId = event.getCausalId();
-		this.causalDescription = lookupCausal(core, this.causalId);
+		this.causalDescription = lookupCausalDescription(coreMgr, this.causalId);
 		this.organizer = event.getOrganizer();
 		
 		if(event.hasAttendees()) {
@@ -125,22 +125,22 @@ public class RBEventDetail {
 		}
 	}
 	
-	private String lookupActivity(CoreManager core, Integer activityId) throws WTException {
+	private String lookupActivityDescription(CoreManager core, Integer activityId) throws WTException {
 		if(activityId == null) return null;
-		OActivity activity = core.getActivity(activityId);
-		return (activity != null) ? activity.getDescription() : null;
+		Activity act = core.getActivity(activityId);
+		return (act != null) ? act.getDescription() : null;
 	}
 	
-	private String lookupCustomer(CoreManager core, String customerId) throws WTException {
-		if(customerId == null) return null;
-		OCustomer customer = core.getCustomer(customerId);
-		return (customer != null) ? customer.getDescription() : null;
-	}
-	
-	private String lookupCausal(CoreManager core, Integer causalId) throws WTException {
+	private String lookupCausalDescription(CoreManager core, Integer causalId) throws WTException {
 		if(causalId == null) return null;
-		OCausal causal = core.getCausal(causalId);
-		return (causal != null) ? causal.getDescription() : null;
+		Causal cau = core.getCausal(causalId);
+		return (cau != null) ? cau.getDescription() : null;
+	}
+	
+	private String lookupMasterDataDescription(CoreManager coreMgr, String masterDataId) throws WTException {
+		if (masterDataId == null) return null;
+		MasterData md = coreMgr.getMasterData(masterDataId);
+		return (md != null) ? md.getDescription() : null;
 	}
 	
 	public Integer getCalendarId() {
@@ -223,20 +223,20 @@ public class RBEventDetail {
 		return activityDescription;
 	}
 
-	public String getCustomerId() {
-		return customerId;
+	public String getMasterDataId() {
+		return masterDataId;
 	}
 	
-	public String getCustomerDescription() {
-		return customerDescription;
+	public String getMasterDataDescription() {
+		return masterDataDescription;
 	}
 
-	public String getStatisticId() {
-		return statisticId;
+	public String getStatMasterDataId() {
+		return statMasterDataId;
 	}
 	
-	public String getStatisticDescription() {
-		return statisticDescription;
+	public String getStatMasterDataDescription() {
+		return statMasterDataDescription;
 	}
 
 	public Integer getCausalId() {

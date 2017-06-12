@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables.records;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class EventsRecord extends org.jooq.impl.UpdatableRecordImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> {
 
-	private static final long serialVersionUID = -1034219092;
+	private static final long serialVersionUID = -1553519828;
 
 	/**
 	 * Setter for <code>calendar.events.event_id</code>.
@@ -285,30 +285,30 @@ public class EventsRecord extends org.jooq.impl.UpdatableRecordImpl<com.sonicle.
 	}
 
 	/**
-	 * Setter for <code>calendar.events.customer_id</code>.
+	 * Setter for <code>calendar.events.master_data_id</code>.
 	 */
-	public void setCustomerId(java.lang.String value) {
+	public void setMasterDataId(java.lang.String value) {
 		setValue(19, value);
 	}
 
 	/**
-	 * Getter for <code>calendar.events.customer_id</code>.
+	 * Getter for <code>calendar.events.master_data_id</code>.
 	 */
-	public java.lang.String getCustomerId() {
+	public java.lang.String getMasterDataId() {
 		return (java.lang.String) getValue(19);
 	}
 
 	/**
-	 * Setter for <code>calendar.events.statistic_id</code>.
+	 * Setter for <code>calendar.events.stat_master_data_id</code>.
 	 */
-	public void setStatisticId(java.lang.String value) {
+	public void setStatMasterDataId(java.lang.String value) {
 		setValue(20, value);
 	}
 
 	/**
-	 * Getter for <code>calendar.events.statistic_id</code>.
+	 * Getter for <code>calendar.events.stat_master_data_id</code>.
 	 */
-	public java.lang.String getStatisticId() {
+	public java.lang.String getStatMasterDataId() {
 		return (java.lang.String) getValue(20);
 	}
 
@@ -380,7 +380,7 @@ public class EventsRecord extends org.jooq.impl.UpdatableRecordImpl<com.sonicle.
 	/**
 	 * Create a detached, initialised EventsRecord
 	 */
-	public EventsRecord(java.lang.Integer eventId, java.lang.Integer calendarId, java.lang.Integer recurrenceId, org.joda.time.DateTime startDate, org.joda.time.DateTime endDate, java.lang.String timezone, java.lang.Boolean allDay, java.lang.String title, java.lang.String description, java.lang.String location, java.lang.Boolean isPrivate, java.lang.Boolean busy, java.lang.Integer reminder, java.lang.Boolean readOnly, java.lang.String revisionStatus, org.joda.time.DateTime revisionTimestamp, java.lang.String publicUid, org.joda.time.DateTime remindedOn, java.lang.Integer activityId, java.lang.String customerId, java.lang.String statisticId, java.lang.Integer causalId, java.lang.String organizer, java.lang.Integer revisionSequence) {
+	public EventsRecord(java.lang.Integer eventId, java.lang.Integer calendarId, java.lang.Integer recurrenceId, org.joda.time.DateTime startDate, org.joda.time.DateTime endDate, java.lang.String timezone, java.lang.Boolean allDay, java.lang.String title, java.lang.String description, java.lang.String location, java.lang.Boolean isPrivate, java.lang.Boolean busy, java.lang.Integer reminder, java.lang.Boolean readOnly, java.lang.String revisionStatus, org.joda.time.DateTime revisionTimestamp, java.lang.String publicUid, org.joda.time.DateTime remindedOn, java.lang.Integer activityId, java.lang.String masterDataId, java.lang.String statMasterDataId, java.lang.Integer causalId, java.lang.String organizer, java.lang.Integer revisionSequence) {
 		super(com.sonicle.webtop.calendar.jooq.tables.Events.EVENTS);
 
 		setValue(0, eventId);
@@ -402,8 +402,8 @@ public class EventsRecord extends org.jooq.impl.UpdatableRecordImpl<com.sonicle.
 		setValue(16, publicUid);
 		setValue(17, remindedOn);
 		setValue(18, activityId);
-		setValue(19, customerId);
-		setValue(20, statisticId);
+		setValue(19, masterDataId);
+		setValue(20, statMasterDataId);
 		setValue(21, causalId);
 		setValue(22, organizer);
 		setValue(23, revisionSequence);

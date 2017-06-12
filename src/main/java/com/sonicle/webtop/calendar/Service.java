@@ -58,7 +58,6 @@ import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarLkp;
-import com.sonicle.webtop.calendar.bol.js.JsErpExportStart;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
@@ -746,7 +745,7 @@ public class Service extends BaseService {
 					
 					try (FileOutputStream fos = new FileOutputStream(file)) {
 						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started on {0}", ymdhms.print(new DateTime())));
-						manager.exportEvents(log, up.getDomainId(), erpWizard.fromDate, erpWizard.toDate, fos);
+						manager.exportEvents(log, erpWizard.fromDate, erpWizard.toDate, fos);
 						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended on {0}", ymdhms.print(new DateTime())));
 						erpWizard.file = file;
 						erpWizard.filename = MessageFormat.format(ERP_EXPORT_FILENAME, up.getDomainId(), ymd2.print(erpWizard.fromDate), ymd2.print(erpWizard.fromDate), "csv");

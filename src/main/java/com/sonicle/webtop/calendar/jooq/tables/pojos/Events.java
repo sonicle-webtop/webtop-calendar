@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables.pojos;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events implements java.io.Serializable {
 
-	private static final long serialVersionUID = -356938173;
+	private static final long serialVersionUID = 313192249;
 
 	private java.lang.Integer      eventId;
 	private java.lang.Integer      calendarId;
@@ -37,8 +37,8 @@ public class Events implements java.io.Serializable {
 	private java.lang.String       publicUid;
 	private org.joda.time.DateTime remindedOn;
 	private java.lang.Integer      activityId;
-	private java.lang.String       customerId;
-	private java.lang.String       statisticId;
+	private java.lang.String       masterDataId;
+	private java.lang.String       statMasterDataId;
 	private java.lang.Integer      causalId;
 	private java.lang.String       organizer;
 	private java.lang.Integer      revisionSequence;
@@ -65,8 +65,8 @@ public class Events implements java.io.Serializable {
 		java.lang.String       publicUid,
 		org.joda.time.DateTime remindedOn,
 		java.lang.Integer      activityId,
-		java.lang.String       customerId,
-		java.lang.String       statisticId,
+		java.lang.String       masterDataId,
+		java.lang.String       statMasterDataId,
 		java.lang.Integer      causalId,
 		java.lang.String       organizer,
 		java.lang.Integer      revisionSequence
@@ -90,8 +90,8 @@ public class Events implements java.io.Serializable {
 		this.publicUid = publicUid;
 		this.remindedOn = remindedOn;
 		this.activityId = activityId;
-		this.customerId = customerId;
-		this.statisticId = statisticId;
+		this.masterDataId = masterDataId;
+		this.statMasterDataId = statMasterDataId;
 		this.causalId = causalId;
 		this.organizer = organizer;
 		this.revisionSequence = revisionSequence;
@@ -249,20 +249,20 @@ public class Events implements java.io.Serializable {
 		this.activityId = activityId;
 	}
 
-	public java.lang.String getCustomerId() {
-		return this.customerId;
+	public java.lang.String getMasterDataId() {
+		return this.masterDataId;
 	}
 
-	public void setCustomerId(java.lang.String customerId) {
-		this.customerId = customerId;
+	public void setMasterDataId(java.lang.String masterDataId) {
+		this.masterDataId = masterDataId;
 	}
 
-	public java.lang.String getStatisticId() {
-		return this.statisticId;
+	public java.lang.String getStatMasterDataId() {
+		return this.statMasterDataId;
 	}
 
-	public void setStatisticId(java.lang.String statisticId) {
-		this.statisticId = statisticId;
+	public void setStatMasterDataId(java.lang.String statMasterDataId) {
+		this.statMasterDataId = statMasterDataId;
 	}
 
 	public java.lang.Integer getCausalId() {

@@ -68,8 +68,8 @@ public class OEvent extends Events {
 		setBusy(event.getBusy());
 		setReminder(event.getReminder());
 		setActivityId(event.getActivityId());
-		setCustomerId(event.getCustomerId());
-		setStatisticId(event.getStatisticId());
+		setMasterDataId(event.getMasterDataId());
+		setStatMasterDataId(event.getStatMasterDataId());
 		setCausalId(event.getCausalId());
 		setOrganizer(event.getOrganizer());
 		setRevisionTimestamp(event.getRevisionTimestamp());

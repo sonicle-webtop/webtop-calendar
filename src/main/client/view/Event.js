@@ -194,6 +194,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							me.updateCalendarFilters();
 							//me.updateActivityParams(true);
 							me.refreshActivities();
+							me.refreshCausals();
 						}
 					}
 				}),
@@ -425,7 +426,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WTA.model.ActivityLkp',
-					proxy: WTF.proxy(WT.ID, 'LookupActivities', 'activities'),
+					proxy: WTF.proxy(WT.ID, 'LookupActivities'),
 					filters: [{
 						filterFn: function(rec) {
 							if(rec.get('readOnly')) {
@@ -453,12 +454,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				anchor: '100%'
 			}),
 			WTF.remoteCombo('id', 'desc', {
-				reference: 'fldcustomer',
-				bind: '{record.customerId}',
+				reference: 'fldmasterdata',
+				bind: '{record.masterDataId}',
 				autoLoadOnValue: true,
 				store: {
 					model: 'WTA.model.Simple',
-					proxy: WTF.proxy(WT.ID, 'LookupCustomers', 'customers')
+					proxy: WTF.proxy(WT.ID, 'LookupCustomersSuppliers')
 				},
 				triggers: {
 					clear: WTF.clearTrigger()
@@ -466,31 +467,30 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				listeners: {
 					select: function() {
 						var model = me.getModel();
-						model.set('statisticId', null);
+						model.set('statMasterDataId', null);
 						model.set('causalId', null);
 					},
 					clear: function() {
 						var model = me.getModel();
-						model.set('statisticId', null);
+						model.set('statMasterDataId', null);
 						model.set('causalId', null);
 					}
 				},
-				fieldLabel: me.mys.res('event.fld-customer.lbl'),
+				fieldLabel: me.mys.res('event.fld-masterData.lbl'),
 				anchor: '100%'
 			}),
 			WTF.remoteCombo('id', 'desc', {
-				reference: 'fldstatistic',
-				bind: '{record.statisticId}',
+				reference: 'fldstatmasterdata',
+				bind: '{record.statMasterDataId}',
 				autoLoadOnValue: true,
 				store: {
 					model: 'WTA.model.Simple',
-					proxy: WTF.proxy(WT.ID, 'LookupStatisticCustomers', 'customers'),
+					proxy: WTF.proxy(WT.ID, 'LookupStatisticCustomersSuppliers'),
 					listeners: {
 						beforeload: {
 							fn: function(s) {
 								WTU.applyExtraParams(s, {
-									profileId: me.getModel().get('_profileId'),
-									parentCustomerId: me.getModel().get('customerId')
+									parentMasterDataId: me.getModel().get('masterDataId')
 								});
 							}
 						}
@@ -499,7 +499,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				triggers: {
 					clear: WTF.clearTrigger()
 				},
-				fieldLabel: me.mys.res('event.fld-statistic.lbl'),
+				fieldLabel: me.mys.res('event.fld-statMasterData.lbl'),
 				anchor: '100%'
 			}),
 			WTF.remoteCombo('id', 'desc', {
@@ -508,13 +508,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				autoLoadOnValue: true,
 				store: {
 					model: 'WTA.model.CausalLkp',
-					proxy: WTF.proxy(WT.ID, 'LookupCausals', 'causals'),
+					proxy: WTF.proxy(WT.ID, 'LookupCausals'),
+					filters: [{
+						filterFn: function(rec) {
+							if(rec.get('readOnly')) {
+								if(rec.getId() !== me.lref('fldcausal').getValue()) {
+									return null;
+								}
+							}
+							return rec;
+						}
+					}],
 					listeners: {
 						beforeload: {
 							fn: function(s) {
+								var mo = me.getModel();
 								WTU.applyExtraParams(s, {
-									profileId: me.getModel().get('_profileId'),
-									customerId: me.getModel().get('customerId')
+									profileId: mo.get('_profileId'),
+									masterDataId: mo.get('masterDataId')
 								});
 							}
 						}
@@ -1116,9 +1127,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		vm.bind('{record.startDate}', me.onDatesChanged, me);
 		vm.bind('{record.endDate}', me.onDatesChanged, me);
 		vm.bind('{record.timezone}', me.onDatesChanged, me);
-		vm.bind('{record.customerId}', me.onCustomerChanged, me);
+		vm.bind('{record.masterDataId}', me.onMasterDataChanged, me);
 		vm.bind('{record.rrType}', me.onRrTypeChanged, me);
 		vm.bind('{record.rrEndsMode}', me.onRrEndsModeChanged, me);
+		vm.bind('{record.masterDataId}', me.onMasterDataChanged, me);
 	},
 	
 	onViewLoad: function(s, success) {
@@ -1228,8 +1240,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		this.lref('fldactivity').getStore().load();
 	},
 	
-	refreshStatistics: function() {
-		this.lref('fldstatistic').getStore().load();
+	refreshStatMasterData: function() {
+		this.lref('fldstatmasterdata').getStore().load();
 	},
 	
 	refreshCausals: function() {
@@ -1272,8 +1284,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		if ((me.suspendPlanningRefresh === 0) && me.isPlanningActive()) me.reloadPlanning();
 	},
 	
-	onCustomerChanged: function() {
-		this.refreshStatistics();
+	onMasterDataChanged: function() {
+		this.refreshStatMasterData();
 		this.refreshCausals();
 	},
 	

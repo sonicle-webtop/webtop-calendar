@@ -71,12 +71,10 @@ import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.bol.OActivity;
 import com.sonicle.webtop.core.bol.OCausal;
-import com.sonicle.webtop.core.bol.OCustomer;
 import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ActivityDAO;
 import com.sonicle.webtop.core.dal.CausalDAO;
-import com.sonicle.webtop.core.dal.CustomerDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseManager;
 import com.sonicle.webtop.core.bol.Owner;
@@ -136,6 +134,7 @@ import org.supercsv.prefs.CsvPreference;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.Sync;
+import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import javax.mail.Session;
@@ -1616,7 +1615,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return log;
 	}
 	
-	public void exportEvents(LogEntries log, String domainId, DateTime fromDate, DateTime toDate, OutputStream os) throws Exception {
+	public void exportEvents(LogEntries log, DateTime fromDate, DateTime toDate, OutputStream os) throws Exception {
 		Connection con = null, ccon = null;
 		ICsvMapWriter mapw = null;
 		UserDAO userDao = UserDAO.getInstance();
@@ -1635,6 +1634,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				"title", "description", 
 				"activityId", "activityDescription", "activityExternalId", 
 				"causalId", "causalDescription", "causalExternalId", 
+				"masterDataId", "masterDataDescription",
 				"customerId", "customerDescription"
 			};
 			final CellProcessor[] processors = new CellProcessor[]{
@@ -1652,11 +1652,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			mapw = new CsvMapWriter(new OutputStreamWriter(os), pref);
 			mapw.writeHeader(headers);
 			
+			CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
 			con = WT.getConnection(SERVICE_ID);
 			ccon = WT.getCoreConnection();
 			
 			HashMap<String, Object> map = null;
-			List<OCalendar> cals = calDao.selectByDomain(con, domainId);
+			List<OCalendar> cals = calDao.selectByDomain(con, getTargetProfileId().getDomainId());
 			for(OCalendar cal : cals) {
 				final UserProfileId pid = new UserProfileId(cal.getDomainId(), cal.getUserId());
 				final OUser user = userDao.selectByDomainUser(ccon, cal.getDomainId(), cal.getUserId());
@@ -1670,7 +1671,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						map = new HashMap<>();
 						map.put("userId", user.getUserId());
 						map.put("descriptionId", user.getDisplayName());
-						fillExportMapBasic(map, con, sei);
+						fillExportMapBasic(map, coreMgr, con, sei);
 						fillExportMapDates(map, udata.getTimeZone(), sei);
 						mapw.write(map, headers, processors);
 						
@@ -1687,7 +1688,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						map = new HashMap<>();
 						map.put("userId", user.getUserId());
 						map.put("descriptionId", user.getDisplayName());
-						fillExportMapBasic(map, con, sei);
+						fillExportMapBasic(map, coreMgr, con, sei);
 						for(SchedulerEventInstance inst : instances) {
 							fillExportMapDates(map, udata.getTimeZone(), inst);
 							mapw.write(map, headers, processors);
@@ -1906,7 +1907,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		map.put("duration", Minutes.minutesBetween(sei.getEndDate(), sei.getStartDate()).size());
 	}
 	
-	private void fillExportMapBasic(HashMap<String, Object> map, Connection con, SchedulerEventInstance sei) throws Exception {
+	private void fillExportMapBasic(HashMap<String, Object> map, CoreManager coreMgr, Connection con, SchedulerEventInstance sei) throws Exception {
 		map.put("eventId", sei.getEventId());
 		map.put("title", sei.getTitle());
 		map.put("description", sei.getDescription());
@@ -1921,11 +1922,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			map.put("activityExternalId", activity.getExternalId());
 		}
 		
-		if(sei.getCustomerId() != null) {
-			CustomerDAO cusDao = CustomerDAO.getInstance();
-			OCustomer customer = cusDao.viewById(con, sei.getCustomerId());
-			map.put("customerId", customer.getCustomerId());
-			map.put("customerDescription", customer.getDescription());
+		if (sei.getMasterDataId() != null) {
+			MasterData md = coreMgr.getMasterData(sei.getMasterDataId());
+			map.put("masterDataId", md.getMasterDataId());
+			map.put("masterDataDescription", md.getDescription());
+			map.put("customerId", md.getMasterDataId());
+			map.put("customerDescription", md.getDescription());
 		}
 		
 		if(sei.getCausalId() != null) {
@@ -2276,8 +2278,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		evt.setBusy(oevt.getBusy());
 		evt.setReminder(oevt.getReminder());
 		evt.setActivityId(oevt.getActivityId());
-		evt.setCustomerId(oevt.getCustomerId());
-		evt.setStatisticId(oevt.getStatisticId());
+		evt.setMasterDataId(oevt.getMasterDataId());
+		evt.setStatMasterDataId(oevt.getStatMasterDataId());
 		evt.setCausalId(oevt.getCausalId());
 		return evt;
 	}
@@ -2300,8 +2302,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		evti.setBusy(se.getBusy());
 		evti.setReminder(se.getReminder());
 		evti.setActivityId(se.getActivityId());
-		evti.setCustomerId(se.getCustomerId());
-		evti.setStatisticId(se.getStatisticId());
+		evti.setMasterDataId(se.getMasterDataId());
+		evti.setStatMasterDataId(se.getStatMasterDataId());
 		evti.setCausalId(se.getCausalId());
 		return evti;
 	}

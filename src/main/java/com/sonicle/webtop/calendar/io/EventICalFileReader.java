@@ -211,8 +211,8 @@ public class EventICalFileReader implements EventFileReader {
 		// Others...
 		event.setReminder(null);
 		event.setActivityId(null);
-		event.setCustomerId(null);
-		event.setStatisticId(null);
+		event.setMasterDataId(null);
+		event.setStatMasterDataId(null);
 		event.setCausalId(null);
 
 		// Extract recurrence (real definition or reference to a previous instance)

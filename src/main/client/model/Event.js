@@ -63,8 +63,8 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('busy', 'boolean', false, {defaultValue: false}),
 		WTF.field('reminder', 'int', true),
 		WTF.field('activityId', 'int', true),
-		WTF.field('customerId', 'string', true),
-		WTF.field('statisticId', 'string', true),
+		WTF.field('masterDataId', 'string', true),
+		WTF.field('statMasterDataId', 'string', true),
 		WTF.field('causalId', 'int', true),
 		WTF.field('rrType', 'string', false, {defaultValue: '_'}),
 		WTF.field('rrDailyType', 'string', true, {

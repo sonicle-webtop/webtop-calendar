@@ -239,7 +239,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}
 				}
 			}, {
-				xtype: 'wtsuggestcombo',
+				//FIXME: check suggestcombo on delete all field
+				xtype: 'textfield',
 				bind: '{record.location}',
 				sid: me.mys.ID,
 				suggestionContext: 'eventlocation',

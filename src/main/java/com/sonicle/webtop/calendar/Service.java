@@ -145,7 +145,7 @@ public class Service extends BaseService {
 	@Override
 	public void initialize() throws Exception {
 		UserProfile up = getEnv().getProfile();
-		manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, up.getId());
+		manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, false, up.getId());
 		ss = new CalendarServiceSettings(SERVICE_ID, up.getDomainId());
 		us = new CalendarUserSettings(SERVICE_ID, up.getId());
 		initFolders();

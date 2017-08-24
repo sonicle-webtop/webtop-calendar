@@ -744,13 +744,13 @@ public class Service extends BaseService {
 					DateTimeFormatter ymdhms = DateTimeUtils.createFormatter("yyyy-MM-dd HH:mm:ss", up.getTimeZone());
 					
 					try (FileOutputStream fos = new FileOutputStream(file)) {
-						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started on {0}", ymdhms.print(new DateTime())));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started on {0}", ymdhms.print(new DateTime())));
 						manager.exportEvents(log, erpWizard.fromDate, erpWizard.toDate, fos);
-						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended on {0}", ymdhms.print(new DateTime())));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Ended on {0}", ymdhms.print(new DateTime())));
 						erpWizard.file = file;
 						erpWizard.filename = MessageFormat.format(ERP_EXPORT_FILENAME, up.getDomainId(), ymd2.print(erpWizard.fromDate), ymd2.print(erpWizard.fromDate), "csv");
-						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "File ready: {0}", erpWizard.filename));
-						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Operation completed succesfully"));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "File ready: {0}", erpWizard.filename));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Operation completed succesfully"));
 						new JsonResult(new JsWizardData(log.print())).printTo(out);
 					}
 				} catch(Throwable t) {

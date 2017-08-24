@@ -1549,26 +1549,26 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendarElements(calendarId, "CREATE");
 			if(mode.equals("copy")) checkRightsOnCalendarElements(calendarId, "DELETE");
 			
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started at {0}", new DateTime()));
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Reading source file..."));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started at {0}", new DateTime()));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Reading source file..."));
 			ArrayList<EventReadResult> parsed = null;
 			try {
 				parsed = rea.listEvents(log, file);
 			} catch(IOException | UnsupportedOperationException ex) {
-				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
+				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
 				throw new WTException(ex);
 			}
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", parsed.size()));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s found!", parsed.size()));
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			if(mode.equals("copy")) {
-				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Cleaning previous events..."));
+				log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Cleaning previous events..."));
 				int del = doDeleteEventsByCalendar(con, calendarId);
-				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s deleted!", del));
+				log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s deleted!", del));
 			}
 			
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Importing..."));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Importing..."));
 			int count = 0;
 			for(EventReadResult parse : parsed) {
 				parse.event.setCalendarId(calendarId);
@@ -1599,10 +1599,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				} catch(Exception ex) {
 					logger.trace("Error inserting event", ex);
 					DbUtils.rollbackQuietly(con);
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", parse.event.getTitle(), parse.event.getPublicUid(), ex.getMessage()));
+					log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", parse.event.getTitle(), parse.event.getPublicUid(), ex.getMessage()));
 				}
 			}
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s imported!", count));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s imported!", count));
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -1610,7 +1610,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			throw ex;
 		} finally {
 			DbUtils.closeQuietly(con);
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended at {0}", new DateTime()));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Ended at {0}", new DateTime()));
 		}
 		return log;
 	}
@@ -1676,7 +1676,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						mapw.write(map, headers, processors);
 						
 					} catch(Exception ex) {
-						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
 					}
 				}
 				for(VSchedulerEvent vse : edao.viewRecurringByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
@@ -1695,7 +1695,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						}	
 						
 					} catch(Exception ex) {
-						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
 					}
 				}
 			}
@@ -2598,20 +2598,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		HashMap<String, OEvent> uidMap = new HashMap<>();
 		LogEntries log = new LogEntries();
-		log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Started at {0}", new DateTime()));
+		log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started at {0}", new DateTime()));
 		
 		try {
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Parsing iCal file..."));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Parsing iCal file..."));
 			ArrayList<ParseResult> parsed = null;
 			try {
 				parsed = ICalHelper.parseICal(log, is, defaultTz);
 			} catch(ParserException | IOException ex) {
-				log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to complete parsing. Reason: {0}", ex.getMessage()));
+				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to complete parsing. Reason: {0}", ex.getMessage()));
 				throw ex;
 			}
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s found!", parsed.size()));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s found!", parsed.size()));
 			
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Importing..."));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Importing..."));
 			con = WT.getConnection(SERVICE_ID, false);
 			int count = 0;
 			for(ParseResult parse : parsed) {
@@ -2643,17 +2643,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				} catch(Exception ex) {
 					ex.printStackTrace();
 					DbUtils.rollbackQuietly(con);
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", parse.event.getTitle(), parse.event.getPublicUid(), ex.getMessage()));
+					log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", parse.event.getTitle(), parse.event.getPublicUid(), ex.getMessage()));
 				}
 			}
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "{0} event/s imported!", count));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s imported!", count));
 			
 		} catch(Exception ex) {
 			throw ex;
 		} finally {
 			uidMap.clear();
 			DbUtils.closeQuietly(con);
-			log.addMaster(new MessageLogEntry(LogEntry.LEVEL_INFO, "Ended at {0}", new DateTime()));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Ended at {0}", new DateTime()));
 			
 			for(LogEntry entry : log) {
 				logger.debug("{}", ((MessageLogEntry)entry).getMessage());

@@ -127,11 +127,11 @@ public class EventICalFileReader implements EventFileReader {
 				try {
 					results.add(readVEvent(velog, ve));
 					if(!velog.isEmpty()) {
-						log.addMaster(new MessageLogEntry(LogEntry.LEVEL_WARN, "VEVENT ['{1}', {0}]", ve.getUid(), ve.getSummary()));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.WARN, "VEVENT ['{1}', {0}]", ve.getUid(), ve.getSummary()));
 						log.addAll(velog);
 					}
 				} catch(Throwable t) {
-					log.addMaster(new MessageLogEntry(LogEntry.LEVEL_ERROR, "VEVENT ['{1}', {0}]. Reason: {3}", ve.getUid(), ve.getSummary(), t.getMessage()));
+					log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "VEVENT ['{1}', {0}]. Reason: {3}", ve.getUid(), ve.getSummary(), t.getMessage()));
 				}
 			}
 		}
@@ -181,7 +181,7 @@ public class EventICalFileReader implements EventFileReader {
 			event.setTitle(StringUtils.defaultString(ve.getSummary().getValue()));
 		} else {
 			event.setTitle("");
-			log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Event has no title"));
+			log.add(new MessageLogEntry(LogEntry.Level.WARN, "Event has no title"));
 		}
 
 		// Description
@@ -241,7 +241,7 @@ public class EventICalFileReader implements EventFileReader {
 			try {
 				event.setOrganizer(parseVEventOrganizer(log, org));
 			} catch(Exception ex) {
-				log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, ex.getMessage()));
+				log.add(new MessageLogEntry(LogEntry.Level.WARN, ex.getMessage()));
 			}
 		}
 
@@ -253,7 +253,7 @@ public class EventICalFileReader implements EventFileReader {
 				try {
 					attendees.add(parseVEventAttendee(log, (Attendee)o));
 				} catch(Exception ex) {
-					log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, ex.getMessage()));
+					log.add(new MessageLogEntry(LogEntry.Level.WARN, ex.getMessage()));
 				}
 			}
 			event.setAttendees(attendees);
@@ -365,7 +365,7 @@ public class EventICalFileReader implements EventFileReader {
 			ia = new InternetAddress(address, (cn == null) ? address : cn.getValue());
 		} else {
 			throw new WTException("Organizer must be valid [{0}]", org.toString());
-			//log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Organizer must have a valid address [{0}]", organizer.toString()));
+			//log.add(new MessageLogEntry(LogEntry.Level.WARN, "Organizer must have a valid address [{0}]", organizer.toString()));
 		}
 		
 		return ia.toString();
@@ -385,7 +385,7 @@ public class EventICalFileReader implements EventFileReader {
 			attendee.setRecipient(new InternetAddress(address, (cn == null) ? address : cn.getValue()).toString());
 		} else {
 			throw new WTException("Attendee must be valid [{0}]", att.toString());
-			//log.add(new MessageLogEntry(LogEntry.LEVEL_WARN, "Attendee must have a valid address [{0}]", attendee.toString()));
+			//log.add(new MessageLogEntry(LogEntry.Level.WARN, "Attendee must have a valid address [{0}]", attendee.toString()));
 		}
 		
 		// Evaluates cuType

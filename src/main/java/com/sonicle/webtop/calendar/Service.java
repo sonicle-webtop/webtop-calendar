@@ -32,7 +32,10 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.MailUtils;
+import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
@@ -69,8 +72,11 @@ import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
 import com.sonicle.webtop.calendar.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
+import com.sonicle.webtop.calendar.bol.model.SetupDataCalendarRemote;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
+import com.sonicle.webtop.calendar.msg.RemoteSyncResult;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
 import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
@@ -78,7 +84,9 @@ import com.sonicle.webtop.calendar.rpt.RptAgendaWeek5;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek7;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
+import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
+import com.sonicle.webtop.core.app.WebTopSession;
 import com.sonicle.webtop.core.app.WebTopSession.UploadedFile;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.bol.js.JsSimple;
@@ -88,7 +96,9 @@ import com.sonicle.webtop.core.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
+import com.sonicle.webtop.core.sdk.AsyncActionCollection;
 import com.sonicle.webtop.core.sdk.BaseService;
+import com.sonicle.webtop.core.sdk.BaseServiceAsyncAction;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -102,6 +112,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.sql.Connection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -138,6 +149,7 @@ public class Service extends BaseService {
 	private final LinkedHashMap<String, CalendarRoot> roots = new LinkedHashMap<>();
 	private final HashMap<String, ArrayList<CalendarFolder>> foldersByRoot = new HashMap<>();
 	private final LinkedHashMap<Integer, CalendarFolder> folders = new LinkedHashMap<>();
+	private final AsyncActionCollection<Integer, SyncRemoteCalendarAA> syncRemoteCalendarAAs = new AsyncActionCollection<>();
 	private CheckedRoots checkedRoots = null;
 	private CheckedFolders checkedFolders = null;
 	private ErpExportWizard erpWizard = null;
@@ -153,6 +165,9 @@ public class Service extends BaseService {
 	
 	@Override
 	public void cleanup() throws Exception {
+		synchronized(syncRemoteCalendarAAs) {
+			syncRemoteCalendarAAs.clear();
+		}
 		checkedFolders.clear();
 		checkedFolders = null;
 		checkedRoots.clear();
@@ -169,11 +184,27 @@ public class Service extends BaseService {
 	public ServiceVars returnServiceVars() {
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 		ServiceVars co = new ServiceVars();
-		co.put("defaultCalendarSync", ss.getDefaultCalendarSync().toString());
+		co.put("defaultCalendarSync", EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 		co.put("view", us.getView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));
 		return co;
+	}
+	
+	private WebTopSession getWts() {
+		return getEnv().getWebTopSession();
+	}
+	
+	private void runSyncRemoteCalendar(int calendarId, String calendarName, boolean full) throws WTException {
+		synchronized(syncRemoteCalendarAAs) {
+			if (syncRemoteCalendarAAs.containsKey(calendarId)) {
+				logger.debug("SyncRemoteCalendar run skipped [{}]", calendarId);
+				return;
+			}
+			final SyncRemoteCalendarAA aa = new SyncRemoteCalendarAA(calendarId, calendarName, full);
+			syncRemoteCalendarAAs.put(calendarId, aa);
+			aa.start(RunContext.getSubject(), RunContext.getRunProfileId());
+		}
 	}
 	
 	private void initFolders() throws Exception {
@@ -323,13 +354,15 @@ public class Service extends BaseService {
 		try {
 			Boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", true);
 			
-			for(CalendarRoot root : roots.values()) {
-				if(root instanceof MyCalendarRoot) {
-					UserProfile up = getEnv().getProfile();
-					items.add(new JsSimple(up.getStringId(), up.getDisplayName()));
-				} else {
-					//TODO: se writableOnly verificare che il gruppo condiviso sia scrivibile
-					items.add(new JsSimple(root.getOwnerProfileId().toString(), root.getDescription()));
+			synchronized(roots) {
+				for(CalendarRoot root : roots.values()) {
+					if(root instanceof MyCalendarRoot) {
+						UserProfile up = getEnv().getProfile();
+						items.add(new JsSimple(up.getStringId(), up.getDisplayName()));
+					} else {
+						//TODO: se writableOnly verificare che il gruppo condiviso sia scrivibile
+						items.add(new JsSimple(root.getOwnerProfileId().toString(), root.getDescription()));
+					}
 				}
 			}
 			
@@ -345,27 +378,16 @@ public class Service extends BaseService {
 		List<JsCalendarLkp> items = new ArrayList<>();
 		
 		try {
-			for(CalendarRoot root : roots.values()) {
-				if(root instanceof MyCalendarRoot) {
-					for(Calendar cal : manager.listCalendars()) {
-						items.add(new JsCalendarLkp(cal));
-					}
-				} else {
-					/*
-					HashMap<Integer, CalendarFolder> folds = manager.listIncomingCalendarFolders(root.getShareId());
-					for(CalendarFolder fold : folds.values()) {
-						if(!fold.getElementsPerms().implies("CREATE")) continue;
-						items.add(new JsCalendarLkp(fold.getCalendar()));
-					}
-					*/
-					if(foldersByRoot.containsKey(root.getShareId())) {
+			synchronized(roots) {
+				for(CalendarRoot root : roots.values()) {
+					if (foldersByRoot.containsKey(root.getShareId())) {
 						for(CalendarFolder fold : foldersByRoot.get(root.getShareId())) {
-							if(!fold.getElementsPerms().implies("CREATE")) continue;
 							items.add(new JsCalendarLkp(fold));
 						}
 					}
 				}
 			}
+			
 			new JsonResult("folders", items, items.size()).printTo(out);
 			
 		} catch(Exception ex) {
@@ -453,7 +475,7 @@ public class Service extends BaseService {
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
-				Integer id = ServletUtils.getIntParameter(request, "id", true);
+				int id = ServletUtils.getIntParameter(request, "id", true);
 				
 				item = manager.getCalendar(id);
 				new JsonResult(new JsCalendar(item)).printTo(out);
@@ -461,7 +483,7 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				item = manager.addCalendar(JsCalendar.buildFolder(pl.data));
+				item = manager.addCalendar(JsCalendar.createCalendar(pl.data, null));
 				updateFoldersCache();
 				toggleCheckedFolder(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
@@ -469,7 +491,9 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				manager.updateCalendar(JsCalendar.buildFolder(pl.data));
+				item = manager.getCalendar(pl.data.calendarId);
+				if (item == null) throw new WTException("Calendar not found [{0}]", pl.data.calendarId);
+				manager.updateCalendar(JsCalendar.createCalendar(pl.data, item.getParameters()));
 				updateFoldersCache();
 				new JsonResult().printTo(out);
 				
@@ -478,12 +502,79 @@ public class Service extends BaseService {
 				
 				manager.deleteCalendar(pl.data.calendarId);
 				updateFoldersCache();
+				toggleCheckedFolder(pl.data.calendarId, false);
+				new JsonResult().printTo(out);
+				
+			} else if (crud.equals("sync")) {
+				int id = ServletUtils.getIntParameter(request, "id", true);
+				boolean full = ServletUtils.getBooleanParameter(request, "full", false);
+				
+				item = manager.getCalendar(id);
+				if (item == null) throw new WTException("Calendar not found [{0}]", id);
+				runSyncRemoteCalendar(id, item.getName(), full);
+				
 				new JsonResult().printTo(out);
 			}
 			
-		} catch(Exception ex) {
-			logger.error("Error in ManageCalendars", ex);
+		} catch(Throwable t) {
+			logger.error("Error in ManageCalendars", t);
 			new JsonResult(false, "Error").printTo(out);
+		}
+	}
+	
+	public void processSetupCalendarRemote(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		WebTopSession wts = getEnv().getWebTopSession();
+		final String PROPERTY_PREFIX = "setupremotecalendar-";
+		
+		try {
+			String crud = ServletUtils.getStringParameter(request, "crud", true);
+			if(crud.equals("s1")) {
+				String tag = ServletUtils.getStringParameter(request, "tag", true);
+				String profileId = ServletUtils.getStringParameter(request, "profileId", true);
+				String provider = ServletUtils.getStringParameter(request, "provider", true);
+				String url = ServletUtils.getStringParameter(request, "url", true);
+				String username = ServletUtils.getStringParameter(request, "username", null);
+				String password = ServletUtils.getStringParameter(request, "password", null);
+				
+				Calendar.Provider remoteProvider = EnumUtils.forSerializedName(provider, Calendar.Provider.class);
+				URI uri = URIUtils.createURI(url);
+				
+				CalendarManager.ProbeCalendarRemoteUrlResult result = manager.probeCalendarRemoteUrl(remoteProvider, uri, username, password);
+				if (result == null) throw new WTException("URL problem");
+				
+				SetupDataCalendarRemote setup = new SetupDataCalendarRemote();
+				setup.setProfileId(profileId);
+				setup.setProvider(remoteProvider);
+				setup.setUrl(uri);
+				setup.setUsername(username);
+				setup.setPassword(password);
+				setup.setName(result.displayName);
+				wts.setProperty(SERVICE_ID, PROPERTY_PREFIX+tag, setup);
+				
+				new JsonResult(setup).printTo(out);
+				
+			} else if(crud.equals("s2")) {
+				String tag = ServletUtils.getStringParameter(request, "tag", true);
+				String name = ServletUtils.getStringParameter(request, "name", true);
+				String color = ServletUtils.getStringParameter(request, "color", true);
+				
+				wts.hasPropertyOrThrow(SERVICE_ID, PROPERTY_PREFIX+tag);
+				SetupDataCalendarRemote setup = (SetupDataCalendarRemote) wts.getProperty(SERVICE_ID, PROPERTY_PREFIX+tag);
+				setup.setName(name);
+				setup.setColor(color);
+				
+				Calendar cal = manager.addCalendar(setup.toCalendar());
+				wts.clearProperty(SERVICE_ID, PROPERTY_PREFIX+tag);
+				updateFoldersCache();
+				toggleCheckedFolder(cal.getCalendarId(), true);
+				runSyncRemoteCalendar(cal.getCalendarId(), cal.getName(), true); // Starts a full-sync
+				
+				new JsonResult().printTo(out);
+			}
+			
+		} catch (Exception ex) {
+			logger.error("Error in SetupStoreFtp", ex);
+			new JsonResult(false, ex.getMessage()).printTo(out);
 		}
 	}
 	
@@ -1190,12 +1281,13 @@ public class Service extends BaseService {
 		node.put("_erights", folder.getElementsPerms().toString());
 		node.put("_calId", cal.getCalendarId());
 		node.put("_builtIn", cal.getBuiltIn());
+		node.put("_provider", EnumUtils.toSerializedName(cal.getProvider()));
 		node.put("_default", cal.getIsDefault());
 		node.put("_color", Calendar.getHexColor(color));
 		node.put("_visible", visible);
 		node.put("_isPrivate", cal.getIsPrivate());
-		node.put("_busy", cal.getDefaultBusy());
-		node.put("_reminder", cal.getDefaultReminder());
+		node.put("_defBusy", cal.getDefaultBusy());
+		node.put("_defReminder", cal.getDefaultReminder());
 		
 		List<String> classes = new ArrayList<>();
 		if(cal.getIsDefault()) classes.add("wtcal-tree-default");
@@ -1207,6 +1299,45 @@ public class Service extends BaseService {
 		node.setIconClass("wt-palette-" + Calendar.getHexColor(color));
 		node.setChecked(visible);
 		return node;
+	}
+	
+	private class SyncRemoteCalendarAA extends BaseServiceAsyncAction {
+		private final int calendarId;
+		private final String calendarName;
+		private final boolean full;
+		
+		public SyncRemoteCalendarAA(int calendarId, String calendarName, boolean full) {
+			super();
+			setName(this.getClass().getSimpleName());
+			this.calendarId = calendarId;
+			this.calendarName = calendarName;
+			this.full = full;
+		}
+
+		@Override
+		public void executeAction() {
+			try {
+				manager.syncRemoteCalendar(calendarId, full);
+				this.completed();
+				getWts().notify(new RemoteSyncResult()
+					.setCalendarId(calendarId)
+					.setCalendarName(calendarName)
+					.setSuccess(true)
+				);
+				
+			} catch(WTException ex) {
+				logger.error("Remote sync failed", ex);
+				getWts().notify(new RemoteSyncResult()
+					.setCalendarId(calendarId)
+					.setCalendarName(calendarName)
+					.setThrowable(ex)
+				);
+			} finally {
+				synchronized(syncRemoteCalendarAAs) {
+					syncRemoteCalendarAAs.remove(calendarId);
+				}
+			}
+		}
 	}
 	
 	private static class ErpExportWizard {

@@ -41,16 +41,18 @@ import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
 import com.sonicle.webtop.calendar.jooq.tables.Events;
-import com.sonicle.webtop.calendar.jooq.tables.EventsAttendees;
 import com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.impl.DSL;
 import static org.jooq.impl.DSL.*;
 
 /**
@@ -126,9 +128,27 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(Integer.class);
 	}
 	
+	public Map<String, Integer> selectHrefsByByCalendar(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.HREF
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
+					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+				)
+			)
+			.fetchMap(EVENTS.HREF, EVENTS.EVENT_ID);
+	}
+	
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		OEvent.ensureCoherence(item);
+		item.ensureCoherence();
 		item.setRevisionStatus(OEvent.REV_STATUS_NEW);
 		item.setRevisionTimestamp(revisionTimestamp);
 		item.setRevisionSequence(0);
@@ -141,31 +161,32 @@ public class EventDAO extends BaseDAO {
 	
 	public int update(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		OEvent.ensureCoherence(item);
+		item.ensureCoherence();
 		item.setRevisionStatus(OEvent.REV_STATUS_MODIFIED);
 		item.setRevisionTimestamp(revisionTimestamp);
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
+			.set(EVENTS.REVISION_STATUS, item.getRevisionStatus())
+			.set(EVENTS.REVISION_TIMESTAMP, item.getRevisionTimestamp())
 			.set(EVENTS.RECURRENCE_ID, item.getRecurrenceId())
 			.set(EVENTS.START_DATE, item.getStartDate())
 			.set(EVENTS.END_DATE, item.getEndDate())
 			.set(EVENTS.TIMEZONE, item.getTimezone())
 			.set(EVENTS.ALL_DAY, item.getAllDay())
 			.set(EVENTS.TITLE, item.getTitle())
+			.set(EVENTS.ORGANIZER, item.getOrganizer())
 			.set(EVENTS.DESCRIPTION, item.getDescription())
 			.set(EVENTS.LOCATION, item.getLocation())
 			.set(EVENTS.IS_PRIVATE, item.getIsPrivate())
 			.set(EVENTS.BUSY, item.getBusy())
 			.set(EVENTS.REMINDER, item.getReminder())
-			.set(EVENTS.READ_ONLY, item.getReadOnly())
+			.set(EVENTS.HREF, item.getHref())
+			.set(EVENTS.ETAG, item.getEtag())
 			.set(EVENTS.ACTIVITY_ID, item.getActivityId())
 			.set(EVENTS.MASTER_DATA_ID, item.getMasterDataId())
 			.set(EVENTS.STAT_MASTER_DATA_ID, item.getStatMasterDataId())
 			.set(EVENTS.CAUSAL_ID, item.getCausalId())
-			.set(EVENTS.ORGANIZER, item.getOrganizer())
-			.set(EVENTS.REVISION_STATUS, item.getRevisionStatus())
-			.set(EVENTS.REVISION_TIMESTAMP, item.getRevisionTimestamp())
 			.where(
 				EVENTS.EVENT_ID.equal(item.getEventId())
 			)
@@ -231,10 +252,20 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
+	public int deleteById(Connection con, int eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(EVENTS)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+			)
+			.execute();
+	}
+	
 	public int deleteByCalendarId(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.delete(RECURRENCES_BROKEN)
+			.delete(EVENTS)
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 			)
@@ -261,6 +292,24 @@ public class EventDAO extends BaseDAO {
 			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
+			)
+			.execute();
+	}
+	
+	public int deleteBrokenOrphansByEventId(Connection con, int eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(EVENTS)
+			.where(
+				EVENTS.EVENT_ID.in(
+					DSL.select(
+						RECURRENCES_BROKEN.NEW_EVENT_ID
+					)
+					.from(RECURRENCES_BROKEN)
+					.where(
+						RECURRENCES_BROKEN.EVENT_ID.equal(eventId)
+					)
+				)				
 			)
 			.execute();
 	}

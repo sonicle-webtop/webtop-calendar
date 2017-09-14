@@ -32,16 +32,26 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.github.sardine.DavResource;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.HttpClientUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.PathUtils;
+import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.CompositeId;
+import com.sonicle.dav.CalDav;
+import com.sonicle.dav.CalDavFactory;
+import com.sonicle.dav.DavSyncStatus;
+import com.sonicle.dav.DavUtil;
+import com.sonicle.dav.caldav.DavCalendar;
+import com.sonicle.dav.caldav.DavCalendarEvent;
+import com.sonicle.dav.impl.DavException;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
@@ -64,7 +74,7 @@ import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
-import com.sonicle.webtop.calendar.io.EventReadResult;
+import com.sonicle.webtop.calendar.io.EventInput;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.app.RunContext;
@@ -133,17 +143,29 @@ import org.supercsv.io.ICsvMapWriter;
 import org.supercsv.prefs.CsvPreference;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.Sync;
+import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
+import com.sonicle.webtop.calendar.util.ICalendarInput;
 import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICalendarUtils;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 import javax.mail.Session;
+import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.Method;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.utils.URIBuilder;
 
 /**
  *
@@ -175,6 +197,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return WT.getPlatformName() + " Calendar";
 	}
 	
+	private CalendarServiceSettings getServiceSettings() {
+		return new CalendarServiceSettings(SERVICE_ID, getTargetProfileId().getDomainId());
+	}
+	
+	private CalDav getCalDav(String username, String password) {
+		if (!StringUtils.isBlank(username) && !StringUtils.isBlank(username)) {
+			return CalDavFactory.begin(username, password);
+		} else {
+			return CalDavFactory.begin();
+		}
+	}
+	
 	public List<CalendarRoot> listIncomingCalendarRoots() throws WTException {
 		CoreManager core = WT.getCoreManager(getTargetProfileId());
 		ArrayList<CalendarRoot> roots = new ArrayList();
@@ -201,7 +235,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		for(OShare share : shares) {
 			
 			List<Calendar> cals = null;
-			if(share.hasWildcard()) {
+			if (share.hasWildcard()) {
 				UserProfileId ownerId = core.userUidToProfileId(share.getUserUid());
 				cals = listCalendars(ownerId);
 			} else {
@@ -212,7 +246,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				SharePermsFolder fperms = core.getShareFolderPermissions(share.getShareId().toString());
 				SharePermsElements eperms = core.getShareElementsPermissions(share.getShareId().toString());
 				
-				if(folders.containsKey(cal.getCalendarId())) {
+				if (folders.containsKey(cal.getCalendarId())) {
 					CalendarFolder folder = folders.get(cal.getCalendarId());
 					folder.getPerms().merge(fperms);
 					folder.getElementsPerms().merge(eperms);
@@ -285,13 +319,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private List<Calendar> listCalendars(UserProfileId pid) throws WTException {
-		CalendarDAO caldao = CalendarDAO.getInstance();
+		CalendarDAO calDao = CalendarDAO.getInstance();
 		ArrayList<Calendar> items = new ArrayList<>();
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			for (OCalendar ocal : caldao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
+			for (OCalendar ocal : calDao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
 				//checkRightsOnCalendarFolder(ocal.getCalendarId(), "READ");
 				items.add(createCalendar(ocal));
 			}
@@ -306,14 +340,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public Calendar getCalendar(int calendarId) throws WTException {
-		CalendarDAO caldao = CalendarDAO.getInstance();
+		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			checkRightsOnCalendarFolder(calendarId, "READ");
 			
 			con = WT.getConnection(SERVICE_ID);
-			OCalendar ocal = caldao.selectById(con, calendarId);
+			OCalendar ocal = calDao.selectById(con, calendarId);
 			return createCalendar(ocal);
 			
 		} catch(SQLException | DAOException ex) {
@@ -325,14 +359,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public Calendar getBuiltInCalendar() throws WTException {
-		CalendarDAO caldao = CalendarDAO.getInstance();
+		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			OCalendar ocal = caldao.selectBuiltInByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
-			if(ocal == null) return null;
+			OCalendar ocal = calDao.selectBuiltInByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
+			if (ocal == null) return null;
 			
 			checkRightsOnCalendarFolder(ocal.getCalendarId(), "READ");
 			
@@ -346,19 +380,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public Calendar addCalendar(Calendar item) throws WTException {
+	public Calendar addCalendar(Calendar calendar) throws WTException {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarRoot(item.getProfileId(), "MANAGE");
+			checkRightsOnCalendarRoot(calendar.getProfileId(), "MANAGE");
 			
 			con = WT.getConnection(SERVICE_ID, false);
-			item.setBuiltIn(false);
-			item = doCalendarUpdate(true, con, item);
+			calendar.setBuiltIn(false);
+			calendar = doCalendarUpdate(true, con, calendar);
 			DbUtils.commitQuietly(con);
-			writeLog("CALENDAR_INSERT", String.valueOf(item.getCalendarId()));
+			writeLog("CALENDAR_INSERT", String.valueOf(calendar.getCalendarId()));
 			
-			return item;
+			return calendar;
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -386,21 +420,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				return null;
 			}
 			
-			CalendarServiceSettings ss = new CalendarServiceSettings(SERVICE_ID, getTargetProfileId().getDomainId());
-			
 			Calendar cal = new Calendar();
-			cal.setDomainId(getTargetProfileId().getDomainId());
-			cal.setUserId(getTargetProfileId().getUserId());
 			cal.setBuiltIn(true);
 			cal.setName(WT.getPlatformName());
 			cal.setDescription("");
-			cal.setColor("#FFFFFF");
-			cal.setSync(ss.getDefaultCalendarSync());
-			cal.setIsPrivate(false);
 			cal.setIsDefault(true);
-			cal.setDefaultBusy(false);
-			cal.setDefaultReminder(null);
-			cal.setDefaultSendInvitation(false);
 			cal = doCalendarUpdate(true, con, cal);
 			DbUtils.commitQuietly(con);
 			writeLog("CALENDAR_INSERT",  String.valueOf(cal.getCalendarId()));
@@ -419,18 +443,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public Calendar updateCalendar(Calendar cal) throws WTException {
+	public Calendar updateCalendar(Calendar calendar) throws WTException {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarFolder(cal.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarFolder(calendar.getCalendarId(), "UPDATE");
 			
 			con = WT.getConnection(SERVICE_ID, false);
-			cal = doCalendarUpdate(false, con, cal);
+			calendar = doCalendarUpdate(false, con, calendar);
 			DbUtils.commitQuietly(con);
-			writeLog("CALENDAR_UPDATE", String.valueOf(cal.getCalendarId()));
+			writeLog("CALENDAR_UPDATE", String.valueOf(calendar.getCalendarId()));
 			
-			return cal;
+			return calendar;
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -445,7 +469,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public boolean deleteCalendar(int calendarId) throws WTException {
-		CalendarDAO caldao = CalendarDAO.getInstance();
+		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
@@ -456,8 +480,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Sharing sharing = getSharing(shareId);
 			
 			con = WT.getConnection(SERVICE_ID, false);
-			int ret = caldao.deleteById(con, calendarId);
-			doDeleteEventsByCalendar(con, calendarId);
+			Calendar cal = createCalendar(calDao.selectById(con, calendarId));
+			if (cal == null) return false;
+			
+			int ret = calDao.deleteById(con, calendarId);
+			doDeleteEventsByCalendar(con, calendarId, !cal.isRemoteProvider());
 			
 			// Cleanup sharing, if necessary
 			if ((sharing != null) && !sharing.getRights().isEmpty()) {
@@ -510,7 +537,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 				for(VSchedulerEvent se : edao.viewRecurringDatesByCalendarFromTo(con, cal.getCalendarId(), fromDate, toDate)) {
 					se.updateCalculatedFields();
-					expEvents = CalendarManager.this.calculateRecurringInstances(con, new SchedulerEventInstance(se), fromDate, toDate, userTz);
+					expEvents = calculateRecurringInstances(con, new SchedulerEventInstance(se), fromDate, toDate, userTz);
 					for(SchedulerEventInstance expEvent : expEvents) {
 						addExpandedEventDates(dates, expEvent);
 					}
@@ -814,8 +841,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public Event addEventFromICal(int calendarId, net.fortuna.ical4j.model.Calendar ical) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		
-		EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
-		ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
+		ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromCalendar(ical, null);
 		if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
 		
 		Event event = parsed.get(0).event;
@@ -900,8 +926,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 			
 			// Parse the ical using the code used in import
-			EventICalFileReader rea = new EventICalFileReader(udata.getTimeZone());
-			ArrayList<EventReadResult> parsed = rea.readCalendar(new LogEntries(), ical);
+			ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromCalendar(ical, null);
 			Event parsedEvent = parsed.get(0).event;
 			parsedEvent.setCalendarId(evt.getCalendarId());
 			
@@ -968,7 +993,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			try {
 				con = WT.getConnection(SERVICE_ID);
-				doDeleteEvent(con, evt.getEventId());
+				doDeleteEvent(con, evt.getEventId(), true);
 
 			} catch(SQLException | DAOException ex) {
 				throw new WTException(ex, "DB error");
@@ -1280,6 +1305,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				evt.setStartDate(startDate);
 				evt.setEndDate(endDate);
 				evt.setTitle(title);
+				evt.ensureCoherence();
 				edao.update(con, evt, createRevisionTimestamp());
 				
 				DbUtils.commitQuietly(con);
@@ -1322,7 +1348,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if(type.equals(EVENT_NORMAL)) {
 				if(target.equals(TARGET_THIS)) {
 					if(!ekey.eventId.equals(originalEvent.getEventId())) throw new WTException("In this case both ids must be equals");
-					doDeleteEvent(con, ekey.eventId);
+					doDeleteEvent(con, ekey.eventId, true);
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(originalEvent.getEventId()));
@@ -1333,7 +1359,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			} else if(type.equals(EVENT_BROKEN)) {
 				if(target.equals(TARGET_THIS)) {
 					// 1 - logically delete newevent (broken one)
-					doDeleteEvent(con, ekey.eventId);
+					doDeleteEvent(con, ekey.eventId, true);
 					// 2 - updates revision of original event
 					evtdao.updateRevision(con, originalEvent.getEventId(), createRevisionTimestamp());
 					
@@ -1369,7 +1395,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - logically delete original event
-					doDeleteEvent(con, ekey.eventId);
+					doDeleteEvent(con, ekey.eventId, true);
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
@@ -1405,7 +1431,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// 1 - removes the broken record
 			rbdao.deleteByNewEvent(con, ekey.eventId);
 			// 2 - logically delete broken event
-			doDeleteEvent(con, ekey.eventId);
+			doDeleteEvent(con, ekey.eventId, true);
 			
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
@@ -1551,55 +1577,37 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started at {0}", new DateTime()));
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Reading source file..."));
-			ArrayList<EventReadResult> parsed = null;
+			
+			ArrayList<EventInput> input = null;
 			try {
-				parsed = rea.listEvents(log, file);
+				input = rea.listEvents(log, file);
 			} catch(IOException | UnsupportedOperationException ex) {
 				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
 				throw new WTException(ex);
 			}
-			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s found!", parsed.size()));
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s found!", input.size()));
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			if(mode.equals("copy")) {
 				log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Cleaning previous events..."));
-				int del = doDeleteEventsByCalendar(con, calendarId);
+				int del = doDeleteEventsByCalendar(con, calendarId, false);
 				log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s deleted!", del));
+				DbUtils.commitQuietly(con);
 			}
 			
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Importing..."));
 			int count = 0;
-			for(EventReadResult parse : parsed) {
-				parse.event.setCalendarId(calendarId);
+			for(EventInput ei : input) {
+				ei.event.setCalendarId(calendarId);
 				try {
-					InsertResult insert = doEventInsert(con, parse.event, true, true);
-					
-					if(insert.recurrence != null) {
-						// Cache recurring event for future use within broken references 
-						uidMap.put(insert.event.getPublicUid(), insert.event);
-						
-						// If present, adds excluded dates as broken instances
-						if(parse.excludedDates != null) {
-							for(LocalDate date : parse.excludedDates) {
-								doExcludeRecurrenceDate(con, insert.event, date);
-							}
-						}
-					} else {
-						if(parse.overwritesRecurringInstance != null) {
-							if(uidMap.containsKey(insert.event.getPublicUid())) {
-								OEvent oevt = uidMap.get(insert.event.getPublicUid());
-								doExcludeRecurrenceDate(con, oevt, parse.overwritesRecurringInstance, insert.event.getEventId());
-							}
-						}
-					}
-					
+					doEventInputInsert(con, uidMap, ei);
 					DbUtils.commitQuietly(con);
 					count++;
 				} catch(Exception ex) {
 					logger.trace("Error inserting event", ex);
 					DbUtils.rollbackQuietly(con);
-					log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", parse.event.getTitle(), parse.event.getPublicUid(), ex.getMessage()));
+					log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", ei.event.getTitle(), ei.event.getPublicUid(), ex.getMessage()));
 				}
 			}
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s imported!", count));
@@ -1797,6 +1805,270 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.closeQuietly(con);
 		}
 		return alerts;
+	}
+	
+	public ProbeCalendarRemoteUrlResult probeCalendarRemoteUrl(Calendar.Provider provider, URI url, String username, String password) throws WTException {
+		
+		if (!Calendar.Provider.WEBCAL.equals(provider) && !Calendar.Provider.CALDAV.equals(provider)) {
+			throw new WTException("Provider is not valid or is not remote [{0}]", EnumUtils.toSerializedName(provider));
+		}
+		
+		try {
+			if (Calendar.Provider.WEBCAL.equals(provider)) {
+				URIBuilder builder = new URIBuilder(url);
+				if (StringUtils.equalsIgnoreCase(builder.getScheme(), "webcal")) {
+					builder.setScheme("http"); // Force http scheme
+				}
+				if (!StringUtils.isBlank(username) && !StringUtils.isBlank(username)) {
+					builder.setUserInfo(username, password);
+					logger.debug("Checking remote calendar URL with provided credentials [{}, {}]", url.toString(), username);
+				} else {
+					logger.debug("Checking remote calendar URL [{}]", url.toString());
+				}
+				
+				if (HttpClientUtils.exists(URIUtils.buildQuietly(builder))) {
+					return new ProbeCalendarRemoteUrlResult(FilenameUtils.getBaseName(url.getPath()));
+				} else {
+					return null;
+				}
+				
+			} else if (Calendar.Provider.CALDAV.equals(provider)) {
+				CalDav dav = getCalDav(username, password);
+				
+				try {
+					DavCalendar dcal = dav.getCalendar(url.toString());
+					return (dcal != null) ? new ProbeCalendarRemoteUrlResult(dcal.getDisplayName()) : null;
+					
+				} catch(DavException ex) {
+					logger.error("DAV error", ex);
+					return null;
+				}
+			} else {
+				throw new WTException("Unsupported provider");
+			}
+			
+		} catch(IOException ex) {
+			throw new WTException(ex, "Unable to check URL [{0}]", url.toString());
+		}
+	}
+	
+	public void syncRemoteCalendar(int calendarId) throws WTException {
+		syncRemoteCalendar(calendarId, false);
+	}
+	
+	public void syncRemoteCalendar(int calendarId, boolean full) throws WTException {
+		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		final ICalendarInput icalInput = new ICalendarInput(udata.getTimeZone());
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			//checkRightsOnCalendarFolder(calendarId, "READ");
+			
+			con = WT.getConnection(SERVICE_ID, false);
+			Calendar cal = createCalendar(calDao.selectById(con, calendarId));
+			if (!Calendar.Provider.WEBCAL.equals(cal.getProvider()) && !Calendar.Provider.CALDAV.equals(cal.getProvider())) {
+				throw new WTException("Specified calendar is not remote (webcal or CalDAV) [{0}]", calendarId);
+			}
+			
+			CalendarRemoteParameters params = LangUtils.deserialize(cal.getParameters(), CalendarRemoteParameters.class);
+			if (params == null) throw new WTException("Unable to deserialize remote parameters");
+			if (params.url == null) throw new WTException("Remote URL is undefined");
+			
+			if (Calendar.Provider.WEBCAL.equals(cal.getProvider())) {
+				final String PREFIX = "webcal-";
+				File tempFile = null;
+				
+				URIBuilder builder = new URIBuilder(params.url);
+				if (StringUtils.equalsIgnoreCase(builder.getScheme(), "webcal")) {
+					builder.setScheme("http"); // Force http scheme
+				}
+				if (!StringUtils.isBlank(params.username) && !StringUtils.isBlank(params.username)) {
+					builder.setUserInfo(params.username, params.password);
+				}
+				URI newUrl = URIUtils.buildQuietly(builder);
+				
+				try {
+					tempFile = WT.createTempFile(PREFIX, null);
+					
+					// Retrieve webcal content (iCalendar) from the specified URL 
+					// and save it locally
+					logger.debug("Retrieving iCalendar file from URL [{}]", newUrl);
+					FileOutputStream os = null;
+					try {
+						os = new FileOutputStream(tempFile);
+						HttpClientUtils.get(newUrl, os);
+					} catch(IOException ex) {
+						throw new WTException(ex, "Unable to retrieve webcal [{0}]", newUrl);
+					} finally {
+						IOUtils.closeQuietly(os);
+					}
+					logger.debug("Saved to temp file [{}]", tempFile.getName());
+
+					// Parse downloaded iCalendar
+					logger.debug("Parsing downloaded iCalendar file");
+					net.fortuna.ical4j.model.Calendar ical = null;
+					FileInputStream is = null;
+					try {
+						is = new FileInputStream(tempFile);
+						ical = ICalendarUtils.parseAllRelaxed(is);
+						//TODO: add support to FILENAME property (Google https://github.com/ical4j/ical4j/issues/69)
+					} catch(IOException | ParserException ex) {
+						throw new WTException(ex, "Unable to read webcal");
+					} finally {
+						IOUtils.closeQuietly(os);
+					}
+
+					// Convert data to internal event model
+					logger.debug("Converting data to internal model");
+					ArrayList<EventInput> input = icalInput.fromCalendar(ical, null);
+					logger.debug("Converted {} events", input.size());
+
+					// Inserts data...
+					logger.debug("Inserting events...");
+					try {
+						doDeleteEventsByCalendar(con, calendarId, false);
+						HashMap<String, OEvent> cache = new HashMap<>();
+						for(EventInput ei : input) {
+							ei.event.setCalendarId(calendarId);
+							ei.event.setReadOnly(true);
+							doEventInputInsert(con, cache, ei);
+						}
+						cache.clear();
+						DbUtils.commitQuietly(con);
+
+					} catch(Throwable t) {
+						DbUtils.rollbackQuietly(con);
+						throw new WTException(t, "Error importing iCalendar");
+					}
+					
+				} finally {
+					if (tempFile != null) {
+						logger.debug("Removing temp file [{}]", tempFile.getName());
+						WT.deleteTempFile(tempFile);
+					}
+				}
+				
+			} else if (Calendar.Provider.CALDAV.equals(cal.getProvider())) {
+				CalDav dav = getCalDav(params.username, params.password);
+				
+				try {
+					DavCalendar dcal = dav.getCalendarSyncToken(params.url.toString());
+					if (dcal == null) throw new WTException("DAV calendar not found");
+					
+					final boolean syncIsSupported = !StringUtils.isBlank(dcal.getSyncToken());
+					final String savedSyncToken = params.syncToken;
+					
+					if (!syncIsSupported || (syncIsSupported && StringUtils.isBlank(savedSyncToken)) || full) { // Full update
+						// If supported, saves last sync-token issued
+						if (syncIsSupported) {
+							params.syncToken = dcal.getSyncToken();
+						}
+						
+						// Retrieves events list from DAV endpoint
+						logger.debug("Retrieving whole list [{}]", params.url.toString());
+						List<DavCalendarEvent> devts = dav.listCalendarEvents(params.url.toString());
+						logger.debug("Endpoint returns {} items", devts.size());
+						
+						// Inserts data...
+						try {
+							logger.debug("Processing results...");
+							doDeleteEventsByCalendar(con, calendarId, false);
+							HashMap<String, OEvent> cache = new HashMap<>();
+							for(DavCalendarEvent devt : devts) {
+								final ArrayList<EventInput> input = icalInput.fromCalendar(devt.getCalendar(), null);
+								if (input.size() != 1) throw new WTException("Unexpected size");
+								final EventInput ei = input.get(0);
+								
+								ei.event.setCalendarId(calendarId);
+								ei.event.setReadOnly(true);
+								ei.event.setHref(devt.getPath());
+								ei.event.setEtag(devt.geteTag());
+								doEventInputInsert(con, cache, ei);
+							}
+							cache.clear();
+							
+							calDao.updateParametersById(con, calendarId, LangUtils.serialize(params, CalendarRemoteParameters.class));
+							DbUtils.commitQuietly(con);
+							
+						} catch(Throwable t) {
+							DbUtils.rollbackQuietly(con);
+							throw new WTException(t, "Error importing iCalendar");
+						}
+						
+					} else { // Partial update
+						params.syncToken = dcal.getSyncToken();
+						
+						EventDAO evtDao = EventDAO.getInstance();
+						Map<String, Integer> eventIdsByHref = evtDao.selectHrefsByByCalendar(con, calendarId);
+						
+						logger.debug("Retrieving changes [{}, {}]", params.url.toString(), savedSyncToken);
+						List<DavSyncStatus> changes = dav.getCalendarChanges(params.url.toString(), savedSyncToken);
+						logger.debug("Endpoint returns {} items", changes.size());
+						
+						try {
+							if (!changes.isEmpty()) {
+								// Process changes...
+								logger.debug("Processing changes...");
+								List<String> hrefs = new ArrayList<>();
+								for(DavSyncStatus change : changes) {
+									if (DavUtil.HTTP_SC_TEXT_OK.equals(change.getResponseStatus())) {
+										hrefs.add(change.getPath());
+
+									} else { // Event deleted
+										final Integer eventId = eventIdsByHref.get(change.getPath());
+
+										if (eventId == null) throw new WTException("Event path not found [{0}]", change.getPath());
+										doDeleteEvent(con, eventId, false);
+									}
+								}
+
+								// Retrieves events list from DAV endpoint (using multiget)
+								logger.debug("Retrieving inserted/updated events [{}]", hrefs.size());
+								List<DavCalendarEvent> devts = dav.listCalendarEvents(params.url.toString(), hrefs);
+
+								// Inserts/Updates data...
+								logger.debug("Inserting/Updating events...");
+								HashMap<String, OEvent> cache = new HashMap<>();
+								for(DavCalendarEvent devt : devts) {
+									final Integer eventId = eventIdsByHref.get(devt.getPath());
+
+									final ArrayList<EventInput> input = icalInput.fromCalendar(devt.getCalendar(), null);
+									if (input.size() != 1) throw new WTException("Unexpected size");
+									final EventInput ei = input.get(0);
+
+									if (eventId != null) {
+										doDeleteEvent(con, eventId, false);
+									}
+
+									ei.event.setCalendarId(calendarId);
+									ei.event.setReadOnly(true);
+									ei.event.setHref(devt.getPath());
+									ei.event.setEtag(devt.geteTag());
+									doEventInputInsert(con, cache, ei);
+								}
+								cache.clear();
+							}
+							
+							calDao.updateParametersById(con, calendarId, LangUtils.serialize(params, CalendarRemoteParameters.class));
+							DbUtils.commitQuietly(con);
+							
+						} catch(Throwable t) {
+							DbUtils.rollbackQuietly(con);
+							throw new WTException(t, "Error importing iCalendar");
+						}
+					}
+					
+				} catch(DavException ex) {
+					throw new WTException(ex, "CalDAV error");
+				}
+			}
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
 	}
 	
 	private void notifyOrganizer(Locale locale, Event event, String updatedAttendeeId) {
@@ -2049,19 +2321,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private Calendar doCalendarUpdate(boolean insert, Connection con, Calendar cal) throws WTException {
-		CalendarDAO caldao = CalendarDAO.getInstance();
+	private Calendar doCalendarUpdate(boolean insert, Connection con, Calendar cal) throws DAOException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
 		
 		OCalendar ocal = createOCalendar(cal);
-		if (ocal.getDomainId() == null) ocal.setDomainId(getTargetProfileId().getDomainId());
-		if (ocal.getUserId() == null) ocal.setUserId(getTargetProfileId().getUserId());
-		
-		if(ocal.getIsDefault()) caldao.resetIsDefaultByProfile(con, ocal.getDomainId(), ocal.getUserId());
 		if (insert) {
-			ocal.setCalendarId(caldao.getSequence(con).intValue());
-			caldao.insert(con, ocal);
+			ocal.setCalendarId(calDao.getSequence(con).intValue());
+		}
+		fillOCalendarWithDefaults(ocal);
+		if (ocal.getIsDefault()) calDao.resetIsDefaultByProfile(con, ocal.getDomainId(), ocal.getUserId());
+		if (insert) {
+			calDao.insert(con, ocal);
 		} else {
-			caldao.update(con, ocal);
+			calDao.update(con, ocal);
 		}
 		
 		return createCalendar(ocal);
@@ -2083,32 +2355,44 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return ICalendarUtils.buildUid(timeBasedPart + "." + eventPart, internetName);
 	}
 	
-	private InsertResult doEventInsert(Connection con, Event event, boolean insertRecurrence, boolean insertAttendees) throws WTException {
+	private InsertResult doEventInputInsert(Connection con, HashMap<String, OEvent> cache, EventInput ei) throws DAOException {
+		InsertResult insert = doEventInsert(con, ei.event, true, true);
+		if (insert.recurrence != null) {
+			// Cache recurring event for future use within broken references 
+			cache.put(insert.event.getPublicUid(), insert.event);
+			// If present, adds excluded dates as broken instances
+			if (ei.excludedDates != null) {
+				for(LocalDate date : ei.excludedDates) {
+					doExcludeRecurrenceDate(con, insert.event, date);
+				}
+			}
+		} else {
+			if (ei.overwritesRecurringInstance != null) {
+				if (cache.containsKey(insert.event.getPublicUid())) {
+					final OEvent oevt = cache.get(insert.event.getPublicUid());
+					doExcludeRecurrenceDate(con, oevt, ei.overwritesRecurringInstance, insert.event.getEventId());
+				}
+			}
+		}
+		return insert;
+	}
+	
+	private InsertResult doEventInsert(Connection con, Event event, boolean insertRecurrence, boolean insertAttendees) {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 		DateTime revision = createRevisionTimestamp();
 		
-		final int eventId = evtDao.getSequence(con).intValue();
-		
-		if (StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
-		if (StringUtils.isBlank(event.getPublicUid())) {
-			//final String uid = ICalendarUtils.buildUid(IdentifierUtils.getUUIDTimeBased(), WT.getDomainInternetName(getTargetProfileId().getDomainId()));
-			//event.setPublicUid(uid);
-			event.setPublicUid(buildEventUid(eventId, WT.getDomainInternetName(getTargetProfileId().getDomainId())));
-			//event.setPublicUid(IdentifierUtils.getUUID());
-		}
-		
-		OEvent oevt = new OEvent();
-		oevt.fillFrom(event);
-		oevt.setEventId(eventId);
+		OEvent oevt = createOEvent(event);
+		oevt.setEventId(evtDao.getSequence(con).intValue());
+		oevt.setRevisionStatus(OEvent.REV_STATUS_NEW);
+		fillOEventWithDefaults(oevt);
+		oevt.ensureCoherence();
 		
 		ArrayList<OEventAttendee> oatts = new ArrayList<>();
 		if(insertAttendees && event.hasAttendees()) {
-			OEventAttendee oatt = null;
 			for(EventAttendee att : event.getAttendees()) {
-				oatt = new OEventAttendee();
-				oatt.fillFrom(att);
+				final OEventAttendee oatt = createOEventAttendee(att);
 				oatt.setAttendeeId(IdentifierUtils.getUUID());
 				oatt.setEventId(oevt.getEventId());
 				attDao.insert(con, oatt);
@@ -2134,60 +2418,82 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private OEvent doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean attendees) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
+		EventDAO evtDao = EventDAO.getInstance();
+		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 		DateTime revision = createRevisionTimestamp();
 		
-		if(StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer());
+		if (StringUtils.isBlank(event.getOrganizer())) event.setOrganizer(buildOrganizer()); // Make sure organizer is filled
+		fillOEvent(originalEvent, event);
+		originalEvent.ensureCoherence();
 		
-		originalEvent.fillFrom(event);
-		if(attendees) {
-			eadao.selectByEvent(con, originalEvent.getEventId());
-			List<EventAttendee> fromList = createEventAttendeeList(eadao.selectByEvent(con, originalEvent.getEventId()));
+		if (attendees) {
+			attDao.selectByEvent(con, originalEvent.getEventId());
+			List<EventAttendee> fromList = createEventAttendeeList(attDao.selectByEvent(con, originalEvent.getEventId()));
 			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(fromList, event.getAttendees());
 			
-			OEventAttendee oatt = null;
 			for(EventAttendee att : changeSet.inserted) {
-				oatt = new OEventAttendee();
-				oatt.fillFrom(att);
+				final OEventAttendee oatt = createOEventAttendee(att);
 				oatt.setAttendeeId(IdentifierUtils.getUUID());
 				oatt.setEventId(originalEvent.getEventId());
-				eadao.insert(con, oatt);
+				attDao.insert(con, oatt);
 			}
 			for(EventAttendee att : changeSet.updated) {
-				oatt = new OEventAttendee();
-				oatt.fillFrom(att);
-				eadao.update(con, oatt);
+				final OEventAttendee oatt = createOEventAttendee(att);
+				attDao.update(con, oatt);
 			}
 			for(EventAttendee att : changeSet.deleted) {
-				eadao.delete(con, att.getAttendeeId());
+				attDao.delete(con, att.getAttendeeId());
 			}
 		}
 		
-		edao.update(con, originalEvent, revision);
+		evtDao.update(con, originalEvent, revision);
 		return originalEvent;
 	}
 	
-	private void doDeleteEvent(Connection con, int eventId) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		edao.logicDeleteById(con, eventId, createRevisionTimestamp());
-		//TODO: cancellare reminder
-		//TODO: se ricorrenza, eliminare tutte le broken dove newid!=null ??? Non servi più dato che verifico il D dell'evento ricorrente
+	private void doDeleteEvent(Connection con, int eventId, boolean logicDelete) throws DAOException {
+		EventDAO evtDao = EventDAO.getInstance();
+		
+		if (logicDelete) {
+			evtDao.logicDeleteById(con, eventId, createRevisionTimestamp());
+			
+		} else {
+			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+			RecurrenceBrokenDAO recbkDao = RecurrenceBrokenDAO.getInstance();
+			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+			
+			recDao.deleteByEventId(con, eventId);
+			recbkDao.deleteByEvent(con, eventId);
+			attDao.deleteByEvent(con, eventId);
+			evtDao.deleteById(con, eventId);
+		}
 	}
 	
-	private int doDeleteEventsByCalendar(Connection con, int calendarId) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		return edao.logicDeleteByCalendarId(con, calendarId, createRevisionTimestamp());
-		//TODO: cancellare reminder
+	private int doDeleteEventsByCalendar(Connection con, int calendarId, boolean logicDelete) throws DAOException {
+		EventDAO evtDao = EventDAO.getInstance();
+		
+		if (logicDelete) {
+			return evtDao.logicDeleteByCalendarId(con, calendarId, createRevisionTimestamp());
+			
+		} else {
+			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+			RecurrenceBrokenDAO recbkDao = RecurrenceBrokenDAO.getInstance();
+			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+			
+			attDao.deleteByCalendarId(con, calendarId);
+			recbkDao.deleteByCalendarId(con, calendarId);
+			recDao.deleteByCalendarId(con, calendarId);
+			return evtDao.deleteByCalendarId(con, calendarId);
+		}
 	}
 	
-	private void doMoveEvent(Connection con, boolean copy, Event event, int targetCalendarId) throws WTException {
+	private void doMoveEvent(Connection con, boolean copy, Event event, int targetCalendarId) throws DAOException {
 		if(copy) {
 			event.setCalendarId(targetCalendarId);
 			doEventInsert(con, event, true, true);
+			
 		} else {
-			EventDAO edao = EventDAO.getInstance();
-			edao.updateCalendar(con, event.getEventId(), targetCalendarId, createRevisionTimestamp());
+			EventDAO evtDao = EventDAO.getInstance();
+			evtDao.updateCalendar(con, event.getEventId(), targetCalendarId, createRevisionTimestamp());
 		}
 	}
 	
@@ -2213,44 +2519,76 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return ia.toString();
 	}
 	
-	private Calendar createCalendar(OCalendar ocal) {
-		if (ocal == null) return null;
-		Calendar cal = new Calendar();
-		cal.setCalendarId(ocal.getCalendarId());
-		cal.setDomainId(ocal.getDomainId());
-		cal.setUserId(ocal.getUserId());
-		cal.setBuiltIn(ocal.getBuiltIn());
-		cal.setName(ocal.getName());
-		cal.setDescription(ocal.getDescription());
-		cal.setColor(ocal.getColor());
-		cal.setSync(EnumUtils.forValue(Sync.class, ocal.getSync()));
-		//cal.setSync(ocal.getSync());
-		cal.setIsPrivate(ocal.getIsPrivate());
-		cal.setIsDefault(ocal.getIsDefault());
-		cal.setDefaultBusy(ocal.getBusy());
-		cal.setDefaultReminder(ocal.getReminder());
-		cal.setDefaultSendInvitation(ocal.getInvitation());
-		return cal;
+	private Calendar createCalendar(OCalendar with) {
+		return fillCalendar(new Calendar(), with);
 	}
 	
-	private OCalendar createOCalendar(Calendar cal) {
-		if (cal == null) return null;
-		OCalendar ocal = new OCalendar();
-		ocal.setCalendarId(cal.getCalendarId());
-		ocal.setDomainId(cal.getDomainId());
-		ocal.setUserId(cal.getUserId());
-		ocal.setBuiltIn(cal.getBuiltIn());
-		ocal.setName(cal.getName());
-		ocal.setDescription(cal.getDescription());
-		ocal.setColor(cal.getColor());
-		ocal.setSync(EnumUtils.getValue(cal.getSync()));
-		//ocal.setSync(cal.getSync());
-		ocal.setIsPrivate(cal.getIsPrivate());
-		ocal.setIsDefault(cal.getIsDefault());
-		ocal.setBusy(cal.getDefaultBusy());
-		ocal.setReminder(cal.getDefaultReminder());
-		ocal.setInvitation(cal.getDefaultSendInvitation());
-		return ocal;
+	private Calendar fillCalendar(Calendar fill, OCalendar with) {
+		if ((fill != null) && (with != null)) {
+			fill.setCalendarId(with.getCalendarId());
+			fill.setDomainId(with.getDomainId());
+			fill.setUserId(with.getUserId());
+			fill.setBuiltIn(with.getBuiltIn());
+			fill.setProvider(EnumUtils.forSerializedName(with.getProvider(), Calendar.Provider.class));
+			fill.setName(with.getName());
+			fill.setDescription(with.getDescription());
+			fill.setColor(with.getColor());
+			fill.setSync(EnumUtils.forSerializedName(with.getSync(), Calendar.Sync.class));
+			fill.setIsDefault(with.getIsDefault());
+			fill.setIsPrivate(with.getIsPrivate());
+			fill.setDefaultBusy(with.getBusy());
+			fill.setDefaultReminder(with.getReminder());
+			fill.setDefaultSendInvitation(with.getInvitation());
+			fill.setParameters(with.getParameters());
+		}
+		return fill;
+	}
+	
+	private OCalendar createOCalendar(Calendar with) {
+		return fillOCalendar(new OCalendar(), with);
+	}
+	
+	private OCalendar fillOCalendar(OCalendar fill, Calendar with) {
+		if ((fill != null) && (with != null)) {
+			fill.setCalendarId(with.getCalendarId());
+			fill.setDomainId(with.getDomainId());
+			fill.setUserId(with.getUserId());
+			fill.setBuiltIn(with.getBuiltIn());
+			fill.setProvider(EnumUtils.toSerializedName(with.getProvider()));
+			fill.setName(with.getName());
+			fill.setDescription(with.getDescription());
+			fill.setColor(with.getColor());
+			fill.setSync(EnumUtils.toSerializedName(with.getSync()));
+			fill.setIsDefault(with.getIsDefault());
+			fill.setIsPrivate(with.getIsPrivate());
+			fill.setBusy(with.getDefaultBusy());
+			fill.setReminder(with.getDefaultReminder());
+			fill.setInvitation(with.getDefaultSendInvitation());
+			fill.setParameters(with.getParameters());
+		}
+		return fill;
+	}
+	
+	private OCalendar fillOCalendarWithDefaults(OCalendar fill) {
+		if (fill != null) {
+			CalendarServiceSettings ss = getServiceSettings();
+			if (fill.getDomainId() == null) fill.setDomainId(getTargetProfileId().getDomainId());
+			if (fill.getUserId() == null) fill.setUserId(getTargetProfileId().getUserId());
+			if (fill.getBuiltIn() == null) fill.setBuiltIn(false);
+			if (StringUtils.isBlank(fill.getProvider())) fill.setProvider(EnumUtils.toSerializedName(Calendar.Provider.LOCAL));
+			if (StringUtils.isBlank(fill.getColor())) fill.setColor("#FFFFFF");
+			if (StringUtils.isBlank(fill.getSync())) fill.setSync(EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
+			if (fill.getIsDefault() == null) fill.setIsDefault(false);
+			if (fill.getIsPrivate() == null) fill.setIsPrivate(false);
+			if (fill.getBusy() == null) fill.setBusy(false);
+			if (fill.getInvitation() == null) fill.setInvitation(false);
+			
+			Calendar.Provider provider = EnumUtils.forSerializedName(fill.getProvider(), Calendar.Provider.class);
+			if (Calendar.Provider.WEBCAL.equals(provider) || Calendar.Provider.CALDAV.equals(provider)) {
+				fill.setIsDefault(false);
+			}
+		}
+		return fill;
 	}
 	
 	private SchedulerEventInstance cloneEvent(SchedulerEventInstance sourceEvent, DateTime newStart, DateTime newEnd) {
@@ -2260,28 +2598,95 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return event;
 	}
 	
-	private Event createEvent(OEvent oevt) {
-		Event evt = new Event();
-		evt.setEventId(oevt.getEventId());
-		evt.setCalendarId(oevt.getCalendarId());
-		evt.setRevisionTimestamp(oevt.getRevisionTimestamp());
-		evt.setPublicUid(oevt.getPublicUid());
-		evt.setStartDate(oevt.getStartDate());
-		evt.setEndDate(oevt.getEndDate());
-		evt.setTimezone(oevt.getTimezone());
-		evt.setAllDay(oevt.getAllDay());
-		evt.setOrganizer(oevt.getOrganizer());
-		evt.setTitle(oevt.getTitle());
-		evt.setDescription(oevt.getDescription());
-		evt.setLocation(oevt.getLocation());
-		evt.setIsPrivate(oevt.getIsPrivate());
-		evt.setBusy(oevt.getBusy());
-		evt.setReminder(oevt.getReminder());
-		evt.setActivityId(oevt.getActivityId());
-		evt.setMasterDataId(oevt.getMasterDataId());
-		evt.setStatMasterDataId(oevt.getStatMasterDataId());
-		evt.setCausalId(oevt.getCausalId());
-		return evt;
+	private Event createEvent(OEvent with) {
+		return fillEvent(new Event(), with);
+	}
+	
+	private Event fillEvent(Event fill, OEvent with) {
+		if ((fill != null) && (with != null)) {
+			fill.setEventId(with.getEventId());
+			fill.setCalendarId(with.getCalendarId());
+			//fill.setRevisionStatus(EnumUtils.forSerializedName(with.getRevisionStatus(), Event.RevisionStatus.class));
+			fill.setRevisionTimestamp(with.getRevisionTimestamp());
+			//fill.setRevisionSequence(with.getRevisionSequence());
+			fill.setPublicUid(with.getPublicUid());
+			fill.setReadOnly(with.getReadOnly());
+			fill.setStartDate(with.getStartDate());
+			fill.setEndDate(with.getEndDate());
+			fill.setTimezone(with.getTimezone());
+			fill.setAllDay(with.getAllDay());
+			fill.setOrganizer(with.getOrganizer());
+			fill.setTitle(with.getTitle());
+			fill.setDescription(with.getDescription());
+			fill.setLocation(with.getLocation());
+			fill.setIsPrivate(with.getIsPrivate());
+			fill.setBusy(with.getBusy());
+			fill.setReminder(with.getReminder());
+			fill.setHref(with.getHref());
+			fill.setEtag(with.getEtag());
+			fill.setActivityId(with.getActivityId());
+			fill.setMasterDataId(with.getMasterDataId());
+			fill.setStatMasterDataId(with.getStatMasterDataId());
+			fill.setCausalId(with.getCausalId());
+		}
+		return fill;
+	}
+	
+	/*
+	private void fillEventWithDefaults(Event fill) {
+		if (fill != null) {
+			if (StringUtils.isBlank(fill.getPublicUid())) {
+				fill.setPublicUid(buildEventUid(fill.getEventId(), WT.getDomainInternetName(getTargetProfileId().getDomainId())));
+			}
+			if (fill.getReadOnly() == null) fill.setReadOnly(false);
+			if (StringUtils.isBlank(fill.getOrganizer())) fill.setOrganizer(buildOrganizer());
+		}
+	}
+	*/
+	
+	private OEvent createOEvent(Event with) {
+		return fillOEvent(new OEvent(), with);
+	}
+	
+	private OEvent fillOEvent(OEvent fill, Event with) {
+		if ((fill != null) && (with != null)) {
+			fill.setEventId(with.getEventId());
+			fill.setCalendarId(with.getCalendarId());
+			//fill.setRevisionStatus(EnumUtils.toSerializedName(with.getRevisionStatus()));
+			fill.setRevisionTimestamp(with.getRevisionTimestamp());
+			//fill.setRevisionSequence(with.getRevisionSequence());
+			fill.setPublicUid(with.getPublicUid());
+			fill.setReadOnly(with.getReadOnly());
+			fill.setStartDate(with.getStartDate());
+			fill.setEndDate(with.getEndDate());
+			fill.setTimezone(with.getTimezone());
+			fill.setAllDay(with.getAllDay());
+			fill.setOrganizer(with.getOrganizer());
+			fill.setTitle(with.getTitle());
+			fill.setDescription(with.getDescription());
+			fill.setLocation(with.getLocation());
+			fill.setIsPrivate(with.getIsPrivate());
+			fill.setBusy(with.getBusy());
+			fill.setReminder(with.getReminder());
+			fill.setHref(with.getHref());
+			fill.setEtag(with.getEtag());
+			fill.setActivityId(with.getActivityId());
+			fill.setMasterDataId(with.getMasterDataId());
+			fill.setStatMasterDataId(with.getStatMasterDataId());
+			fill.setCausalId(with.getCausalId());
+		}
+		return fill;
+	}
+	
+	private OEvent fillOEventWithDefaults(OEvent fill) {
+		if (fill != null) {
+			if (StringUtils.isBlank(fill.getPublicUid())) {
+				fill.setPublicUid(buildEventUid(fill.getEventId(), WT.getDomainInternetName(getTargetProfileId().getDomainId())));
+			}
+			if (fill.getReadOnly() == null) fill.setReadOnly(false);
+			if (StringUtils.isBlank(fill.getOrganizer())) fill.setOrganizer(buildOrganizer());
+		}
+		return fill;
 	}
 	
 	private EventInstance createEventInstance(String key, RecurringInfo recurringInfo, VSchedulerEvent se) {
@@ -2301,6 +2706,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		evti.setIsPrivate(se.getIsPrivate());
 		evti.setBusy(se.getBusy());
 		evti.setReminder(se.getReminder());
+		evti.setHref(se.getHref());
+		evti.setEtag(se.getEtag());
 		evti.setActivityId(se.getActivityId());
 		evti.setMasterDataId(se.getMasterDataId());
 		evti.setStatMasterDataId(se.getStatMasterDataId());
@@ -2361,15 +2768,36 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return rec;
 	}
 	
-	private EventAttendee createEventAttendee(OEventAttendee attendee) {
-		EventAttendee att = new EventAttendee();
-		att.setAttendeeId(attendee.getAttendeeId());
-		att.setRecipient(attendee.getRecipient());
-		att.setRecipientType(attendee.getRecipientType());
-		att.setRecipientRole(attendee.getRecipientRole());
-		att.setResponseStatus(attendee.getResponseStatus());
-		att.setNotify(attendee.getNotify());
-		return att;
+	private EventAttendee createEventAttendee(OEventAttendee with) {
+		return fillEventAttendee(new EventAttendee(), with);
+	}
+	
+	private EventAttendee fillEventAttendee(EventAttendee fill, OEventAttendee with) {
+		if ((fill != null) && (with != null)) {
+			fill.setAttendeeId(with.getAttendeeId());
+			fill.setRecipient(with.getRecipient());
+			fill.setRecipientType(with.getRecipientType());
+			fill.setRecipientRole(with.getRecipientRole());
+			fill.setResponseStatus(with.getResponseStatus());
+			fill.setNotify(with.getNotify());
+		}
+		return fill;
+	}
+	
+	private OEventAttendee createOEventAttendee(EventAttendee with) {
+		return fillOEventAttendee(new OEventAttendee(), with);
+	}
+	
+	private OEventAttendee fillOEventAttendee(OEventAttendee fill, EventAttendee with) {
+		if ((fill != null) && (with != null)) {
+			fill.setAttendeeId(with.getAttendeeId());
+			fill.setRecipient(with.getRecipient());
+			fill.setRecipientType(with.getRecipientType());
+			fill.setRecipientRole(with.getRecipientRole());
+			fill.setResponseStatus(with.getResponseStatus());
+			fill.setNotify(with.getNotify());
+		}
+		return fill;
 	}
 	
 	private List<EventAttendee> createEventAttendeeList(List<OEventAttendee> attendees) {
@@ -2379,12 +2807,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		return atts;
 	}
-	
-	
-	
-	
-	
-	
 	
 	private UserProfileId findCalendarOwner(int calendarId) throws WTException {
 		Connection con = null;
@@ -2589,7 +3011,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	
+	public static class ProbeCalendarRemoteUrlResult {
+		public final String displayName;
+		
+		public ProbeCalendarRemoteUrlResult(String displayName) {
+			this.displayName = displayName;
+		}
+	}
 	
 	
 	

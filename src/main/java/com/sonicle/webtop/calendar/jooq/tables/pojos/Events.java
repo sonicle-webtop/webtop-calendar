@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables.pojos;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events implements java.io.Serializable {
 
-	private static final long serialVersionUID = 313192249;
+	private static final long serialVersionUID = 1990389087;
 
 	private java.lang.Integer      eventId;
 	private java.lang.Integer      calendarId;
@@ -42,6 +42,8 @@ public class Events implements java.io.Serializable {
 	private java.lang.Integer      causalId;
 	private java.lang.String       organizer;
 	private java.lang.Integer      revisionSequence;
+	private java.lang.String       href;
+	private java.lang.String       etag;
 
 	public Events() {}
 
@@ -69,7 +71,9 @@ public class Events implements java.io.Serializable {
 		java.lang.String       statMasterDataId,
 		java.lang.Integer      causalId,
 		java.lang.String       organizer,
-		java.lang.Integer      revisionSequence
+		java.lang.Integer      revisionSequence,
+		java.lang.String       href,
+		java.lang.String       etag
 	) {
 		this.eventId = eventId;
 		this.calendarId = calendarId;
@@ -95,6 +99,8 @@ public class Events implements java.io.Serializable {
 		this.causalId = causalId;
 		this.organizer = organizer;
 		this.revisionSequence = revisionSequence;
+		this.href = href;
+		this.etag = etag;
 	}
 
 	public java.lang.Integer getEventId() {
@@ -287,5 +293,21 @@ public class Events implements java.io.Serializable {
 
 	public void setRevisionSequence(java.lang.Integer revisionSequence) {
 		this.revisionSequence = revisionSequence;
+	}
+
+	public java.lang.String getHref() {
+		return this.href;
+	}
+
+	public void setHref(java.lang.String href) {
+		this.href = href;
+	}
+
+	public java.lang.String getEtag() {
+		return this.etag;
+	}
+
+	public void setEtag(java.lang.String etag) {
+		this.etag = etag;
 	}
 }

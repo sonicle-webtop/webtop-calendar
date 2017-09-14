@@ -43,5 +43,5 @@ import java.util.ArrayList;
  * @author malbinola
  */
 public interface EventFileReader {
-	public ArrayList<EventReadResult> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException;
+	public ArrayList<EventInput> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException;
 }

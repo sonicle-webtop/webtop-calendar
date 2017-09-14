@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables.pojos;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Calendars implements java.io.Serializable {
 
-	private static final long serialVersionUID = -1279825503;
+	private static final long serialVersionUID = 1304359579;
 
 	private java.lang.Integer calendarId;
 	private java.lang.String  domainId;
@@ -31,6 +31,8 @@ public class Calendars implements java.io.Serializable {
 	private java.lang.Boolean invitation;
 	private java.lang.Boolean isPrivate;
 	private java.lang.Boolean isDefault;
+	private java.lang.String  provider;
+	private java.lang.String  parameters;
 
 	public Calendars() {}
 
@@ -47,7 +49,9 @@ public class Calendars implements java.io.Serializable {
 		java.lang.Integer reminder,
 		java.lang.Boolean invitation,
 		java.lang.Boolean isPrivate,
-		java.lang.Boolean isDefault
+		java.lang.Boolean isDefault,
+		java.lang.String  provider,
+		java.lang.String  parameters
 	) {
 		this.calendarId = calendarId;
 		this.domainId = domainId;
@@ -62,6 +66,8 @@ public class Calendars implements java.io.Serializable {
 		this.invitation = invitation;
 		this.isPrivate = isPrivate;
 		this.isDefault = isDefault;
+		this.provider = provider;
+		this.parameters = parameters;
 	}
 
 	public java.lang.Integer getCalendarId() {
@@ -166,5 +172,21 @@ public class Calendars implements java.io.Serializable {
 
 	public void setIsDefault(java.lang.Boolean isDefault) {
 		this.isDefault = isDefault;
+	}
+
+	public java.lang.String getProvider() {
+		return this.provider;
+	}
+
+	public void setProvider(java.lang.String provider) {
+		this.provider = provider;
+	}
+
+	public java.lang.String getParameters() {
+		return this.parameters;
+	}
+
+	public void setParameters(java.lang.String parameters) {
+		this.parameters = parameters;
 	}
 }

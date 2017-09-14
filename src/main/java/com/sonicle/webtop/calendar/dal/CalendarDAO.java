@@ -120,6 +120,7 @@ public class CalendarDAO extends BaseDAO {
 			)
 			.orderBy(
 				CALENDARS.BUILT_IN.desc(),
+				CALENDARS.PROVIDER.asc(),
 				CALENDARS.NAME.asc()
 			)
 			.fetchInto(OCalendar.class);
@@ -137,6 +138,7 @@ public class CalendarDAO extends BaseDAO {
 			)
 			.orderBy(
 				CALENDARS.BUILT_IN.desc(),
+				CALENDARS.PROVIDER.asc(),
 				CALENDARS.NAME.asc()
 			)
 			.fetchInto(OCalendar.class);
@@ -165,7 +167,10 @@ public class CalendarDAO extends BaseDAO {
 				.and(CALENDARS.USER_ID.equal(userId))
 				.and(CALENDARS.BUILT_IN.equal(false))
 			)
-			.orderBy(CALENDARS.NAME)
+			.orderBy(
+				CALENDARS.PROVIDER.asc(),
+				CALENDARS.NAME.asc()
+			)
 			.fetchInto(OCalendar.class);
 	}
 	
@@ -185,12 +190,13 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.NAME, item.getName())
 			.set(CALENDARS.DESCRIPTION, item.getDescription())
 			.set(CALENDARS.COLOR, item.getColor())
+			.set(CALENDARS.SYNC, item.getSync())
+			.set(CALENDARS.IS_DEFAULT, item.getIsDefault())
 			.set(CALENDARS.IS_PRIVATE, item.getIsPrivate())
 			.set(CALENDARS.BUSY, item.getBusy())
 			.set(CALENDARS.REMINDER, item.getReminder())
-			.set(CALENDARS.SYNC, item.getSync())
 			.set(CALENDARS.INVITATION, item.getInvitation())
-			.set(CALENDARS.IS_DEFAULT, item.getIsDefault())
+			.set(CALENDARS.PARAMETERS, item.getParameters())
 			.where(
 				CALENDARS.CALENDAR_ID.equal(item.getCalendarId())
 			)
@@ -202,6 +208,17 @@ public class CalendarDAO extends BaseDAO {
 		return dsl
 			.update(CALENDARS)
 			.set(fieldValues)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
+			.execute();
+	}
+	
+	public int updateParametersById(Connection con, int calendarId, String parameters) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(CALENDARS)
+			.set(CALENDARS.PARAMETERS, parameters)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)

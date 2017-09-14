@@ -41,18 +41,35 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 		WTF.field('calendarId', 'int', false),
 		WTF.field('domainId', 'string', false),
 		WTF.field('userId', 'string', false),
+		WTF.field('provider', 'string', false, {defaultValue: 'local'}),
 		WTF.field('name', 'string', false),
 		WTF.field('description', 'string', true),
 		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
 		WTF.field('sync', 'string', false, {defaultValue: 'O'}),
-		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
+		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('busy', 'boolean', false, {defaultValue: false}),
 		WTF.field('reminder', 'int', true),
 		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
-		// Read-only fields
+		WTF.field('remoteUrl', 'string', true, {
+			validators: [{
+				type: 'sopresence',
+				ifField: 'provider',
+				ifValues: ['webcal', 'caldav']
+			}]
+		}),
+		WTF.field('remoteUsername', 'string', true),
+		WTF.field('remotePassword', 'string', true),
+		
+		// Useful computed fields...
 		WTF.calcField('_profileId', 'string', ['domainId', 'userId'], function(v, rec) {
 			return rec.get('userId') + '@' + rec.get('domainId');
 		})
-	]
+	],
+	
+	statics: {
+		hasRemoteSync: function(provider) {
+			return (provider === 'webcal') || (provider === 'caldav');
+		}
+	}
 });

@@ -46,6 +46,7 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarLkp', {
 		WTF.field('reminder', 'int', true),
 		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
 		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
+		WTF.field('_create', 'boolean', false),
 		WTF.calcField('_profileId', 'string', ['domainId', 'userId'], function(v, rec) {
 			return rec.get('userId') + '@' + rec.get('domainId');
 		})

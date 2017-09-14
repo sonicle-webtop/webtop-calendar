@@ -55,21 +55,17 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 	},
 	
 	/**
-	 * @cfg {String} ownerId
-	 * Initial ownerId value
-	*/
-	
-	/**
-	 * @cfg {String} calendarId
-	 * Initial calendarId value
+	 * @cfg {Object} data
+	 * Initial data values: ownerId, calendarId;
 	*/
 	
 	initComponent: function() {
 		var me = this,
-				ic = me.getInitialConfig();
+				ic = me.getInitialConfig(),
+				data = ic['data'] || {};
 		
-		if(!Ext.isEmpty(ic.ownerId)) me.getVM().set('ownerId', ic.ownerId);
-		if(!Ext.isEmpty(ic.calendarId)) me.getVM().set('calendarId', ic.calendarId);
+		if (!Ext.isEmpty(data.ownerId)) me.getVM().set('ownerId', data.ownerId);
+		if (!Ext.isEmpty(data.calendarId)) me.getVM().set('calendarId', data.calendarId);
 		
 		Ext.apply(me, {
 			buttons: [{
@@ -116,7 +112,12 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 					store: {
 						autoLoad: true,
 						model: me.mys.preNs('model.CalendarLkp'),
-						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
+						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders'),
+						filters: [{
+							filterFn: function(rec) {
+								return (rec.get('_create') === true);
+							}
+						}]
 					},
 					colorField: 'color',
 					fieldLabel: me.mys.res('calendarChooser.fld-calendar.lbl'),
@@ -128,7 +129,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 	
 	onOkClick: function() {
 		var me = this;
-		if(!me.lref('fldowner').isValid() || !me.lref('fldcalendar').isValid()) return;
+		if (!me.lref('fldowner').isValid() || !me.lref('fldcalendar').isValid()) return;
 		me.fireEvent('viewok', me);
 		me.closeView(false);
 	},
@@ -143,9 +144,12 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 				sto = fld.getStore();
 		
 		sto.clearFilter();
-		sto.addFilter({
+		sto.addFilter([{
 			property: '_profileId',
 			value: owner
-		});
+		}, {
+			property: '_create',
+			value: true
+		}]);
 	}
 });

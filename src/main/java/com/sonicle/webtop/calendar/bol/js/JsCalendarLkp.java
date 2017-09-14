@@ -52,8 +52,10 @@ public class JsCalendarLkp {
 	public Boolean busy;
 	public Integer reminder;
 	public Boolean invitation;
+	public Boolean _create;
 	
-	public JsCalendarLkp(Calendar cal) {
+	public JsCalendarLkp(CalendarFolder folder) {
+		final Calendar cal = folder.getCalendar();
 		calendarId = cal.getCalendarId();
 		domainId = cal.getDomainId();
 		userId = cal.getUserId();
@@ -64,13 +66,10 @@ public class JsCalendarLkp {
 		busy = cal.getDefaultBusy();
 		reminder = cal.getDefaultReminder();
 		invitation = cal.getDefaultSendInvitation();
-	}
-	
-	public JsCalendarLkp(CalendarFolder folder) {
-		this(folder.getCalendar());
 		if (folder.getData() != null) {
 			CalendarFolderData data = (CalendarFolderData)folder.getData();
 			if (!StringUtils.isBlank(data.color)) color = data.color;
 		}
+		_create = folder.getElementsPerms().implies("CREATE");
 	}
 }

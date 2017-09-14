@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Calendars extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord> {
 
-	private static final long serialVersionUID = 2019949657;
+	private static final long serialVersionUID = 1462763472;
 
 	/**
 	 * The reference instance of <code>calendar.calendars</code>
@@ -95,6 +95,16 @@ public class Calendars extends org.jooq.impl.TableImpl<com.sonicle.webtop.calend
 	 * The column <code>calendar.calendars.is_default</code>.
 	 */
 	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.Boolean> IS_DEFAULT = createField("is_default", org.jooq.impl.SQLDataType.BOOLEAN.nullable(false).defaulted(true), this, "");
+
+	/**
+	 * The column <code>calendar.calendars.provider</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.String> PROVIDER = createField("provider", org.jooq.impl.SQLDataType.VARCHAR.length(20), this, "");
+
+	/**
+	 * The column <code>calendar.calendars.parameters</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.String> PARAMETERS = createField("parameters", org.jooq.impl.SQLDataType.CLOB, this, "");
 
 	/**
 	 * Create a <code>calendar.calendars</code> table reference

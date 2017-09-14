@@ -202,10 +202,19 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'socolorcombo',
 					reference: 'fldcalendar',
 					bind: '{record.calendarId}',
+					autoLoadOnValue: true,
 					store: {
-						autoLoad: true,
 						model: me.mys.preNs('model.CalendarLkp'),
-						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
+						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders'),
+						filters: [{
+							filterFn: function(rec) {
+								if (rec.get('_create') === false) {
+									return rec.getId() === me.getModel().get('calendarId');
+								} else {
+									return true;
+								}
+							}
+						}]
 					},
 					colorField: 'color',
 					listeners: {

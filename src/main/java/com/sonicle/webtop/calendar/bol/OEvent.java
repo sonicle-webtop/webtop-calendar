@@ -33,7 +33,6 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import org.joda.time.DateTime;
 
@@ -46,49 +45,19 @@ public class OEvent extends Events {
 	public final static String REV_STATUS_MODIFIED = "M";
 	public final static String REV_STATUS_DELETED = "D";
 	
-	public OEvent() {
-		super();
-		setReadOnly(false);
-		setRevisionStatus(REV_STATUS_NEW);
-	}
-	
-	public void fillFrom(Event event) {
-		setCalendarId(event.getCalendarId());
-		
-		setStartDate(event.getStartDate());
-		setEndDate(event.getEndDate());
-		setTimezone(event.getTimezone());
-		setAllDay(event.getAllDay());
-		ensureCoherence(this);
-		
-		setTitle(event.getTitle());
-		setDescription(event.getDescription());
-		setLocation(event.getLocation());
-		setIsPrivate(event.getIsPrivate());
-		setBusy(event.getBusy());
-		setReminder(event.getReminder());
-		setActivityId(event.getActivityId());
-		setMasterDataId(event.getMasterDataId());
-		setStatMasterDataId(event.getStatMasterDataId());
-		setCausalId(event.getCausalId());
-		setOrganizer(event.getOrganizer());
-		setRevisionTimestamp(event.getRevisionTimestamp());
-		setPublicUid(event.getPublicUid());
-	}
-	
-	public static void ensureCoherence(OEvent event) {
+	public void ensureCoherence() {
 		// Ensure start < end
-		if(event.getStartDate().compareTo(event.getEndDate()) > 0) {
+		if (getStartDate().compareTo(getEndDate()) > 0) {
 			// Swap dates...
-			DateTime dt = event.getEndDate();
-			event.setEndDate(event.getStartDate());
-			event.setStartDate(dt);
+			final DateTime dt = getEndDate();
+			setEndDate(getStartDate());
+			setStartDate(dt);
 		}
 		
 		// If event is all day, take max time as possible
-		if(event.getAllDay()) {
-			event.setStartDate(event.getStartDate().withTimeAtStartOfDay());
-			event.setEndDate(DateTimeUtils.withTimeAtEndOfDay(event.getEndDate()));
+		if (getAllDay()) {
+			setStartDate(getStartDate().withTimeAtStartOfDay());
+			setEndDate(DateTimeUtils.withTimeAtEndOfDay(getEndDate()));
 		}
 	}
 }

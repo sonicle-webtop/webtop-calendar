@@ -29,6 +29,7 @@ CREATE TABLE "calendar"."calendars" (
 "domain_id" varchar(20) NOT NULL,
 "user_id" varchar(100) NOT NULL,
 "built_in" bool DEFAULT false,
+"provider" varchar(20) NOT NULL,
 "name" varchar(50) NOT NULL,
 "description" varchar(100),
 "color" varchar(20),
@@ -37,7 +38,8 @@ CREATE TABLE "calendar"."calendars" (
 "is_default" bool DEFAULT false NOT NULL,
 "busy" bool DEFAULT false NOT NULL,
 "reminder" int4,
-"invitation" bool DEFAULT true NOT NULL
+"invitation" bool DEFAULT true NOT NULL,
+"parameters" text
 )
 WITH (OIDS=FALSE)
 
@@ -68,6 +70,8 @@ CREATE TABLE "calendar"."events" (
 "busy" bool NOT NULL,
 "reminder" int4,
 "reminded_on" timestamptz(6),
+"href" varchar(255),
+"etag" varchar(255),
 "activity_id" int4,
 "master_data_id" varchar(36),
 "stat_master_data_id" varchar(36),

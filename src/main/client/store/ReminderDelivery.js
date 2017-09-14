@@ -31,7 +31,6 @@
  * feasible for technical reasons, the Appropriate Legal Notices must display
  * the words "Powered by Sonicle WebTop".
  */
-
 Ext.define('Sonicle.webtop.calendar.store.ReminderDelivery', {
 	extend: 'Ext.data.ArrayStore',
 	

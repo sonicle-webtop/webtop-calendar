@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar;
 
 import static com.sonicle.webtop.calendar.CalendarSettings.*;
-import com.sonicle.webtop.calendar.model.Sync;
+import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.sdk.BaseServiceSettings;
 import org.joda.time.LocalTime;
 
@@ -47,8 +47,8 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 		super(serviceId, domainId);
 	}
 	
-	public Sync getDefaultCalendarSync() {
-		return getEnum(Sync.class, DEFAULT_PREFIX + CALENDAR_SYNC, Sync.OFF);
+	public Calendar.Sync getDefaultCalendarSync() {
+		return getEnum(DEFAULT_PREFIX + CALENDAR_SYNC, Calendar.Sync.OFF, Calendar.Sync.class);
 	}
 	
 	public String getDefaultView() {

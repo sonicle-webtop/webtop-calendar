@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> {
 
-	private static final long serialVersionUID = 1546406076;
+	private static final long serialVersionUID = -1369564358;
 
 	/**
 	 * The reference instance of <code>calendar.events</code>
@@ -150,6 +150,16 @@ public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.
 	 * The column <code>calendar.events.revision_sequence</code>.
 	 */
 	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.Integer> REVISION_SEQUENCE = createField("revision_sequence", org.jooq.impl.SQLDataType.INTEGER.nullable(false).defaulted(true), this, "");
+
+	/**
+	 * The column <code>calendar.events.href</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> HREF = createField("href", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
+
+	/**
+	 * The column <code>calendar.events.etag</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> ETAG = createField("etag", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
 
 	/**
 	 * Create a <code>calendar.events</code> table reference

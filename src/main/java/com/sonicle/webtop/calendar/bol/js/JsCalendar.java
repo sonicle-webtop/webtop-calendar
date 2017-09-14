@@ -34,8 +34,10 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.LangUtils;
+import com.sonicle.commons.URIUtils;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.Sync;
+import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 
 /**
  *
@@ -46,47 +48,65 @@ public class JsCalendar {
 	public String domainId;
 	public String userId;
 	public Boolean builtIn;
+	public String provider;
 	public String name;
 	public String description;
 	public String color;
 	public String sync;
-	public Boolean isPrivate;
 	public Boolean isDefault;
+	public Boolean isPrivate;
 	public Boolean busy;
 	public Integer reminder;
 	public Boolean invitation;
+	public String remoteUrl;
+	public String remoteUsername;
+	public String remotePassword;
 	
 	public JsCalendar(Calendar cal) {
 		calendarId = cal.getCalendarId();
 		domainId = cal.getDomainId();
 		userId = cal.getUserId();
 		builtIn = cal.getBuiltIn();
+		provider = EnumUtils.toSerializedName(cal.getProvider());
 		name = cal.getName();
 		description = cal.getDescription();
 		color = cal.getColor();
-		sync = EnumUtils.getValue(cal.getSync());
-		isPrivate = cal.getIsPrivate();
+		sync = EnumUtils.toSerializedName(cal.getSync());
 		isDefault = cal.getIsDefault();
+		isPrivate = cal.getIsPrivate();
 		busy = cal.getDefaultBusy();
 		reminder = cal.getDefaultReminder();
 		invitation = cal.getDefaultSendInvitation();
+		
+		CalendarRemoteParameters params = LangUtils.deserialize(cal.getParameters(), new CalendarRemoteParameters(), CalendarRemoteParameters.class);
+		remoteUrl = URIUtils.toString(params.url);
+		remoteUsername = params.username;
+		remotePassword = params.password;
 	}
 	
-	public static Calendar buildFolder(JsCalendar js) {
-		Calendar cat = new Calendar();
-		cat.setCalendarId(js.calendarId);
-		cat.setDomainId(js.domainId);
-		cat.setUserId(js.userId);
-		cat.setBuiltIn(js.builtIn);
-		cat.setName(js.name);
-		cat.setDescription(js.description);
-		cat.setColor(js.color);
-		cat.setSync(EnumUtils.forValue(Sync.class, js.sync));
-		cat.setIsPrivate(js.isPrivate);
-		cat.setIsDefault(js.isDefault);
-		cat.setDefaultBusy(js.busy);
-		cat.setDefaultReminder(js.reminder);
-		cat.setDefaultSendInvitation(js.invitation);
-		return cat;
+	public static Calendar createCalendar(JsCalendar js, String origParameters) {
+		Calendar cal = new Calendar();
+		cal.setCalendarId(js.calendarId);
+		cal.setDomainId(js.domainId);
+		cal.setUserId(js.userId);
+		cal.setBuiltIn(js.builtIn);
+		cal.setProvider(EnumUtils.forSerializedName(js.provider, Calendar.Provider.class));
+		cal.setName(js.name);
+		cal.setDescription(js.description);
+		cal.setColor(js.color);
+		cal.setSync(EnumUtils.forSerializedName(js.sync, Calendar.Sync.class));
+		cal.setIsDefault(js.isDefault);
+		cal.setIsPrivate(js.isPrivate);
+		cal.setDefaultBusy(js.busy);
+		cal.setDefaultReminder(js.reminder);
+		cal.setDefaultSendInvitation(js.invitation);
+		
+		CalendarRemoteParameters params = LangUtils.deserialize(origParameters, new CalendarRemoteParameters(), CalendarRemoteParameters.class);
+		params.url = URIUtils.createURIQuietly(js.remoteUrl);
+		params.username = js.remoteUsername;
+		params.password = js.remotePassword;
+		cal.setParameters(LangUtils.serialize(params, CalendarRemoteParameters.class));
+		
+		return cal;
 	}
 }

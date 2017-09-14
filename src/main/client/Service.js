@@ -41,6 +41,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.grid.column.Color',
 		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
+		'Sonicle.webtop.calendar.model.Calendar',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.GridEvent',
 		'Sonicle.webtop.calendar.view.Sharing',
@@ -74,6 +75,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.on('activate', me.onActivate, me);
 		me.onMessage('notifyReminder', function() {
 			WT.info('reminder arrived');
+		});
+		me.onMessage('remoteSyncResult', function(msg) {
+			var pl = msg.payload;
+			WT.showNotification(me.ID, {
+				tag: me.self.noTagRemoteSync(pl.calendarId),
+				title: pl.calendarName,
+				//iconCls: me.cssIconCls('im-chat', 'm'),
+				body: (pl.success === true) ? me.res('not.calendar.remotesync.ok.body') : me.res('not.calendar.remotesync.error.body', pl.message),
+				data: {
+					calendarId: pl.calendarId
+				}
+			}, {callbackService: true});
 		});
 		
 		me.setToolbar(Ext.create({
@@ -248,11 +261,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 								ad;
 						if(cal) {
 							ad = soDate.isMidnight(dates.startDate) && soDate.isMidnight(dates.endDate);
-							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), dates.startDate, dates.endDate, ad);
+							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), dates.startDate, dates.endDate, ad);
 						}
 					},
 					eventdblclick: function(s, rec) {
-						if(rec && !me.isEventRO(rec)) {
+						if (rec && !me.self.isSchedulerEventRO(rec)) {
 							var er = me.toRightsObj(rec.get('_rights'));
 							me.openEventUI(er.UPDATE, rec.get('id'));
 						}
@@ -269,7 +282,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 								start = dt;
 								end = soDate.add(dt, {minutes: 30});
 							}
-							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), start, end, ad);
+							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), start, end, ad);
 						}
 					},
 					eventcontextmenu: function(s, rec, el, e) {
@@ -334,15 +347,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}],
 				listeners: {
 					rowdblclick: function(s, rec) {
-						if (!me.isEventRO(rec)) {
+						if (!me.isSchedulerEventRO(rec)) {
 							var er = me.toRightsObj(rec.get('_rights'));
 							me.openEventUI(er.UPDATE, rec.get('id'));
-							//TODO: popolare il campo _rights nella risposta server
 						}
 					}
 				}
 			}]
 		}));
+	},
+	
+	notificationCallback: function(type, tag, data) {
+		var me = this;
+		if (tag.startsWith(me.self.NOTAG_REMOTESYNC)) {
+			me.reloadEvents();
+		}
 	},
 	
 	multical: function() {
@@ -472,6 +491,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (node) me.addCalendarUI(node.get('_domainId'), node.get('_userId'));
 			}
 		});
+		me.addAct('addRemoteCalendar', {
+			tooltip: null,
+			handler: function() {
+				var node = me.getSelectedFolder(me.trFolders());
+				if (node) me.addRemoteCalendarUI(node.get('_pid'));
+			}
+		});
 		me.addAct('editCalendar', {
 			tooltip: null,
 			handler: function() {
@@ -484,6 +510,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			handler: function() {
 				var node = me.getSelectedFolder(me.trFolders());
 				if (node) me.deleteCalendarUI(node);
+			}
+		});
+		me.addAct('syncRemoteCalendar', {
+			tooltip: null,
+			handler: function() {
+				var node = me.getSelectedFolder(me.trFolders());
+				if (node) me.syncRemoteCalendarUI(node.get('_calId'));
 			}
 		});
 		me.addAct('importEvents', {
@@ -590,7 +623,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			handler: function() {
 				var cal = me.getSelectedFolder(me.trFolders()),
 						day = me.multical().getValue();
-				if (cal) me.addEventAtUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_busy'), cal.get('_reminder'), day);
+				if (cal) me.addEventAtUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), day);
 			}
 		});
 		me.addAct('openEvent', {
@@ -599,10 +632,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event), er;
 				if (rec) {
-					er = me.toRightsObj(rec.get('_rights'));
-					me.openEventUI(er.UPDATE, rec.get('id'));
+						er = me.toRightsObj(rec.get('_rights'));
+						me.openEventUI(er.UPDATE, rec.get('id'));
+					}
 				}
-			}
 		});
 		me.addAct('deleteEvent', {
 			text: WT.res('act-delete.lbl'),
@@ -670,6 +703,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			xtype: 'menu',
 			items: [
 				me.getAct('addCalendar'),
+				me.getAct('addRemoteCalendar'),
 				'-',
 				{
 					text: me.res('mni-viewFolders.lbl'),
@@ -691,6 +725,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							mine = rec.getId().startsWith('0'),
 							rr = me.toRightsObj(rec.get('_rrights'));
 					me.getAct('addCalendar').setDisabled(!rr.MANAGE);
+					me.getAct('addRemoteCalendar').setDisabled(!rr.MANAGE);
 					me.getAct('editSharing').setDisabled(!rr.MANAGE);
 					me.getAct('manageHiddenCalendars').setDisabled(mine);
 				}
@@ -703,6 +738,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('editCalendar'),
 				me.getAct('deleteCalendar'),
 				me.getAct('addCalendar'),
+				me.getAct('addRemoteCalendar'),
 				'-',
 				{
 					text: me.res('mni-viewFolder.lbl'),
@@ -718,6 +754,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('editSharing'),
 				me.getAct('hideCalendar'),
 				me.getAct('calendarColor'),
+				me.getAct('syncRemoteCalendar'),
 				'-',
 				me.getAct('addEvent'),
 				me.getAct('importEvents')
@@ -729,15 +766,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							mine = rec.getId().startsWith('0'),
 							rr = me.toRightsObj(rec.get('_rrights')),
 							fr = me.toRightsObj(rec.get('_frights')),
-							er = me.toRightsObj(rec.get('_erights'));
+							er = me.toRightsObj(rec.get('_erights')),
+							MoCal = Sonicle.webtop.calendar.model.Calendar;
 					me.getAct('editCalendar').setDisabled(!fr.UPDATE);
 					me.getAct('deleteCalendar').setDisabled(!fr.DELETE || rec.get('_builtIn'));
 					me.getAct('addCalendar').setDisabled(!rr.MANAGE);
+					me.getAct('addRemoteCalendar').setDisabled(!rr.MANAGE);
 					me.getAct('editSharing').setDisabled(!rr.MANAGE);
 					me.getAct('addEvent').setDisabled(!er.CREATE);
 					me.getAct('importEvents').setDisabled(!er.CREATE);
 					me.getAct('hideCalendar').setDisabled(mine);
 					me.getAct('calendarColor').setDisabled(mine);
+					me.getAct('syncRemoteCalendar').setDisabled(!MoCal.hasRemoteSync(rec.get('_provider')));
 					if (!mine) s.down('colorpicker').select(rec.get('_color'), true);
 				}
 			}
@@ -773,7 +813,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var rec = s.menuData.event,
-							ro = me.isEventRO(rec),
+							ro = me.self.isSchedulerEventRO(rec),
 							er = me.toRightsObj(rec.get('_rights')),
 							brk = (rec.get('isBroken') === true);
 					me.getAct('openEvent').setDisabled(ro);
@@ -852,18 +892,40 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
+	addRemoteCalendarUI: function(profileId) {
+		var me = this;
+		me.setupRemoteCalendar(profileId, {
+			callback: function(success, mo) {
+				if(success) me.loadFolderNode(profileId);
+			}
+		});
+	},
+	
 	editCalendarUI: function(calendarId) {
 		var me = this;
 		me.editCalendar(calendarId, {
 			callback: function(success, model) {
-				if(success) me.loadFolderNode(model.get('_profileId'));
+				if (success) me.loadFolderNode(model.get('_profileId'));
 			}
 		});
 	},
 	
 	deleteCalendarUI: function(node) {
 		WT.confirm(this.res('calendar.confirm.delete', Ext.String.ellipsis(node.get('text'), 40)), function(bid) {
-			if(bid === 'yes') node.drop();
+			if (bid === 'yes') node.drop();
+		}, this);
+	},
+	
+	syncRemoteCalendarUI: function(calendarId) {
+		var me = this;
+		WT.confirm(this.res('calendar.confirm.remotesync'), function(bid) {
+			if (bid === 'yes') {
+				me.syncRemoteCalendar(calendarId, false, {
+					callback: function(success, json) {
+						if (!success) WT.error(json.message);
+					}
+				});
+			}
 		}, this);
 	},
 	
@@ -1046,6 +1108,23 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
+	setupRemoteCalendar: function(profileId, opts) {
+		opts = opts || {};
+		var me = this,
+			vct = WT.createView(me.ID, 'view.CalendarRemoteWiz', {
+				viewCfg: {
+					data: {
+						profileId: profileId
+					}
+				}
+			});
+		
+		vct.getView().on('viewclose', function(s) {
+			Ext.callback(opts.callback, opts.scope || me, [true, s.getVMData()]);
+		});
+		vct.show();
+	},
+	
 	editCalendar: function(calendarId, opts) {
 		opts = opts || {};
 		var me = this,
@@ -1060,6 +1139,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					calendarId: calendarId
 				}
 			});
+		});
+	},
+	
+	syncRemoteCalendar: function(calendarId, full, opts) {
+		opts = opts || {};
+		var me = this;
+		WT.ajaxReq(me.ID, 'ManageCalendars', {
+			params: {
+				crud: 'sync',
+				id: calendarId,
+				full: full
+			},
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope, [success, json]);
+			}
 		});
 	},
 	
@@ -1311,10 +1405,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}
 	},
 	
-	isEventRO: function(rec) {
-		return rec.get('isReadOnly') === true;
-	},
-	
 	/*
 	 * @private
 	 */
@@ -1368,9 +1458,23 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				dockableConfig: {
 					title: me.res(copy ? 'act-copyEvent.lbl' : 'act-moveEvent.lbl')
 				},
-				ownerId: ownerId,
-				calendarId: calendarId
+				data: {
+					ownerId: ownerId,
+					calendarId: calendarId
+				}
 			}
 		});
+	},
+	
+	statics: {
+		NOTAG_REMOTESYNC: 'remsync-',
+
+		noTagRemoteSync: function(calendarId) {
+			return this.NOTAG_REMOTESYNC + calendarId;
+		},
+		
+		isSchedulerEventRO: function(rec) {
+			return rec.get('isReadOnly') === true;
+		}
 	}
 });

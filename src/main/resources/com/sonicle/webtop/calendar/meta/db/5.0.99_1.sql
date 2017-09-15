@@ -21,5 +21,5 @@ ALTER TABLE "calendar"."calendars" ALTER COLUMN "provider" SET NOT NULL;
 -- Update structure for events
 -- ----------------------------
 ALTER TABLE "calendar"."events"
-ADD COLUMN "href" varchar(255),
-ADD COLUMN "etag" varchar(255);
+ADD COLUMN "href" varchar(2048),
+ADD COLUMN "etag" varchar(2048);

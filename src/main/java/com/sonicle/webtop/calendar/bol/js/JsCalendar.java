@@ -101,14 +101,14 @@ public class JsCalendar {
 		cal.setDefaultReminder(js.reminder);
 		cal.setDefaultSendInvitation(js.invitation);
 		
-		if (Calendar.Provider.LOCAL.equals(cal.getProvider())) {
-			cal.setParameters(null);
-		} else {
+		if (cal.isRemoteProvider()) {
 			CalendarRemoteParameters params = LangUtils.deserialize(origParameters, new CalendarRemoteParameters(), CalendarRemoteParameters.class);
 			params.url = URIUtils.createURIQuietly(js.remoteUrl);
 			params.username = js.remoteUsername;
 			params.password = js.remotePassword;
 			cal.setParameters(LangUtils.serialize(params, CalendarRemoteParameters.class));
+		} else {
+			cal.setParameters(null);
 		}
 		
 		return cal;

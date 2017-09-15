@@ -84,7 +84,17 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 				defaults: {
 					labelWidth: 110
 				},
-				items: [{
+				items: [
+				WTF.lookupCombo('id', 'desc', {
+					bind: '{record.provider}',
+					disabled: true,
+					store: Ext.create('Sonicle.webtop.calendar.store.Provider', {
+						autoLoad: true
+					}),
+					fieldLabel: me.mys.res('calendar.fld-provider.lbl'),
+					width: 250
+				}), 
+				{
 					xtype: 'textfield',
 					reference: 'fldname',
 					bind: '{record.name}',
@@ -98,16 +108,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 					},
 					hideEmptyLabel: false,
 					boxLabel: me.mys.res('calendar.fld-default.lbl')
-				}, 
-				WTF.lookupCombo('id', 'desc', {
-					bind: '{record.provider}',
-					disabled: true,
-					store: Ext.create('Sonicle.webtop.calendar.store.Provider', {
-						autoLoad: true
-					}),
-					fieldLabel: me.mys.res('calendar.fld-provider.lbl'),
-					width: 250
-				}),	{
+				}, {
 					xtype: 'textareafield',
 					bind: '{record.description}',
 					fieldLabel: me.mys.res('calendar.fld-description.lbl'),

@@ -1330,7 +1330,7 @@ public class Service extends BaseService {
 				getWts().notify(new RemoteSyncResult()
 					.setCalendarId(calendarId)
 					.setCalendarName(calendarName)
-					.setThrowable(ex)
+					.setThrowable(ex, true)
 				);
 			} finally {
 				synchronized(syncRemoteCalendarAAs) {

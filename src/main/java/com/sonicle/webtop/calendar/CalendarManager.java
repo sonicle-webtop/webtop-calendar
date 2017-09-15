@@ -32,7 +32,6 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.github.sardine.DavResource;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.HttpClientUtils;
@@ -73,7 +72,6 @@ import com.sonicle.webtop.calendar.dal.EventAttendeeDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
-import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.io.EventInput;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
@@ -149,10 +147,8 @@ import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
 import javax.mail.Session;
 import net.fortuna.ical4j.data.ParserException;
@@ -164,7 +160,6 @@ import net.fortuna.ical4j.model.property.Method;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.utils.URIBuilder;
 
 /**
@@ -1931,7 +1926,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						HashMap<String, OEvent> cache = new HashMap<>();
 						for(EventInput ei : input) {
 							ei.event.setCalendarId(calendarId);
-							ei.event.setReadOnly(true);
 							doEventInputInsert(con, cache, ei);
 						}
 						cache.clear();
@@ -1981,7 +1975,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								final EventInput ei = input.get(0);
 								
 								ei.event.setCalendarId(calendarId);
-								ei.event.setReadOnly(true);
 								ei.event.setHref(devt.getPath());
 								ei.event.setEtag(devt.geteTag());
 								doEventInputInsert(con, cache, ei);
@@ -2042,7 +2035,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 									}
 
 									ei.event.setCalendarId(calendarId);
-									ei.event.setReadOnly(true);
 									ei.event.setHref(devt.getPath());
 									ei.event.setEtag(devt.geteTag());
 									doEventInputInsert(con, cache, ei);

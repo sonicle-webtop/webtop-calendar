@@ -40,6 +40,7 @@ import com.sonicle.webtop.core.bol.Owner;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.List;
 import org.jooq.DSLContext;
 
@@ -101,6 +102,22 @@ public class CalendarDAO extends BaseDAO {
 			.from(CALENDARS)
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
+			)
+			.orderBy(
+				CALENDARS.BUILT_IN.desc(),
+				CALENDARS.NAME.asc()
+			)
+			.fetchInto(OCalendar.class);
+	}
+	
+	public List<OCalendar> selectByDomainIn(Connection con, String domainId, Collection<Integer> calendarIds) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.CALENDAR_ID.in(calendarIds))
 			)
 			.orderBy(
 				CALENDARS.BUILT_IN.desc(),

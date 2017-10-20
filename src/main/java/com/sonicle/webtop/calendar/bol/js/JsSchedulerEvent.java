@@ -40,6 +40,7 @@ import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFolder;
 import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
@@ -75,6 +76,54 @@ public class JsSchedulerEvent {
 	public String _profileId;
 	
 	public JsSchedulerEvent() {}
+	
+	public JsSchedulerEvent(CalendarRoot root, CalendarFolder folder, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
+		Calendar calendar = folder.getCalendar();
+		
+		// Determine if keep event data private
+		boolean keepDataPrivate = false;
+		if (event.getIsPrivate()) {
+			if (!calendar.getProfileId().equals(profileId)) {
+				keepDataPrivate = true;
+			}
+		}
+		
+		id = event.getKey();
+		eventId = event.getEventId();
+		originalEventId = event.getEventId();
+		calendarId = event.getCalendarId();
+		
+		// Source field is already in UTC, we need only to display it
+		// in the timezone choosen by user in his settings.
+		// Formatter will be instantiated specifying desired timezone.
+		startDate = ymdhmsZoneFmt.print(event.getStartDate());
+		endDate = ymdhmsZoneFmt.print(event.getEndDate());
+		timezone = event.getTimezone();
+		isAllDay = event.getAllDay();
+		
+		title = (keepDataPrivate) ? "***" : event.getTitle();
+		color = calendar.getColor();
+		if (folder.getData() != null) {
+			CalendarFolderData data = (CalendarFolderData)folder.getData();
+			if (!StringUtils.isBlank(data.color)) color = data.color;
+		}
+		location = (keepDataPrivate) ? "" : event.getLocation();
+		isPrivate = event.getIsPrivate();
+		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
+		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
+		isReadOnly = keepDataPrivate;
+		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
+		hasAtts = event.getHasAttendees();
+		isRecurring = event.isRecurring();
+		isBroken = event.isBroken();
+		hasCmts = !StringUtils.isBlank(event.getDescription());
+		
+		folderName = calendar.getName();
+		_owner = (root instanceof MyCalendarRoot) ? "" : root.getDescription();
+		_rights = folder.getElementsPerms().toString();
+		_profileId = calendar.getProfileId().toString();
+	}
 	
 	public JsSchedulerEvent(CalendarRoot rootFolder, CalendarFolder folder, SchedulerEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);

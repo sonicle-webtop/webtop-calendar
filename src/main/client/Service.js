@@ -347,7 +347,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}],
 				listeners: {
 					rowdblclick: function(s, rec) {
-						if (!me.isSchedulerEventRO(rec)) {
+						if (!me.self.isSchedulerEventRO(rec)) {
 							var er = me.toRightsObj(rec.get('_rights'));
 							me.openEventUI(er.UPDATE, rec.get('id'));
 						}

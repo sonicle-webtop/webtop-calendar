@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.util.JRHelper;
 import java.awt.Image;
 import java.util.Date;
@@ -57,7 +58,7 @@ public class RBAgendaEvent {
 	public Integer spanLeft;
 	public Integer spanRight;
 	
-	public RBAgendaEvent(Calendar calendar, SchedulerEventInstance event, Integer spanLeft, Integer spanRight) {
+	public RBAgendaEvent(Calendar calendar, SchedEventInstance event, Integer spanLeft, Integer spanRight) {
 		this.calendarId = calendar.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = Calendar.getHexColor(calendar.getColor());

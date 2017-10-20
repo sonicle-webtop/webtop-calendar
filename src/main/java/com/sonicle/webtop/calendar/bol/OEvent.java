@@ -34,13 +34,14 @@ package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
+import com.sonicle.webtop.calendar.IEvent;
 import org.joda.time.DateTime;
 
 /**
  *
  * @author malbinola
  */
-public class OEvent extends Events {
+public class OEvent extends Events implements IEvent {
 	public final static String REV_STATUS_NEW = "N";
 	public final static String REV_STATUS_MODIFIED = "M";
 	public final static String REV_STATUS_DELETED = "D";

@@ -58,7 +58,7 @@ public class EventICalFileReader implements EventFileReader {
 	}
 	
 	@Override
-	public ArrayList<EventInput> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException{
+	public ArrayList<EventInput> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException {
 		FileInputStream fis = null;
 		try {
 			fis = new FileInputStream(file);

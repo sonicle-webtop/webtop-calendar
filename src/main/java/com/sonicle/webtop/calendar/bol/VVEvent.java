@@ -33,20 +33,19 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.core.sdk.UserProfileId;
+import java.util.Objects;
 
 /**
  *
  * @author malbinola
  */
-public class VSchedulerEvent extends OEvent {
+public class VVEvent extends OEvent {
 	private Integer originalEventId;
 	private String calendarDomainId;
 	private String calendarUserId;
 	private Boolean hasAttendees;
-	private Boolean isRecurring;
-	private Boolean isBroken;
 	
-	public VSchedulerEvent() {
+	public VVEvent() {
 		super();
 	}
 	
@@ -86,35 +85,13 @@ public class VSchedulerEvent extends OEvent {
 		this.hasAttendees = hasAttendees;
 	}
 	
-	public Boolean getIsRecurring() {
-		return isRecurring;
-	}
-
-	public void setIsRecurring(Boolean isRecurring) {
-		this.isRecurring = isRecurring;
+	public boolean isRecurring() {
+		return getRecurrenceId() != null;
 	}
 	
-	public Boolean getIsBroken() {
-		return isBroken;
-	}
-
-	public void setIsBroken(Boolean isBroken) {
-		this.isBroken = isBroken;
-	}
-	
-	public void updateCalculatedFields() {
-		if(getRecurrenceId() == null) {
-			isRecurring = false;
-			if(originalEventId == null) {
-				originalEventId = getEventId();
-				isBroken = false;
-			} else {
-				isBroken = true;
-			}
-		} else {
-			isRecurring = true;
-			originalEventId = getEventId();
-			isBroken = false;
-		}
+	public boolean isBroken() {
+		//TODO: estendere l'implementazione per contemplare eventi spezzati con una loro ricorrenza
+		if (isRecurring()) return false;
+		return !Objects.equals(getOriginalEventId(), getEventId());
 	}
 }

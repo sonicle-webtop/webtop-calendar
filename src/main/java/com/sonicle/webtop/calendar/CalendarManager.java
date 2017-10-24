@@ -54,8 +54,8 @@ import com.sonicle.dav.caldav.DavCalendar;
 import com.sonicle.dav.caldav.DavCalendarEvent;
 import com.sonicle.dav.impl.DavException;
 import com.sonicle.webtop.calendar.model.Event;
-import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
+import com.sonicle.webtop.calendar.bol.VVEvent;
+import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
@@ -156,6 +156,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import javax.mail.Session;
 import net.fortuna.ical4j.data.ParserException;
@@ -211,64 +213,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public List<CalendarRoot> listIncomingCalendarRoots() throws WTException {
-		CoreManager core = WT.getCoreManager(getTargetProfileId());
-		ArrayList<CalendarRoot> roots = new ArrayList();
-		HashSet<String> hs = new HashSet<>();
-		
-		List<IncomingShareRoot> shares = core.listIncomingShareRoots(SERVICE_ID, GROUPNAME_CALENDAR);
-		for(IncomingShareRoot share : shares) {
-			SharePermsRoot perms = core.getShareRootPermissions(share.getShareId());
-			CalendarRoot root = new CalendarRoot(share, perms);
-			if(hs.contains(root.getShareId())) continue; // Avoid duplicates ??????????????????????
-			hs.add(root.getShareId());
-			roots.add(root);
-		}
-		return roots;
-	}
-	
-	public HashMap<Integer, CalendarFolder> listIncomingCalendarFolders(String rootShareId) throws WTException {
-		CoreManager core = WT.getCoreManager(getTargetProfileId());
-		LinkedHashMap<Integer, CalendarFolder> folders = new LinkedHashMap<>();
-		
-		// Retrieves incoming folders (from sharing). This lookup already 
-		// returns readable shares (we don't need to test READ permission)
-		List<OShare> shares = core.listIncomingShareFolders(rootShareId, GROUPNAME_CALENDAR);
-		for(OShare share : shares) {
-			
-			List<Calendar> cals = null;
-			if (share.hasWildcard()) {
-				UserProfileId ownerId = core.userUidToProfileId(share.getUserUid());
-				cals = listCalendars(ownerId);
-			} else {
-				cals = Arrays.asList(getCalendar(Integer.valueOf(share.getInstance())));
-			}
-			
-			for(Calendar cal : cals) {
-				SharePermsFolder fperms = core.getShareFolderPermissions(share.getShareId().toString());
-				SharePermsElements eperms = core.getShareElementsPermissions(share.getShareId().toString());
-				
-				if (folders.containsKey(cal.getCalendarId())) {
-					CalendarFolder folder = folders.get(cal.getCalendarId());
-					folder.getPerms().merge(fperms);
-					folder.getElementsPerms().merge(eperms);
-				} else {
-					folders.put(cal.getCalendarId(), new CalendarFolder(share.getShareId().toString(), fperms, eperms, cal));
-				}
-			}
-		}
-		return folders;
-	}
-	
-	private List<Integer> listIncomingCalendarIds() throws WTException {
-		ArrayList<Integer> ids = new ArrayList<>();
-		for(CalendarRoot root : listIncomingCalendarRoots()) {
-			HashMap<Integer, CalendarFolder> folders = listIncomingCalendarFolders(root.getShareId());
-			ids.addAll(folders.keySet());
-		}
-		return ids;
-	}
-	
 	public String buildCalendarFolderShareId(int calendarId) throws WTException {
 		UserProfileId targetPid = getTargetProfileId();
 		
@@ -303,8 +247,52 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public UserProfileId getCalendarOwner(int calendarId) throws WTException {
-		return calendarToOwner(calendarId);
+	public List<CalendarRoot> listIncomingCalendarRoots() throws WTException {
+		CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
+		ArrayList<CalendarRoot> roots = new ArrayList();
+		HashSet<String> hs = new HashSet<>();
+		
+		List<IncomingShareRoot> shares = coreMgr.listIncomingShareRoots(SERVICE_ID, GROUPNAME_CALENDAR);
+		for (IncomingShareRoot share : shares) {
+			SharePermsRoot perms = coreMgr.getShareRootPermissions(share.getShareId());
+			CalendarRoot root = new CalendarRoot(share, perms);
+			if (hs.contains(root.getShareId())) continue; // Avoid duplicates ??????????????????????
+			hs.add(root.getShareId());
+			roots.add(root);
+		}
+		return roots;
+	}
+	
+	@Override
+	public HashMap<Integer, CalendarFolder> listIncomingCalendarFolders(String rootShareId) throws WTException {
+		CoreManager core = WT.getCoreManager(getTargetProfileId());
+		LinkedHashMap<Integer, CalendarFolder> folders = new LinkedHashMap<>();
+		
+		// Retrieves incoming folders (from sharing). This lookup already 
+		// returns readable shares (we don't need to test READ permission)
+		List<OShare> shares = core.listIncomingShareFolders(rootShareId, GROUPNAME_CALENDAR);
+		for (OShare share : shares) {
+			List<Calendar> cals = null;
+			if (share.hasWildcard()) {
+				final UserProfileId ownerId = core.userUidToProfileId(share.getUserUid());
+				cals = listCalendars(ownerId);
+			} else {
+				cals = Arrays.asList(getCalendar(Integer.valueOf(share.getInstance())));
+			}
+			for (Calendar cal : cals) {
+				SharePermsFolder fperms = core.getShareFolderPermissions(share.getShareId().toString());
+				SharePermsElements eperms = core.getShareElementsPermissions(share.getShareId().toString());
+				
+				if (folders.containsKey(cal.getCalendarId())) {
+					CalendarFolder folder = folders.get(cal.getCalendarId());
+					folder.getPerms().merge(fperms);
+					folder.getElementsPerms().merge(eperms);
+				} else {
+					folders.put(cal.getCalendarId(), new CalendarFolder(share.getShareId().toString(), fperms, eperms, cal));
+				}
+			}
+		}
+		return folders;
 	}
 	
 	@Override
@@ -312,6 +300,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		ArrayList<Integer> ids = new ArrayList<>();
 		for (Calendar calendar : listCalendars()) {
 			ids.add(calendar.getCalendarId());
+		}
+		return ids;
+	}
+	
+	@Override
+	public List<Integer> listIncomingCalendarIds() throws WTException {
+		ArrayList<Integer> ids = new ArrayList<>();
+		for (CalendarRoot root : listIncomingCalendarRoots()) {
+			ids.addAll(listIncomingCalendarFolders(root.getShareId()).keySet());
 		}
 		return ids;
 	}
@@ -339,6 +336,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
+	}
+	
+	@Override
+	public UserProfileId getCalendarOwner(int calendarId) throws WTException {
+		return calendarToOwner(calendarId);
 	}
 	
 	@Override
@@ -526,12 +528,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			for (OCalendar ocal : ocals) {
 				if (!quietlyCheckRightsOnCalendarFolder(ocal.getCalendarId(), "READ")) continue;
 				
-				final List<VSchedulerEvent> vevts1 = eveDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null);
-				for (VSchedulerEvent vevt : vevts1) {
+				final List<VVEvent> vevts1 = eveDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null);
+				for (VVEvent vevt : vevts1) {
 					addExpandedEventDates(dates, vevt);
 				}
-				final List<VSchedulerEvent> vevts2 = eveDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null);
-				for (VSchedulerEvent vevt : vevts2) {
+				final List<VVEvent> vevts2 = eveDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null);
+				for (VVEvent vevt : vevts2) {
 					final List<SchedEventInstance> instances = calculateRecurringInstances(con, createSchedEvent(vevt), fromDate, toDate, userTimezone, 200);
 					for (SchedEventInstance instance : instances) {
 						addExpandedEventDates(dates, instance);
@@ -569,12 +571,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (!quietlyCheckRightsOnCalendarFolder(ocal.getCalendarId(), "READ")) continue;
 				
 				final ArrayList<SchedEvent> events = new ArrayList<>();
-				final List<VSchedulerEvent> vevts1 = eveDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern);
-				for (VSchedulerEvent vevt : vevts1) {
+				final List<VVEvent> vevts1 = eveDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern);
+				for (VVEvent vevt : vevts1) {
 					events.add(createSchedEvent(vevt));
 				}
-				final List<VSchedulerEvent> vevts2 = eveDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern);
-				for (VSchedulerEvent vevt : vevts2) {
+				final List<VVEvent> vevts2 = eveDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern);
+				for (VVEvent vevt : vevts2) {
 					events.add(createSchedEvent(vevt));
 				}
 				foEvents.add(new FolderEvents(createCalendar(ocal), events));
@@ -582,6 +584,56 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return foEvents;
 			
 		} catch (SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarFolderIds, DateTime startDate) throws WTException {
+		return listUpcomingEventInstances(calendarFolderIds, startDate, 3, null);
+	}
+	
+	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarFolderIds, DateTime startDate, String pattern) throws WTException {
+		return listUpcomingEventInstances(calendarFolderIds, startDate, 3, pattern);
+	}
+	
+	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarFolderIds, DateTime startDate, int days, String pattern) throws WTException {
+		EventDAO eveDao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			
+			ArrayList<Integer> validIds = new ArrayList<>();
+			for (Integer catId : calendarFolderIds) {
+				if (!quietlyCheckRightsOnCalendarFolder(catId, "READ")) continue;
+				validIds.add(catId);
+			}
+			
+			if (days > 15) days = 15;
+			final DateTime fromDate = startDate.withTimeAtStartOfDay();
+			final DateTime toDate = startDate.plusDays(days);
+			
+			ArrayList<SchedEventInstance> events = new ArrayList<>();
+			for (VVEvent ve : eveDao.viewByCalendarFromToPattern(con, validIds, fromDate, toDate, pattern)) {
+				events.add(new SchedEventInstance(createSchedEvent(ve)));
+			}
+			for (VVEvent ve : eveDao.viewRecurringByCalendarFromToPattern(con, validIds, fromDate, toDate, pattern)) {
+				events.addAll(calculateRecurringInstances(con, createSchedEvent(ve), fromDate, toDate, DateTimeZone.UTC, 200));
+			}
+			
+			// Sorts events by their startDate
+			Collections.sort(events, new Comparator<SchedEventInstance>() {
+				@Override
+				public int compare(final SchedEventInstance se1, final SchedEventInstance se2) {
+					return se1.getStartDate().compareTo(se2.getStartDate());
+				}
+			});
+			
+			return events;
+			
+		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
 		} finally {
 			DbUtils.closeQuietly(con);
@@ -610,10 +662,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (!quietlyCheckRightsOnCalendarFolder(ocal.getCalendarId(), "READ")) continue;
 				
 				final ArrayList<SchedEventInstance> instances = new ArrayList<>();
-				for (VSchedulerEvent vevt : eveDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern)) {
-					instances.add(fillSchedEvent(new SchedEventInstance(EventKey.buildKey(vevt.getEventId(), null)), vevt));
+				for (VVEvent vevt : eveDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern)) {
+					instances.add(new SchedEventInstance(createSchedEvent(vevt)));
 				}
-				for (VSchedulerEvent vevt : eveDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern)) {
+				for (VVEvent vevt : eveDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern)) {
 					instances.addAll(calculateRecurringInstances(con, createSchedEvent(vevt), fromDate, toDate, userTimezone, 200));
 				}
 				foInstances.add(new FolderEventInstances(createCalendar(ocal), instances));
@@ -644,211 +696,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	private SchedulerEventInstance getSchedulerEventByUid(Connection con, String eventPublicUid) throws WTException {
+	private VVEventInstance getSchedulerEventByUid(Connection con, String eventPublicUid) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
-		VSchedulerEvent ve = edao.viewByPublicUid(con, eventPublicUid);
+		VVEvent ve = edao.viewByPublicUid(con, eventPublicUid);
 		if(ve == null) return null;
-		ve.updateCalculatedFields();
-		return new SchedulerEventInstance(ve);
-	}
-	
-	
-	/**
-	 * @deprecated 
-	 */
-	public List<CalendarEvents> searchSchedulerEvents(UserProfileId pid, Integer[] calendars, String query) throws WTException {
-		Connection con = null;
-		ArrayList<CalendarEvents> grpEvts = new ArrayList<>();
-		CalendarDAO cdao = CalendarDAO.getInstance();
-		EventDAO edao = EventDAO.getInstance();
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			
-			// Lists desired calendars (tipically visibles) coming from passed list
-			// Passed ids should belong to referenced group, this is ensured using 
-			// domainId and userId parameters in below query.
-			List<OCalendar> cals = cdao.selectByProfileIn(con, pid.getDomainId(), pid.getUserId(), calendars);
-			List<SchedulerEventInstance> sevs = null;
-			for(OCalendar cal : cals) {
-				sevs = new ArrayList<>();
-				for(VSchedulerEvent se : edao.searchByCalendarQuery(con, cal.getCalendarId(), query)) {
-					se.updateCalculatedFields();
-					sevs.add(new SchedulerEventInstance(se));
-				}
-				for(VSchedulerEvent se : edao.searchRecurringByCalendarQuery(con, cal.getCalendarId(), query)) {
-					se.updateCalculatedFields();
-					sevs.add(new SchedulerEventInstance(se));
-				}
-				grpEvts.add(new CalendarEvents(createCalendar(cal), sevs));
-			}
-			return grpEvts;
-		
-		} catch(SQLException | DAOException ex) {
-			throw new WTException(ex, "DB error");
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	/**
-	 * @deprecated 
-	 */
-	public List<SchedulerEventInstance> calculateRecurringInstances(SchedulerEventInstance recurringEvent, DateTime fromDate, DateTime toDate, DateTimeZone userTz) throws WTException {
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			return calculateRecurringInstances(con, recurringEvent, fromDate, toDate, userTz);
-		} catch(SQLException ex) {
-			throw new WTException(ex, "DB error");
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	/**
-	 * @deprecated 
-	 */
-	private List<SchedulerEventInstance> listExpiredSchedulerEvents(Connection con, DateTime fromDate, DateTime toDate) throws WTException {
-		//TODO: auth
-		List<SchedulerEventInstance> sevs = new ArrayList<>();
-		EventDAO edao = EventDAO.getInstance();
-		
-		for(VSchedulerEvent se : edao.viewExpiredForUpdateByFromTo(con, fromDate, toDate)) {
-			se.updateCalculatedFields();
-			sevs.add(new SchedulerEventInstance(se));
-		}
-		/*
-		for(VSchedulerEvent se : edao.viewRecurringExpiredForUpdateByFromTo(con, fromDate, toDate)) {
-			se.updateCalculatedFields();
-			sevs.add(new SchedulerEvent(se));
-		}
-		*/
-		return sevs;
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	private List<SchedEventInstance> doGetExpiredEventsForUpdate(Connection con, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
-		EventDAO eveDao = EventDAO.getInstance();
-		//TODO: gestire alert su eventi ricorrenti
-		final ArrayList<SchedEventInstance> instances = new ArrayList<>();
-		for (VSchedulerEvent vevt : eveDao.viewExpiredForUpdateByFromTo(con, fromDate, toDate)) {
-			instances.add(fillSchedEvent(new SchedEventInstance(EventKey.buildKey(vevt.getEventId(), null)), vevt));
-		}
-		/*
-		for (VSchedulerEvent vevt : eveDao.viewRecurringExpiredForUpdateByFromTo(con, fromDate, toDate)) {
-			instances.addAll(calculateRecurringInstances(con, createSchedEvent(vevt), fromDate, toDate, DateTimeZone.UTC, 200));
-		}
-		*/
-		return instances;
-	}
-	
-	private List<SchedEventInstance> calculateRecurringInstances(Connection con, SchedEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
-		return calculateRecurringInstances(con, event, fromDate, toDate, userTimezone, -1);
-	}
-	
-	private List<SchedEventInstance> calculateRecurringInstances(Connection con, SchedEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
-		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
-		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
-		
-		if (event.getRecurrenceId() == null) throw new WTException("Specified event [{}] does not have a recurrence set", event.getEventId());
-		
-		// Retrieves reccurence and broken dates (if any)
-		ORecurrence orec = recDao.select(con, event.getRecurrenceId());
-		if (orec == null) throw new WTException("Unable to retrieve recurrence [{}]", event.getRecurrenceId());
-		List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, event.getEventId(), event.getRecurrenceId());
-		
-		if (fromDate == null) fromDate = orec.getStartDate();
-		if (toDate == null) toDate = orec.getStartDate().plusYears(5);
-		
-		//TODO: ritornare direttamente l'hashmap da jooq
-		// Builds a hashset of broken dates for increasing performances
-		HashMap<String, ORecurrenceBroken> brokenDates = new HashMap<>();
-		for(ORecurrenceBroken obrec : obrecs) {
-			brokenDates.put(obrec.getEventDate().toString(), obrec);
-		}
-		
-		// If not present, updates rrule
-		if (StringUtils.isBlank(orec.getRule())) {
-			orec.setRule(orec.buildRRule(DateTimeZone.UTC).getValue());
-			recDao.updateRRule(con, orec.getRecurrenceId(), orec.getRule());
-		}
-		
-		try {
-			ArrayList<SchedEventInstance> instances = new ArrayList<>();
-			
-			// Calculate event length in order to generate events like original one
-			int eventDays = calculateEventLengthInDays(event);
-			RRule rr = new RRule(orec.getRule());
-			
-			// Calcutate recurrence set for required dates range
-			PeriodList periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), orec.getStartDate(), rr, fromDate, toDate, userTimezone);
-			
-			// Recurrence start is useful to skip undesired dates at beginning.
-			// If event does not starts at recurrence real beginning (eg. event
-			// start on MO but first recurrence begin on WE), ical4j lib includes 
-			// those dates in calculated recurrence set, as stated in RFC 
-			// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
-			LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), userTimezone).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
-			LocalDate rrEnd = orec.getUntilDate().toLocalDate();
-			
-			// Iterates returned recurring periods and builds cloned events...
-			int count = -1;
-			for (net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
-				count++;
-				if ((limit != -1) && (count > limit)) break;
-				final LocalDate perStart = ICal4jUtils.toJodaDateTime(per.getStart()).toLocalDate();
-				final LocalDate perEnd = ICal4jUtils.toJodaDateTime(per.getEnd()).toLocalDate();
-				
-				if (brokenDates.containsKey(perStart.toString())) continue; // Skip broken dates...
-				if ((perStart.compareTo(rrStart) >= 0) && (perEnd.compareTo(rrEnd) <= 0)) { // Skip unwanted dates at beginning
-					final DateTime newStart = event.getStartDate().withDate(perStart);
-					final DateTime newEnd = event.getEndDate().withDate(newStart.plusDays(eventDays).toLocalDate());
-					
-					// Generate cloned event like original one
-					SchedEvent clone = Cloner.standard().deepClone(event);
-					clone.setStartDate(newStart);
-					clone.setEndDate(newEnd);
-					instances.add(new SchedEventInstance(EventKey.buildKey(event.getEventId(), event.getEventId(), perStart), clone));	
-				}
-			}
-			return instances;
-			
-		} catch(DAOException ex) {
-			throw new WTException(ex, "DB error");
-		} catch(ParseException ex) {
-			throw new WTException(ex, "Unable to parse rrule");
-		}
+		return new VVEventInstance(ve);
 	}
 	
 	public Integer getEventId(GetEventScope scope, boolean forceOriginal, String publicUid) throws WTException {
@@ -903,7 +755,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			SchedulerEventInstance ve = getSchedulerEventByUid(con, eventPublicUid);
+			VVEventInstance ve = getSchedulerEventByUid(con, eventPublicUid);
 			return (ve == null) ? null : EventKey.buildKey(ve.getEventId(), ve.getOriginalEventId());
 			
 		} catch(SQLException | DAOException ex) {
@@ -1256,46 +1108,37 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public EventInstance getEventInstance(String eventKey) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
-		EventAttendeeDAO adao = EventAttendeeDAO.getInstance();
+		EventDAO evtDao = EventDAO.getInstance();
+		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+		EventAttendeeDAO eattDao = EventAttendeeDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			EventKey ek = new EventKey(eventKey);
+			EventKey ekey = new EventKey(eventKey);
 			con = WT.getConnection(SERVICE_ID);
 			
-			OEvent original = edao.selectById(con, ek.originalEventId);
-			if(original == null) throw new WTException("Unable to retrieve original event [{0}]", ek.originalEventId);
-			checkRightsOnCalendarFolder(original.getCalendarId(), "READ"); // Rights check!
+			VVEvent vevt = evtDao.viewById(con, ekey.eventId);
+			if (vevt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
+			checkRightsOnCalendarFolder(vevt.getCalendarId(), "READ");
 			
-			VSchedulerEvent sevt = edao.viewById(con, ek.eventId);
-			sevt.updateCalculatedFields(); // TODO: Serve??????????????????????
-			if(sevt == null) throw new WTException("Unable to retrieve event [{}]", ek.eventId);
-			
-			EventInstance evti = null;
-			String type = guessEventType(ek, original);
-			if(type.equals(EVENT_NORMAL)) {
-				evti = createEventInstance(eventKey, RecurringInfo.NONE, sevt);
-				evti.setAttendees(createEventAttendeeList(adao.selectByEvent(con, sevt.getEventId())));
+			EventInstance ei = null;
+			if (vevt.isRecurring()) {
+				ORecurrence orec = recDao.select(con, vevt.getRecurrenceId());
+				if (orec == null) throw new WTException("Unable to retrieve recurrence [{0}]", ekey.originalEventId);
 				
-			} else if(type.equals(EVENT_RECURRING)) {
-				ORecurrence rec = rdao.select(con, sevt.getRecurrenceId());
-				if(rec == null) throw new WTException("Unable to retrieve recurrence [{0}]", ek.originalEventId);
+				ei = createEventInstance(eventKey, RecurringInfo.RECURRING, vevt);
+				int eventDays = calculateEventLengthInDays(vevt);
+				ei.setStartDate(ei.getStartDate().withDate(ekey.instanceDate));
+				ei.setEndDate(ei.getEndDate().withDate(ei.getStartDate().plusDays(eventDays).toLocalDate()));
+				ei.setRecurrence(createEventRecurrence(orec));
 				
-				evti = createEventInstance(eventKey, RecurringInfo.RECURRING, sevt);
-				int eventDays = calculateEventLengthInDays(sevt);
-				evti.setStartDate(evti.getStartDate().withDate(ek.instanceDate));
-				evti.setEndDate(evti.getEndDate().withDate(evti.getStartDate().plusDays(eventDays).toLocalDate()));
-				evti.setRecurrence(createEventRecurrence(rec));
-				
-			} else if(type.equals(EVENT_BROKEN)) {
-				//TODO: recuperare il record ricorrenza per verifica?
-				evti = createEventInstance(eventKey, RecurringInfo.BROKEN, sevt);
-				evti.setAttendees(createEventAttendeeList(adao.selectByEvent(con, sevt.getEventId())));
+			} else {
+				//TODO: se broken, recuperare il record ricorrenza per verifica?
+				ei = createEventInstance(eventKey, vevt.isBroken() ? RecurringInfo.BROKEN : RecurringInfo.NONE, vevt);
+				ei.setAttendees(createEventAttendeeList(eattDao.selectByEvent(con, vevt.getEventId())));
 			}
 			
-			return evti;
+			return ei;
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -1306,9 +1149,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public void updateEventInstance(String target, EventInstance event) throws WTException {
-		//CoreManager core = WT.getCoreManager(getTargetProfileId());
-		EventDAO edao = EventDAO.getInstance();
-		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
+		EventDAO evtDao = EventDAO.getInstance();
+		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		Connection con = null;
 		
 		//TODO: gestire i suggerimenti (titolo + luogo)
@@ -1317,52 +1159,22 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			EventKey ekey = new EventKey(event.getKey());
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			OEvent original = edao.selectById(con, ekey.originalEventId);
+			VVEvent vevt = evtDao.viewById(con, ekey.eventId);
+			if (vevt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
+			checkRightsOnCalendarElements(vevt.getCalendarId(), "UPDATE");
+			
+			OEvent original = evtDao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarElements(original.getCalendarId(), "UPDATE");
 			
 			//TODO: gestire le notifiche invito per gli eventi ricorrenti
-			String type = guessEventType(ekey, original);
-			if(type.equals(EVENT_NORMAL)) {
-				if(target.equals(TARGET_THIS)) {
-					// 1 - Updates the event with new data
-					doEventUpdate(con, original, event, true);
-					
-					DbUtils.commitQuietly(con);
-					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
-					
-					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
-					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
-					
-					// Handle attendees invitation
-					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
-				}
-				
-			} else if(type.equals(EVENT_BROKEN)) {
-				if(target.equals(TARGET_THIS)) {
-					// 1 - Updates broken event (follow eventId) with new data
-					OEvent oevt = edao.selectById(con, ekey.eventId);
-					if(oevt == null) throw new WTException("Unable to retrieve broken event [{}]", ekey.eventId);
-					doEventUpdate(con, oevt, event, true);
-					
-					DbUtils.commitQuietly(con);
-					writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
-					
-					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
-					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
-					
-					// Handle attendees invitation
-					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
-				}
-				
-			} else if(type.equals(EVENT_RECURRING)) {
-				if(target.equals(TARGET_THIS)) {
+			if (vevt.isRecurring()) {
+				if (target.equals(TARGET_THIS)) {
 					// 1 - Inserts new broken event
 					InsertResult insert = doEventInsert(con, event, false, false);
 					// 2 - Marks recurring event date inserting a broken record
 					doExcludeRecurrenceDate(con, original, ekey.instanceDate, insert.event.getEventId());
 					// 3 - Updates revision of original event
-					edao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					evtDao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
@@ -1371,15 +1183,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, insert.event.getLocation());
 					
-				} else if(target.equals(TARGET_SINCE)) {
+				} else if (target.equals(TARGET_SINCE)) {
 					// 1 - Resize original recurrence (sets until date at the day before date)
-					ORecurrence orec = rdao.select(con, original.getRecurrenceId());
+					ORecurrence orec = recDao.select(con, original.getRecurrenceId());
 					if(orec == null) throw new WTException("Unable to retrieve original event's recurrence [{}]", original.getRecurrenceId());
 					DateTime until = orec.getUntilDate();
 					orec.applyEndUntil(ekey.instanceDate.minusDays(1).toDateTimeAtStartOfDay(), DateTimeZone.forID(original.getTimezone()), true);
-					rdao.update(con, orec);
+					recDao.update(con, orec);
 					// 2 - Updates revision of original event
-					edao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
+					evtDao.updateRevision(con, original.getEventId(), createRevisionTimestamp());
 					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 					// 3 - Insert new event adjusting recurrence a bit
 					event.getRecurrence().setEndsMode(EventRecurrence.ENDS_MODE_UNTIL);
@@ -1393,19 +1205,94 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, insert.event.getLocation());
 					
-				} else if(target.equals(TARGET_ALL)) {
+				} else if (target.equals(TARGET_ALL)) {
 					// 1 - Updates recurring event data (dates must be preserved) (+revision)
 					event.setStartDate(event.getStartDate().withDate(original.getStartDate().toLocalDate()));
 					event.setEndDate(event.getEndDate().withDate(original.getEndDate().toLocalDate()));
 					doEventUpdate(con, original, event, false);
 					// 2 - Updates recurrence data
-					ORecurrence orec = rdao.select(con, original.getRecurrenceId());
+					ORecurrence orec = recDao.select(con, original.getRecurrenceId());
 					orec.fillFrom(event.getRecurrence(), original.getStartDate(), original.getEndDate(), original.getTimezone());
-					rdao.update(con, orec);
+					recDao.update(con, orec);
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 				}
+				
+			} else if (vevt.isBroken()) {
+				if (target.equals(TARGET_THIS)) {
+					// 1 - Updates broken event (follow eventId) with new data
+					OEvent oevt = evtDao.selectById(con, ekey.eventId);
+					if(oevt == null) throw new WTException("Unable to retrieve broken event [{}]", ekey.eventId);
+					doEventUpdate(con, oevt, event, true);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
+					
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
+					
+					// Handle attendees invitation
+					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
+				}
+				
+			} else {
+				if (target.equals(TARGET_THIS)) {
+					// 1 - Updates the event with new data
+					doEventUpdate(con, original, event, true);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+					
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
+					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
+					
+					// Handle attendees invitation
+					notifyAttendees(Crud.UPDATE, getEventInstance(event.getKey()));
+				}
+			}
+			
+		} catch(SQLException | DAOException ex) {
+			DbUtils.rollbackQuietly(con);
+			throw new WTException(ex, "DB error");
+		} catch(Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
+	public void updateEventInstance(String eventKey, DateTime startDate, DateTime endDate, String title) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			EventKey ekey = new EventKey(eventKey);
+			con = WT.getConnection(SERVICE_ID, false);
+			
+			VVEvent vevt = evtDao.viewById(con, ekey.eventId);
+			if (vevt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
+			checkRightsOnCalendarElements(vevt.getCalendarId(), "UPDATE");
+			
+			if (vevt.isRecurring()) {
+				throw new WTException("Not supported on recurring events [{}]", ekey.eventId);
+			} else {
+				// 1 - Updates event's dates/times (+revision)
+				OEvent oevt = evtDao.selectById(con, ekey.eventId);
+				if (oevt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
+				
+				oevt.setStartDate(startDate);
+				oevt.setEndDate(endDate);
+				oevt.setTitle(title);
+				oevt.ensureCoherence();
+				evtDao.update(con, oevt, createRevisionTimestamp());
+				DbUtils.commitQuietly(con);
+				writeLog("EVENT_UPDATE", String.valueOf(oevt.getEventId()));
+				
+				// Handle attendees invitation
+				if (vevt.getHasAttendees()) notifyAttendees(Crud.UPDATE, getEventInstance(eventKey));
 			}
 			
 		} catch(SQLException | DAOException ex) {
@@ -1448,52 +1335,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public void updateEventInstance(String eventKey, DateTime startDate, DateTime endDate, String title) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		Connection con = null;
-		
-		try {
-			EventKey ekey = new EventKey(eventKey);
-			con = WT.getConnection(SERVICE_ID, false);
-			
-			OEvent originalEvent = edao.selectById(con, ekey.originalEventId);
-			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarElements(originalEvent.getCalendarId(), "UPDATE");
-			
-			String type = guessEventType(ekey, originalEvent);
-			if(type.equals(EVENT_NORMAL) || type.equals(EVENT_BROKEN)) {
-				// 1 - Updates event's dates/times (+revision)
-				OEvent evt = edao.selectById(con, ekey.eventId);
-				if(evt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
-				evt.setStartDate(startDate);
-				evt.setEndDate(endDate);
-				evt.setTitle(title);
-				evt.ensureCoherence();
-				edao.update(con, evt, createRevisionTimestamp());
-				
-				DbUtils.commitQuietly(con);
-				writeLog("EVENT_UPDATE", String.valueOf(evt.getEventId()));
-				// Handle attendees invitation
-				notifyAttendees(Crud.UPDATE, getEventInstance(eventKey));
-				
-			} else {
-				throw new WTException("Unable to move recurring event instance [{}]", ekey.eventId);
-			}	
-			
-		} catch(SQLException | DAOException ex) {
-			DbUtils.rollbackQuietly(con);
-			throw new WTException(ex, "DB error");
-		} catch(Exception ex) {
-			DbUtils.rollbackQuietly(con);
-			throw ex;
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	@Override
 	public void deleteEventInstance(String target, String eventKey) throws WTException {
-		EventDAO evtdao = EventDAO.getInstance();
+		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recdao = RecurrenceDAO.getInstance();
 		Connection con = null;
 		
@@ -1501,67 +1344,72 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			EventKey ekey = new EventKey(eventKey);
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			OEvent originalEvent = evtdao.selectById(con, ekey.originalEventId);
-			if(originalEvent == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);
-			checkRightsOnCalendarElements(originalEvent.getCalendarId(), "DELETE");
+			VVEvent vevt = evtDao.viewById(con, ekey.eventId);
+			if (vevt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
+			checkRightsOnCalendarElements(vevt.getCalendarId(), "DELETE");
 			
-			Event evtBase = getEventInstance(eventKey); // Gets event for later use
+			Event dump = null;
+			if (vevt.getHasAttendees()) {
+				dump = getEventInstance(eventKey); // Gets event for later use
+			}
 			
-			String type = guessEventType(ekey, originalEvent);
-			if(type.equals(EVENT_NORMAL)) {
-				if(target.equals(TARGET_THIS)) {
-					if(!ekey.eventId.equals(originalEvent.getEventId())) throw new WTException("In this case both ids must be equals");
-					doDeleteEvent(con, ekey.eventId, true);
-					
-					DbUtils.commitQuietly(con);
-					writeLog("EVENT_DELETE", String.valueOf(originalEvent.getEventId()));
-					// Handle attendees invitation
-					notifyAttendees(Crud.DELETE, evtBase);
-				}
-				
-			} else if(type.equals(EVENT_BROKEN)) {
-				if(target.equals(TARGET_THIS)) {
-					// 1 - logically delete newevent (broken one)
-					doDeleteEvent(con, ekey.eventId, true);
-					// 2 - updates revision of original event
-					evtdao.updateRevision(con, originalEvent.getEventId(), createRevisionTimestamp());
-					
-					DbUtils.commitQuietly(con);
-					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
-					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
-					// Handle attendees invitation
-					notifyAttendees(Crud.DELETE, evtBase);
-				}
-				
-			} else if(type.equals(EVENT_RECURRING)) {
-				if(target.equals(TARGET_THIS)) {
+			if (vevt.isRecurring()) {
+				Integer recurrenceId = evtDao.selectRecurrenceId(con, ekey.originalEventId);
+				if (target.equals(TARGET_THIS)) {
 					// 1 - inserts a broken record (without new event) on deleted date
-					doExcludeRecurrenceDate(con, originalEvent, ekey.instanceDate);
+					doExcludeRecurrenceDate(con, ekey.originalEventId, recurrenceId, ekey.instanceDate, null);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, originalEvent.getEventId(), createRevisionTimestamp());
+					evtDao.updateRevision(con, ekey.originalEventId, createRevisionTimestamp());
 					
 					DbUtils.commitQuietly(con);
-					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
+					writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
 					
 				} else if(target.equals(TARGET_SINCE)) {
 					// 1 - resize original recurrence (sets until date at the day before deleted date)
-					ORecurrence rec = recdao.select(con, originalEvent.getRecurrenceId());
-					if(rec == null) throw new WTException("Unable to retrieve original event's recurrence [{}]", originalEvent.getRecurrenceId());
-					rec.setUntilDate(ekey.instanceDate.toDateTimeAtStartOfDay().minusDays(1));
-					rec.updateRRule(DateTimeZone.forID(originalEvent.getTimezone()));
-					recdao.update(con, rec);
+					ORecurrence orec = recdao.select(con, recurrenceId);
+					if (orec == null) throw new WTException("Unable to retrieve original event's recurrence [{}]", recurrenceId);
+					
+					orec.setUntilDate(ekey.instanceDate.toDateTimeAtStartOfDay().minusDays(1));
+					orec.updateRRule(DateTimeZone.forID(vevt.getTimezone()));
+					recdao.update(con, orec);
 					// 2 - updates revision of original event
-					evtdao.updateRevision(con, originalEvent.getEventId(), createRevisionTimestamp());
+					evtDao.updateRevision(con, ekey.originalEventId, createRevisionTimestamp());
 					
 					DbUtils.commitQuietly(con);
-					writeLog("EVENT_UPDATE", String.valueOf(originalEvent.getEventId()));
+					writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
 					
 				} else if(target.equals(TARGET_ALL)) {
 					// 1 - logically delete original event
+					doDeleteEvent(con, ekey.originalEventId, true);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_DELETE", String.valueOf(ekey.originalEventId));
+				}
+				
+			} else if (vevt.isBroken()) {
+				if (target.equals(TARGET_THIS)) {
+					// 1 - logically delete newevent (broken one)
 					doDeleteEvent(con, ekey.eventId, true);
+					// 2 - updates revision of original event
+					evtDao.updateRevision(con, ekey.originalEventId, createRevisionTimestamp());
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
+					writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
+					
+					// Handle attendees invitation
+					if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, dump);
+				}
+			} else {
+				if (target.equals(TARGET_THIS)) {
+					if (!ekey.eventId.equals(ekey.originalEventId)) throw new WTException("In this case both ids must be equals");
+					doDeleteEvent(con, ekey.eventId, true);
+					
+					DbUtils.commitQuietly(con);
+					writeLog("EVENT_DELETE", String.valueOf(ekey.originalEventId));
+					
+					// Handle attendees invitation
+					if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, dump);
 				}
 			}
 			
@@ -1578,26 +1426,38 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public void restoreEventInstance(String eventKey) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		RecurrenceBrokenDAO rbdao = RecurrenceBrokenDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			// Scheduler IDs always contains an eventId reference.
-			// For broken events extracted eventId is not equal to extracted
-			// originalEventId (event generator or database event), since
-			// it belongs to the recurring event
-			EventKey ekey = new EventKey(eventKey);
-			if(ekey.originalEventId.equals(ekey.eventId)) throw new WTException("Cannot restore an event that is not broken");
+			final EventKey ekey = new EventKey(eventKey);
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			RecurrenceBrokenDAO rbdao = RecurrenceBrokenDAO.getInstance();
+			VVEvent vevt = evtDao.viewById(con, ekey.eventId);
+			if (vevt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
+			checkRightsOnCalendarElements(vevt.getCalendarId(), "UPDATE");
+			
+			if (!vevt.isBroken()) throw new WTException("Cannot restore an event that is not broken");
+			
+			Event dump = null;
+			if (vevt.getHasAttendees()) {
+				dump = getEventInstance(eventKey); // Gets event for later use
+			}
 			
 			// 1 - removes the broken record
 			rbdao.deleteByNewEvent(con, ekey.eventId);
 			// 2 - logically delete broken event
 			doDeleteEvent(con, ekey.eventId, true);
+			// 3 - updates revision of original event
+			evtDao.updateRevision(con, ekey.originalEventId, createRevisionTimestamp());
 			
 			DbUtils.commitQuietly(con);
-			writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
+			writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
+			writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
+			
+			// Handle attendees invitation
+			if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, dump);
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -1639,43 +1499,38 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public LinkedHashSet<String> calculateAvailabilitySpans(int minRange, UserProfileId pid, DateTime fromDate, DateTime toDate, DateTimeZone userTz, boolean busy) throws WTException {
-		Connection con = null;
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		EventDAO evtDao = EventDAO.getInstance();
 		LinkedHashSet<String> hours = new LinkedHashSet<>();
-		CalendarDAO cdao = CalendarDAO.getInstance();
-		EventDAO edao = EventDAO.getInstance();
+		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
 			// Lists desired calendars by profile
-			List<OCalendar> cals = cdao.selectByProfile(con, pid.getDomainId(), pid.getUserId());
-			List<SchedulerEventInstance> sevs = new ArrayList<>();
-			for(OCalendar cal : cals) {
-				for(VSchedulerEvent se : edao.viewByCalendarFromToPattern(con, cal.getCalendarId(), fromDate, toDate, null)) {
-					se.updateCalculatedFields();
-					sevs.add(new SchedulerEventInstance(se));
+			final List<VVEventInstance> veis = new ArrayList<>();
+			for (OCalendar ocal : calDao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
+				for (VVEvent ve : evtDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+					veis.add(new VVEventInstance(ve));
 				}
-				for(VSchedulerEvent se : edao.viewRecurringByCalendarFromToPattern(con, cal.getCalendarId(), fromDate, toDate, null)) {
-					se.updateCalculatedFields();
-					sevs.add(new SchedulerEventInstance(se));
+				for (VVEvent ve : evtDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+					veis.add(new VVEventInstance(ve));
 				}
 			}
 			
 			DateTime startDt, endDt;
-			List<SchedulerEventInstance> recInstances = null;
-			for(SchedulerEventInstance se : sevs) {
-				// Ignore events that are not marked as busy!
-				if(se.getBusy() != busy) continue;
+			for (VVEventInstance vei : veis) {
+				if (vei.getBusy() != busy) continue; // Ignore events that are not marked as busy!
 				
-				if(se.getRecurrenceId() == null) {
-					startDt = se.getStartDate().withZone(userTz);
-					endDt = se.getEndDate().withZone(userTz);
+				if (vei.getRecurrenceId() == null) {
+					startDt = vei.getStartDate().withZone(userTz);
+					endDt = vei.getEndDate().withZone(userTz);
 					hours.addAll(generateTimeSpans(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
 				} else {
-					recInstances = calculateRecurringInstances(se, fromDate, toDate, userTz);
-					for(SchedulerEventInstance recInstance : recInstances) {
-						startDt = recInstance.getStartDate().withZone(userTz);
-						endDt = recInstance.getEndDate().withZone(userTz);
+					final List<VVEventInstance> instances = calculateRecurringInstances(con, vei, fromDate, toDate, userTz);
+					for (VVEventInstance instance : instances) {
+						startDt = instance.getStartDate().withZone(userTz);
+						endDt = instance.getEndDate().withZone(userTz);
 						hours.addAll(generateTimeSpans(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
 					}
 				}
@@ -1828,45 +1683,41 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			ccon = WT.getCoreConnection();
 			
 			HashMap<String, Object> map = null;
-			List<OCalendar> cals = calDao.selectByDomain(con, getTargetProfileId().getDomainId());
-			for(OCalendar cal : cals) {
-				final UserProfileId pid = new UserProfileId(cal.getDomainId(), cal.getUserId());
-				final OUser user = userDao.selectByDomainUser(ccon, cal.getDomainId(), cal.getUserId());
-				if(user == null) throw new WTException("User [{0}] not found", pid.toString());
+			for (OCalendar ocal : calDao.selectByDomain(con, getTargetProfileId().getDomainId())) {
+				final UserProfileId pid = new UserProfileId(ocal.getDomainId(), ocal.getUserId());
+				final OUser user = userDao.selectByDomainUser(ccon, ocal.getDomainId(), ocal.getUserId());
+				if (user == null) throw new WTException("User [{0}] not found", pid.toString());
 				final UserProfile.Data udata = WT.getUserData(pid);
 				
-				for(VSchedulerEvent vse : edao.viewByCalendarFromToPattern(con, cal.getCalendarId(), fromDate, toDate, null)) {
-					vse.updateCalculatedFields();
-					final SchedulerEventInstance sei = new SchedulerEventInstance(vse);
+				for (VVEvent ve : edao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+					final VVEventInstance vei = new VVEventInstance(ve);
 					try {
 						map = new HashMap<>();
 						map.put("userId", user.getUserId());
 						map.put("descriptionId", user.getDisplayName());
-						fillExportMapBasic(map, coreMgr, con, sei);
-						fillExportMapDates(map, udata.getTimeZone(), sei);
+						fillExportMapBasic(map, coreMgr, con, vei);
+						fillExportMapDates(map, udata.getTimeZone(), vei);
 						mapw.write(map, headers, processors);
 						
 					} catch(Exception ex) {
-						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", ve.getEventId(), ex.getMessage()));
 					}
 				}
-				for(VSchedulerEvent vse : edao.viewRecurringByCalendarFromToPattern(con, cal.getCalendarId(), fromDate, toDate, null)) {
-					vse.updateCalculatedFields();
-					final SchedulerEventInstance sei = new SchedulerEventInstance(vse);
-					final List<SchedulerEventInstance> instances = calculateRecurringInstances(sei, fromDate, toDate, udata.getTimeZone());
+				for(VVEvent ve : edao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+					final List<VVEventInstance> instances = calculateRecurringInstances(con, ve, fromDate, toDate, udata.getTimeZone());
 					
 					try {
 						map = new HashMap<>();
 						map.put("userId", user.getUserId());
 						map.put("descriptionId", user.getDisplayName());
-						fillExportMapBasic(map, coreMgr, con, sei);
-						for(SchedulerEventInstance inst : instances) {
-							fillExportMapDates(map, udata.getTimeZone(), inst);
+						fillExportMapBasic(map, coreMgr, con, ve);
+						for (VVEventInstance vei : instances) {
+							fillExportMapDates(map, udata.getTimeZone(), vei);
 							mapw.write(map, headers, processors);
 						}	
 						
 					} catch(Exception ex) {
-						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", vse.getEventId(), ex.getMessage()));
+						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", ve.getEventId(), ex.getMessage()));
 					}
 				}
 			}
@@ -2229,6 +2080,163 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
+	private List<SchedEventInstance> calculateRecurringInstances(Connection con, SchedEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
+		return calculateRecurringInstances(con, event, fromDate, toDate, userTimezone, -1);
+	}
+	
+	private List<SchedEventInstance> calculateRecurringInstances(Connection con, SchedEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
+		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
+		
+		if (event.getRecurrenceId() == null) throw new WTException("Specified event [{}] does not have a recurrence set", event.getEventId());
+		
+		// Retrieves reccurence and broken dates (if any)
+		ORecurrence orec = recDao.select(con, event.getRecurrenceId());
+		if (orec == null) throw new WTException("Unable to retrieve recurrence [{}]", event.getRecurrenceId());
+		List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, event.getEventId(), event.getRecurrenceId());
+		
+		if (fromDate == null) fromDate = orec.getStartDate();
+		if (toDate == null) toDate = orec.getStartDate().plusYears(5);
+		
+		//TODO: ritornare direttamente l'hashmap da jooq
+		// Builds a hashset of broken dates for increasing performances
+		HashMap<String, ORecurrenceBroken> brokenDates = new HashMap<>();
+		for(ORecurrenceBroken obrec : obrecs) {
+			brokenDates.put(obrec.getEventDate().toString(), obrec);
+		}
+		
+		// If not present, updates rrule
+		if (StringUtils.isBlank(orec.getRule())) {
+			orec.setRule(orec.buildRRule(DateTimeZone.UTC).getValue());
+			recDao.updateRRule(con, orec.getRecurrenceId(), orec.getRule());
+		}
+		
+		try {
+			ArrayList<SchedEventInstance> instances = new ArrayList<>();
+			
+			// Calculate event length in order to generate events like original one
+			int eventDays = calculateEventLengthInDays(event);
+			RRule rr = new RRule(orec.getRule());
+			
+			// Calcutate recurrence set for required dates range
+			PeriodList periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), orec.getStartDate(), rr, fromDate, toDate, userTimezone);
+			
+			// Recurrence start is useful to skip undesired dates at beginning.
+			// If event does not starts at recurrence real beginning (eg. event
+			// start on MO but first recurrence begin on WE), ical4j lib includes 
+			// those dates in calculated recurrence set, as stated in RFC 
+			// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
+			LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), userTimezone).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
+			LocalDate rrEnd = orec.getUntilDate().toLocalDate();
+			
+			// Iterates returned recurring periods and builds cloned events...
+			int count = -1;
+			for (net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
+				count++;
+				if ((limit != -1) && (count > limit)) break;
+				final LocalDate perStart = ICal4jUtils.toJodaDateTime(per.getStart()).toLocalDate();
+				final LocalDate perEnd = ICal4jUtils.toJodaDateTime(per.getEnd()).toLocalDate();
+				
+				if (brokenDates.containsKey(perStart.toString())) continue; // Skip broken dates...
+				if ((perStart.compareTo(rrStart) >= 0) && (perEnd.compareTo(rrEnd) <= 0)) { // Skip unwanted dates at beginning
+					final DateTime newStart = event.getStartDate().withDate(perStart);
+					final DateTime newEnd = event.getEndDate().withDate(newStart.plusDays(eventDays).toLocalDate());
+					
+					// Generate cloned event like original one
+					SchedEvent clone = Cloner.standard().deepClone(event);
+					clone.setStartDate(newStart);
+					clone.setEndDate(newEnd);
+					instances.add(new SchedEventInstance(EventKey.buildKey(event.getEventId(), event.getEventId(), perStart), clone));	
+				}
+			}
+			return instances;
+			
+		} catch(DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} catch(ParseException ex) {
+			throw new WTException(ex, "Unable to parse rrule");
+		}
+	}
+	
+	private List<VVEventInstance> calculateRecurringInstances(Connection con, VVEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
+		return calculateRecurringInstances(con, event, fromDate, toDate, userTimezone, -1);
+	}
+	
+	private List<VVEventInstance> calculateRecurringInstances(Connection con, VVEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
+		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
+		
+		if (event.getRecurrenceId() == null) throw new WTException("Specified event [{}] does not have a recurrence set", event.getEventId());
+		
+		// Retrieves reccurence and broken dates (if any)
+		ORecurrence orec = recDao.select(con, event.getRecurrenceId());
+		if (orec == null) throw new WTException("Unable to retrieve recurrence [{}]", event.getRecurrenceId());
+		List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, event.getEventId(), event.getRecurrenceId());
+		
+		if (fromDate == null) fromDate = orec.getStartDate();
+		if (toDate == null) toDate = orec.getStartDate().plusYears(5);
+		
+		//TODO: ritornare direttamente l'hashmap da jooq
+		// Builds a hashset of broken dates for increasing performances
+		HashMap<String, ORecurrenceBroken> brokenDates = new HashMap<>();
+		for(ORecurrenceBroken obrec : obrecs) {
+			brokenDates.put(obrec.getEventDate().toString(), obrec);
+		}
+		
+		// If not present, updates rrule
+		if (StringUtils.isBlank(orec.getRule())) {
+			orec.setRule(orec.buildRRule(DateTimeZone.UTC).getValue());
+			recDao.updateRRule(con, orec.getRecurrenceId(), orec.getRule());
+		}
+		
+		try {
+			ArrayList<VVEventInstance> instances = new ArrayList<>();
+			
+			// Calculate event length in order to generate events like original one
+			int eventDays = calculateEventLengthInDays(event);
+			RRule rr = new RRule(orec.getRule());
+			
+			// Calcutate recurrence set for required dates range
+			PeriodList periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), orec.getStartDate(), rr, fromDate, toDate, userTimezone);
+			
+			// Recurrence start is useful to skip undesired dates at beginning.
+			// If event does not starts at recurrence real beginning (eg. event
+			// start on MO but first recurrence begin on WE), ical4j lib includes 
+			// those dates in calculated recurrence set, as stated in RFC 
+			// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
+			LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), userTimezone).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
+			LocalDate rrEnd = orec.getUntilDate().toLocalDate();
+			
+			// Iterates returned recurring periods and builds cloned events...
+			int count = -1;
+			final Cloner cloner = Cloner.standard();
+			for (net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
+				count++;
+				if ((limit != -1) && (count > limit)) break;
+				final LocalDate perStart = ICal4jUtils.toJodaDateTime(per.getStart()).toLocalDate();
+				final LocalDate perEnd = ICal4jUtils.toJodaDateTime(per.getEnd()).toLocalDate();
+				
+				if (brokenDates.containsKey(perStart.toString())) continue; // Skip broken dates...
+				if ((perStart.compareTo(rrStart) >= 0) && (perEnd.compareTo(rrEnd) <= 0)) { // Skip unwanted dates at beginning
+					final DateTime newStart = event.getStartDate().withDate(perStart);
+					final DateTime newEnd = event.getEndDate().withDate(newStart.plusDays(eventDays).toLocalDate());
+					
+					// Generate cloned event like original one
+					VVEvent clone = cloner.deepClone(event);
+					clone.setStartDate(newStart);
+					clone.setEndDate(newEnd);
+					instances.add(new VVEventInstance(EventKey.buildKey(event.getEventId(), event.getEventId(), perStart), clone));	
+				}
+			}
+			return instances;
+			
+		} catch(DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} catch(ParseException ex) {
+			throw new WTException(ex, "Unable to parse rrule");
+		}
+	}
+	
 	private void notifyOrganizer(Locale locale, Event event, String updatedAttendeeId) {
 		String targetDomainId = getTargetProfileId().getDomainId();
 		CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
@@ -2326,7 +2334,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return PathUtils.concatPaths(publicBaseUrl, s);
 	}
 	
-	private void fillExportMapDates(HashMap<String, Object> map, DateTimeZone timezone, SchedulerEventInstance sei) throws Exception {
+	private void fillExportMapDates(HashMap<String, Object> map, DateTimeZone timezone, VVEventInstance sei) throws Exception {
 		DateTime startDt = sei.getStartDate().withZone(timezone);
 		map.put("startDate", startDt);
 		map.put("startTime", startDt);
@@ -2337,33 +2345,33 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		map.put("duration", Minutes.minutesBetween(sei.getEndDate(), sei.getStartDate()).size());
 	}
 	
-	private void fillExportMapBasic(HashMap<String, Object> map, CoreManager coreMgr, Connection con, SchedulerEventInstance sei) throws Exception {
-		map.put("eventId", sei.getEventId());
-		map.put("title", sei.getTitle());
-		map.put("description", sei.getDescription());
+	private void fillExportMapBasic(HashMap<String, Object> map, CoreManager coreMgr, Connection con, VVEvent event) throws Exception {
+		map.put("eventId", event.getEventId());
+		map.put("title", event.getTitle());
+		map.put("description", event.getDescription());
 		
-		if(sei.getActivityId() != null) {
+		if(event.getActivityId() != null) {
 			ActivityDAO actDao = ActivityDAO.getInstance();
-			OActivity activity = actDao.select(con, sei.getActivityId());
-			if(activity == null) throw new WTException("Activity [{0}] not found", sei.getActivityId());
+			OActivity activity = actDao.select(con, event.getActivityId());
+			if(activity == null) throw new WTException("Activity [{0}] not found", event.getActivityId());
 
 			map.put("activityId", activity.getActivityId());
 			map.put("activityDescription", activity.getDescription());
 			map.put("activityExternalId", activity.getExternalId());
 		}
 		
-		if (sei.getMasterDataId() != null) {
-			MasterData md = coreMgr.getMasterData(sei.getMasterDataId());
+		if (event.getMasterDataId() != null) {
+			MasterData md = coreMgr.getMasterData(event.getMasterDataId());
 			map.put("masterDataId", md.getMasterDataId());
 			map.put("masterDataDescription", md.getDescription());
 			map.put("customerId", md.getMasterDataId());
 			map.put("customerDescription", md.getDescription());
 		}
 		
-		if(sei.getCausalId() != null) {
+		if(event.getCausalId() != null) {
 			CausalDAO cauDao = CausalDAO.getInstance();
-			OCausal causal = cauDao.select(con, sei.getCausalId());
-			if(causal == null) throw new WTException("Causal [{0}] not found", sei.getCausalId());
+			OCausal causal = cauDao.select(con, event.getCausalId());
+			if(causal == null) throw new WTException("Causal [{0}] not found", event.getCausalId());
 			
 			map.put("causalId", causal.getCausalId());
 			map.put("causalDescription", causal.getDescription());
@@ -2393,116 +2401,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		for(int count = 1; count <= days; count++) {
 			dates.add(date);
 			date = date.plusDays(1);
-		}
-	}
-	
-	/**
-	 * @deprecated
-	 * Computes event length in days.
-	 * For events that starts and ends in same date, returned lenght will be 0.
-	 * @param event
-	 * @return 
-	 */
-	private int calculateEventLengthInDays(OEvent event) {
-		return Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays();
-	}
-	
-	/**
-	 * @deprecated
-	 * Fills passed dates hashmap within ones coming from specified event.
-	 * If event starts on 21 Apr and ends on 25 Apr, 21->25 dates will be added to the set.
-	 * @param dates
-	 * @param event 
-	 */
-	private void addExpandedEventDates(HashSet<DateTime> dates, OEvent event) {
-		int days = calculateEventLengthInDays(event)+1;
-		DateTime date = event.getStartDate().withTimeAtStartOfDay();
-		for(int count = 1; count <= days; count++) {
-			dates.add(date);
-			date = date.plusDays(1);
-		}
-	}
-	
-	private List<SchedulerEventInstance> calculateRecurringInstances(Connection con, SchedulerEventInstance event, DateTime fromDate, DateTime toDate, DateTimeZone userTz) throws WTException {
-		ArrayList<SchedulerEventInstance> events = new ArrayList<>();
-		ORecurrence rec = null;
-		List<ORecurrenceBroken> brokenRecs;
-		HashMap<String, ORecurrenceBroken> brokenDates;
-		PeriodList periods = null;
-		
-		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
-		RecurrenceBrokenDAO rbdao = RecurrenceBrokenDAO.getInstance();
-		
-		// Retrieves reccurence and broken dates (if any)
-		if(event.getRecurrenceId() == null) throw new WTException("Specified event [{}] does not have a recurrence set", event.getEventId());
-		rec = rdao.select(con, event.getRecurrenceId());
-		if(rec == null) throw new WTException("Unable to retrieve recurrence [{}]", event.getRecurrenceId());
-		brokenRecs = rbdao.selectByEventRecurrence(con, event.getEventId(), event.getRecurrenceId());
-		
-		// Builds a hashset of broken dates for increasing performances
-		brokenDates = new HashMap<>();
-		for(ORecurrenceBroken brokenRec : brokenRecs) {
-			brokenDates.put(brokenRec.getEventDate().toString(), brokenRec);
-		}
-		
-		// If not present, updates rrule
-		if(StringUtils.isEmpty(rec.getRule())) {
-			rec.setRule(rec.buildRRule(DateTimeZone.UTC).getValue());
-			rdao.updateRRule(con, rec.getRecurrenceId(), rec.getRule());
-		}
-		
-		try {
-			// Calculate event length in order to generate events like original one
-			int eventDays = calculateEventLengthInDays(event);
-			RRule rr = new RRule(rec.getRule());
-			
-			// Calcutate recurrence set for required dates range
-			periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), rec.getStartDate(), rr, fromDate, toDate, userTz);
-			
-			// Recurrence start is useful to skip undesired dates at beginning.
-			// If event does not starts at recurrence real beginning (eg. event
-			// start on MO but first recurrence begin on WE), ical4j lib includes 
-			// those dates in calculated recurrence set, as stated in RFC 
-			// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
-			LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), userTz).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
-			LocalDate rrEnd = rec.getUntilDate().toLocalDate();
-			
-			// Iterates returned recurring periods and builds cloned events...
-			SchedulerEventInstance recEvent;
-			LocalDate perStart, perEnd;
-			DateTime newStart, newEnd;
-			for(net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
-				perStart = ICal4jUtils.toJodaDateTime(per.getStart()).toLocalDate();
-				perEnd = ICal4jUtils.toJodaDateTime(per.getEnd()).toLocalDate();
-				
-				if(brokenDates.containsKey(perStart.toString())) continue; // Skip broken dates...
-				if((perStart.compareTo(rrStart) >= 0) && (perEnd.compareTo(rrEnd) <= 0)) { // Skip unwanted dates at beginning
-					newStart = event.getStartDate().withDate(perStart);
-					newEnd = event.getEndDate().withDate(newStart.plusDays(eventDays).toLocalDate());
-					// Generate cloned event like original one
-					recEvent = cloneEvent(event, newStart, newEnd);
-					recEvent.setKey(EventKey.buildKey(event.getEventId(), event.getEventId(), perStart));
-					events.add(recEvent);
-				}
-			}
-			return events;
-			
-		} catch(DAOException ex) {
-			throw new WTException(ex, "DB error");
-		} catch(ParseException ex) {
-			throw new WTException(ex, "Unable to parse rrule");
-		}
-	}
-	
-	private String guessEventType(EventKey eventKey, OEvent original) {
-		if(original.getRecurrenceId() == null) { // Normal event
-			return EVENT_NORMAL;
-		} else { // Event linked to a recurrence
-			if(eventKey.eventId.equals(original.getEventId())) { // Recurring event
-				return EVENT_RECURRING;
-			} else { // Broken event
-				return EVENT_BROKEN;
-			}
 		}
 	}
 	
@@ -2683,19 +2581,38 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private ORecurrenceBroken doExcludeRecurrenceDate(Connection con, OEvent recurringEvent, LocalDate instanceDate) throws DAOException {
-		return doExcludeRecurrenceDate(con, recurringEvent, instanceDate, null);
+		return doExcludeRecurrenceDate(con, recurringEvent.getEventId(), recurringEvent.getRecurrenceId(), instanceDate, null);
 	}
 	
 	private ORecurrenceBroken doExcludeRecurrenceDate(Connection con, OEvent recurringEvent, LocalDate instanceDate, Integer brokenEventId) throws DAOException {
+		return doExcludeRecurrenceDate(con, recurringEvent.getEventId(), recurringEvent.getRecurrenceId(), instanceDate, brokenEventId);
+	}
+	
+	private ORecurrenceBroken doExcludeRecurrenceDate(Connection con, int recurringEventId, int recurrenceId, LocalDate instanceDate, Integer brokenEventId) throws DAOException {
 		RecurrenceBrokenDAO broDao = RecurrenceBrokenDAO.getInstance();
 		// 1 - inserts a broken record on excluded date
 		ORecurrenceBroken orb  = new ORecurrenceBroken();
-		orb.setEventId(recurringEvent.getEventId());
-		orb.setRecurrenceId(recurringEvent.getRecurrenceId());
+		orb.setEventId(recurringEventId);
+		orb.setRecurrenceId(recurrenceId);
 		orb.setEventDate(instanceDate);
 		orb.setNewEventId(brokenEventId);
 		broDao.insert(con, orb);
 		return orb;
+	}
+	
+	private List<SchedEventInstance> doGetExpiredEventsForUpdate(Connection con, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
+		EventDAO eveDao = EventDAO.getInstance();
+		//TODO: gestire alert su eventi ricorrenti
+		final ArrayList<SchedEventInstance> instances = new ArrayList<>();
+		for (VVEvent vevt : eveDao.viewExpiredForUpdateByFromTo(con, fromDate, toDate)) {
+			instances.add(new SchedEventInstance(createSchedEvent(vevt)));
+		}
+		/*
+		for (VSchedulerEvent vevt : eveDao.viewRecurringExpiredForUpdateByFromTo(con, fromDate, toDate)) {
+			instances.addAll(calculateRecurringInstances(con, createSchedEvent(vevt), fromDate, toDate, DateTimeZone.UTC, 200));
+		}
+		*/
+		return instances;
 	}
 	
 	private String buildOrganizer() {
@@ -2776,25 +2693,22 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return fill;
 	}
 	
-	private SchedulerEventInstance cloneEvent(SchedulerEventInstance sourceEvent, DateTime newStart, DateTime newEnd) {
-		SchedulerEventInstance event = new SchedulerEventInstance(sourceEvent);
+	private VVEventInstance cloneEvent(VVEventInstance sourceEvent, DateTime newStart, DateTime newEnd) {
+		VVEventInstance event = new VVEventInstance(sourceEvent);
 		event.setStartDate(newStart);
 		event.setEndDate(newEnd);
 		return event;
 	}
 	
-	private SchedEvent createSchedEvent(VSchedulerEvent with) {
+	private SchedEvent createSchedEvent(VVEvent with) {
 		return fillSchedEvent(new SchedEvent(), with);
 	}
 	
-	private <T extends SchedEvent> T fillSchedEvent(T fill, VSchedulerEvent with) {
+	private <T extends SchedEvent> T fillSchedEvent(T fill, VVEvent with) {
 		if ((fill != null) && (with != null)) {
 			fill.setEventId(with.getEventId());
-			fill.setOriginalEventId(with.getOriginalEventId());
-			fill.setPublicUid(with.getPublicUid());
 			fill.setCalendarId(with.getCalendarId());
-			fill.setCalendarDomainId(with.getCalendarDomainId());
-			fill.setCalendarUserId(with.getCalendarUserId());
+			fill.setPublicUid(with.getPublicUid());
 			fill.setRecurrenceId(with.getRecurrenceId());
 			fill.setRevisionTimestamp(with.getRevisionTimestamp());
 			fill.setStartDate(with.getStartDate());
@@ -2808,17 +2722,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			fill.setIsPrivate(with.getIsPrivate());
 			fill.setBusy(with.getBusy());
 			fill.setReminder(with.getReminder());
+			fill.setOriginalEventId(with.getOriginalEventId());
+			fill.setCalendarDomainId(with.getCalendarDomainId());
+			fill.setCalendarUserId(with.getCalendarUserId());
 			fill.setHasAttendees(with.getHasAttendees());
 		}
 		return fill;
 	}
 	
-	
 	private Event createEvent(OEvent with) {
 		return fillEvent(new Event(), with);
 	}
 	
-	private Event fillEvent(Event fill, OEvent with) {
+	private <T extends Event> T fillEvent(T fill, OEvent with) {
 		if ((fill != null) && (with != null)) {
 			fill.setEventId(with.getEventId());
 			fill.setCalendarId(with.getCalendarId());
@@ -2905,7 +2821,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return fill;
 	}
 	
-	private EventInstance createEventInstance(String key, RecurringInfo recurringInfo, VSchedulerEvent se) {
+	private EventInstance createEventInstance(String key, RecurringInfo recurringInfo, VVEvent se) {
 		EventInstance evti = new EventInstance(key, recurringInfo);
 		evti.setEventId(se.getEventId());
 		evti.setCalendarId(se.getCalendarId());
@@ -3198,7 +3114,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	/**
 	 * @deprecated 
 	 */
-	private ReminderInApp createEventReminderAlertWeb(SchedulerEventInstance event) {
+	private ReminderInApp createEventReminderAlertWeb(VVEventInstance event) {
 		ReminderInApp alert = new ReminderInApp(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
 		alert.setTitle(event.getTitle());
 		alert.setDate(event.getStartDate().withZone(event.getDateTimeZone()));
@@ -3209,7 +3125,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	/**
 	 * @deprecated 
 	 */
-	private ReminderEmail createEventReminderAlertEmail(Locale locale, SchedulerEventInstance event) {
+	private ReminderEmail createEventReminderAlertEmail(Locale locale, VVEventInstance event) {
 		ReminderEmail alert = new ReminderEmail(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
 		//TODO: completare email
 		return alert;
@@ -3239,9 +3155,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	public static class CalendarEvents {
 		public final Calendar calendar;
-		public final List<SchedulerEventInstance> events;
+		public final List<VVEventInstance> events;
 		
-		public CalendarEvents(Calendar calendar, List<SchedulerEventInstance> events) {
+		public CalendarEvents(Calendar calendar, List<VVEventInstance> events) {
 			this.calendar = calendar;
 			this.events = events;
 		}

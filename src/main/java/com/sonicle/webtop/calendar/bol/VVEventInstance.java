@@ -30,28 +30,32 @@
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
  * display the words "Copyright (C) 2014 Sonicle S.r.l.".
  */
-package com.sonicle.webtop.calendar.bol.model;
+package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.model.EventKey;
 import com.rits.cloning.Cloner;
-import com.sonicle.webtop.calendar.bol.VSchedulerEvent;
+import com.sonicle.webtop.calendar.bol.VVEvent;
 import org.joda.time.DateTimeZone;
 
 /**
  *
  * @author malbinola
  */
-public class SchedulerEventInstance extends VSchedulerEvent {
+public class VVEventInstance extends VVEvent {
 	private String key;
 	
-	public SchedulerEventInstance() {
+	public VVEventInstance() {
 		super();
 	}
 	
-	public SchedulerEventInstance(VSchedulerEvent event) {
+	public VVEventInstance(VVEvent event) {
+		this(EventKey.buildKey(event.getEventId(), event.getOriginalEventId()), event);
+	}
+	
+	public VVEventInstance(String key, VVEvent event) {
 		super();
-		new Cloner().copyPropertiesOfInheritedClass(event, this);
-		key = EventKey.buildKey(event.getEventId(), event.getOriginalEventId());
+		this.key = key;
+		Cloner.standard().copyPropertiesOfInheritedClass(event, this);
 	}
 
 	public String getKey() {

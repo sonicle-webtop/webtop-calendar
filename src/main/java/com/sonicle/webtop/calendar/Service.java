@@ -53,7 +53,7 @@ import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
+import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
 import com.sonicle.webtop.calendar.bol.js.JsCalendar;
@@ -63,6 +63,7 @@ import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarLkp;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
+import com.sonicle.webtop.calendar.bol.js.JsPletEvents;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.model.CalendarFolder;
@@ -125,6 +126,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -805,8 +807,8 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
-				List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
-				List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(visibleCategoryIds, "%"+query+"%", utz);
+				final List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
+				final List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(visibleCategoryIds, "%"+query+"%", utz);
 				for (FolderEventInstances foInstancesObj : foInstancesObjs) {
 					final CalendarRoot root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
 					if (root == null) continue;
@@ -1122,6 +1124,44 @@ public class Service extends BaseService {
 			ServletUtils.writeErrorHandlingJs(response, ex.getMessage());
 		} finally {
 			IOUtils.closeQuietly(baos);
+		}
+	}
+	
+	public void processPortletEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		ArrayList<JsPletEvents> items = new ArrayList<>();
+		UserProfile up = getEnv().getProfile();
+		DateTimeZone utz = up.getTimeZone();
+		
+		try {
+			String query = ServletUtils.getStringParameter(request, "query", null);
+			
+			if (query == null) {
+				final CalendarRoot root = roots.get(MyCalendarRoot.SHARE_ID);
+				final List<Integer> ids = manager.listCalendarIds();
+				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, DateTimeUtils.now())) {
+					final CalendarFolder folder = folders.get(instance.getCalendarId());
+					if (folder == null) continue;
+					
+					items.add(new JsPletEvents(root, folder, instance, utz));
+				}
+			} else {
+				final Set<Integer> ids = folders.keySet();
+				for (FolderEventInstances foInstancesObj : manager.listFolderEventInstances(ids, "%"+query+"%", utz)) {
+					final CalendarRoot root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
+					if (root == null) continue;
+					final CalendarFolder fold = folders.get(foInstancesObj.folder.getCalendarId());
+					if (fold == null) continue;
+					
+					for (SchedEventInstance sei : foInstancesObj.instances) {
+						items.add(new JsPletEvents(root, fold, sei, utz));
+					}
+				}
+			}
+			new JsonResult(items).printTo(out);
+			
+		} catch(Exception ex) {
+			logger.error("Error in PortletEvents", ex);
+			new JsonResult(false, "Error").printTo(out);	
 		}
 	}
 	

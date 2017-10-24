@@ -36,7 +36,7 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
+import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFolder;
 import com.sonicle.webtop.calendar.model.CalendarRoot;
@@ -125,7 +125,7 @@ public class JsSchedulerEvent {
 		_profileId = calendar.getProfileId().toString();
 	}
 	
-	public JsSchedulerEvent(CalendarRoot rootFolder, CalendarFolder folder, SchedulerEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(CalendarRoot rootFolder, CalendarFolder folder, VVEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
@@ -163,8 +163,8 @@ public class JsSchedulerEvent {
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.getHasAttendees();
-		isRecurring = event.getIsRecurring();
-		isBroken = event.getIsBroken();
+		isRecurring = event.isRecurring();
+		isBroken = event.isBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();

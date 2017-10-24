@@ -25,5 +25,9 @@
 		<permissions>
 			<sharePermission group="CALENDAR" />
 		</permissions>
+		
+		<portlets>
+			<portlet jsClassName="portlet.Events" />
+		</portlets>
 	</service>
 </services>

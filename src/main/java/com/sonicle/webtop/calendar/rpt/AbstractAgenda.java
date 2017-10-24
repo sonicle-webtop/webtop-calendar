@@ -36,7 +36,7 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
-import com.sonicle.webtop.calendar.bol.model.SchedulerEventInstance;
+import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.FolderEvents;

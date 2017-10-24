@@ -43,13 +43,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Calendar',
 		'Sonicle.webtop.calendar.model.Event',
-		'Sonicle.webtop.calendar.model.GridEvent',
+		'Sonicle.webtop.calendar.model.GridEvent'
+		
+	],
+	uses: [
 		'Sonicle.webtop.calendar.view.Sharing',
 		'Sonicle.webtop.calendar.view.Calendar',
 		'Sonicle.webtop.calendar.view.Event',
 		'Sonicle.webtop.calendar.view.CalendarChooser',
 		'Sonicle.webtop.calendar.view.HiddenCalendars',
-		'Sonicle.webtop.calendar.ServiceApi'
+		'Sonicle.webtop.calendar.ServiceApi',
+		'Sonicle.webtop.calendar.portlet.Events'
 	],
 	mixins: [
 		'WTA.mixin.FoldersTree'

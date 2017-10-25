@@ -98,5 +98,12 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 			callback: opts.callback,
 			scope: opts.scope
 		});
+	},
+	
+	/**
+	 * Create an instance of the events portlet body.
+	 */
+	createEventsPortletBody: function(cfg) {		
+		return Ext.create('Sonicle.webtop.calendar.portlet.EventsBody', Ext.apply(cfg||{},{ mys: this.service }));
 	}
 });

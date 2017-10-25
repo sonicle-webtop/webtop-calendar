@@ -42,8 +42,9 @@ import com.sonicle.webtop.core.sdk.msg.ResultServiceMessage;
 public class RemoteSyncResult extends ResultServiceMessage {
 	public static final String ACTION = "remoteSyncResult";
 
-	public RemoteSyncResult() {
+	public RemoteSyncResult(boolean start) {
 		super("com.sonicle.webtop.calendar", ACTION);
+		setMappedPayload("start", start);
 	}
 	
 	public final RemoteSyncResult setCalendarId(int calendarId) {

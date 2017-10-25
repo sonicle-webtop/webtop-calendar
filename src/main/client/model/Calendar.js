@@ -65,11 +65,5 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 		WTF.calcField('_profileId', 'string', ['domainId', 'userId'], function(v, rec) {
 			return rec.get('userId') + '@' + rec.get('domainId');
 		})
-	],
-	
-	statics: {
-		hasRemoteSync: function(provider) {
-			return (provider === 'webcal') || (provider === 'caldav');
-		}
-	}
+	]
 });

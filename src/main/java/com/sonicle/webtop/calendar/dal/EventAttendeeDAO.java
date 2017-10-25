@@ -146,7 +146,7 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByCalendarId(Connection con, int calendarId) throws DAOException {
+	public int deleteByCalendar(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_ATTENDEES)

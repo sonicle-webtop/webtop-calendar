@@ -43,13 +43,12 @@ Ext.define('Sonicle.webtop.calendar.model.FolderNode', {
 		WTF.roField('_calId', 'string'),
 		WTF.roField('_builtIn', 'boolean'),
 		WTF.roField('_provider', 'string'),
+		WTF.roField('_color', 'string'),
 		WTF.roField('_default', 'boolean'),
 		WTF.field('_visible', 'boolean', false), // Same as checked
-		WTF.roField('_color', 'string'),
 		WTF.roField('_isPrivate', 'boolean'),
 		WTF.roField('_defBusy', 'boolean'),
 		WTF.roField('_defReminder', 'int'),
-		WTF.roField('_syncable', 'boolean'),
 		WTF.calcField('_domainId', 'string', '_pid', function(v, rec) {
 			return (rec.get('_pid')) ? rec.get('_pid').split('@')[1] : null;
 		}),

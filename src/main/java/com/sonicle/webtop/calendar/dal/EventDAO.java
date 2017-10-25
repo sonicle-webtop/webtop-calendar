@@ -279,7 +279,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByCalendarId(Connection con, int calendarId) throws DAOException {
+	public int deleteByCalendar(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS)
@@ -301,7 +301,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int logicDeleteByCalendarId(Connection con, int calendarId, DateTime revisionTimestamp) throws DAOException {
+	public int logicDeleteByCalendar(Connection con, int calendarId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)

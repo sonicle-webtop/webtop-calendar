@@ -44,6 +44,6 @@ import com.sonicle.webtop.core.model.SharePermsElements;
 public class MyCalendarFolder extends CalendarFolder {
 	
 	public MyCalendarFolder(String shareId, Calendar calendar) {
-		super(shareId, SharePermsFolder.full(), calendar.isRemoteProvider() ? new SharePermsElements() : SharePermsElements.full(), calendar);
+		super(shareId, SharePermsFolder.full(), SharePermsElements.full(), calendar);
 	}
 }

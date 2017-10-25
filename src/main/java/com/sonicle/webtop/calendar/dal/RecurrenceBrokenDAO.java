@@ -110,7 +110,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByCalendarId(Connection con, int calendarId) throws DAOException {
+	public int deleteByCalendar(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(RECURRENCES_BROKEN)

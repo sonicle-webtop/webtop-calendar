@@ -33,7 +33,6 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.EnumUtils;
-import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
@@ -53,7 +52,6 @@ import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
-import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
 import com.sonicle.webtop.calendar.bol.js.JsCalendar;
@@ -76,10 +74,7 @@ import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
 import com.sonicle.webtop.calendar.bol.model.SetupDataCalendarRemote;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
-import com.sonicle.webtop.calendar.model.FolderEvents;
-import com.sonicle.webtop.calendar.model.SchedEvent;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.msg.RemoteSyncResult;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
@@ -584,7 +579,7 @@ public class Service extends BaseService {
 			}
 			
 		} catch (Exception ex) {
-			logger.error("Error in SetupStoreFtp", ex);
+			logger.error("Error in SetupCalendarRemote", ex);
 			new JsonResult(false, ex.getMessage()).printTo(out);
 		}
 	}
@@ -1374,18 +1369,18 @@ public class Service extends BaseService {
 		node.put("_calId", cal.getCalendarId());
 		node.put("_builtIn", cal.getBuiltIn());
 		node.put("_provider", EnumUtils.toSerializedName(cal.getProvider()));
-		node.put("_default", cal.getIsDefault());
 		node.put("_color", Calendar.getHexColor(color));
+		node.put("_default", cal.getIsDefault());
 		node.put("_visible", visible);
 		node.put("_isPrivate", cal.getIsPrivate());
 		node.put("_defBusy", cal.getDefaultBusy());
 		node.put("_defReminder", cal.getDefaultReminder());
 		
 		List<String> classes = new ArrayList<>();
-		if(cal.getIsDefault()) classes.add("wtcal-tree-default");
-		if(!folder.getElementsPerms().implies("CREATE") 
+		if (cal.getIsDefault()) classes.add("wt-tree-node-bold");
+		if (!folder.getElementsPerms().implies("CREATE") 
 				&& !folder.getElementsPerms().implies("UPDATE")
-				&& !folder.getElementsPerms().implies("DELETE")) classes.add("wtcal-tree-readonly");
+				&& !folder.getElementsPerms().implies("DELETE")) classes.add("wt-tree-node-grey");
 		node.setCls(StringUtils.join(classes, " "));
 		
 		node.setIconClass("wt-palette-" + Calendar.getHexColor(color));
@@ -1408,10 +1403,15 @@ public class Service extends BaseService {
 
 		@Override
 		public void executeAction() {
+			getWts().notify(new RemoteSyncResult(true)
+				.setCalendarId(calendarId)
+				.setCalendarName(calendarName)
+				.setSuccess(true)
+			);
 			try {
 				manager.syncRemoteCalendar(calendarId, full);
 				this.completed();
-				getWts().notify(new RemoteSyncResult()
+				getWts().notify(new RemoteSyncResult(false)
 					.setCalendarId(calendarId)
 					.setCalendarName(calendarName)
 					.setSuccess(true)
@@ -1419,7 +1419,7 @@ public class Service extends BaseService {
 				
 			} catch(WTException ex) {
 				logger.error("Remote sync failed", ex);
-				getWts().notify(new RemoteSyncResult()
+				getWts().notify(new RemoteSyncResult(false)
 					.setCalendarId(calendarId)
 					.setCalendarName(calendarName)
 					.setThrowable(ex, true)

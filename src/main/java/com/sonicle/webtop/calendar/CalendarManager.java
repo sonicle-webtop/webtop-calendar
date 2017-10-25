@@ -1748,16 +1748,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			// Erase events and related tables
 			if (deep) {
-				for(OCalendar ocal : caldao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
-					attdao.deleteByCalendarId(con, ocal.getCalendarId());
-					recdao.deleteByCalendarId(con, ocal.getCalendarId());
-					recbrkdao.deleteByCalendarId(con, ocal.getCalendarId());
-					evtdao.deleteByCalendarId(con, ocal.getCalendarId());
+				for (OCalendar ocal : caldao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
+					attdao.deleteByCalendar(con, ocal.getCalendarId());
+					recdao.deleteByCalendar(con, ocal.getCalendarId());
+					recbrkdao.deleteByCalendar(con, ocal.getCalendarId());
+					evtdao.deleteByCalendar(con, ocal.getCalendarId());
 				}
 			} else {
 				DateTime revTs = createRevisionTimestamp();
-				for(OCalendar ocal : caldao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
-					evtdao.logicDeleteByCalendarId(con, ocal.getCalendarId(), revTs);
+				for (OCalendar ocal : caldao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
+					evtdao.logicDeleteByCalendar(con, ocal.getCalendarId(), revTs);
 				}
 			}
 			
@@ -2418,7 +2418,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} else {
 			calDao.update(con, ocal);
 		}
-		
 		return createCalendar(ocal);
 	}
 	
@@ -2544,7 +2543,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			RecurrenceBrokenDAO recbkDao = RecurrenceBrokenDAO.getInstance();
 			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 			
-			recDao.deleteByEventId(con, eventId);
+			recDao.deleteByEvent(con, eventId);
 			recbkDao.deleteByEvent(con, eventId);
 			attDao.deleteByEvent(con, eventId);
 			evtDao.deleteById(con, eventId);
@@ -2555,17 +2554,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		EventDAO evtDao = EventDAO.getInstance();
 		
 		if (logicDelete) {
-			return evtDao.logicDeleteByCalendarId(con, calendarId, createRevisionTimestamp());
+			return evtDao.logicDeleteByCalendar(con, calendarId, createRevisionTimestamp());
 			
 		} else {
 			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 			RecurrenceBrokenDAO recbkDao = RecurrenceBrokenDAO.getInstance();
 			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 			
-			attDao.deleteByCalendarId(con, calendarId);
-			recbkDao.deleteByCalendarId(con, calendarId);
-			recDao.deleteByCalendarId(con, calendarId);
-			return evtDao.deleteByCalendarId(con, calendarId);
+			attDao.deleteByCalendar(con, calendarId);
+			recbkDao.deleteByCalendar(con, calendarId);
+			recDao.deleteByCalendar(con, calendarId);
+			return evtDao.deleteByCalendar(con, calendarId);
 		}
 	}
 	
@@ -3150,16 +3149,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			this.recurrence = recurrence;
 			this.attendees = attendees;
 			
-		}
-	}
-	
-	public static class CalendarEvents {
-		public final Calendar calendar;
-		public final List<VVEventInstance> events;
-		
-		public CalendarEvents(Calendar calendar, List<VVEventInstance> events) {
-			this.calendar = calendar;
-			this.events = events;
 		}
 	}
 	

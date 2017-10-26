@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
@@ -1141,7 +1142,8 @@ public class Service extends BaseService {
 				}
 			} else {
 				final Set<Integer> ids = folders.keySet();
-				for (FolderEventInstances foInstancesObj : manager.listFolderEventInstances(ids, "%"+query+"%", utz)) {
+				final String pattern = LangUtils.patternizeWords(query);
+				for (FolderEventInstances foInstancesObj : manager.listFolderEventInstances(ids, pattern, utz)) {
 					final CalendarRoot root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
 					if (root == null) continue;
 					final CalendarFolder fold = folders.get(foInstancesObj.folder.getCalendarId());

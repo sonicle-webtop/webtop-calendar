@@ -36,7 +36,7 @@ import com.sonicle.webtop.calendar.model.GetEventScope;
 import com.rits.cloning.Cloner;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.EnumUtils;
-import com.sonicle.commons.HttpClientUtils;
+import com.sonicle.commons.http.HttpClientUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.MailUtils;
@@ -169,6 +169,7 @@ import net.fortuna.ical4j.model.property.Method;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.utils.URIBuilder;
 
 /**
@@ -1838,10 +1839,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					logger.debug("Checking remote calendar URL [{}]", url.toString());
 				}
 				
-				if (HttpClientUtils.exists(URIUtils.buildQuietly(builder))) {
-					return new ProbeCalendarRemoteUrlResult(FilenameUtils.getBaseName(url.getPath()));
-				} else {
-					return null;
+				HttpClient httpCli = null;
+				try {
+					httpCli = HttpClientUtils.createBasicHttpClient(HttpClientUtils.configureSSLAcceptAll(), url);
+					return HttpClientUtils.exists(httpCli, url) ? new ProbeCalendarRemoteUrlResult(FilenameUtils.getBaseName(url.getPath())) : null;
+				} finally {
+					HttpClientUtils.closeQuietly(httpCli);
 				}
 				
 			} else if (Calendar.Provider.CALDAV.equals(provider)) {
@@ -1906,14 +1909,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					// Retrieve webcal content (iCalendar) from the specified URL 
 					// and save it locally
 					logger.debug("Retrieving iCalendar file from URL [{}]", newUrl);
+					HttpClient httpCli = null;
 					FileOutputStream os = null;
 					try {
+						httpCli = HttpClientUtils.createBasicHttpClient(HttpClientUtils.configureSSLAcceptAll(), newUrl);
 						os = new FileOutputStream(tempFile);
-						HttpClientUtils.get(newUrl, os);
+						HttpClientUtils.get(httpCli, newUrl, os);
+						
 					} catch(IOException ex) {
 						throw new WTException(ex, "Unable to retrieve webcal [{0}]", newUrl);
 					} finally {
 						IOUtils.closeQuietly(os);
+						HttpClientUtils.closeQuietly(httpCli);
 					}
 					logger.debug("Saved to temp file [{}]", tempFile.getName());
 

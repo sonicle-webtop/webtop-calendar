@@ -12,8 +12,12 @@
 		<companyWebSite>http://www.sonicle.com</companyWebSite>
 		<supportEmail>sonicle@sonicle.com</supportEmail>
 		
+		<controller name=".CalendarController" />
+		<manager name=".CalendarManager" />
+		<!--
 		<controllerClassName>CalendarController</controllerClassName>
 		<managerClassName>CalendarManager</managerClassName>
+		-->
 		<serviceClassName>Service</serviceClassName>
 		<publicServiceClassName>PublicService</publicServiceClassName>
 		<userOptions>
@@ -21,6 +25,8 @@
 			<viewJsClassName>view.UserOptions</viewJsClassName>
 			<modelJsClassName>model.UserOptions</modelJsClassName>
 		</userOptions>
+		
+		<restApiEndpoint name=".RestApi" />
 		
 		<permissions>
 			<sharePermission group="CALENDAR" />

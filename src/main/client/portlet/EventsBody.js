@@ -66,6 +66,10 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 					}
 				}
 			},
+			viewConfig: {
+				deferEmptyText: false,
+				emptyText: me.mys.res('portlet.events.gp.emp')
+			},
 			columns: [{
 				xtype: 'socolorcolumn',
 				dataIndex: 'calendarName',

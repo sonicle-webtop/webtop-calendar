@@ -264,15 +264,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}
 				},
 				listeners: {
-					contextmenu: function(s,e) {
-						WT.showContextMenu(e, me.getRef('cxmScheduler'));
-					},
 					rangeselect: function(s,dates,onComplete) {
 						onComplete();
 						var cal = me.getSelectedFolder(me.trFolders()),
 								soDate = Sonicle.Date,
 								ad;
-						if(cal) {
+						if (cal) {
 							ad = soDate.isMidnight(dates.startDate) && soDate.isMidnight(dates.endDate);
 							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), dates.startDate, dates.endDate, ad);
 						}
@@ -283,23 +280,23 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							me.openEventUI(er.UPDATE, rec.get('id'));
 						}
 					},
-					daydblclick: function(s, dt, ad) {
+					daydblclick: function(s, dt, allDay) {
 						var cal = me.getSelectedFolder(me.trFolders()),
 								soDate = Sonicle.Date,
-								start, end;
-						if(cal) {
-							if(ad) {
-								start = soDate.copyTime(me.getVar('workdayStart'), dt);
-								end = soDate.copyTime(me.getVar('workdayEnd'), dt);
-							} else {
-								start = dt;
-								end = soDate.add(dt, {minutes: 30});
-							}
-							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), start, end, ad);
+								start = allDay ? soDate.copyTime(me.getVar('workdayStart'), dt) : dt,
+								end = allDay ? soDate.copyTime(me.getVar('workdayEnd'), dt) : soDate.add(dt, {minutes: 30});
+						if (cal) {
+							me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), start, end, allDay);
 						}
 					},
-					eventcontextmenu: function(s, rec, el, e) {
+					eventcontextmenu: function(s, rec, e) {
 						WT.showContextMenu(e, me.getRef('cxmEvent'), {event: rec});
+					},
+					daycontextmenu: function(s, dt, allDay, e) {
+						var soDate = Sonicle.Date,
+								start = allDay ? soDate.copyTime(me.getVar('workdayStart'), dt) : dt,
+								end = allDay ? soDate.copyTime(me.getVar('workdayEnd'), dt) : soDate.add(dt, {minutes: 30});
+						WT.showContextMenu(e, me.getRef('cxmScheduler'), {start: start, end: end, allDay: allDay});
 					}
 				}
 			}, {
@@ -317,8 +314,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					xtype: 'soiconcolumn',
 					getIconCls: function(v,rec) {
 						var ico = 'single-event';
-						if(rec.get('isBroken')) ico = 'broken-event';
-						if(rec.get('isRecurring')) ico = 'recurring-event';
+						if (rec.get('isBroken')) ico = 'broken-event';
+						if (rec.get('isRecurring')) ico = 'recurring-event';
 						return WTF.cssIconCls(me.XID, ico, 'xs');
 					},
 					iconSize: WTU.imgSizeToPx('xs'),
@@ -631,12 +628,28 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			}
 		});
+		me.addAct('addSchedEvent', {
+			text: me.res('act-addEvent.lbl'),
+			tooltip: null,
+			iconCls: 'wtcal-icon-addEvent-xs',
+			handler: function(s, e) {
+				var cal = me.getSelectedFolder(me.trFolders()),
+						mdata = e.menuData;
+				if (cal) {
+					if (mdata.start && mdata.end) {
+						me.addEventUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), mdata.start, mdata.end, mdata.allDay);
+					} else {
+						me.addEventOnUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), me.multical().getValue());
+					}
+				}
+			}
+		});
 		me.addAct('addEvent', {
 			tooltip: null,
 			handler: function() {
 				var cal = me.getSelectedFolder(me.trFolders()),
 						day = me.multical().getValue();
-				if (cal) me.addEventAtUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), day);
+				if (cal) me.addEventOnUI(cal.get('_pid'), cal.get('_calId'), cal.get('_isPrivate'), cal.get('_defBusy'), cal.get('_defReminder'), day);
 			}
 		});
 		me.addAct('openEvent', {
@@ -798,7 +811,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addRef('cxmScheduler', Ext.create({
 			xtype: 'menu',
 			items: [
-				me.getAct('addEvent'),
+				me.getAct('addSchedEvent'),
 				me.getAct('printEvent')
 			]
 		}));
@@ -1016,9 +1029,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	addEventAtUI: function(ownerId, calendarId, isPrivate, busy, reminder, day) {
+	addEventOnUI: function(ownerId, calendarId, isPrivate, busy, reminder, day) {
 		var me = this;
-		me.addEventAt(ownerId, calendarId, isPrivate, busy, reminder, day, {
+		me.addEventOn(ownerId, calendarId, isPrivate, busy, reminder, day, {
 			callback: function(success) {
 				if(success) me.reloadEvents();
 			}
@@ -1267,7 +1280,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	addEventAt: function(ownerId, calendarId, isPrivate, busy, reminder, day, opts) {
+	addEventOn: function(ownerId, calendarId, isPrivate, busy, reminder, day, opts) {
 		var date = Sonicle.Date.copyTime(new Date(), day);
 		this.addEvent(ownerId, calendarId, isPrivate, busy, reminder, date, date, false, opts);
 	},

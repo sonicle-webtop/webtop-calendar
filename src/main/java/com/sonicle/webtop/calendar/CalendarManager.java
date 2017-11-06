@@ -1991,9 +1991,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						// Inserts data...
 						try {
 							logger.debug("Processing results...");
+							// Define a simple map in order to check duplicates.
+							// eg. SOGo passes same card twice :(
+							HashSet<String> hrefs = new HashSet<>();
 							doDeleteEventsByCalendar(con, calendarId, false);
 							HashMap<String, OEvent> cache = new HashMap<>();
 							for(DavCalendarEvent devt : devts) {
+								if (hrefs.contains(devt.getPath())) {
+									logger.trace("iCal duplicated. Skipped! [{}]", devt.getPath());
+									continue;
+								}
+								
 								final ArrayList<EventInput> input = icalInput.fromCalendar(devt.getCalendar(), null);
 								if (input.size() != 1) throw new WTException("Unexpected size");
 								final EventInput ei = input.get(0);
@@ -2002,8 +2010,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								ei.event.setHref(devt.getPath());
 								ei.event.setEtag(devt.geteTag());
 								doEventInputInsert(con, cache, ei);
+								hrefs.add(devt.getPath());
 							}
 							cache.clear();
+							hrefs.clear();
 							
 							calDao.updateParametersById(con, calendarId, LangUtils.serialize(params, CalendarRemoteParameters.class));
 							DbUtils.commitQuietly(con);
@@ -2027,7 +2037,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							if (!changes.isEmpty()) {
 								// Process changes...
 								logger.debug("Processing changes...");
-								List<String> hrefs = new ArrayList<>();
+								HashSet<String> hrefs = new HashSet<>();
 								for(DavSyncStatus change : changes) {
 									if (DavUtil.HTTP_SC_TEXT_OK.equals(change.getResponseStatus())) {
 										hrefs.add(change.getPath());

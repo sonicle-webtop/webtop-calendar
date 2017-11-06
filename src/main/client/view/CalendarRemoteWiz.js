@@ -57,7 +57,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 			username: null,
 			password: null,
 			name: null,
-			color: null
+			color: '#FFFFFF'
 		}
 	},
 	
@@ -167,6 +167,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 				}, {
 					xtype: 'sopalettefield',
 					bind: '{color}',
+					allowBlank: false,
 					colors: WT.getColorPalette(),
 					fieldLabel: me.mys.res('calendarRemoteWiz.fld-color.lbl'),
 					width: 210

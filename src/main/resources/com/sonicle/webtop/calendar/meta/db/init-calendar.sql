@@ -63,7 +63,7 @@ CREATE TABLE "calendar"."events" (
 "timezone" varchar(50) NOT NULL,
 "all_day" bool NOT NULL,
 "organizer" varchar(650),
-"title" varchar(100),
+"title" varchar(255),
 "description" text,
 "location" varchar(255),
 "is_private" bool NOT NULL,
@@ -194,4 +194,4 @@ ALTER TABLE "calendar"."recurrences_broken" ADD PRIMARY KEY ("event_id", "recurr
 -- ----------------------------
 @DataSource[default@com.sonicle.webtop.core]
 DELETE FROM "core"."settings" WHERE ("settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("settings"."key" = 'manifest.version');
-INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.1.1');
+INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.1.4');

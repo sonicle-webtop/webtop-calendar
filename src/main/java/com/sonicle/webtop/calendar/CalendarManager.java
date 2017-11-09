@@ -857,7 +857,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public Event addEventFromICal(int calendarId, net.fortuna.ical4j.model.Calendar ical) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		
-		ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromCalendar(ical, null);
+		ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
 		if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
 		
 		Event event = parsed.get(0).event;
@@ -942,7 +942,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 			
 			// Parse the ical using the code used in import
-			ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromCalendar(ical, null);
+			ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
 			Event parsedEvent = parsed.get(0).event;
 			parsedEvent.setCalendarId(evt.getCalendarId());
 			
@@ -1940,7 +1940,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 					// Convert data to internal event model
 					logger.debug("Converting data to internal model");
-					ArrayList<EventInput> input = icalInput.fromCalendar(ical, null);
+					ArrayList<EventInput> input = icalInput.fromICalendarFile(ical, null);
 					logger.debug("Converted {} events", input.size());
 
 					// Inserts data...
@@ -2002,7 +2002,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 									continue;
 								}
 								
-								final ArrayList<EventInput> input = icalInput.fromCalendar(devt.getCalendar(), null);
+								final ArrayList<EventInput> input = icalInput.fromICalendarFile(devt.getCalendar(), null);
 								if (input.size() != 1) throw new WTException("Unexpected size");
 								final EventInput ei = input.get(0);
 								
@@ -2060,7 +2060,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								for(DavCalendarEvent devt : devts) {
 									final Integer eventId = eventIdsByHref.get(devt.getPath());
 
-									final ArrayList<EventInput> input = icalInput.fromCalendar(devt.getCalendar(), null);
+									final ArrayList<EventInput> input = icalInput.fromICalendarFile(devt.getCalendar(), null);
 									if (input.size() != 1) throw new WTException("Unexpected size");
 									final EventInput ei = input.get(0);
 

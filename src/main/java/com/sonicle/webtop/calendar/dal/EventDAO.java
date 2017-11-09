@@ -48,7 +48,6 @@ import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -191,8 +190,8 @@ public class EventDAO extends BaseDAO {
 			.set(EVENTS.END_DATE, item.getEndDate())
 			.set(EVENTS.TIMEZONE, item.getTimezone())
 			.set(EVENTS.ALL_DAY, item.getAllDay())
-			.set(EVENTS.TITLE, item.getTitle())
 			.set(EVENTS.ORGANIZER, item.getOrganizer())
+			.set(EVENTS.TITLE, item.getTitle())
 			.set(EVENTS.DESCRIPTION, item.getDescription())
 			.set(EVENTS.LOCATION, item.getLocation())
 			.set(EVENTS.IS_PRIVATE, item.getIsPrivate())

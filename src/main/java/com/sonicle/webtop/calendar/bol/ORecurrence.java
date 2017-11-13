@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.commons.LangUtils;
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
@@ -135,7 +136,6 @@ public class ORecurrence extends Recurrences {
 		RRule rr = null;
 		setRepeat(null);
 		setPermanent(true);
-		setUntilDate(ICal4jUtils.ifiniteDate(etz));
 		rr = buildRRule(etz);
 		if(setRule) setRule(rr.getValue());
 		return rr;
@@ -211,13 +211,14 @@ public class ORecurrence extends Recurrences {
 				throw new WTException("Unknown recurrence type [{0}]", getType());
 			}
 			
-			if(isEndRepeat()) {
+			if (isEndRepeat()) {
 				rec.setCount(getRepeat());
 			} else if(isEndUntil()) {
-				// We need to sum 1day to defined until date, for rrule untilDate is not inclusive!
-				rec.setUntil(ICal4jUtils.toICal4jDateTime(getUntilDate().plusDays(1), etz));
+				final DateTime lastTimeOfDay = DateTimeUtils.withTimeAtEndOfDay(getUntilDate());
+				rec.setUntil(ICal4jUtils.toIC4jDateTimeUTC(lastTimeOfDay));
 			} else if(isEndNever()) {
-				rec.setUntil(ICal4jUtils.toICal4jDateTime(ICal4jUtils.ifiniteDate(etz), etz));
+				//TODO: change end logic: rrule without until date means infinite repeat!
+				rec.setUntil(ICal4jUtils.toIC4jDateTimeUTC(ICal4jUtils.ifiniteDate(etz)));
 			} else {
 				throw new WTException("Unknown ends-mode");
 			}

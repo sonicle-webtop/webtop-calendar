@@ -205,16 +205,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					autoLoadOnValue: true,
 					store: {
 						model: me.mys.preNs('model.CalendarLkp'),
-						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders'),
-						filters: [{
-							filterFn: function(rec) {
-								if (rec.get('_create') === false) {
-									return rec.getId() === me.getModel().get('calendarId');
-								} else {
-									return true;
-								}
-							}
-						}]
+						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders')
 					},
 					colorField: 'color',
 					listeners: {
@@ -1274,10 +1265,23 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	updateCalendarFilters: function() {
-		this.lref('fldcalendar').getStore().addFilter({
-			property: '_profileId',
-			value: this.getModel().get('_profileId')
-		});
+		var me = this,
+				mo = me.getModel(),
+				sto = me.lref('fldcalendar').getStore();
+		sto.clearFilter();
+		sto.addFilter([{
+				property: '_profileId',
+				value: mo.get('_profileId')
+			}, {
+				filterFn: function(rec) {
+					if (rec.get('_writable') === false) {
+						if (me.isMode(me.MODE_NEW)) return false;
+						return rec.getId() === mo.get('calendarId');
+					} else {
+						return true;
+					}
+				}
+		}]);
 	},
 	
 	onCalendarSelect: function(cal) {

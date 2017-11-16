@@ -98,7 +98,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					data: {
 						calendarId: pl.calendarId
 					}
-				}, {callbackService: ok});
+				}/*, {callbackService: ok}*/);
+				if (ok) me.reloadEvents();
 			}
 		});
 		
@@ -275,7 +276,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					},
 					eventdblclick: function(s, rec) {
-						if (rec && !me.self.isSchedulerEventRO(rec)) {
+						if (rec && !me.self.schedEventHideData(rec)) {
 							var er = me.toRightsObj(rec.get('_rights'));
 							me.openEventUI(er.UPDATE, rec.get('id'));
 						}
@@ -357,7 +358,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}],
 				listeners: {
 					rowdblclick: function(s, rec) {
-						if (!me.self.isSchedulerEventRO(rec)) {
+						if (!me.self.schedEventHideData(rec)) {
 							var er = me.toRightsObj(rec.get('_rights'));
 							me.openEventUI(er.UPDATE, rec.get('id'));
 						}
@@ -838,13 +839,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var rec = s.menuData.event,
-							ro = me.self.isSchedulerEventRO(rec),
+							hd = me.self.schedEventHideData(rec),
 							er = me.toRightsObj(rec.get('_rights')),
 							brk = (rec.get('isBroken') === true);
-					me.getAct('openEvent').setDisabled(ro);
-					me.getAct('moveEvent').setDisabled(ro || !er.DELETE);
-					me.getAct('deleteEvent').setDisabled(ro || !er.DELETE);
-					me.getAct('restoreEvent').setDisabled(ro || !brk || !er.UPDATE);
+					me.getAct('openEvent').setDisabled(hd);
+					me.getAct('moveEvent').setDisabled(hd || !er.DELETE);
+					me.getAct('deleteEvent').setDisabled(hd || !er.DELETE);
+					me.getAct('restoreEvent').setDisabled(hd || !brk || !er.UPDATE);
 				}
 			}
 		}));
@@ -1498,8 +1499,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			return this.NOTAG_REMOTESYNC + calendarId;
 		},
 		
-		isSchedulerEventRO: function(rec) {
-			return rec.get('isReadOnly') === true;
+		schedEventHideData: function(rec) {
+			return rec.get('hideData') === true;
 		}
 	}
 });

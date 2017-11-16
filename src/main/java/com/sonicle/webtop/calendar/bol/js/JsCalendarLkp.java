@@ -52,7 +52,7 @@ public class JsCalendarLkp {
 	public Boolean busy;
 	public Integer reminder;
 	public Boolean invitation;
-	public Boolean _create;
+	public Boolean _writable;
 	
 	public JsCalendarLkp(CalendarFolder folder) {
 		final Calendar cal = folder.getCalendar();
@@ -70,6 +70,6 @@ public class JsCalendarLkp {
 			CalendarFolderData data = (CalendarFolderData)folder.getData();
 			if (!StringUtils.isBlank(data.color)) color = data.color;
 		}
-		_create = folder.getElementsPerms().implies("CREATE");
+		_writable = folder.getElementsPerms().implies("CREATE");
 	}
 }

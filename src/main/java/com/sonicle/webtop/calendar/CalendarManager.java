@@ -813,11 +813,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	@Override
 	public Event addEvent(Event event, boolean notifyAttendees) throws WTException {
 		CoreManager core = WT.getCoreManager(getTargetProfileId());
+		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
 			con = WT.getConnection(SERVICE_ID, false);
+			
+			Calendar calendar = createCalendar(calDao.selectById(con, event.getCalendarId()));
+			if (calendar == null) throw new WTException("Unable to retrieve calendar [{}]", event.getCalendarId());
+			if (calendar.isRemoteProvider()) throw new WTException("Calendar is read only");
 			
 			InsertResult insert = doEventInsert(con, event, true, true);
 			DbUtils.commitQuietly(con);
@@ -1163,6 +1168,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			VVEvent vevt = evtDao.viewById(con, ekey.eventId);
 			if (vevt == null) throw new WTException("Unable to retrieve event [{}]", ekey.eventId);
 			checkRightsOnCalendarElements(vevt.getCalendarId(), "UPDATE");
+			
+			//TODO: controllare se categoryId non è readonly (remoto)
 			
 			OEvent original = evtDao.selectById(con, ekey.originalEventId);
 			if(original == null) throw new WTException("Unable to retrieve original event [{}]", ekey.originalEventId);

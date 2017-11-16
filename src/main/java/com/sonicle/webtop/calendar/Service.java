@@ -386,15 +386,14 @@ public class Service extends BaseService {
 		
 		try {
 			synchronized(roots) {
-				for(CalendarRoot root : roots.values()) {
+				for (CalendarRoot root : roots.values()) {
 					if (foldersByRoot.containsKey(root.getShareId())) {
-						for(CalendarFolder fold : foldersByRoot.get(root.getShareId())) {
+						for (CalendarFolder fold : foldersByRoot.get(root.getShareId())) {
 							items.add(new JsCalendarLkp(fold));
 						}
 					}
 				}
 			}
-			
 			new JsonResult("folders", items, items.size()).printTo(out);
 			
 		} catch(Exception ex) {

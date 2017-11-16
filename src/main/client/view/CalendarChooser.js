@@ -115,7 +115,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders'),
 						filters: [{
 							filterFn: function(rec) {
-								return (rec.get('_create') === true);
+								return (rec.get('_writable') === true);
 							}
 						}]
 					},
@@ -148,7 +148,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 			property: '_profileId',
 			value: owner
 		}, {
-			property: '_create',
+			property: '_writable',
 			value: true
 		}]);
 	}

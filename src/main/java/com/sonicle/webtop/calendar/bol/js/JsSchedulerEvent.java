@@ -65,6 +65,7 @@ public class JsSchedulerEvent {
 	public Boolean isPrivate;
 	public Integer reminder;
 	public Boolean isReadOnly;
+	public Boolean hideData;
 	public Boolean hasTz;
 	public Boolean hasAtts;
 	public Boolean isRecurring;
@@ -112,7 +113,8 @@ public class JsSchedulerEvent {
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = keepDataPrivate;
+		isReadOnly = keepDataPrivate || calendar.isRemoteProvider();
+		hideData = keepDataPrivate;
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.getHasAttendees();
 		isRecurring = event.isRecurring();

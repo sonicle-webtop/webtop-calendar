@@ -1133,7 +1133,7 @@ public class Service extends BaseService {
 			if (query == null) {
 				final CalendarRoot root = roots.get(MyCalendarRoot.SHARE_ID);
 				final List<Integer> ids = manager.listCalendarIds();
-				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, DateTimeUtils.now())) {
+				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, DateTimeUtils.now().withSecondOfMinute(0))) {
 					final CalendarFolder folder = folders.get(instance.getCalendarId());
 					if (folder == null) continue;
 					

@@ -613,15 +613,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			if (days > 15) days = 15;
-			final DateTime fromDate = startDate.withTimeAtStartOfDay();
-			final DateTime toDate = startDate.plusDays(days);
+			final DateTime toDate = startDate.withTimeAtStartOfDay().plusDays(days);
 			
 			ArrayList<SchedEventInstance> events = new ArrayList<>();
-			for (VVEvent ve : eveDao.viewByCalendarFromToPattern(con, validIds, fromDate, toDate, pattern)) {
+			for (VVEvent ve : eveDao.viewByCalendarFromToPattern(con, validIds, startDate, toDate, pattern)) {
 				events.add(new SchedEventInstance(createSchedEvent(ve)));
 			}
-			for (VVEvent ve : eveDao.viewRecurringByCalendarFromToPattern(con, validIds, fromDate, toDate, pattern)) {
-				events.addAll(calculateRecurringInstances(con, createSchedEvent(ve), fromDate, toDate, DateTimeZone.UTC, 200));
+			for (VVEvent ve : eveDao.viewRecurringByCalendarFromToPattern(con, validIds, startDate, toDate, pattern)) {
+				events.addAll(calculateRecurringInstances(con, createSchedEvent(ve), startDate, toDate, DateTimeZone.UTC, 200));
 			}
 			
 			// Sorts events by their startDate

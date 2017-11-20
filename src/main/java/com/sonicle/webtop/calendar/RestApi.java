@@ -71,9 +71,6 @@ public class RestApi extends BaseRestApiEndpoint {
 		return ok(items);
 	}
 	
-	
-	
-	
 	private CalendarManager getManager() {
 		return getManager(RunContext.getRunProfileId());
 	}

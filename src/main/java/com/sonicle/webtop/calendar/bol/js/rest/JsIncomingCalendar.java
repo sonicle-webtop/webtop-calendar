@@ -55,6 +55,10 @@ public class JsIncomingCalendar {
 		this.ownerDisplayName = udata.getDisplayName();
 		this.calendarId = folder.getCalendar().getCalendarId();
 		this.calendarName = folder.getCalendar().getName();
-		this.readOnly = !SharePermsElements.full().toString().equals(folder.getElementsPerms().toString());
+		if (folder.getCalendar().isRemoteProvider()) {
+			this.readOnly = true;
+		} else {
+			this.readOnly = !SharePermsElements.full().toString().equals(folder.getElementsPerms().toString());
+		}
 	}
 }

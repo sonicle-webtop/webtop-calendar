@@ -537,35 +537,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (node) me.importEventsUI(node.get('_calId'));
 			}
 		});
-		/*
-		me.addRef('uploaders', 'importEvents', Ext.create('Sonicle.upload.Item', {
-			text: WT.res(me.ID, 'act-importEvents.lbl'),
-			iconCls: WTF.cssIconCls(me.XID, 'importEvents', 'xs'),
-			uploaderConfig: WTF.uploader(me.ID, 'ICalUpload', {
-				mimeTypes: [
-					{title: 'iCalendar files', extensions: 'ical,ics,icalendar'}
-				],
-				listeners: {
-					uploadstarted: function(up) {
-						//TODO: caricamento
-						//me.wait();
-					},
-					uploadcomplete: function(up) {
-						//TODO: caricamento
-						//me.unwait();
-					},
-					uploaderror: function(up) {
-						//TODO: caricamento
-						//me.unwait();
-					},
-					fileuploaded: function(up, file, json) {
-						var node = me.getSelectedFolder(me.trFolders());
-						if(node) me.importICal(node.get('_calId'), json.data.uploadId);
-					}
-				}
-			})
-		}));
-		*/
 		me.addAct('calendarColor', {
 			text: me.res('mni-calendarColor.lbl'),
 			tooltip: null,

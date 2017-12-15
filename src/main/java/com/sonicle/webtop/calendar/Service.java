@@ -891,10 +891,9 @@ public class Service extends BaseService {
 	public void processExportForErp(HttpServletRequest request, HttpServletResponse response) {
 		try {
 			try(FileInputStream fis = new FileInputStream(erpWizard.file)) {
-				OutputStream os = response.getOutputStream();
 				ServletUtils.setFileStreamHeaders(response, "application/octet-stream", DispositionType.ATTACHMENT, erpWizard.filename);
 				ServletUtils.setContentLengthHeader(response, erpWizard.file.length());
-				IOUtils.copy(fis, os);
+				IOUtils.copy(fis, response.getOutputStream());
 			}
 			
 		} catch(Exception ex) {

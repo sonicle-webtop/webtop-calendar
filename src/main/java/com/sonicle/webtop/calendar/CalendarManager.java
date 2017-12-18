@@ -1667,8 +1667,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				"title", "description", 
 				"activityId", "activityDescription", "activityExternalId", 
 				"causalId", "causalDescription", "causalExternalId", 
-				"masterDataId", "masterDataDescription",
-				"customerId", "customerDescription"
+				"masterDataId", "masterDataDescription"
 			};
 			final CellProcessor[] processors = new CellProcessor[]{
 				new NotNull(), 

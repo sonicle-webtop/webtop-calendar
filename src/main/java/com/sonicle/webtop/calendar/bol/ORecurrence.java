@@ -136,6 +136,7 @@ public class ORecurrence extends Recurrences {
 		RRule rr = null;
 		setRepeat(null);
 		setPermanent(true);
+		setUntilDate(ICal4jUtils.ifiniteDate(etz));
 		rr = buildRRule(etz);
 		if(setRule) setRule(rr.getValue());
 		return rr;

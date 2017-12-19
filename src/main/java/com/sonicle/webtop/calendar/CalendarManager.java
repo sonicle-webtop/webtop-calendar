@@ -179,9 +179,6 @@ import org.apache.http.client.utils.URIBuilder;
 public class CalendarManager extends BaseManager implements ICalendarManager {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
 	private static final String GROUPNAME_CALENDAR = "CALENDAR";
-	private static final String EVENT_NORMAL = "normal";
-	private static final String EVENT_BROKEN = "broken";
-	private static final String EVENT_RECURRING = "recurring";
 	public static final String TARGET_THIS = "this";
 	public static final String TARGET_SINCE = "since";
 	public static final String TARGET_ALL = "all";

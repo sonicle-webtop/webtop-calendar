@@ -92,9 +92,8 @@ public class ICalHelper {
 	}
 	
 	public static VEvent exportEvent(boolean method, Event event) throws Exception {
-		org.joda.time.DateTimeZone etz = org.joda.time.DateTimeZone.forID(event.getTimezone());
-		Date start = ICal4jUtils.toICal4jDateTime(event.getStartDate(), etz);
-		Date end = ICal4jUtils.toICal4jDateTime(event.getEndDate(), etz);
+		Date start = ICal4jUtils.toIC4jDateTimeUTC(event.getStartDate());
+		Date end = ICal4jUtils.toIC4jDateTimeUTC(event.getEndDate());
 		VEvent ve = new VEvent(start, end, event.getTitle());
 		
 		// Uid: globally unique identifier
@@ -124,7 +123,7 @@ public class ICalHelper {
 		ICal4jUtils.addProperty(ve, event.getBusy() ? Transp.OPAQUE : Transp.TRANSPARENT);
 		
 		// Organizer
-		String mailto = MessageFormat.format("mailto:{0}", event.getOrganizerAddress());
+		String mailto = "mailto:" + event.getOrganizerAddress();
 		Organizer organizer = new Organizer(URI.create(mailto));
 		if(!StringUtils.isBlank(event.getOrganizerCN())) {
 			organizer.getParameters().add(new Cn(event.getOrganizerCN()));

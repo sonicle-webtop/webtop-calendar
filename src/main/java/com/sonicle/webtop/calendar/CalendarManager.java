@@ -36,10 +36,10 @@ import com.sonicle.webtop.calendar.model.GetEventScope;
 import com.rits.cloning.Cloner;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.http.HttpClientUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
-import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
@@ -1063,7 +1063,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			ArrayList<String> matchingIds = new ArrayList<>();
 			List<OEventAttendee> atts = eadao.selectByEvent(con, event.getEventId());
 			for (OEventAttendee att : atts) {
-				final InternetAddress ia = MailUtils.buildInternetAddress(att.getRecipient());
+				final InternetAddress ia = InternetAddressUtils.toInternetAddress(att.getRecipient());
 				if (ia == null) continue;
 				
 				if (StringUtils.equalsIgnoreCase(ia.getAddress(), recipient)) matchingIds.add(att.getAttendeeId());
@@ -2269,16 +2269,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// Find the attendee (in event) that has updated its response
 			EventAttendee targetAttendee = null;
 			for(EventAttendee attendee : event.getAttendees()) {
-				if(attendee.getAttendeeId().equals(updatedAttendeeId)) {
+				if (attendee.getAttendeeId().equals(updatedAttendeeId)) {
 					targetAttendee = attendee;
 					break;
 				}
 			}
-			if(targetAttendee == null) throw new WTException("Attendee not found [{0}]", updatedAttendeeId);
+			if (targetAttendee == null) throw new WTException("Attendee not found [{0}]", updatedAttendeeId);
 			
 			InternetAddress from = WT.getNotificationAddress(targetDomainId);
-			InternetAddress to = MailUtils.buildInternetAddress(event.getOrganizer());
-			if(!MailUtils.isAddressValid(to)) throw new WTException("Organizer address not valid [{0}]", event.getOrganizer());
+			InternetAddress to = InternetAddressUtils.toInternetAddress(event.getOrganizer());
+			if (!InternetAddressUtils.isAddressValid(to)) throw new WTException("Organizer address not valid [{0}]", event.getOrganizer());
 			
 			String servicePublicUrl = WT.getServicePublicUrl(targetDomainId, SERVICE_ID);
 			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
@@ -2329,8 +2329,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				String servicePublicUrl = WT.getServicePublicUrl(getTargetProfileId().getDomainId(), SERVICE_ID);
 				InternetAddress from = ud.getEmail();
 				for(EventAttendee attendee : toBeNotified) {
-					InternetAddress to = MailUtils.buildInternetAddress(attendee.getRecipient());
-					if(MailUtils.isAddressValid(to)) {
+					InternetAddress to = InternetAddressUtils.toInternetAddress(attendee.getRecipient());
+					if (InternetAddressUtils.isAddressValid(to)) {
 						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
 						final String html = TplHelper.buildInvitationTpl(getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
 						try {
@@ -2638,7 +2638,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private String buildOrganizer() {
 		UserProfile.Data ud = WT.getUserData(getTargetProfileId());
-		InternetAddress ia = MailUtils.buildInternetAddress(ud.getEmail().getAddress(), ud.getDisplayName());
+		InternetAddress ia = InternetAddressUtils.toInternetAddress(ud.getEmail().getAddress(), ud.getDisplayName());
 		return ia.toString();
 	}
 	

@@ -159,7 +159,7 @@ public class ICalHelper {
 		ParameterList params = att.getParameters();
 		
 		// CN and email: attendee main details
-		String mailto = MessageFormat.format("mailto:{0}", attendee.getAddress());
+		String mailto = "mailto:" + attendee.getAddress();
 		att.setCalAddress(URI.create(mailto));
 		if (!StringUtils.isBlank(attendee.getCN())) {
 			params.add(new Cn(attendee.getCN()));

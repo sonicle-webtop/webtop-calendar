@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.URIUtils;
@@ -1178,7 +1179,7 @@ public class Service extends BaseService {
 		Connection con = null;
 		
 		try {
-			InternetAddress ia = MailUtils.buildInternetAddress(recipient);
+			InternetAddress ia = InternetAddressUtils.toInternetAddress(recipient);
 			if (ia == null) return null;
 			List<UserProfileId> pids = core.listUserIdsByEmail(recipient);
 			if (pids.isEmpty()) return null;

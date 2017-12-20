@@ -1951,6 +1951,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						doDeleteEventsByCalendar(con, calendarId, false);
 						HashMap<String, OEvent> cache = new HashMap<>();
 						for(EventInput ei : input) {
+							if (logger.isTraceEnabled()) logger.trace("{}", ei.event.toString());
 							ei.event.setCalendarId(calendarId);
 							doEventInputInsert(con, cache, ei);
 						}
@@ -1999,6 +2000,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							doDeleteEventsByCalendar(con, calendarId, false);
 							HashMap<String, OEvent> cache = new HashMap<>();
 							for(DavCalendarEvent devt : devts) {
+								if (logger.isTraceEnabled()) logger.trace("{}", ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
 								if (hrefs.contains(devt.getPath())) {
 									logger.trace("iCal duplicated. Skipped! [{}]", devt.getPath());
 									continue;
@@ -2060,6 +2062,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								logger.debug("Inserting/Updating events...");
 								HashMap<String, OEvent> cache = new HashMap<>();
 								for(DavCalendarEvent devt : devts) {
+									if (logger.isTraceEnabled()) logger.trace("{}", ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
 									final Integer eventId = eventIdsByHref.get(devt.getPath());
 
 									final ArrayList<EventInput> input = icalInput.fromICalendarFile(devt.getCalendar(), null);

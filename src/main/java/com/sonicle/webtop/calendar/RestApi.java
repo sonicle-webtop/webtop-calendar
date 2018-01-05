@@ -34,8 +34,8 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.webtop.calendar.bol.js.rest.JsIncomingCalendar;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.CalendarFolder;
-import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseRestApiEndpoint;
@@ -61,8 +61,8 @@ public class RestApi extends BaseRestApiEndpoint {
 		CalendarManager manager = getManager();
 		
 		ArrayList<JsIncomingCalendar> items = new ArrayList<>();
-		for (CalendarRoot root : manager.listIncomingCalendarRoots()) {
-			for (CalendarFolder fold : manager.listIncomingCalendarFolders(root.getShareId()).values()) {
+		for (ShareRootCalendar root : manager.listIncomingCalendarRoots()) {
+			for (ShareFolderCalendar fold : manager.listIncomingCalendarFolders(root.getShareId()).values()) {
 				if (Calendar.Sync.OFF.equals(fold.getCalendar().getSync())) continue;
 				
 				items.add(new JsIncomingCalendar(root, fold));

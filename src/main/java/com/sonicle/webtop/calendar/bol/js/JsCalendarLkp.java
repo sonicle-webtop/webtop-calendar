@@ -34,7 +34,7 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.CalendarFolder;
+import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -54,7 +54,7 @@ public class JsCalendarLkp {
 	public Boolean invitation;
 	public Boolean _writable;
 	
-	public JsCalendarLkp(CalendarFolder folder) {
+	public JsCalendarLkp(ShareFolderCalendar folder) {
 		final Calendar cal = folder.getCalendar();
 		calendarId = cal.getCalendarId();
 		domainId = cal.getDomainId();

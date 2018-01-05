@@ -34,12 +34,12 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
-import com.sonicle.webtop.calendar.bol.model.MyCalendarFolder;
-import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
+import com.sonicle.webtop.calendar.bol.model.MyShareFolderCalendar;
+import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.CalendarFolder;
-import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import org.apache.commons.lang3.StringUtils;
@@ -78,7 +78,7 @@ public class JsSchedulerEvent {
 	
 	public JsSchedulerEvent() {}
 	
-	public JsSchedulerEvent(CalendarRoot root, CalendarFolder folder, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(ShareRootCalendar root, ShareFolderCalendar folder, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
@@ -122,12 +122,12 @@ public class JsSchedulerEvent {
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();
-		_owner = (root instanceof MyCalendarRoot) ? "" : root.getDescription();
+		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
 		_rights = folder.getElementsPerms().toString();
 		_profileId = calendar.getProfileId().toString();
 	}
 	
-	public JsSchedulerEvent(CalendarRoot rootFolder, CalendarFolder folder, VVEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(ShareRootCalendar rootFolder, ShareFolderCalendar folder, VVEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
@@ -170,7 +170,7 @@ public class JsSchedulerEvent {
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();
-		_owner = (rootFolder instanceof MyCalendarRoot) ? "" : rootFolder.getDescription();
+		_owner = (rootFolder instanceof MyShareRootCalendar) ? "" : rootFolder.getDescription();
 		_rights = folder.getElementsPerms().toString();
 		_profileId = calendar.getProfileId().toString();
 	}

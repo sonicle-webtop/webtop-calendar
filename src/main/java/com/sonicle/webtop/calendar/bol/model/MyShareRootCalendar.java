@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.core.model.SharePermsRoot;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 
@@ -40,10 +40,10 @@ import com.sonicle.webtop.core.sdk.UserProfileId;
  *
  * @author malbinola
  */
-public class MyCalendarRoot extends CalendarRoot {
+public class MyShareRootCalendar extends ShareRootCalendar {
 	public static final String SHARE_ID = "0";
 	
-	public MyCalendarRoot(UserProfileId ownerId) {
+	public MyShareRootCalendar(UserProfileId ownerId) {
 		super(SHARE_ID, SharePermsRoot.full(), ownerId, null);
 	}
 }

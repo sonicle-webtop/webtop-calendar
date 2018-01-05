@@ -61,9 +61,9 @@ import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
-import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
-import com.sonicle.webtop.calendar.model.CalendarFolder;
-import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
+import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.model.EventInstance.RecurringInfo;
@@ -150,6 +150,8 @@ import com.sonicle.webtop.calendar.model.SchedEvent;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.util.ICalendarInput;
 import com.sonicle.webtop.core.model.MasterData;
+import com.sonicle.webtop.core.sdk.AbstractMapCache;
+import com.sonicle.webtop.core.sdk.AbstractShareCache;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import java.io.FileInputStream;
@@ -185,14 +187,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public static final String SUGGESTION_EVENT_TITLE = "eventtitle";
 	public static final String SUGGESTION_EVENT_LOCATION = "eventlocation";
 	
-	private final HashMap<Integer, UserProfileId> cacheCalendarToOwner = new HashMap<>();
-	private final Object shareCacheLock = new Object();
-	private final HashMap<UserProfileId, String> cacheOwnerToRootShare = new HashMap<>();
-	private final HashMap<UserProfileId, String> cacheOwnerToWildcardFolderShare = new HashMap<>();
-	private final HashMap<Integer, String> cacheCalendarToFolderShare = new HashMap<>();
+	private final OwnerCache ownerCache = new OwnerCache();
+	private final ShareCache shareCache = new ShareCache();
 	
 	public CalendarManager(boolean fastInit, UserProfileId targetProfileId) {
 		super(fastInit, targetProfileId);
+		if (!fastInit) {
+			shareCache.init();
+		}
 	}
 	
 	private String getProductName() {
@@ -211,25 +213,33 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public String buildCalendarFolderShareId(int calendarId) throws WTException {
+	private List<ShareRootCalendar> internalListIncomingCalendarShareRoots() throws WTException {
+		CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
+		List<ShareRootCalendar> roots = new ArrayList();
+		HashSet<String> hs = new HashSet<>();
+		for (IncomingShareRoot share : coreMgr.listIncomingShareRoots(SERVICE_ID, GROUPNAME_CALENDAR)) {
+			final SharePermsRoot perms = coreMgr.getShareRootPermissions(share.getShareId());
+			ShareRootCalendar root = new ShareRootCalendar(share, perms);
+			if (hs.contains(root.getShareId())) continue; // Avoid duplicates ??????????????????????
+			hs.add(root.getShareId());
+			roots.add(root);
+		}
+		return roots;
+	}
+	
+	public String buildSharingId(int calendarId) throws WTException {
 		UserProfileId targetPid = getTargetProfileId();
 		
-		UserProfileId ownerPid = calendarToOwner(calendarId);
-		if (ownerPid == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
+		// Skip rights check if running user is resource's owner
+		UserProfileId owner = ownerCache.get(calendarId);
+		if (owner == null) throw new WTException("owner({0}) -> null", calendarId);
 		
 		String rootShareId = null;
-		if (ownerPid.equals(targetPid)) {
-			rootShareId = MyCalendarRoot.SHARE_ID;
+		if (owner.equals(targetPid)) {
+			rootShareId = MyShareRootCalendar.SHARE_ID;
 		} else {
-			for(CalendarRoot root : listIncomingCalendarRoots()) {
-				HashMap<Integer, CalendarFolder> folders = listIncomingCalendarFolders(root.getShareId());
-				if (folders.containsKey(calendarId)) {
-					rootShareId = root.getShareId();
-					break;
-				}
-			}
+			rootShareId = shareCache.getShareRootIdByFolderId(calendarId);
 		}
-		
 		if (rootShareId == null) throw new WTException("Unable to find a root share [{0}]", calendarId);
 		return new CompositeId().setTokens(rootShareId, calendarId).toString();
 	}
@@ -245,49 +255,29 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public List<CalendarRoot> listIncomingCalendarRoots() throws WTException {
-		CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
-		ArrayList<CalendarRoot> roots = new ArrayList();
-		HashSet<String> hs = new HashSet<>();
-		
-		List<IncomingShareRoot> shares = coreMgr.listIncomingShareRoots(SERVICE_ID, GROUPNAME_CALENDAR);
-		for (IncomingShareRoot share : shares) {
-			SharePermsRoot perms = coreMgr.getShareRootPermissions(share.getShareId());
-			CalendarRoot root = new CalendarRoot(share, perms);
-			if (hs.contains(root.getShareId())) continue; // Avoid duplicates ??????????????????????
-			hs.add(root.getShareId());
-			roots.add(root);
-		}
-		return roots;
+	public List<ShareRootCalendar> listIncomingCalendarRoots() throws WTException {
+		return shareCache.getShareRoots();
 	}
 	
 	@Override
-	public HashMap<Integer, CalendarFolder> listIncomingCalendarFolders(String rootShareId) throws WTException {
-		CoreManager core = WT.getCoreManager(getTargetProfileId());
-		LinkedHashMap<Integer, CalendarFolder> folders = new LinkedHashMap<>();
+	public Map<Integer, ShareFolderCalendar> listIncomingCalendarFolders(String rootShareId) throws WTException {
+		CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
+		LinkedHashMap<Integer, ShareFolderCalendar> folders = new LinkedHashMap<>();
 		
-		// Retrieves incoming folders (from sharing). This lookup already 
-		// returns readable shares (we don't need to test READ permission)
-		List<OShare> shares = core.listIncomingShareFolders(rootShareId, GROUPNAME_CALENDAR);
-		for (OShare share : shares) {
-			List<Calendar> cals = null;
-			if (share.hasWildcard()) {
-				final UserProfileId ownerId = core.userUidToProfileId(share.getUserUid());
-				cals = listCalendars(ownerId);
+		for (Integer folderId : shareCache.getFolderIdsByShareRoot(rootShareId)) {
+			final String shareFolderId = shareCache.getShareFolderIdByFolderId(folderId);
+			if (StringUtils.isBlank(shareFolderId)) continue;
+			SharePermsFolder fperms = coreMgr.getShareFolderPermissions(shareFolderId);
+			SharePermsElements eperms = coreMgr.getShareElementsPermissions(shareFolderId);
+			if (folders.containsKey(folderId)) {
+				final ShareFolderCalendar shareFolder = folders.get(folderId);
+				if (shareFolder == null) continue;
+				shareFolder.getPerms().merge(fperms);
+				shareFolder.getElementsPerms().merge(eperms);
 			} else {
-				cals = Arrays.asList(getCalendar(Integer.valueOf(share.getInstance())));
-			}
-			for (Calendar cal : cals) {
-				SharePermsFolder fperms = core.getShareFolderPermissions(share.getShareId().toString());
-				SharePermsElements eperms = core.getShareElementsPermissions(share.getShareId().toString());
-				
-				if (folders.containsKey(cal.getCalendarId())) {
-					CalendarFolder folder = folders.get(cal.getCalendarId());
-					folder.getPerms().merge(fperms);
-					folder.getElementsPerms().merge(eperms);
-				} else {
-					folders.put(cal.getCalendarId(), new CalendarFolder(share.getShareId().toString(), fperms, eperms, cal));
-				}
+				final Calendar calendar = getCalendar(folderId);
+				if (calendar == null) continue;
+				folders.put(folderId, new ShareFolderCalendar(shareFolderId, fperms, eperms, calendar));
 			}
 		}
 		return folders;
@@ -305,7 +295,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	@Override
 	public List<Integer> listIncomingCalendarIds() throws WTException {
 		ArrayList<Integer> ids = new ArrayList<>();
-		for (CalendarRoot root : listIncomingCalendarRoots()) {
+		for (ShareRootCalendar root : listIncomingCalendarRoots()) {
 			ids.addAll(listIncomingCalendarFolders(root.getShareId()).keySet());
 		}
 		return ids;
@@ -338,7 +328,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public UserProfileId getCalendarOwner(int calendarId) throws WTException {
-		return calendarToOwner(calendarId);
+		return ownerCache.get(calendarId);
 	}
 	
 	@Override
@@ -479,8 +469,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendarFolder(calendarId, "DELETE");
 			
 			// Retrieve sharing status (for later)
-			String shareId = buildCalendarFolderShareId(calendarId);
-			Sharing sharing = getSharing(shareId);
+			String sharingId = buildSharingId(calendarId);
+			Sharing sharing = getSharing(sharingId);
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			Calendar cal = createCalendar(calDao.selectById(con, calendarId));
@@ -2977,74 +2967,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void buildShareCache() {
-		CoreManager core = WT.getCoreManager(getTargetProfileId());
-		
-		try {
-			cacheOwnerToRootShare.clear();
-			cacheOwnerToWildcardFolderShare.clear();
-			cacheCalendarToFolderShare.clear();
-			for(CalendarRoot root : listIncomingCalendarRoots()) {
-				cacheOwnerToRootShare.put(root.getOwnerProfileId(), root.getShareId());
-				for(OShare folder : core.listIncomingShareFolders(root.getShareId(), GROUPNAME_CALENDAR)) {
-					if(folder.hasWildcard()) {
-						UserProfileId ownerId = core.userUidToProfileId(folder.getUserUid());
-						cacheOwnerToWildcardFolderShare.put(ownerId, folder.getShareId().toString());
-					} else {
-						cacheCalendarToFolderShare.put(Integer.valueOf(folder.getInstance()), folder.getShareId().toString());
-					}
-				}
-			}
-		} catch(WTException ex) {
-			throw new WTRuntimeException(ex.getMessage());
-		}
-	}
-	
-	private String ownerToRootShareId(UserProfileId owner) {
-		synchronized(shareCacheLock) {
-			if (!cacheOwnerToRootShare.containsKey(owner)) buildShareCache();
-			return cacheOwnerToRootShare.get(owner);
-		}
-	}
-	
-	private String ownerToWildcardFolderShareId(UserProfileId ownerPid) {
-		synchronized(shareCacheLock) {
-			if (!cacheOwnerToWildcardFolderShare.containsKey(ownerPid) && cacheOwnerToRootShare.isEmpty()) buildShareCache();
-			return cacheOwnerToWildcardFolderShare.get(ownerPid);
-		}
-	}
-	
-	private String calendarToFolderShareId(int calendarId) {
-		synchronized(shareCacheLock) {
-			if (!cacheCalendarToFolderShare.containsKey(calendarId)) buildShareCache();
-			return cacheCalendarToFolderShare.get(calendarId);
-		}
-	}
-	
-	private UserProfileId calendarToOwner(int calendarId) {
-		synchronized(cacheCalendarToOwner) {
-			if (cacheCalendarToOwner.containsKey(calendarId)) {
-				return cacheCalendarToOwner.get(calendarId);
-			} else {
-				try {
-					UserProfileId owner = findCalendarOwner(calendarId);
-					if (owner != null) cacheCalendarToOwner.put(calendarId, owner);
-					return owner;
-				} catch(WTException ex) {
-					throw new WTRuntimeException(ex.getMessage());
-				}
-			}
-		}
-	}
-	
-	private void checkRightsOnCalendarRoot(UserProfileId ownerPid, String action) throws WTException {
+	private void checkRightsOnCalendarRoot(UserProfileId owner, String action) throws WTException {
 		UserProfileId targetPid = getTargetProfileId();
 		
 		if (RunContext.isWebTopAdmin()) return;
-		if (ownerPid.equals(targetPid)) return;
+		if (owner.equals(targetPid)) return;
 		
-		String shareId = ownerToRootShareId(ownerPid);
-		if (shareId == null) throw new WTException("ownerToRootShareId({0}) -> null", ownerPid);
+		String shareId = shareCache.getShareRootIdByOwner(owner);
+		if (shareId == null) throw new WTException("ownerToRootShareId({0}) -> null", owner);
 		CoreManager core = WT.getCoreManager(targetPid);
 		if (core.isShareRootPermitted(shareId, action)) return;
 		//if (core.isShareRootPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
@@ -3070,20 +3000,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if(RunContext.isWebTopAdmin()) return;
 		
 		// Skip rights check if running user is resource's owner
-		UserProfileId ownerPid = calendarToOwner(calendarId);
-		if (ownerPid == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
-		if (ownerPid.equals(targetPid)) return;
+		UserProfileId owner = ownerCache.get(calendarId);
+		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
+		if (owner.equals(targetPid)) return;
 		
 		// Checks rights on the wildcard instance (if present)
 		CoreManager core = WT.getCoreManager(targetPid);
-		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
+		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
 		if (wildcardShareId != null) {
 			if (core.isShareFolderPermitted(wildcardShareId, action)) return;
 			//if (core.isShareFolderPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
 		}
 		
 		// Checks rights on calendar instance
-		String shareId = calendarToFolderShareId(calendarId);
+		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
 		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
 		if (core.isShareFolderPermitted(shareId, action)) return;
 		//if (core.isShareFolderPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
@@ -3097,20 +3027,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if(RunContext.isWebTopAdmin()) return;
 		
 		// Skip rights check if running user is resource's owner
-		UserProfileId ownerPid = calendarToOwner(calendarId);
-		if (ownerPid == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
-		if (ownerPid.equals(targetPid)) return;
+		UserProfileId owner = ownerCache.get(calendarId);
+		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
+		if (owner.equals(targetPid)) return;
 		
 		// Checks rights on the wildcard instance (if present)
 		CoreManager core = WT.getCoreManager(targetPid);
-		String wildcardShareId = ownerToWildcardFolderShareId(ownerPid);
+		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
 		if (wildcardShareId != null) {
 			if (core.isShareElementsPermitted(wildcardShareId, action)) return;
 			//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
 		}
 		
 		// Checks rights on calendar instance
-		String shareId = calendarToFolderShareId(calendarId);
+		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
 		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
 		if (core.isShareElementsPermitted(shareId, action)) return;
 		//if (core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
@@ -3182,7 +3112,55 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
+	private class OwnerCache extends AbstractMapCache<Integer, UserProfileId> {
+
+		@Override
+		protected void internalInitCache() {}
+
+		@Override
+		protected void internalMissKey(Integer key) {
+			try {
+				UserProfileId owner = findCalendarOwner(key);
+				if (owner == null) throw new WTException("Owner not found [{0}]", key);
+				put(key, owner);
+			} catch(WTException ex) {
+				throw new WTRuntimeException(ex.getMessage());
+			}
+		}
+	}
 	
+	private class ShareCache extends AbstractShareCache<Integer, ShareRootCalendar> {
+
+		@Override
+		protected void internalInitCache() {
+			final CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
+			try {
+				for (ShareRootCalendar root : internalListIncomingCalendarShareRoots()) {
+					shareRoots.add(root);
+					ownerToShareRoot.put(root.getOwnerProfileId(), root);
+					for (OShare folder : coreMgr.listIncomingShareFolders(root.getShareId(), GROUPNAME_CALENDAR)) {
+						if (folder.hasWildcard()) {
+							final UserProfileId ownerPid = coreMgr.userUidToProfileId(folder.getUserUid());
+							ownerToWildcardShareFolder.put(ownerPid, folder.getShareId().toString());
+							for (Calendar calendar : listCalendars(ownerPid)) {
+								folderTo.add(calendar.getCalendarId());
+								rootShareToFolderShare.put(root.getShareId(), calendar.getCalendarId());
+								folderToWildcardShareFolder.put(calendar.getCalendarId(), folder.getShareId().toString());
+							}
+						} else {
+							int categoryId = Integer.valueOf(folder.getInstance());
+							folderTo.add(categoryId);
+							rootShareToFolderShare.put(root.getShareId(), categoryId);
+							folderToShareFolder.put(categoryId, folder.getShareId().toString());
+						}
+					}
+				}
+				ready = true;
+			} catch(WTException ex) {
+				throw new WTRuntimeException(ex.getMessage());
+			}
+		}
+	}
 	
 	/*
 	public void importICal(int calendarId, InputStream is, DateTimeZone defaultTz) throws Exception {

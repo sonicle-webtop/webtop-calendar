@@ -32,8 +32,8 @@
  */
 package com.sonicle.webtop.calendar.bol.js.rest;
 
-import com.sonicle.webtop.calendar.model.CalendarFolder;
-import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.model.SharePermsElements;
 import com.sonicle.webtop.core.sdk.UserProfile;
@@ -49,7 +49,7 @@ public class JsIncomingCalendar {
 	public String calendarName;
 	public Boolean readOnly;
 	
-	public JsIncomingCalendar(CalendarRoot root, CalendarFolder folder) {
+	public JsIncomingCalendar(ShareRootCalendar root, ShareFolderCalendar folder) {
 		UserProfile.Data udata = WT.getUserData(root.getOwnerProfileId());
 		this.ownerProfileId = root.getOwnerProfileId().toString();
 		this.ownerDisplayName = udata.getDisplayName();

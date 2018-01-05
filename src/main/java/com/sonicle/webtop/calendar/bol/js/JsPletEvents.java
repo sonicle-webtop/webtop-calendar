@@ -33,10 +33,10 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.bol.model.MyCalendarRoot;
+import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.CalendarFolder;
-import com.sonicle.webtop.calendar.model.CalendarRoot;
+import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -61,7 +61,7 @@ public class JsPletEvents {
 	public String _frights;
 	public String _erights;
 	
-	public JsPletEvents(CalendarRoot root, CalendarFolder folder, SchedEventInstance event, DateTimeZone profileTz) {
+	public JsPletEvents(ShareRootCalendar root, ShareFolderCalendar folder, SchedEventInstance event, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		final Calendar calendar = folder.getCalendar();
 		
@@ -82,7 +82,7 @@ public class JsPletEvents {
 		title = event.getTitle();
 		location = event.getLocation();
 		
-		_owner = (root instanceof MyCalendarRoot) ? "" : root.getDescription();
+		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
 		_frights = folder.getElementsPerms().toString();
 		_erights = folder.getElementsPerms().toString();
 	}

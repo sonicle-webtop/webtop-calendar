@@ -119,21 +119,6 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setObject(CHECKED_CALENDAR_FOLDERS, value, CheckedFolders.class);
 	}
 	
-	public CalendarFolderData getCalendarFolderData(int calendarId) {
-		final String key = MessageFormat.format(CALENDAR_FOLDER_DATA, calendarId);
-		return getObject(key, new CalendarFolderData(), CalendarFolderData.class);
-	}
-	
-	public boolean setCalendarFolderData(int calendarId, CalendarFolderData value) {
-		final String key = MessageFormat.format(CALENDAR_FOLDER_DATA, calendarId);
-		return setObject(key, value, CalendarFolderData.class);
-	}
-	
-	public boolean clearCalendarFolderData(int calendarId) {
-		final String key = MessageFormat.format(CALENDAR_FOLDER_DATA, calendarId);
-		return clear(key);
-	}
-	
 	public static class CheckedRoots extends HashSet<String> {
 		public CheckedRoots() {
 			super();

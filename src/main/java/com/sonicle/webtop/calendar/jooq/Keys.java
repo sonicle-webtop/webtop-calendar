@@ -29,6 +29,7 @@ public class Keys {
 	// UNIQUE and PRIMARY KEY definitions
 	// -------------------------------------------------------------------------
 
+	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.CalendarPropsRecord> CALENDAR_PROPS_PKEY = UniqueKeys0.CALENDAR_PROPS_PKEY;
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord> CALENDARS_PKEY1 = UniqueKeys0.CALENDARS_PKEY1;
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> EVENTS_PKEY = UniqueKeys0.EVENTS_PKEY;
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord> EVENTS_PLANNING_PKEY = UniqueKeys0.EVENTS_PLANNING_PKEY;
@@ -51,6 +52,7 @@ public class Keys {
 	}
 
 	private static class UniqueKeys0 extends org.jooq.impl.AbstractKeys {
+		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.CalendarPropsRecord> CALENDAR_PROPS_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.CalendarProps.CALENDAR_PROPS, com.sonicle.webtop.calendar.jooq.tables.CalendarProps.CALENDAR_PROPS.DOMAIN_ID, com.sonicle.webtop.calendar.jooq.tables.CalendarProps.CALENDAR_PROPS.USER_ID, com.sonicle.webtop.calendar.jooq.tables.CalendarProps.CALENDAR_PROPS.CALENDAR_ID);
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord> CALENDARS_PKEY1 = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS, com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS.CALENDAR_ID);
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> EVENTS_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.Events.EVENTS, com.sonicle.webtop.calendar.jooq.tables.Events.EVENTS.EVENT_ID);
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord> EVENTS_PLANNING_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.EventsAttendees.EVENTS_ATTENDEES, com.sonicle.webtop.calendar.jooq.tables.EventsAttendees.EVENTS_ATTENDEES.ATTENDEE_ID);

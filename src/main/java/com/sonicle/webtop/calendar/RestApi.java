@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.webtop.calendar.bol.js.rest.JsIncomingCalendar;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.core.app.RunContext;
@@ -42,6 +43,8 @@ import com.sonicle.webtop.core.sdk.BaseRestApiEndpoint;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -60,12 +63,18 @@ public class RestApi extends BaseRestApiEndpoint {
 	public Response listIncomingCalendars() throws WTException {
 		CalendarManager manager = getManager();
 		
+		List<Integer> incCatIds = manager.listIncomingCalendarIds();
+		Map<Integer, CalendarPropSet> psets = manager.getCalendarCustomProps(incCatIds);
+		
 		ArrayList<JsIncomingCalendar> items = new ArrayList<>();
 		for (ShareRootCalendar root : manager.listIncomingCalendarRoots()) {
 			for (ShareFolderCalendar fold : manager.listIncomingCalendarFolders(root.getShareId()).values()) {
-				if (Calendar.Sync.OFF.equals(fold.getCalendar().getSync())) continue;
+				Calendar.Sync sync = Calendar.Sync.OFF;
+				CalendarPropSet pset = psets.get(fold.getCalendar().getCalendarId());
+				if (pset != null) sync = pset.getSyncOrDefault(sync);
+				if (Calendar.Sync.OFF.equals(sync)) continue;
 				
-				items.add(new JsIncomingCalendar(root, fold));
+				items.add(new JsIncomingCalendar(root, fold, pset));
 			}
 		}
 		return ok(items);

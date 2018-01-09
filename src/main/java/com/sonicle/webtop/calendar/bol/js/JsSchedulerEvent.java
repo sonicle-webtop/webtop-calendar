@@ -38,6 +38,7 @@ import com.sonicle.webtop.calendar.bol.model.MyShareFolderCalendar;
 import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
@@ -78,7 +79,7 @@ public class JsSchedulerEvent {
 	
 	public JsSchedulerEvent() {}
 	
-	public JsSchedulerEvent(ShareRootCalendar root, ShareFolderCalendar folder, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(ShareRootCalendar root, ShareFolderCalendar folder, CalendarPropSet folderProps, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
@@ -105,10 +106,7 @@ public class JsSchedulerEvent {
 		
 		title = (keepDataPrivate) ? "***" : event.getTitle();
 		color = calendar.getColor();
-		if (folder.getData() != null) {
-			CalendarFolderData data = (CalendarFolderData)folder.getData();
-			if (!StringUtils.isBlank(data.color)) color = data.color;
-		}
+		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		location = (keepDataPrivate) ? "" : event.getLocation();
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
@@ -127,7 +125,7 @@ public class JsSchedulerEvent {
 		_profileId = calendar.getProfileId().toString();
 	}
 	
-	public JsSchedulerEvent(ShareRootCalendar rootFolder, ShareFolderCalendar folder, VVEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(ShareRootCalendar rootFolder, ShareFolderCalendar folder, CalendarPropSet folderProps, VVEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
@@ -154,10 +152,7 @@ public class JsSchedulerEvent {
 		
 		title = (keepDataPrivate) ? "***" : event.getTitle();
 		color = calendar.getColor();
-		if (folder.getData() != null) {
-			CalendarFolderData data = (CalendarFolderData)folder.getData();
-			if (!StringUtils.isBlank(data.color)) color = data.color;
-		}
+		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		location = (keepDataPrivate) ? "" : event.getLocation();
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();

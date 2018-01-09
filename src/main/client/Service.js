@@ -542,6 +542,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			tooltip: null,
 			menu: {
 				showSeparator: false,
+				itemId: 'calendarColor',
 				items: [{
 						xtype: 'colorpicker',
 						colors: WT.getColorPalette(),
@@ -549,7 +550,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							select: function(s, color) {
 								var node = me.getSelectedFolder(me.trFolders());
 								me.getRef('cxmFolder').hide();
-								if (node) me.updateCalendarColorUI(node, '#'+color);
+								if (node) me.updateCalendarPropColorUI(node, '#'+color);
 							}
 						}
 					},
@@ -558,9 +559,46 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						tooltip: null,
 						handler: function() {
 							var node = me.getSelectedFolder(me.trFolders());
-							if (node) me.updateCalendarColorUI(node, null);
+							if (node) me.updateCalendarPropColorUI(node, null);
 						}
 					})
+				]
+			}
+		});
+		var onItemClick = function(s) {
+			var node = me.getSelectedFolder(me.trFolders());
+			if (node && s.checked) me.updateCalendarPropSyncUI(node, s.getItemId());
+		};
+		me.addAct('calendarSync', {
+			text: me.res('mni-calendarSync.lbl'),
+			tooltip: null,
+			menu: {
+				itemId: 'calendarSync',
+				items: [{
+						itemId: 'O',
+						text: me.res('store.sync.O'),
+						group: 'calendarSync',
+						checked: false,
+						listeners: {
+							click: onItemClick
+						}
+					}, {
+						itemId: 'R',
+						text: me.res('store.sync.R'),
+						group: 'calendarSync',
+						checked: false,
+						listeners: {
+							click: onItemClick
+						}
+					}, {
+						itemId: 'W',
+						text: me.res('store.sync.W'),
+						group: 'calendarSync',
+						checked: false,
+						listeners: {
+							click: onItemClick
+						}
+					}
 				]
 			}
 		});
@@ -750,8 +788,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				},
 				'-',
 				me.getAct('editSharing'),
-				me.getAct('hideCalendar'),
-				me.getAct('calendarColor'),
+				{
+					text: me.res('mni-customizeFolder.lbl'),
+					menu: {
+						items: [
+							me.getAct('hideCalendar'),
+							me.getAct('calendarColor'),
+							me.getAct('calendarSync')
+						]
+					}
+				},
 				me.getAct('syncRemoteCalendar'),
 				'-',
 				me.getAct('addEvent'),
@@ -774,8 +820,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					me.getAct('importEvents').setDisabled(!er.CREATE);
 					me.getAct('hideCalendar').setDisabled(mine);
 					me.getAct('calendarColor').setDisabled(mine);
+					me.getAct('calendarSync').setDisabled(mine);
 					me.getAct('syncRemoteCalendar').setDisabled(!Sonicle.webtop.calendar.view.Calendar.isRemote(rec.get('_provider')));
-					if (!mine) s.down('colorpicker').select(rec.get('_color'), true);
+					if (!mine) {
+						s.down('menu#calendarColor').down('colorpicker').select(rec.get('_color'), true);
+						s.down('menu#calendarSync').getComponent(rec.get('_sync')).setChecked(true);
+					}
 				}
 			}
 		}));
@@ -837,7 +887,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}
 	},
 	
-	loadFolderNode: function(pid) {
+	loadRootNode: function(pid, reloadItemsIf) {
 		var me = this,
 				sto = me.trFolders().getStore(),
 				node;
@@ -845,7 +895,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		node = sto.findNode('_pid', pid, false);
 		if (node) {
 			sto.load({node: node});
-			if(node.get('checked'))	me.reloadEvents();
+			if (reloadItemsIf && node.get('checked')) me.reloadEvents();
 		}
 	},
 	
@@ -884,7 +934,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		me.addCalendar(domainId, userId, {
 			callback: function(success, model) {
-				if(success) me.loadFolderNode(model.get('_profileId'));
+				if(success) me.loadRootNode(model.get('_profileId'));
 			}
 		});
 	},
@@ -893,7 +943,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		me.setupRemoteCalendar(profileId, {
 			callback: function(success, mo) {
-				if(success) me.loadFolderNode(profileId);
+				if(success) me.loadRootNode(profileId);
 			}
 		});
 	},
@@ -902,7 +952,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		me.editCalendar(calendarId, {
 			callback: function(success, model) {
-				if (success) me.loadFolderNode(model.get('_profileId'));
+				if (success) me.loadRootNode(model.get('_profileId'), true);
 			}
 		});
 	},
@@ -933,7 +983,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		vct.getView().on('viewcallback', function(s, success, json) {
 			if (success) {
 				Ext.iterate(json.data, function(pid) {
-					me.loadFolderNode(pid);
+					me.loadRootNode(pid);
 				});
 			}
 		});
@@ -947,7 +997,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.updateCalendarVisibility(node.get('_calId'), true, {
 					callback: function(success) {
 						if(success) {
-							me.loadFolderNode(node.get('_pid'));
+							me.loadRootNode(node.get('_pid'));
 							me.showHideF3Node(node, false);
 						}
 					}
@@ -956,13 +1006,24 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}, this);
 	},
 	
-	updateCalendarColorUI: function(node, color) {
+	updateCalendarPropColorUI: function(node, color) {
 		var me = this;
-		me.updateCalendarColor(node.get('_calId'), color, {
+		me.updateCalendarPropColor(node.get('_calId'), color, {
 			callback: function(success) {
 				if(success) {
-					me.loadFolderNode(node.get('_pid'));
+					me.loadRootNode(node.get('_pid'));
 					if (node.get('_visible')) me.reloadEvents();
+				}
+			}
+		});
+	},
+	
+	updateCalendarPropSyncUI: function(node, sync) {
+		var me = this;
+		me.updateCalendarPropSync(node.get('_calId'), sync, {
+			callback: function(success) {
+				if (success) {
+					me.loadRootNode(node.get('_pid'));
 				}
 			}
 		});
@@ -1169,13 +1230,27 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	updateCalendarColor: function(calendarId, color, opts) {
+	updateCalendarPropColor: function(calendarId, color, opts) {
 		opts = opts || {};
 		var me = this;
-		WT.ajaxReq(me.ID, 'SetCalendarColor', {
+		WT.ajaxReq(me.ID, 'SetCalendarPropColor', {
 			params: {
 				id: calendarId,
 				color: color
+			},
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope || me, [success, json]);
+			}
+		});
+	},
+	
+	updateCalendarPropSync: function(categoryId, sync, opts) {
+		opts = opts || {};
+		var me = this;
+		WT.ajaxReq(me.ID, 'SetCalendarPropSync', {
+			params: {
+				id: categoryId,
+				sync: sync
 			},
 			callback: function(success, json) {
 				Ext.callback(opts.callback, opts.scope || me, [success, json]);

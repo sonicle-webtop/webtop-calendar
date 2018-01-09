@@ -17,6 +17,11 @@ package com.sonicle.webtop.calendar.jooq;
 public class Tables {
 
 	/**
+	 * The table calendar.calendar_props
+	 */
+	public static final com.sonicle.webtop.calendar.jooq.tables.CalendarProps CALENDAR_PROPS = com.sonicle.webtop.calendar.jooq.tables.CalendarProps.CALENDAR_PROPS;
+
+	/**
 	 * The table calendar.calendars
 	 */
 	public static final com.sonicle.webtop.calendar.jooq.tables.Calendars CALENDARS = com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS;

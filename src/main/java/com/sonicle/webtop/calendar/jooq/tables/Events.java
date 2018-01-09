@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> {
 
-	private static final long serialVersionUID = -1369564358;
+	private static final long serialVersionUID = -575773895;
 
 	/**
 	 * The reference instance of <code>calendar.events</code>
@@ -69,7 +69,7 @@ public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.
 	/**
 	 * The column <code>calendar.events.title</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> TITLE = createField("title", org.jooq.impl.SQLDataType.VARCHAR.length(100), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> TITLE = createField("title", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
 
 	/**
 	 * The column <code>calendar.events.description</code>.

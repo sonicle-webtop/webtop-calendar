@@ -95,11 +95,4 @@ public class CalendarSettings {
 	 * List of checked (or visible) calendars.
 	 */
 	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
-	
-	/**
-	 * [user]
-	 * [object[]]
-	 * Custom data for the @ calendar folder.
-	 */
-	public static final String CALENDAR_FOLDER_DATA = "category.folder.data@{0}";
 }

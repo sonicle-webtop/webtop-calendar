@@ -46,6 +46,22 @@ WITH (OIDS=FALSE)
 ;
 
 -- ----------------------------
+-- Table structure for calendar_props
+-- ----------------------------
+DROP TABLE IF EXISTS "calendar"."calendar_props";
+CREATE TABLE "calendar"."calendar_props" (
+"domain_id" varchar(20) NOT NULL,
+"user_id" varchar(100) NOT NULL,
+"calendar_id" int4 NOT NULL,
+"hidden" bool,
+"color" varchar(20),
+"sync" varchar(1)
+)
+WITH (OIDS=FALSE)
+
+;
+
+-- ----------------------------
 -- Table structure for events
 -- ----------------------------
 DROP TABLE IF EXISTS "calendar"."events";
@@ -158,6 +174,16 @@ CREATE UNIQUE INDEX "calendars_ak2" ON "calendar"."calendars" USING btree ("doma
 ALTER TABLE "calendar"."calendars" ADD PRIMARY KEY ("calendar_id");
 
 -- ----------------------------
+-- Indexes structure for table calendar_props
+-- ----------------------------
+CREATE INDEX "calendar_props_ak1" ON "calendar"."calendar_props" USING btree ("calendar_id");
+
+-- ----------------------------
+-- Primary Key structure for table calendar_props
+-- ----------------------------
+ALTER TABLE "calendar"."calendar_props" ADD PRIMARY KEY ("domain_id", "user_id", "calendar_id");
+
+-- ----------------------------
 -- Indexes structure for table events
 -- ----------------------------
 CREATE INDEX "events_ak1" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "recurrence_id", "start_date", "end_date");
@@ -194,4 +220,4 @@ ALTER TABLE "calendar"."recurrences_broken" ADD PRIMARY KEY ("event_id", "recurr
 -- ----------------------------
 @DataSource[default@com.sonicle.webtop.core]
 DELETE FROM "core"."settings" WHERE ("settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("settings"."key" = 'manifest.version');
-INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.1.4');
+INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.1.6');

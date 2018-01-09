@@ -57,6 +57,7 @@ import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.calendar.bol.OCalendarPropSet;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
@@ -70,6 +71,7 @@ import com.sonicle.webtop.calendar.model.EventInstance.RecurringInfo;
 import com.sonicle.webtop.calendar.model.EventKey;
 import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
+import com.sonicle.webtop.calendar.dal.CalendarPropsDAO;
 import com.sonicle.webtop.calendar.dal.EventAttendeeDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
@@ -143,12 +145,14 @@ import org.supercsv.io.ICsvMapWriter;
 import org.supercsv.prefs.CsvPreference;
 import com.sonicle.webtop.calendar.io.EventFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.FolderEvents;
 import com.sonicle.webtop.calendar.model.SchedEvent;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.util.ICalendarInput;
+import com.sonicle.webtop.core.dal.DAOIntegrityViolationException;
 import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.AbstractMapCache;
 import com.sonicle.webtop.core.sdk.AbstractShareCache;
@@ -463,6 +467,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	@Override
 	public boolean deleteCalendar(int calendarId) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
+		CalendarPropsDAO psetDao = CalendarPropsDAO.getInstance();
 		Connection con = null;
 		
 		try {
@@ -477,6 +482,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (cal == null) return false;
 			
 			int ret = calDao.deleteById(con, calendarId);
+			psetDao.deleteByCalendar(con, calendarId);
 			doDeleteEventsByCalendar(con, calendarId, !cal.isRemoteProvider());
 			
 			// Cleanup sharing, if necessary
@@ -498,6 +504,84 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			throw new WTException(ex, "DB error");
 		} catch(Exception ex) {
 			throw ex;
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
+	public CalendarPropSet getCalendarCustomProps(int calendarId) throws WTException {
+		return getCalendarCustomProps(getTargetProfileId(), calendarId);
+	}
+	
+	private CalendarPropSet getCalendarCustomProps(UserProfileId profileId, int calendarId) throws WTException {
+		CalendarPropsDAO psetDao = CalendarPropsDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			OCalendarPropSet opset = psetDao.selectByProfileCalendar(con, profileId.getDomainId(), profileId.getUserId(), calendarId);
+			return (opset == null) ? new CalendarPropSet() : createCalendarPropSet(opset);
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
+	public Map<Integer, CalendarPropSet> getCalendarCustomProps(Collection<Integer> calendarIds) throws WTException {
+		return getCalendarCustomProps(getTargetProfileId(), calendarIds);
+	}
+	
+	public Map<Integer, CalendarPropSet> getCalendarCustomProps(UserProfileId profileId, Collection<Integer> calendarIds) throws WTException {
+		CalendarPropsDAO psetDao = CalendarPropsDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			LinkedHashMap<Integer, CalendarPropSet> psets = new LinkedHashMap<>(calendarIds.size());
+			Map<Integer, OCalendarPropSet> map = psetDao.selectByProfileCalendarIn(con, profileId.getDomainId(), profileId.getUserId(), calendarIds);
+			for (Integer categoryId : calendarIds) {
+				OCalendarPropSet opset = map.get(categoryId);
+				psets.put(categoryId, (opset == null) ? new CalendarPropSet() : createCalendarPropSet(opset));
+			}
+			return psets;
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
+	public CalendarPropSet updateCalendarCustomProps(int calendarId, CalendarPropSet propertySet) throws WTException {
+		ensureUser();
+		return updateCalendarCustomProps(getTargetProfileId(), calendarId, propertySet);
+	}
+	
+	private CalendarPropSet updateCalendarCustomProps(UserProfileId profileId, int calendarId, CalendarPropSet propertySet) throws WTException {
+		CalendarPropsDAO psetDao = CalendarPropsDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			OCalendarPropSet opset = createOCalendarPropSet(propertySet);
+			opset.setDomainId(profileId.getDomainId());
+			opset.setUserId(profileId.getUserId());
+			opset.setCalendarId(calendarId);
+			
+			con = WT.getConnection(SERVICE_ID);
+			try {
+				psetDao.insert(con, opset);
+			} catch(DAOIntegrityViolationException ex1) {
+				psetDao.update(con, opset);
+			}
+			return propertySet;
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1727,6 +1811,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	public void eraseData(boolean deep) throws WTException {
 		CalendarDAO caldao = CalendarDAO.getInstance();
+		CalendarPropsDAO psetDao = CalendarPropsDAO.getInstance();
 		EventDAO evtdao = EventDAO.getInstance();
 		EventAttendeeDAO attdao = EventAttendeeDAO.getInstance();
 		RecurrenceDAO recdao = RecurrenceDAO.getInstance();
@@ -1755,6 +1840,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			// Erase calendars
+			psetDao.deleteByProfile(con, pid.getDomainId(), pid.getUserId());
 			caldao.deleteByProfile(con, pid.getDomainId(), pid.getUserId());
 			
 			DbUtils.commitQuietly(con);
@@ -2700,6 +2786,32 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (Calendar.Provider.WEBCAL.equals(provider) || Calendar.Provider.CALDAV.equals(provider)) {
 				fill.setIsDefault(false);
 			}
+		}
+		return fill;
+	}
+	
+	private CalendarPropSet createCalendarPropSet(OCalendarPropSet with) {
+		return fillCalendarPropSet(new CalendarPropSet(), with);
+	}
+	
+	private CalendarPropSet fillCalendarPropSet(CalendarPropSet fill, OCalendarPropSet with) {
+		if ((fill != null) && (with != null)) {
+			fill.setHidden(with.getHidden());
+			fill.setColor(with.getColor());
+			fill.setSync(EnumUtils.forSerializedName(with.getSync(), Calendar.Sync.class));
+		}
+		return fill;
+	}
+	
+	private OCalendarPropSet createOCalendarPropSet(CalendarPropSet with) {
+		return fillOCalendarPropSet(new OCalendarPropSet(), with);
+	}
+	
+	private OCalendarPropSet fillOCalendarPropSet(OCalendarPropSet fill, CalendarPropSet with) {
+		if ((fill != null) && (with != null)) {
+			fill.setHidden(with.getHidden());
+			fill.setColor(with.getColor());
+			fill.setSync(EnumUtils.toSerializedName(with.getSync()));
 		}
 		return fill;
 	}

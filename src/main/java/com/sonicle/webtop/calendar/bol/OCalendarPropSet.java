@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Sonicle S.r.l.
+ * Copyright (C) 2018 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,41 +28,16 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2017 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2018 Sonicle S.r.l.".
  */
-package com.sonicle.webtop.calendar.bol.js.rest;
+package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.CalendarPropSet;
-import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
-import com.sonicle.webtop.calendar.model.ShareRootCalendar;
-import com.sonicle.webtop.core.app.WT;
-import com.sonicle.webtop.core.model.SharePermsElements;
-import com.sonicle.webtop.core.sdk.UserProfile;
+import com.sonicle.webtop.calendar.jooq.tables.pojos.CalendarProps;
 
 /**
  *
  * @author malbinola
  */
-public class JsIncomingCalendar {
-	public String ownerProfileId;
-	public String ownerDisplayName;
-	public Integer calendarId;
-	public String calendarName;
-	public Boolean readOnly;
+public class OCalendarPropSet extends CalendarProps {
 	
-	public JsIncomingCalendar(ShareRootCalendar root, ShareFolderCalendar folder, CalendarPropSet folderProps) {
-		UserProfile.Data udata = WT.getUserData(root.getOwnerProfileId());
-		this.ownerProfileId = root.getOwnerProfileId().toString();
-		this.ownerDisplayName = udata.getDisplayName();
-		this.calendarId = folder.getCalendar().getCalendarId();
-		this.calendarName = folder.getCalendar().getName();
-		if (folder.getCalendar().isRemoteProvider()) {
-			this.readOnly = true;
-		} else if ((folderProps != null) && Calendar.Sync.READ.equals(folderProps.getSync())) {
-			this.readOnly = true;
-		} else {
-			this.readOnly = !SharePermsElements.full().toString().equals(folder.getElementsPerms().toString());
-		}
-	}
 }

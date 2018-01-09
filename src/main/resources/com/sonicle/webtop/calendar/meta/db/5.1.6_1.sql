@@ -31,7 +31,7 @@ ALTER TABLE "calendar"."calendar_props" ADD PRIMARY KEY ("domain_id", "user_id",
 INSERT INTO "calendar"."calendar_props" 
 ("domain_id", "user_id", "calendar_id", "hidden", "color") 
 SELECT domain_id, user_id, 
-CAST (replace("key",'calendar.folder.data@','') AS int4), 
+CAST (replace(replace("key",'calendar.folder.data@',''),',','') AS int4), 
 CASE WHEN split_part(split_part(substr("value",2,length("value")-2),',',1),':',2)='true' THEN TRUE ELSE NULL END, 
 CASE WHEN replace(split_part(split_part(substr("value",2,length("value")-2),',',2),':',2),'"','')='null' THEN NULL ELSE replace(split_part(split_part(substr("value",2,length("value")-2),',',2),':',2),'"','') END 
 FROM "core"."user_settings" 

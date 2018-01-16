@@ -1000,7 +1000,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		VEvent ve = ICalendarUtils.getVEvent(ical);
 		if (ve == null) throw new WTException("Calendar does not contain any event");
 		
-		String uid = ve.getUid().getValue();
+		String uid = ICalendarUtils.getUidValue(ve);
 		if (StringUtils.isBlank(uid)) throw new WTException("Event does not provide a valid Uid");
 		
 		if (ical.getMethod().equals(Method.REQUEST)) {
@@ -1026,6 +1026,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				con = WT.getConnection(SERVICE_ID, false);
 				OEvent original = edao.selectById(con, evt.getEventId());
+				
+				// Set into parsed all fields tha can't be changed by the iCal
+				// update otherwise data can be lost inside doUpdateEvent
+				parsedEvent.setEventId(original.getEventId());
+				parsedEvent.setCalendarId(original.getCalendarId());
+				parsedEvent.setReadOnly(original.getReadOnly());
+				parsedEvent.setReminder(original.getReminder());
+				parsedEvent.setHref(original.getHref());
+				parsedEvent.setEtag(original.getEtag());
+				parsedEvent.setActivityId(original.getActivityId());
+				parsedEvent.setMasterDataId(original.getMasterDataId());
+				parsedEvent.setStatMasterDataId(original.getStatMasterDataId());
+				parsedEvent.setCausalId(original.getCausalId());
+				
 				doEventUpdate(con, original, parsedEvent, true);
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
@@ -2607,7 +2621,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		originalEvent.ensureCoherence();
 		
 		if (attendees) {
-			attDao.selectByEvent(con, originalEvent.getEventId());
 			List<EventAttendee> fromList = createEventAttendeeList(attDao.selectByEvent(con, originalEvent.getEventId()));
 			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(fromList, event.getAttendees());
 			

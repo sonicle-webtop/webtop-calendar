@@ -1905,11 +1905,57 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.commitQuietly(con);
 			
 		} catch(Exception ex) {
+			DbUtils.rollbackQuietly(con);
 			logger.error("Error collecting reminder alerts", ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
+		
+		sendInvitationForZPushEvents(now.minusMinutes(1));
+		
 		return alerts;
+	}
+	
+	private void sendInvitationForZPushEvents(DateTime fromTimestamp) {
+		EventDAO evtDao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID, false);
+			
+			ArrayList<Integer> processed = new ArrayList<>();
+			for (OEvent oevt : evtDao.selectHandleInvitationByRevision(con, fromTimestamp)) {
+				String crud = null;
+				if (OEvent.REV_STATUS_NEW.equals(oevt.getRevisionStatus())) {
+					crud = Crud.CREATE;
+				} else if (OEvent.REV_STATUS_MODIFIED.equals(oevt.getRevisionStatus())) {
+					crud = Crud.UPDATE;
+				} else if (OEvent.REV_STATUS_DELETED.equals(oevt.getRevisionStatus())) {
+					crud = Crud.DELETE;
+				}
+				if (crud == null) {
+					logger.warn("Invalid revision status [{}]", oevt.getEventId());
+					continue;
+				}
+				
+				Event event = getEvent(oevt.getEventId());
+				if (event == null) {
+					logger.warn("Unable to get event [{}]", oevt.getEventId());
+					continue;
+				}
+				notifyAttendees(crud, null);
+				processed.add(oevt.getEventId());
+			}
+			
+			evtDao.updateHandleInvitationIn(con, processed, false);
+			DbUtils.commitQuietly(con);
+			
+		} catch(Throwable t) {
+			DbUtils.rollbackQuietly(con);
+			logger.error("Error collecting reminder alerts", t);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
 	}
 	
 	public ProbeCalendarRemoteUrlResult probeCalendarRemoteUrl(Calendar.Provider provider, URI url, String username, String password) throws WTException {

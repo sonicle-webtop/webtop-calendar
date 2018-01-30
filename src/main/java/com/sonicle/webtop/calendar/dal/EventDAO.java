@@ -588,6 +588,34 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VVEvent.class);
 	}
 	
+	public List<OEvent> selectHandleInvitationByRevision(Connection con, DateTime revisionTimestamp) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.REVISION_STATUS
+			)
+			.from(EVENTS)
+			.where(
+					EVENTS.HANDLE_INVITATION.equal(true)
+					.and(
+						EVENTS.REVISION_TIMESTAMP.greaterOrEqual(revisionTimestamp)
+					)
+			)
+			.fetchInto(OEvent.class);
+	}
+	
+	public int updateHandleInvitationIn(Connection con, Collection<Integer> eventIds, boolean handleInvitation) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS)
+			.set(EVENTS.HANDLE_INVITATION, handleInvitation)
+			.where(
+				EVENTS.EVENT_ID.in(eventIds)
+			)
+			.execute();
+	}
+	
 	public List<VVEvent> viewRecurringByCalendarFromToPattern(Connection con, int calendarId, DateTime fromDate, DateTime toDate, String pattern) throws DAOException {
 		return viewRecurringByCalendarFromToPattern(con, Arrays.asList(calendarId), fromDate, toDate, pattern);
 	}

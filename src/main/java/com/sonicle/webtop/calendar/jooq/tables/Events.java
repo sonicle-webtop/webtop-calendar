@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> {
 
-	private static final long serialVersionUID = -575773895;
+	private static final long serialVersionUID = 1187800806;
 
 	/**
 	 * The reference instance of <code>calendar.events</code>
@@ -160,6 +160,11 @@ public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.
 	 * The column <code>calendar.events.etag</code>.
 	 */
 	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.String> ETAG = createField("etag", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
+
+	/**
+	 * The column <code>calendar.events.handle_invitation</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.Boolean> HANDLE_INVITATION = createField("handle_invitation", org.jooq.impl.SQLDataType.BOOLEAN.defaulted(true), this, "");
 
 	/**
 	 * Create a <code>calendar.events</code> table reference

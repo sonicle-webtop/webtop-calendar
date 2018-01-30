@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables.pojos;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events implements java.io.Serializable {
 
-	private static final long serialVersionUID = 1990389087;
+	private static final long serialVersionUID = 267122081;
 
 	private java.lang.Integer      eventId;
 	private java.lang.Integer      calendarId;
@@ -44,6 +44,7 @@ public class Events implements java.io.Serializable {
 	private java.lang.Integer      revisionSequence;
 	private java.lang.String       href;
 	private java.lang.String       etag;
+	private java.lang.Boolean      handleInvitation;
 
 	public Events() {}
 
@@ -73,7 +74,8 @@ public class Events implements java.io.Serializable {
 		java.lang.String       organizer,
 		java.lang.Integer      revisionSequence,
 		java.lang.String       href,
-		java.lang.String       etag
+		java.lang.String       etag,
+		java.lang.Boolean      handleInvitation
 	) {
 		this.eventId = eventId;
 		this.calendarId = calendarId;
@@ -101,6 +103,7 @@ public class Events implements java.io.Serializable {
 		this.revisionSequence = revisionSequence;
 		this.href = href;
 		this.etag = etag;
+		this.handleInvitation = handleInvitation;
 	}
 
 	public java.lang.Integer getEventId() {
@@ -309,5 +312,13 @@ public class Events implements java.io.Serializable {
 
 	public void setEtag(java.lang.String etag) {
 		this.etag = etag;
+	}
+
+	public java.lang.Boolean getHandleInvitation() {
+		return this.handleInvitation;
+	}
+
+	public void setHandleInvitation(java.lang.Boolean handleInvitation) {
+		this.handleInvitation = handleInvitation;
 	}
 }

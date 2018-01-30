@@ -588,7 +588,7 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VVEvent.class);
 	}
 	
-	public List<OEvent> selectHandleInvitationByRevision(Connection con, DateTime revisionTimestamp) throws DAOException {
+	public List<OEvent> selectHandleInvitationByRevision(Connection con) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -598,9 +598,6 @@ public class EventDAO extends BaseDAO {
 			.from(EVENTS)
 			.where(
 					EVENTS.HANDLE_INVITATION.equal(true)
-					.and(
-						EVENTS.REVISION_TIMESTAMP.greaterOrEqual(revisionTimestamp)
-					)
 			)
 			.fetchInto(OEvent.class);
 	}

@@ -838,6 +838,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public Event getEvent(int eventId) throws WTException {
+		return getEvent(eventId,false);
+	}
+	
+	public Event getEvent(int eventId, boolean forZPushFix) throws WTException {
 		EventDAO edao = EventDAO.getInstance();
 		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
 		EventAttendeeDAO adao = EventAttendeeDAO.getInstance();
@@ -846,7 +850,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			OEvent oevt = edao.selectAliveById(con, eventId);
+			OEvent oevt = forZPushFix?edao.selectById(con, eventId):edao.selectAliveById(con, eventId);
 			if(oevt == null) return null;
 			checkRightsOnCalendarFolder(oevt.getCalendarId(), "READ"); // Rights check!
 			
@@ -1911,12 +1915,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.closeQuietly(con);
 		}
 		
-		sendInvitationForZPushEvents(now.minusMinutes(1));
+		sendInvitationForZPushEvents();
 		
 		return alerts;
 	}
 	
-	private void sendInvitationForZPushEvents(DateTime fromTimestamp) {
+	private void sendInvitationForZPushEvents() {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -1924,7 +1928,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			ArrayList<Integer> processed = new ArrayList<>();
-			for (OEvent oevt : evtDao.selectHandleInvitationByRevision(con, fromTimestamp)) {
+			for (OEvent oevt : evtDao.selectHandleInvitationByRevision(con)) {
 				String crud = null;
 				if (OEvent.REV_STATUS_NEW.equals(oevt.getRevisionStatus())) {
 					crud = Crud.CREATE;
@@ -1938,12 +1942,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					continue;
 				}
 				
-				Event event = getEvent(oevt.getEventId());
+				Event event = getEvent(oevt.getEventId(),true);
 				if (event == null) {
 					logger.warn("Unable to get event [{}]", oevt.getEventId());
 					continue;
 				}
-				notifyAttendees(crud, null);
+				notifyAttendees(crud, event, InternetAddressUtils.toInternetAddress(event.getOrganizer()));
 				processed.add(oevt.getEventId());
 			}
 			
@@ -2430,6 +2434,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private void notifyAttendees(String crud, Event event) {
+		notifyAttendees(crud, event, null);
+	}
+	
+	private void notifyAttendees(String crud, Event event, InternetAddress from) {
 		try {
 			// Finds attendees to be notified...
 			ArrayList<EventAttendee> toBeNotified = new ArrayList<>();
@@ -2463,7 +2471,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				String because = lookupResource(getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
 				
 				String servicePublicUrl = WT.getServicePublicUrl(getTargetProfileId().getDomainId(), SERVICE_ID);
-				InternetAddress from = ud.getEmail();
+				if (from==null) from = ud.getEmail();
 				for(EventAttendee attendee : toBeNotified) {
 					InternetAddress to = InternetAddressUtils.toInternetAddress(attendee.getRecipient());
 					if (InternetAddressUtils.isAddressValid(to)) {

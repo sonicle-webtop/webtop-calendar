@@ -593,6 +593,7 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.select(
 				EVENTS.EVENT_ID,
+				EVENTS.CALENDAR_ID,
 				EVENTS.REVISION_STATUS
 			)
 			.from(EVENTS)

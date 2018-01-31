@@ -1941,13 +1941,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					logger.warn("Invalid revision status [{}]", oevt.getEventId());
 					continue;
 				}
-				
+				Calendar calendar = getCalendar(oevt.getCalendarId());
+				if (calendar == null) {
+					logger.warn("Unable to get calendar [{}]", oevt.getCalendarId());
+					continue;
+				}
 				Event event = getEvent(oevt.getEventId(),true);
 				if (event == null) {
 					logger.warn("Unable to get event [{}]", oevt.getEventId());
 					continue;
 				}
-				notifyAttendees(crud, event, InternetAddressUtils.toInternetAddress(event.getOrganizer()));
+				notifyAttendees(calendar.getProfileId(), crud, event);
 				processed.add(oevt.getEventId());
 			}
 			
@@ -2434,10 +2438,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private void notifyAttendees(String crud, Event event) {
-		notifyAttendees(crud, event, null);
+		notifyAttendees(getTargetProfileId(), crud, event);
 	}
 	
-	private void notifyAttendees(String crud, Event event, InternetAddress from) {
+	private void notifyAttendees(UserProfileId senderProfileId, String crud, Event event) {
 		try {
 			// Finds attendees to be notified...
 			ArrayList<EventAttendee> toBeNotified = new ArrayList<>();
@@ -2446,8 +2450,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			if(!toBeNotified.isEmpty()) {
-				UserProfile.Data ud = WT.getUserData(getTargetProfileId());
-				CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
+				UserProfile.Data ud = WT.getUserData(senderProfileId);
+				CoreUserSettings cus = new CoreUserSettings(senderProfileId);
 				Session session=getMailSession();
 				String dateFormat = cus.getShortDateFormat();
 				String timeFormat = cus.getShortTimeFormat();
@@ -2466,17 +2470,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				MimeBodyPart attPart = ICalendarUtils.createInvitationAttachmentPart(icalText, filename);
 				MimeBodyPart calendarPart = ICalendarUtils.createInvitationCalendarPart(methodCancel, icalText);
 				
-				String source = NotificationHelper.buildSource(getLocale(), SERVICE_ID);
-				String subject = TplHelper.buildEventInvitationEmailSubject(getLocale(), dateFormat, timeFormat, event, crud);
-				String because = lookupResource(getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
+				String source = NotificationHelper.buildSource(ud.getLocale(), SERVICE_ID);
+				String subject = TplHelper.buildEventInvitationEmailSubject(ud.getLocale(), dateFormat, timeFormat, event, crud);
+				String because = lookupResource(ud.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
 				
-				String servicePublicUrl = WT.getServicePublicUrl(getTargetProfileId().getDomainId(), SERVICE_ID);
-				if (from==null) from = ud.getEmail();
+				String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
+				InternetAddress from = ud.getEmail();
 				for(EventAttendee attendee : toBeNotified) {
 					InternetAddress to = InternetAddressUtils.toInternetAddress(attendee.getRecipient());
 					if (InternetAddressUtils.isAddressValid(to)) {
-						final String customBody = TplHelper.buildEventInvitationBodyTpl(getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
-						final String html = TplHelper.buildInvitationTpl(getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
+						final String customBody = TplHelper.buildEventInvitationBodyTpl(ud.getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
+						final String html = TplHelper.buildInvitationTpl(ud.getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
 						try {
 							WT.sendEmail(session, true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{attPart, calendarPart});
 						} catch(MessagingException ex) {

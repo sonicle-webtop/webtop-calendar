@@ -35,12 +35,12 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttendee;
+import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.text.ParseException;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import javax.mail.internet.AddressException;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.Date;
@@ -59,11 +59,11 @@ import net.fortuna.ical4j.model.property.Method;
 import net.fortuna.ical4j.model.property.Organizer;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.model.property.Sequence;
+import net.fortuna.ical4j.model.property.Status;
 import net.fortuna.ical4j.model.property.Transp;
 import net.fortuna.ical4j.model.property.Uid;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 
 /**
  * TODO: Organize this like ICalendarParser...
@@ -71,30 +71,41 @@ import org.joda.time.LocalDate;
  */
 public class ICalHelper {
 	
-	public static Calendar exportICal(String prodId, ArrayList<Event> events) throws Exception {
-		return exportICal(prodId, false, events);
+	public static Calendar toCalendar(Method method, String prodId, Event event) throws WTException {
+		return toCalendar(method, prodId, Arrays.asList(event));
 	}
 	
-	public static Calendar exportICal(String prodId, boolean methodCancel, ArrayList<Event> events) throws Exception {
+	public static Calendar toCalendar(String prodId, Collection<Event> events) throws WTException {
+		return toCalendar(null, prodId, events);
+	}
+	
+	public static Calendar toCalendar(Method calMethod, String prodId, Collection<Event> events) throws WTException {
 		//org.joda.time.DateTime now = DateTimeUtils.now();
 		Calendar ical = null;
-		if (methodCancel) {
-			ical = ICalendarUtils.newCalendar(prodId, Method.CANCEL);
+		if (calMethod == null) {
+			ical = ICalendarUtils.newCalendar(prodId, null);
 		} else {
-			ical = ICalendarUtils.newCalendar(prodId, Method.REQUEST);
+			ensureMethodRequestOrCancel(calMethod);
+			ical = ICalendarUtils.newCalendar(prodId, calMethod);
 		}
 		
 		for(Event event : events) {
-			ical.getComponents().add(exportEvent(true, event));
+			ical.getComponents().add(toVEvent(calMethod, event));
 		}
-		
 		return ical;
 	}
 	
-	public static VEvent exportEvent(boolean method, Event event) throws Exception {
+	public static VEvent toVEvent(Method calMethod, Event event) throws WTException {
 		Date start = ICal4jUtils.toIC4jDateTimeUTC(event.getStartDate());
 		Date end = ICal4jUtils.toIC4jDateTimeUTC(event.getEndDate());
 		VEvent ve = new VEvent(start, end, event.getTitle());
+		
+		// Status: meeting status
+		if (Method.REQUEST.equals(calMethod)) {
+			ICal4jUtils.addProperty(ve, Status.VEVENT_CONFIRMED);
+		} else if (Method.CANCEL.equals(calMethod)) {
+			ICal4jUtils.addProperty(ve, Status.VEVENT_CANCELLED);
+		}
 		
 		// Uid: globally unique identifier
 		// http://www.kanzaki.com/docs/ical/uid.html
@@ -114,7 +125,7 @@ public class ICalHelper {
 		
 		// Location: the intended venue for the activity
 		// http://www.kanzaki.com/docs/ical/location.html
-		if(!StringUtils.isEmpty(event.getLocation())) {
+		if (!StringUtils.isEmpty(event.getLocation())) {
 			ICal4jUtils.addProperty(ve, new Location(event.getLocation()));
 		}
 		
@@ -125,28 +136,61 @@ public class ICalHelper {
 		// Organizer
 		String mailto = "mailto:" + event.getOrganizerAddress();
 		Organizer organizer = new Organizer(URI.create(mailto));
-		if(!StringUtils.isBlank(event.getOrganizerCN())) {
+		if (!StringUtils.isBlank(event.getOrganizerCN())) {
 			organizer.getParameters().add(new Cn(event.getOrganizerCN()));
 		}
 		ve.getProperties().add(organizer);
-		
-		// Recerrence
-		if(event.hasRecurrence()) {
-			ve.getProperties().add(exportEventRecurrence(event));
-		}
 		
 		// Attendees
 		for(EventAttendee attendee : event.getAttendees()) {
 			try {
 				if(attendee.hasEmailRecipient()) {
-					ve.getProperties().add(exportEventAttendee(method, attendee));
+					ve.getProperties().add(toAttendee(calMethod, attendee));
 				}
-			} catch(URISyntaxException | AddressException ex) {
+			} catch(AddressException ex) {
 				/* Do nothing...*/
 			}
 		}
 		
+		// Recerrence
+		if (event.hasRecurrence()) {
+			try {
+				ve.getProperties().add(exportEventRecurrence(event));
+			} catch(ParseException ex) {
+				throw new WTException(ex, "Unable to add recurrence");
+			}
+		}
+		
 		return ve;
+	}
+	
+	public static Attendee toAttendee(Method calMethod, EventAttendee attendee) throws AddressException {
+		Attendee att = new Attendee();
+		ParameterList params = att.getParameters();
+		
+		// CN and email: attendee main details
+		String mailto = "mailto:" + attendee.getAddress();
+		att.setCalAddress(URI.create(mailto));
+		if (!StringUtils.isBlank(attendee.getCN())) {
+			params.add(new Cn(attendee.getCN()));
+		}
+		
+		// CuType: calendar user type (INDIVIDUAL, RESOURCE, etc...)
+		// http://www.kanzaki.com/docs/ical/cutype.html
+		params.add(recipientTypeToCuType(attendee.getRecipientType()));
+		
+		// Role: attendee participation role
+		// http://www.kanzaki.com/docs/ical/role.html
+		params.add(recipientRoleToRole(attendee.getRecipientRole()));
+		
+		// PartStat: participation status for the calendar user
+		// http://www.kanzaki.com/docs/ical/partstat.html
+		params.add(responseStatusToPartStat(attendee.getResponseStatus()));
+		
+		if (Method.REQUEST.equals(calMethod)) {
+			params.add(Rsvp.TRUE);
+		}
+		return att;
 	}
 	
 	public static RRule exportEventRecurrence(Event event) throws ParseException {
@@ -250,6 +294,12 @@ public class ICalHelper {
 			return EventAttendee.RESPONSE_STATUS_DECLINED;
 		} else {
 			return EventAttendee.RESPONSE_STATUS_NEEDSACTION;
+		}
+	}
+	
+	private static void ensureMethodRequestOrCancel(Method method) throws WTException {
+		if (!Method.REQUEST.equals(method) && !Method.CANCEL.equals(method)) {
+			throw new WTException("Invalid method: only REQUEST or CANCEL are supported");
 		}
 	}
 }

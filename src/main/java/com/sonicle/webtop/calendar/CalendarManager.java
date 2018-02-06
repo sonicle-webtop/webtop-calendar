@@ -40,6 +40,7 @@ import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.http.HttpClientUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
+import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
@@ -166,6 +167,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import javax.mail.Session;
+import javax.mail.internet.MimeMultipart;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.component.VEvent;
@@ -944,7 +946,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return addEvent(event, false);
 	}
 	
-	@Override
+	/*
 	public void updateEventFromICalReply(net.fortuna.ical4j.model.Calendar ical) throws WTException {
 		VEvent ve = ICalendarUtils.getVEvent(ical);
 		if (ve == null) throw new WTException("Calendar does not contain any event");
@@ -989,13 +991,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			List<String> updatedAttIds = updateEventAttendeeResponseByRecipient(evt, att.getCalAddress().getSchemeSpecificPart(), responseStatus);
 			if (!updatedAttIds.isEmpty()) {
 				evt = getEvent(evt.getEventId());
-				for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
+				for(String attId : updatedAttIds) {
+					notifyOrganizer(getLocale(), evt, attId);
+				}
 			}
 			
 		} else {
 			throw new WTException("Unsupported Calendar's method [{0}]", ical.getMethod().toString());
 		}
 	}
+	*/
 	
 	@Override
 	public void updateEventFromICal(net.fortuna.ical4j.model.Calendar ical) throws WTException {
@@ -1142,7 +1147,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private List<String> updateEventAttendeeResponseByRecipient(Event event, String recipient, String responseStatus) throws WTException {
-		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
+		EventDAO evtDao = EventDAO.getInstance();
+		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 		Connection con = null;
 		
 		try {
@@ -1150,7 +1156,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			// Find matching attendees
 			ArrayList<String> matchingIds = new ArrayList<>();
-			List<OEventAttendee> atts = eadao.selectByEvent(con, event.getEventId());
+			List<OEventAttendee> atts = attDao.selectByEvent(con, event.getEventId());
 			for (OEventAttendee att : atts) {
 				final InternetAddress ia = InternetAddressUtils.toInternetAddress(att.getRecipient());
 				if (ia == null) continue;
@@ -1159,8 +1165,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			// Update responses
-			int ret = eadao.updateAttendeeResponseByIds(con, responseStatus, matchingIds);
-			//TODO: aggiornare data evento?
+			int ret = attDao.updateAttendeeResponseByIds(con, responseStatus, matchingIds);
+			evtDao.updateRevision(con, event.getEventId(), createRevisionTimestamp());
 			
 			if (matchingIds.size() == ret) {
 				DbUtils.commitQuietly(con);
@@ -2446,29 +2452,27 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// Finds attendees to be notified...
 			ArrayList<EventAttendee> toBeNotified = new ArrayList<>();
 			for(EventAttendee attendee : event.getAttendees()) {
-				if(attendee.getNotify()) toBeNotified.add(attendee);
+				if (attendee.getNotify()) toBeNotified.add(attendee);
 			}
 			
-			if(!toBeNotified.isEmpty()) {
+			if (!toBeNotified.isEmpty()) {
 				UserProfile.Data ud = WT.getUserData(senderProfileId);
 				CoreUserSettings cus = new CoreUserSettings(senderProfileId);
 				Session session=getMailSession();
 				String dateFormat = cus.getShortDateFormat();
 				String timeFormat = cus.getShortTimeFormat();
 				
-				boolean methodCancel = crud.equals(Crud.DELETE);
+				String prodId = ICalendarUtils.buildProdId(getProductName());
+				net.fortuna.ical4j.model.property.Method icalMethod = crud.equals(Crud.DELETE) ? net.fortuna.ical4j.model.property.Method.CANCEL : net.fortuna.ical4j.model.property.Method.REQUEST;
 				
 				// Creates ical content
-				ArrayList<Event> events = new ArrayList<>();
-				events.add(event);
-				String prodId = ICalendarUtils.buildProdId(getProductName());
-				net.fortuna.ical4j.model.Calendar ical = ICalHelper.exportICal(prodId, methodCancel, events);
-				String icalText = ICalendarUtils.calendarToString(ical);
+				net.fortuna.ical4j.model.Calendar ical = ICalHelper.toCalendar(icalMethod, prodId, event);
 				
-				// Creates message parts
-				String filename = WT.getPlatformName().toLowerCase() + "-invite.ics";
+				// Creates base message parts
+				String icalText = ICalendarUtils.calendarToString(ical);
+				MimeBodyPart calPart = ICalendarUtils.createInvitationCalendarPart(icalMethod, icalText);
+				String filename = ICalendarUtils.buildICalendarAttachmentFilename(WT.getPlatformName());
 				MimeBodyPart attPart = ICalendarUtils.createInvitationAttachmentPart(icalText, filename);
-				MimeBodyPart calendarPart = ICalendarUtils.createInvitationCalendarPart(methodCancel, icalText);
 				
 				String source = NotificationHelper.buildSource(ud.getLocale(), SERVICE_ID);
 				String subject = TplHelper.buildEventInvitationEmailSubject(ud.getLocale(), dateFormat, timeFormat, event, crud);
@@ -2482,7 +2486,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						final String customBody = TplHelper.buildEventInvitationBodyTpl(ud.getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
 						final String html = TplHelper.buildInvitationTpl(ud.getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
 						try {
-							WT.sendEmail(session, true, from, new InternetAddress[]{to}, null, null, subject, html, new MimeBodyPart[]{attPart, calendarPart});
+							MimeMultipart mmp = ICalendarUtils.createInvitationPart(html, calPart, attPart);
+							WT.sendEmail(session, from, Arrays.asList(to), null, null, subject, mmp);
+							
 						} catch(MessagingException ex) {
 							logger.warn("Unable to send notification to attendee {}", to.toString());
 						}

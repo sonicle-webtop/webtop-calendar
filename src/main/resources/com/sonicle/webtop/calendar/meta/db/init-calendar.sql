@@ -91,7 +91,8 @@ CREATE TABLE "calendar"."events" (
 "activity_id" int4,
 "master_data_id" varchar(36),
 "stat_master_data_id" varchar(36),
-"causal_id" int4
+"causal_id" int4,
+"handle_invitation" bool DEFAULT false
 )
 WITH (OIDS=FALSE)
 
@@ -189,6 +190,7 @@ ALTER TABLE "calendar"."calendar_props" ADD PRIMARY KEY ("domain_id", "user_id",
 CREATE INDEX "events_ak1" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "recurrence_id", "start_date", "end_date");
 CREATE INDEX "events_ak3" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "recurrence_id", "title");
 CREATE INDEX "events_ak2" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "start_date", "end_date", "reminder", "reminded_on");
+CREATE INDEX "events_ak99" ON "calendar"."events" USING btree ("handle_invitation");
 
 -- ----------------------------
 -- Primary Key structure for table events
@@ -220,4 +222,4 @@ ALTER TABLE "calendar"."recurrences_broken" ADD PRIMARY KEY ("event_id", "recurr
 -- ----------------------------
 @DataSource[default@com.sonicle.webtop.core]
 DELETE FROM "core"."settings" WHERE ("settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("settings"."key" = 'manifest.version');
-INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.1.6');
+INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.1.8');

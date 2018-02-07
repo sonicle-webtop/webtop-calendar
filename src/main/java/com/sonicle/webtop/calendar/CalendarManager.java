@@ -346,8 +346,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendarFolder(calendarId, "READ");
 			
 			con = WT.getConnection(SERVICE_ID);
-			OCalendar ocal = calDao.selectById(con, calendarId);
-			return createCalendar(ocal);
+			return createCalendar(calDao.selectById(con, calendarId));
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -896,9 +895,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			Calendar calendar = createCalendar(calDao.selectById(con, event.getCalendarId()));
-			if (calendar == null) throw new WTException("Unable to retrieve calendar [{}]", event.getCalendarId());
-			if (calendar.isRemoteProvider()) throw new WTException("Calendar is read only");
+			Calendar cal = createCalendar(calDao.selectById(con, event.getCalendarId()));
+			if (cal == null) throw new WTException("Calendar not found [{}]", event.getCalendarId());
+			if (cal.isRemoteProvider()) throw new WTException("Calendar is read only");
 			
 			InsertResult insert = doEventInsert(con, event, true, true);
 			DbUtils.commitQuietly(con);
@@ -1947,17 +1946,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					logger.warn("Invalid revision status [{}]", oevt.getEventId());
 					continue;
 				}
+				Event event = getEvent(oevt.getEventId(), true);
+				if (event == null) {
+					logger.warn("Event not found [{}]", oevt.getEventId());
+					continue;
+				}
 				Calendar calendar = getCalendar(oevt.getCalendarId());
 				if (calendar == null) {
-					logger.warn("Unable to get calendar [{}]", oevt.getCalendarId());
-					continue;
+					logger.warn("Calendar not found [{}]", oevt.getCalendarId());
+				} else {
+					notifyAttendees(calendar.getProfileId(), crud, event);
 				}
-				Event event = getEvent(oevt.getEventId(),true);
-				if (event == null) {
-					logger.warn("Unable to get event [{}]", oevt.getEventId());
-					continue;
-				}
-				notifyAttendees(calendar.getProfileId(), crud, event);
 				processed.add(oevt.getEventId());
 			}
 			
@@ -2034,6 +2033,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			Calendar cal = createCalendar(calDao.selectById(con, calendarId));
+			if (cal == null) throw new WTException("Calendar not found [{0}]", calendarId);
 			if (!Calendar.Provider.WEBCAL.equals(cal.getProvider()) && !Calendar.Provider.CALDAV.equals(cal.getProvider())) {
 				throw new WTException("Specified calendar is not remote (webcal or CalDAV) [{0}]", calendarId);
 			}
@@ -2796,7 +2796,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private Calendar createCalendar(OCalendar with) {
-		return fillCalendar(new Calendar(), with);
+		return (with == null) ? null : fillCalendar(new Calendar(), with);
 	}
 	
 	private Calendar fillCalendar(Calendar fill, OCalendar with) {
@@ -2931,7 +2931,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private Event createEvent(OEvent with) {
-		return fillEvent(new Event(), with);
+		return (with == null) ? null : fillEvent(new Event(), with);
 	}
 	
 	private <T extends Event> T fillEvent(T fill, OEvent with) {

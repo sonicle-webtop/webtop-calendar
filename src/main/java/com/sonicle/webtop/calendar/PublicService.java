@@ -81,7 +81,7 @@ public class PublicService extends BasePublicService {
 		return getEnv().getWebTopSession();
 	}
 	
-	private CalendarManager getManager(String domainId) {
+	private CalendarManager getAdminManager(String domainId) {
 		return (CalendarManager)WT.getServiceManager(SERVICE_ID, true, new UserProfileId(domainId, "admin"));
 	}
 	
@@ -95,32 +95,32 @@ public class PublicService extends BasePublicService {
 				String domainId = WT.findDomainIdByPublicName(path.getDomainPublicName());
 				if (domainId == null) throw new WTException("Invalid domain public name [{0}]", path.getDomainPublicName());
 				
-				if(path.getContext().equals(PUBPATH_CONTEXT_EVENT)) {
+				if (path.getContext().equals(PUBPATH_CONTEXT_EVENT)) {
 					EventUrlPath eventUrlPath = new EventUrlPath(path.getRemainingPath());
-					CalendarManager calMgr = getManager(domainId);
+					CalendarManager adminCalMgr = getAdminManager(domainId);
 
 					Event event = null;
-					if(!StringUtils.isBlank(eventUrlPath.getPublicUid())) {
-						if(eventUrlPath.isActionReply()) {
+					if (!StringUtils.isBlank(eventUrlPath.getPublicUid())) {
+						if (eventUrlPath.isActionReply()) {
 							String aid = ServletUtils.getStringParameter(request, "aid", true);
 							String resp = ServletUtils.getStringParameter(request, "resp", true);
 							
 							String responseStatus = toResponseStatus(resp);
-							if(responseStatus == null) throw new WTException("Invalid resp [{0}]", resp);
+							if (responseStatus == null) throw new WTException("Invalid resp [{0}]", resp);
 							
-							event = calMgr.updateEventFromSite(eventUrlPath.getPublicUid(), aid, responseStatus);
+							event = adminCalMgr.updateEventFromSite(eventUrlPath.getPublicUid(), aid, responseStatus);
 							
 						} else {
-							event = calMgr.getEvent(GetEventScope.ALL, true, eventUrlPath.getPublicUid());
+							event = adminCalMgr.getEvent(GetEventScope.ALL, true, eventUrlPath.getPublicUid());
 						}
 					}
 					
-					if(event == null) {
+					if (event == null) {
 						logger.trace("Event not found [{}]", eventUrlPath.getPublicUid());
 						writeErrorPage(request, response, wts, "eventnotfound");
 						
 					} else {
-						Calendar calendar = calMgr.getCalendar(event.getCalendarId());
+						Calendar calendar = adminCalMgr.getCalendar(event.getCalendarId());
 						writeEventPage(request, response, wts, "Event", calendar, event);
 					}
 

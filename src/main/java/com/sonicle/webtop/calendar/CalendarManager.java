@@ -339,14 +339,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public Calendar getCalendar(int calendarId) throws WTException {
-		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			checkRightsOnCalendarFolder(calendarId, "READ");
 			
 			con = WT.getConnection(SERVICE_ID);
-			return createCalendar(calDao.selectById(con, calendarId));
+			return doCalendarGet(con, calendarId);
 			
 		} catch(SQLException | DAOException ex) {
 			throw new WTException(ex, "DB error");
@@ -1120,19 +1119,30 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public Event updateEventFromSite(String eventPublicUid, String attendeeUid, String responseStatus) throws WTException {
-		EventAttendeeDAO eadao = EventAttendeeDAO.getInstance();
+		EventAttendeeDAO evtDao = EventAttendeeDAO.getInstance();
 		Connection con = null;
 		
+		// TODO: permission check
 		try {
 			Event evt = getEvent(GetEventScope.ALL, true, eventPublicUid);
 			if (evt == null) throw new WTException("Event not found [{0}]", eventPublicUid);
 			
 			con = WT.getConnection(SERVICE_ID);
-			
-			int ret = eadao.updateAttendeeResponseByIdEvent(con, responseStatus, attendeeUid, evt.getEventId());
-			if(ret == 1) {
+			int ret = evtDao.updateAttendeeResponseByIdEvent(con, responseStatus, attendeeUid, evt.getEventId());
+			if (ret == 1) {
 				evt = getEvent(evt.getEventId());
-				notifyOrganizer(getLocale(), evt, attendeeUid);
+				
+				String targetDomainId = getTargetProfileId().getDomainId();
+				// Retrieves best locale: get language from the calendar owner,
+				// otherwise returns targetProfile's locale (in this case admin@domain)
+				Locale locale = getLocale();
+				Calendar cal = doCalendarGet(con, evt.getCalendarId());
+				if (cal != null) {
+					UserProfile.Data ud = WT.getUserData(cal.getProfileId());
+					if (ud != null) locale = ud.getLocale();
+				}
+				
+				notifyOrganizer(targetDomainId, locale, evt, attendeeUid);
 				return evt;
 			} else {
 				return null;
@@ -2409,8 +2419,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void notifyOrganizer(Locale locale, Event event, String updatedAttendeeId) {
-		String targetDomainId = getTargetProfileId().getDomainId();
+	private void notifyOrganizer(String senderDomainId, Locale locale, Event event, String updatedAttendeeId) {
 		CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
 		String dateFormat = cus.getShortDateFormat();
 		String timeFormat = cus.getShortTimeFormat();
@@ -2426,11 +2435,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			if (targetAttendee == null) throw new WTException("Attendee not found [{0}]", updatedAttendeeId);
 			
-			InternetAddress from = WT.getNotificationAddress(targetDomainId);
+			InternetAddress from = WT.getNotificationAddress(senderDomainId);
 			InternetAddress to = InternetAddressUtils.toInternetAddress(event.getOrganizer());
 			if (!InternetAddressUtils.isAddressValid(to)) throw new WTException("Organizer address not valid [{0}]", event.getOrganizer());
 			
-			String servicePublicUrl = WT.getServicePublicUrl(targetDomainId, SERVICE_ID);
+			String servicePublicUrl = WT.getServicePublicUrl(senderDomainId, SERVICE_ID);
 			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
 			String subject = TplHelper.buildResponseUpdateEmailSubject(locale, event, targetAttendee);
 			String customBody = TplHelper.buildResponseUpdateBodyTpl(locale, dateFormat, timeFormat, event, servicePublicUrl);
@@ -2578,6 +2587,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			dates.add(date);
 			date = date.plusDays(1);
 		}
+	}
+	
+	private Calendar doCalendarGet(Connection con, int calendarId) throws DAOException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		return createCalendar(calDao.selectById(con, calendarId));
 	}
 	
 	private Calendar doCalendarUpdate(boolean insert, Connection con, Calendar cal) throws DAOException {

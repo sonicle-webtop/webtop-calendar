@@ -1132,17 +1132,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (ret == 1) {
 				evt = getEvent(evt.getEventId());
 				
-				String targetDomainId = getTargetProfileId().getDomainId();
-				// Retrieves best locale: get language from the calendar owner,
-				// otherwise returns targetProfile's locale (in this case admin@domain)
-				Locale locale = getLocale();
-				Calendar cal = doCalendarGet(con, evt.getCalendarId());
-				if (cal != null) {
-					UserProfile.Data ud = WT.getUserData(cal.getProfileId());
-					if (ud != null) locale = ud.getLocale();
-				}
+				// Computes senderProfile: if available the calendarOnwer,
+				// otherwise the targetProfile (in this case admin@domain)
+				UserProfileId senderProfile = getCalendarOwner(evt.getCalendarId());
+				if (senderProfile == null) senderProfile = getTargetProfileId();
 				
-				notifyOrganizer(targetDomainId, locale, evt, attendeeUid);
+				notifyOrganizer(senderProfile, evt, attendeeUid);
 				return evt;
 			} else {
 				return null;
@@ -2419,10 +2414,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void notifyOrganizer(String senderDomainId, Locale locale, Event event, String updatedAttendeeId) {
-		CoreUserSettings cus = new CoreUserSettings(getTargetProfileId());
+	private void notifyOrganizer(UserProfileId senderProfileId, Event event, String updatedAttendeeId) {
+		CoreUserSettings cus = new CoreUserSettings(senderProfileId);
 		String dateFormat = cus.getShortDateFormat();
 		String timeFormat = cus.getShortTimeFormat();
+		Locale locale = getProfileOrTargetLocale(senderProfileId);
 		
 		try {
 			// Find the attendee (in event) that has updated its response
@@ -2435,11 +2431,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			if (targetAttendee == null) throw new WTException("Attendee not found [{0}]", updatedAttendeeId);
 			
-			InternetAddress from = WT.getNotificationAddress(senderDomainId);
+			InternetAddress from = WT.getNotificationAddress(senderProfileId.getDomainId());
 			InternetAddress to = InternetAddressUtils.toInternetAddress(event.getOrganizer());
 			if (!InternetAddressUtils.isAddressValid(to)) throw new WTException("Organizer address not valid [{0}]", event.getOrganizer());
 			
-			String servicePublicUrl = WT.getServicePublicUrl(senderDomainId, SERVICE_ID);
+			String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
 			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
 			String subject = TplHelper.buildResponseUpdateEmailSubject(locale, event, targetAttendee);
 			String customBody = TplHelper.buildResponseUpdateBodyTpl(locale, dateFormat, timeFormat, event, servicePublicUrl);
@@ -2592,6 +2588,26 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	private Calendar doCalendarGet(Connection con, int calendarId) throws DAOException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		return createCalendar(calDao.selectById(con, calendarId));
+	}
+	
+	private UserProfileId doCalendarGetOwner(int calendarId) throws WTException {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			return doCalendarGetOwner(con, calendarId);
+			
+		} catch(SQLException | DAOException ex) {
+			throw new WTException(ex, "DB error");
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	private UserProfileId doCalendarGetOwner(Connection con, int calendarId) throws DAOException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		Owner owner = calDao.selectOwnerById(con, calendarId);
+		return (owner == null) ? null : new UserProfileId(owner.getDomainId(), owner.getUserId());
 	}
 	
 	private Calendar doCalendarUpdate(boolean insert, Connection con, Calendar cal) throws DAOException {
@@ -3154,22 +3170,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return atts;
 	}
 	
-	private UserProfileId findCalendarOwner(int calendarId) throws WTException {
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			CalendarDAO dao = CalendarDAO.getInstance();
-			Owner owner = dao.selectOwnerById(con, calendarId);
-			return (owner == null) ? null : new UserProfileId(owner.getDomainId(), owner.getUserId());
-			
-		} catch(SQLException | DAOException ex) {
-			throw new WTException(ex, "DB error");
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
 	private void checkRightsOnCalendarRoot(UserProfileId owner, String action) throws WTException {
 		UserProfileId targetPid = getTargetProfileId();
 		
@@ -3323,7 +3323,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		@Override
 		protected void internalMissKey(Integer key) {
 			try {
-				UserProfileId owner = findCalendarOwner(key);
+				UserProfileId owner = doCalendarGetOwner(key);
 				if (owner == null) throw new WTException("Owner not found [{0}]", key);
 				put(key, owner);
 			} catch(WTException ex) {

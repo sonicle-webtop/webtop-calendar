@@ -159,6 +159,7 @@ import com.sonicle.webtop.core.sdk.AbstractMapCache;
 import com.sonicle.webtop.core.sdk.AbstractShareCache;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICalendarUtils;
+import com.sonicle.webtop.mail.IMailManager;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URI;
@@ -2463,7 +2464,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (!toBeNotified.isEmpty()) {
 				UserProfile.Data ud = WT.getUserData(senderProfileId);
 				CoreUserSettings cus = new CoreUserSettings(senderProfileId);
-				Session session=getMailSession();
 				String dateFormat = cus.getShortDateFormat();
 				String timeFormat = cus.getShortTimeFormat();
 				
@@ -2484,15 +2484,27 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				String because = lookupResource(ud.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
 				
 				String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
+				IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail");
+				Session session = getMailSession();
 				InternetAddress from = ud.getEmail();
 				for(EventAttendee attendee : toBeNotified) {
 					InternetAddress to = InternetAddressUtils.toInternetAddress(attendee.getRecipient());
 					if (InternetAddressUtils.isAddressValid(to)) {
 						final String customBody = TplHelper.buildEventInvitationBodyTpl(ud.getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);
 						final String html = TplHelper.buildInvitationTpl(ud.getLocale(), source, attendee.getAddress(), event.getTitle(), customBody, because, crud);
+						
 						try {
 							MimeMultipart mmp = ICalendarUtils.createInvitationPart(html, calPart, attPart);
-							WT.sendEmail(session, from, Arrays.asList(to), null, null, subject, mmp);
+							if (mailMgr != null) {
+								try {
+									mailMgr.sendMessage(from, Arrays.asList(to), null, null, subject, mmp);
+								} catch(WTException ex1) {
+									logger.warn("Unable to send using mail service", ex1);
+									WT.sendEmail(session, from, Arrays.asList(to), null, null, subject, mmp);
+								}
+							} else {
+								WT.sendEmail(session, from, Arrays.asList(to), null, null, subject, mmp);
+							}
 							
 						} catch(MessagingException ex) {
 							logger.warn("Unable to send notification to attendee {}", to.toString());

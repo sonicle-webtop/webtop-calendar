@@ -370,7 +370,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	notificationCallback: function(type, tag, data) {
 		var me = this;
-		if (tag.startsWith(me.self.NOTAG_REMOTESYNC)) {
+		if (Ext.String.startsWith(tag, me.self.NOTAG_REMOTESYNC)) {
 			me.reloadEvents();
 		}
 	},
@@ -758,7 +758,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var rec = s.menuData.folder,
-							mine = rec.getId().startsWith('0'),
+							mine = Ext.String.startsWith(rec.getId(), '0'),
 							rr = me.toRightsObj(rec.get('_rrights'));
 					me.getAct('addCalendar').setDisabled(!rr.MANAGE);
 					me.getAct('addRemoteCalendar').setDisabled(!rr.MANAGE);
@@ -807,7 +807,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var rec = s.menuData.folder,
-							mine = rec.getId().startsWith('0'),
+							mine = Ext.String.startsWith(rec.getId(), '0'),
 							rr = me.toRightsObj(rec.get('_rrights')),
 							fr = me.toRightsObj(rec.get('_frights')),
 							er = me.toRightsObj(rec.get('_erights'));

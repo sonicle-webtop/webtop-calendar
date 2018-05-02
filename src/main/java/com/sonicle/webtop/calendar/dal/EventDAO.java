@@ -175,38 +175,70 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int update(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
+	public int update(Connection con, OEvent item, DateTime revisionTimestamp, boolean clearRemindedOn) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		item.ensureCoherence();
 		item.setRevisionStatus(OEvent.REV_STATUS_MODIFIED);
 		item.setRevisionTimestamp(revisionTimestamp);
-		return dsl
-			.update(EVENTS)
-			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
-			.set(EVENTS.REVISION_STATUS, item.getRevisionStatus())
-			.set(EVENTS.REVISION_TIMESTAMP, item.getRevisionTimestamp())
-			.set(EVENTS.RECURRENCE_ID, item.getRecurrenceId())
-			.set(EVENTS.START_DATE, item.getStartDate())
-			.set(EVENTS.END_DATE, item.getEndDate())
-			.set(EVENTS.TIMEZONE, item.getTimezone())
-			.set(EVENTS.ALL_DAY, item.getAllDay())
-			.set(EVENTS.ORGANIZER, item.getOrganizer())
-			.set(EVENTS.TITLE, item.getTitle())
-			.set(EVENTS.DESCRIPTION, item.getDescription())
-			.set(EVENTS.LOCATION, item.getLocation())
-			.set(EVENTS.IS_PRIVATE, item.getIsPrivate())
-			.set(EVENTS.BUSY, item.getBusy())
-			.set(EVENTS.REMINDER, item.getReminder())
-			.set(EVENTS.HREF, item.getHref())
-			.set(EVENTS.ETAG, item.getEtag())
-			.set(EVENTS.ACTIVITY_ID, item.getActivityId())
-			.set(EVENTS.MASTER_DATA_ID, item.getMasterDataId())
-			.set(EVENTS.STAT_MASTER_DATA_ID, item.getStatMasterDataId())
-			.set(EVENTS.CAUSAL_ID, item.getCausalId())
-			.where(
-				EVENTS.EVENT_ID.equal(item.getEventId())
-			)
-			.execute();
+		
+		if (clearRemindedOn) {
+			return dsl
+				.update(EVENTS)
+				.set(EVENTS.CALENDAR_ID, item.getCalendarId())
+				.set(EVENTS.REVISION_STATUS, item.getRevisionStatus())
+				.set(EVENTS.REVISION_TIMESTAMP, item.getRevisionTimestamp())
+				.set(EVENTS.RECURRENCE_ID, item.getRecurrenceId())
+				.set(EVENTS.START_DATE, item.getStartDate())
+				.set(EVENTS.END_DATE, item.getEndDate())
+				.set(EVENTS.TIMEZONE, item.getTimezone())
+				.set(EVENTS.ALL_DAY, item.getAllDay())
+				.set(EVENTS.ORGANIZER, item.getOrganizer())
+				.set(EVENTS.TITLE, item.getTitle())
+				.set(EVENTS.DESCRIPTION, item.getDescription())
+				.set(EVENTS.LOCATION, item.getLocation())
+				.set(EVENTS.IS_PRIVATE, item.getIsPrivate())
+				.set(EVENTS.BUSY, item.getBusy())
+				.set(EVENTS.REMINDER, item.getReminder())
+				.set(EVENTS.HREF, item.getHref())
+				.set(EVENTS.ETAG, item.getEtag())
+				.set(EVENTS.ACTIVITY_ID, item.getActivityId())
+				.set(EVENTS.MASTER_DATA_ID, item.getMasterDataId())
+				.set(EVENTS.STAT_MASTER_DATA_ID, item.getStatMasterDataId())
+				.set(EVENTS.CAUSAL_ID, item.getCausalId())
+				.set(EVENTS.REMINDED_ON, (DateTime)null)
+				.where(
+					EVENTS.EVENT_ID.equal(item.getEventId())
+				)
+				.execute();
+		} else {
+			return dsl
+				.update(EVENTS)
+				.set(EVENTS.CALENDAR_ID, item.getCalendarId())
+				.set(EVENTS.REVISION_STATUS, item.getRevisionStatus())
+				.set(EVENTS.REVISION_TIMESTAMP, item.getRevisionTimestamp())
+				.set(EVENTS.RECURRENCE_ID, item.getRecurrenceId())
+				.set(EVENTS.START_DATE, item.getStartDate())
+				.set(EVENTS.END_DATE, item.getEndDate())
+				.set(EVENTS.TIMEZONE, item.getTimezone())
+				.set(EVENTS.ALL_DAY, item.getAllDay())
+				.set(EVENTS.ORGANIZER, item.getOrganizer())
+				.set(EVENTS.TITLE, item.getTitle())
+				.set(EVENTS.DESCRIPTION, item.getDescription())
+				.set(EVENTS.LOCATION, item.getLocation())
+				.set(EVENTS.IS_PRIVATE, item.getIsPrivate())
+				.set(EVENTS.BUSY, item.getBusy())
+				.set(EVENTS.REMINDER, item.getReminder())
+				.set(EVENTS.HREF, item.getHref())
+				.set(EVENTS.ETAG, item.getEtag())
+				.set(EVENTS.ACTIVITY_ID, item.getActivityId())
+				.set(EVENTS.MASTER_DATA_ID, item.getMasterDataId())
+				.set(EVENTS.STAT_MASTER_DATA_ID, item.getStatMasterDataId())
+				.set(EVENTS.CAUSAL_ID, item.getCausalId())
+				.where(
+					EVENTS.EVENT_ID.equal(item.getEventId())
+				)
+				.execute();
+		}
 	}
 	
 	public int updateCalendar(Connection con, int eventId, int calendarId, DateTime revisionTimestamp) throws DAOException {

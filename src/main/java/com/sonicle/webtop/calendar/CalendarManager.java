@@ -1394,7 +1394,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				oevt.setEndDate(endDate);
 				oevt.setTitle(title);
 				oevt.ensureCoherence();
-				evtDao.update(con, oevt, createRevisionTimestamp());
+				evtDao.update(con, oevt, createRevisionTimestamp(), oevt.getStartDate().isAfterNow());
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(oevt.getEventId()));
 				
@@ -2745,7 +2745,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 		}
 		
-		evtDao.update(con, originalEvent, revision);
+		evtDao.update(con, originalEvent, revision, originalEvent.getStartDate().isAfterNow());
 		return originalEvent;
 	}
 	

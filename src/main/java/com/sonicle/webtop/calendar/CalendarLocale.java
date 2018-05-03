@@ -68,4 +68,8 @@ public class CalendarLocale {
 	public static final String TPL_EMAIL_RESPONSEUPDATE_MSG_TENTATIVE = "tpl.email.responseUpdate.msg.tentative";
 	public static final String TPL_EMAIL_RESPONSEUPDATE_MSG_DECLINED = "tpl.email.responseUpdate.msg.declined";
 	public static final String TPL_EMAIL_RESPONSEUPDATE_MSG_OTHER = "tpl.email.responseUpdate.msg.other";
+	public static final String EMAIL_REMINDER_SUBJECT = "email.reminder.subject";
+	public static final String EMAIL_REMINDER_FOOTER_HEADER = "email.reminder.footer.header";
+	public static final String EMAIL_REMINDER_FOOTER_BECAUSE = "email.reminder.footer.because";
+	public static final String EMAIL_REMINDER_FOOTER_DISCLAIMER = "email.reminder.footer.disclaimer";
 }

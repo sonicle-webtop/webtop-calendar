@@ -2077,7 +2077,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 					if (byEmailCache.get(event.getCalendarProfileId())) {
 						UserProfile.Data ud = WT.getUserData(event.getCalendarProfileId());
-						alerts.add(createEventReminderAlertEmail(ud.getLocale(), event));
+						CoreUserSettings cus = new CoreUserSettings(event.getCalendarProfileId());
+						
+						try {
+							EventInstance eventInstance = getEventInstance(event.getKey());
+							alerts.add(createEventReminderAlertEmail(ud.getLocale(), cus.getShortDateFormat(), cus.getShortTimeFormat(), ud.getPersonalEmailAddress(), event.getCalendarProfileId(), eventInstance));
+						} catch(WTException ex1) {
+							logger.warn("Unable to create reminder alert body", ex1);
+						}	
 					} else {
 						alerts.add(createEventReminderAlertWeb(event));
 					}
@@ -2096,7 +2103,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		return alerts;
 	}
-	
+
 	private void sendInvitationForZPushEvents() {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
@@ -3427,9 +3434,22 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return alert;
 	}
 	
-	private ReminderEmail createEventReminderAlertEmail(Locale locale, SchedEventInstance event) {
-		ReminderEmail alert = new ReminderEmail(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
-		//TODO: completare email
+	private ReminderEmail createEventReminderAlertEmail(Locale locale, String dateFormat, String timeFormat, String recipientEmail, UserProfileId ownerId, EventInstance event) throws WTException {
+		ReminderEmail alert = new ReminderEmail(SERVICE_ID, ownerId, "event", event.getKey());
+		
+		String subject = TplHelper.buildEventReminderEmailSubject(locale, dateFormat, timeFormat, event);
+		alert.setSubject(subject);
+		
+		try {
+			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
+			String because = lookupResource(locale, CalendarLocale.EMAIL_REMINDER_FOOTER_BECAUSE);
+			String customBody = TplHelper.buildEventReminderBodyTpl(locale, dateFormat, timeFormat, event);
+			String body = TplHelper.buildInvitationTpl(locale, source, recipientEmail, event.getTitle(), customBody, because, null);
+			alert.setBody(body);
+			
+		} catch(IOException | TemplateException | AddressException ex) {
+			throw new WTException(ex);
+		}
 		return alert;
 	}
 	

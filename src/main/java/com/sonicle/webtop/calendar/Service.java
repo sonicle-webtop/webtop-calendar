@@ -35,7 +35,6 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.LangUtils;
-import com.sonicle.commons.MailUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateTimeUtils;
@@ -65,7 +64,6 @@ import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsPletEvents;
 import com.sonicle.webtop.calendar.bol.js.JsSharing;
-import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.EventInstance;
@@ -79,6 +77,7 @@ import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.msg.RemoteSyncResult;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
@@ -113,7 +112,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.sql.Connection;
@@ -124,6 +122,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletRequest;
@@ -740,7 +739,7 @@ public class Service extends BaseService {
 				
 			} else if(crud.equals(Crud.DELETE)) {
 				String uid = ServletUtils.getStringParameter(request, "id", true);
-				String target = ServletUtils.getStringParameter(request, "target", "this");
+				UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
 				
 				manager.deleteEventInstance(target, uid);
 				new JsonResult().printTo(out);
@@ -786,7 +785,7 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
-				String target = ServletUtils.getStringParameter(request, "target", "this");
+				UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
 				EventInstance evt = JsEvent.buildEventInstance(pl.data);
@@ -1100,6 +1099,41 @@ public class Service extends BaseService {
 		}
 	}
 	
+	private com.sonicle.webtop.core.util.RRuleStringify.Strings getRRuleStringifyStrings(Locale locale) {
+		com.sonicle.webtop.core.util.RRuleStringify.Strings strings = new com.sonicle.webtop.core.util.RRuleStringify.Strings(locale);
+		strings.freqSecondly = WT.lookupCoreResource(locale, "rr.stringify.freq.secondly");
+		strings.freqHourly = WT.lookupCoreResource(locale, "rr.stringify.freq.hourly");
+		strings.freqDaily = WT.lookupCoreResource(locale, "rr.stringify.freq.daily");
+		strings.freqWeekly = WT.lookupCoreResource(locale, "rr.stringify.freq.weekly");
+		strings.freqMonthly = WT.lookupCoreResource(locale, "rr.stringify.freq.monthly");
+		strings.freqYearly = WT.lookupCoreResource(locale, "rr.stringify.freq.yearly");
+		strings.onEvery = WT.lookupCoreResource(locale, "rr.stringify.onEvery");
+		strings.day = WT.lookupCoreResource(locale, "rr.stringify.day");
+		strings.days = WT.lookupCoreResource(locale, "rr.stringify.days");
+		strings.weekday = WT.lookupCoreResource(locale, "rr.stringify.weekday");
+		strings.weekdays = WT.lookupCoreResource(locale, "rr.stringify.weekdays");
+		strings.week = WT.lookupCoreResource(locale, "rr.stringify.week");
+		strings.weeks = WT.lookupCoreResource(locale, "rr.stringify.weeks");
+		strings.month = WT.lookupCoreResource(locale, "rr.stringify.month");
+		strings.months = WT.lookupCoreResource(locale, "rr.stringify.months");
+		strings.year = WT.lookupCoreResource(locale, "rr.stringify.year");
+		strings.years = WT.lookupCoreResource(locale, "rr.stringify.years");
+		strings.and = WT.lookupCoreResource(locale, "rr.stringify.and");
+		strings.on = WT.lookupCoreResource(locale, "rr.stringify.on");
+		strings.of = WT.lookupCoreResource(locale, "rr.stringify.of");
+		strings.onthe = WT.lookupCoreResource(locale, "rr.stringify.onthe");
+		strings.time = WT.lookupCoreResource(locale, "rr.stringify.time");
+		strings.times = WT.lookupCoreResource(locale, "rr.stringify.times");
+		strings.endsBy = WT.lookupCoreResource(locale, "rr.stringify.endsBy");
+		strings.nth1st = WT.lookupCoreResource(locale, "rr.stringify.nth.1st");
+		strings.nth2nd = WT.lookupCoreResource(locale, "rr.stringify.nth.2nd");
+		strings.nth3rd = WT.lookupCoreResource(locale, "rr.stringify.nth.3rd");
+		strings.nth4th = WT.lookupCoreResource(locale, "rr.stringify.nth.4th");
+		strings.nthLast2nd = WT.lookupCoreResource(locale, "rr.stringify.nth.last2nd");
+		strings.nthLast = WT.lookupCoreResource(locale, "rr.stringify.nth.last");
+		return strings;
+	}
+	
 	public void processPrintEventsDetail(HttpServletRequest request, HttpServletResponse response) {
 		ArrayList<RBEventDetail> items = new ArrayList<>();
 		ByteArrayOutputStream baos = null;
@@ -1109,10 +1143,9 @@ public class Service extends BaseService {
 		try {
 			String filename = ServletUtils.getStringParameter(request, "filename", "print");
 			StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
-			RRuleStringify rrs = new RRuleStringify();
-			rrs.setTimeZone(up.getTimeZone());
-			//rrs.setDateFormat();
-			//rrs.setTimeFormat();
+			
+			com.sonicle.webtop.core.util.RRuleStringify.Strings strings = getRRuleStringifyStrings(up.getLocale());
+			com.sonicle.webtop.core.util.RRuleStringify rrs = new com.sonicle.webtop.core.util.RRuleStringify(strings, up.getTimeZone());
 			
 			EventInstance event = null;
 			Calendar calendar = null;

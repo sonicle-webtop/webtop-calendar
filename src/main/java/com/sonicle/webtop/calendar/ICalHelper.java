@@ -194,7 +194,7 @@ public class ICalHelper {
 	}
 	
 	public static RRule exportEventRecurrence(Event event) throws ParseException {
-		return new RRule(event.getRecurrence().getRRule());
+		return new RRule(event.getRecurrenceRule());
 	}
 	
 	public static Attendee exportEventAttendee(boolean method, EventAttendee attendee) throws Exception {

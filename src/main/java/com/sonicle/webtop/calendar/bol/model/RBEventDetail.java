@@ -34,7 +34,6 @@ package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.model.EventAttendee;
-import com.sonicle.webtop.calendar.RRuleStringify;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.model.Activity;
@@ -42,8 +41,8 @@ import com.sonicle.webtop.core.model.Causal;
 import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.JRHelper;
+import com.sonicle.webtop.core.util.RRuleStringify;
 import java.awt.Image;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -98,12 +97,14 @@ public class RBEventDetail {
 		this.location = event.getLocation();
 		this.recurrenceType = null;
 		this.recurrenceDescription = null;
-		if(event.getRecurrence() != null) {
-			this.recurrenceType = event.getRecurrence().getType();
+		
+		if (event.hasRecurrence()) {
 			try {
-				this.recurrenceDescription = rrStringify.toHumanReadableText(event.getRecurrence().getRRule());
-			} catch(ParseException ex) {}
+				this.recurrenceType = rrStringify.toHumanReadableFrequency(event.getRecurrenceRule());
+				this.recurrenceDescription = rrStringify.toHumanReadableText(event.getRecurrenceRule());
+			} catch(Throwable t) {}
 		}
+		
 		this.isPrivate = event.getIsPrivate();
 		this.isBusy = event.getBusy();
 		this.reminder = event.getReminder();

@@ -90,6 +90,16 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 			.execute();
 	}
 	
+	public int deleteByRecurrence(Connection con, int recurrenceId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(RECURRENCES_BROKEN)
+			.where(
+				RECURRENCES_BROKEN.RECURRENCE_ID.equal(recurrenceId)
+			)
+			.execute();
+	}
+	
 	public int deleteByEvent(Connection con, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl

@@ -55,6 +55,28 @@ public class ORecurrence extends Recurrences {
 		super();
 	}
 	
+	public void set(DateTime untilDate) {
+		Recur recur = getRecur();
+		ICal4jUtils.setRecurUntilDate(recur, untilDate);
+		setRule(recur.toString());
+		setUntilDate(untilDate);
+	}
+	
+	public void set(Recur recur, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone eventTz) {
+		if (recur.getCount() > 0) {
+			setUntilDate(ICal4jUtils.calculateRecurEnd(recur, eventStartDate, eventEndDate, eventTz));
+		} else if (recur.getUntil() != null) {
+			setUntilDate(ICal4jUtils.fromICal4jDate(recur.getUntil(), eventTz));
+		} else {
+			setUntilDate(ICal4jUtils.ifiniteDate(eventTz));
+		}
+		setRule(recur.toString());
+	}
+	
+	public Recur getRecur() {
+		return ICal4jUtils.parseRRule(getRule());
+	}
+	
 	public void fillFrom(EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
 		fillFrom(false, rec, eventStartDate, eventEndDate, eventTimeZone);
 	}

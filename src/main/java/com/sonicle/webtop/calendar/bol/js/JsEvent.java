@@ -35,7 +35,6 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
-import com.sonicle.webtop.calendar.model.EventRecurrence;
 import java.util.ArrayList;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -45,10 +44,6 @@ import org.joda.time.format.DateTimeFormatter;
  * @author malbinola
  */
 public class JsEvent {
-	public static final String REC_TYPE_NONE = "_";
-	public static final String REC_DAILY_TYPE_DAY = "1";
-	public static final String REC_DAILY_TYPE_FERIALI = "2";
-	
 	public String id;
 	
 	public Integer eventId;
@@ -68,26 +63,7 @@ public class JsEvent {
 	public String masterDataId;
 	public String statMasterDataId;
 	public Integer causalId;
-	
-	public String rrEndsMode;
-	public Integer rrRepeatTimes;
-	public String rrUntilDate;
-	public String rrType;
-	public String rrDailyType;
-	public Integer rrDailyFreq;
-	public Integer rrWeeklyFreq;
-	public Boolean rrWeeklyDay1;
-	public Boolean rrWeeklyDay2;
-	public Boolean rrWeeklyDay3;
-	public Boolean rrWeeklyDay4;
-	public Boolean rrWeeklyDay5;
-	public Boolean rrWeeklyDay6;
-	public Boolean rrWeeklyDay7;
-	public Integer rrMonthlyFreq;
-	public Integer rrMonthlyDay;
-	public Integer rrYearlyFreq;
-	public Integer rrYearlyDay;
-	
+	public String rrule;
 	public ArrayList<JsAttendee> attendees;
 	
 	// Read-only fields
@@ -118,42 +94,7 @@ public class JsEvent {
 		statMasterDataId = event.getStatMasterDataId();
 		causalId = event.getCausalId();
 		
-		EventRecurrence rec = event.getRecurrence();
-		if(rec == null) {
-			rrType = REC_TYPE_NONE;
-			rrDailyType = REC_DAILY_TYPE_DAY;
-			rrEndsMode = EventRecurrence.ENDS_MODE_NEVER;
-		} else {
-			if(rec.getType().equals(EventRecurrence.TYPE_DAILY)) {
-				rrType = EventRecurrence.TYPE_DAILY;
-				rrDailyType = REC_DAILY_TYPE_DAY;
-				rrDailyFreq = rec.getDailyFreq();
-			} else if (rec.getType().equals(EventRecurrence.TYPE_DAILY_FERIALI)) {
-				rrType = EventRecurrence.TYPE_DAILY;
-				rrDailyType = REC_DAILY_TYPE_FERIALI;
-				rrDailyFreq = 1; // default value
-			} else {
-				rrType = rec.getType();
-				rrDailyType = REC_DAILY_TYPE_DAY;
-				rrDailyFreq = rec.getDailyFreq();
-			}
-			rrWeeklyFreq = rec.getWeeklyFreq();
-			rrWeeklyDay1 = rec.getWeeklyDay1();
-			rrWeeklyDay2 = rec.getWeeklyDay2();
-			rrWeeklyDay3 = rec.getWeeklyDay3();
-			rrWeeklyDay4 = rec.getWeeklyDay4();
-			rrWeeklyDay5 = rec.getWeeklyDay5();
-			rrWeeklyDay6 = rec.getWeeklyDay6();
-			rrWeeklyDay7 = rec.getWeeklyDay7();
-			rrMonthlyFreq = rec.getMonthlyFreq();
-			rrMonthlyDay = rec.getMonthlyDay();
-			rrYearlyFreq = rec.getYearlyFreq();
-			rrYearlyDay = rec.getYearlyDay();
-			rrEndsMode = rec.getEndsMode();
-			rrRepeatTimes = rec.getRepeatTimes();
-			rrUntilDate = ymdhmsZoneFmt.print(rec.getUntilDate());
-		}
-		
+		rrule = event.getRecurrenceRule();
 		attendees = new ArrayList<>();
 		JsAttendee attendee = null;
 		for(EventAttendee att : event.getAttendees()) {
@@ -200,39 +141,7 @@ public class JsEvent {
 		event.setStatMasterDataId(jse.statMasterDataId);
 		event.setCausalId(jse.causalId);
 		
-		if (!jse.rrType.equals(REC_TYPE_NONE)) {
-			EventRecurrence rec = new EventRecurrence();
-			
-			if (jse.rrType.equals(EventRecurrence.TYPE_DAILY)) {
-				if (jse.rrDailyType.equals(REC_DAILY_TYPE_DAY)) {
-					rec.setType(EventRecurrence.TYPE_DAILY);
-					rec.setDailyFreq(jse.rrDailyFreq);
-				} else {
-					rec.setType(EventRecurrence.TYPE_DAILY_FERIALI);
-					rec.setDailyFreq(null);
-				}
-			} else {
-				rec.setType(jse.rrType);
-				rec.setDailyFreq(jse.rrDailyFreq);
-			}
-			rec.setWeeklyFreq(jse.rrWeeklyFreq);
-			rec.setWeeklyDay1(jse.rrWeeklyDay1);
-			rec.setWeeklyDay2(jse.rrWeeklyDay2);
-			rec.setWeeklyDay3(jse.rrWeeklyDay3);
-			rec.setWeeklyDay4(jse.rrWeeklyDay4);
-			rec.setWeeklyDay5(jse.rrWeeklyDay5);
-			rec.setWeeklyDay6(jse.rrWeeklyDay6);
-			rec.setWeeklyDay7(jse.rrWeeklyDay7);
-			rec.setMonthlyFreq(jse.rrMonthlyFreq);
-			rec.setMonthlyDay(jse.rrMonthlyDay);
-			rec.setYearlyFreq(jse.rrYearlyFreq);
-			rec.setYearlyDay(jse.rrYearlyDay);
-			rec.setEndsMode(jse.rrEndsMode);
-			rec.setRepeatTimes(jse.rrRepeatTimes);
-			rec.setUntilDate((jse.rrUntilDate != null) ? DateTimeUtils.parseYmdHmsWithZone(jse.rrUntilDate, eventTz) : null);
-			event.setRecurrence(rec);
-		}
-		
+		event.setRecurrenceRule(jse.rrule);
 		EventAttendee attendee = null;
 		for(JsAttendee jsa : jse.attendees) {
 			attendee = new EventAttendee();

@@ -37,6 +37,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.field.Palette',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.ColorComboBox',
+		'Sonicle.form.field.rr.Recurrence',
 		'WTA.ux.data.EmptyModel',
 		'WTA.ux.data.ValueModel',
 		'WTA.ux.field.RecipientSuggestCombo',
@@ -44,12 +45,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'WTA.model.ActivityLkp',
 		'WTA.model.CausalLkp',
 		'WTA.store.Timezone',
-		'WTA.store.RRDailyFreq',
-		'WTA.store.RRWeeklyFreq',
-		'WTA.store.RRMonthlyDay',
-		'WTA.store.RRMonthlyFreq',
-		'WTA.store.RRYearlyDay',
-		'WTA.store.RRYearlyFreq',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.CalendarLkp',
 		'Sonicle.webtop.calendar.store.Reminder',
@@ -115,22 +110,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			allDay: WTF.checkboxBind('record', 'allDay'),
 			isPrivate: WTF.checkboxBind('record', 'isPrivate'),
 			busy: WTF.checkboxBind('record', 'busy'),
-			rrType: WTF.checkboxGroupBind('record', 'rrType'),
-			rrDailyType: WTF.checkboxGroupBind('record', 'rrDailyType'),
-			rrWeeklyDay1: WTF.checkboxBind('record', 'rrWeeklyDay1'),
-			rrWeeklyDay2: WTF.checkboxBind('record', 'rrWeeklyDay2'),
-			rrWeeklyDay3: WTF.checkboxBind('record', 'rrWeeklyDay3'),
-			rrWeeklyDay4: WTF.checkboxBind('record', 'rrWeeklyDay4'),
-			rrWeeklyDay5: WTF.checkboxBind('record', 'rrWeeklyDay5'),
-			rrWeeklyDay6: WTF.checkboxBind('record', 'rrWeeklyDay6'),
-			rrWeeklyDay7: WTF.checkboxBind('record', 'rrWeeklyDay7'),
-			rrEndsMode: WTF.checkboxGroupBind('record', 'rrEndsMode'),
-			
-			isRRNone: WTF.foIsEqual('record', 'rrType', '_'),
-			isRRDayly: WTF.foIsEqual('record', 'rrType', 'D'),
-			isRRWeekly: WTF.foIsEqual('record', 'rrType', 'W'),
-			isRRMonthly: WTF.foIsEqual('record', 'rrType', 'M'),
-			isRRYearly: WTF.foIsEqual('record', 'rrType', 'Y'),
+			foHasRecurrence: WTF.foIsEmpty('record', 'rrule'),
 			foIsRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring')
 		});
 	},
@@ -787,314 +767,64 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}
 			]
 		});
-		recurrence = Ext.create({
-			xtype: 'wtpanel',
+		
+		recurrence = {
+			xtype: 'wtform',
 			reference: 'tabrecurrence',
 			itemId: 'recurrence',
 			title: me.mys.res('event.recurrence.tit'),
-			layout: 'vbox',
+			modelValidation: true,
+			defaults: {
+				labelWidth: 110
+			},
 			items: [{
-				xtype: 'container',
-				layout: 'hbox',
-				items: [{
-					xtype: 'wtform',
-					modelValidation: true,
-					layout: 'anchor',
-					items: [{
-						xtype: 'radiogroup',
-						bind: {
-							value: '{rrType}'
-						},
-						layout: 'vbox',
-						defaults: {
-							name: 'rrType',
-							margin: '0 0 15 0'
-						},
-						items: [{
-							bind: {
-								disabled: '{foIsRecurring}'
-							},
-							inputValue: '_',
-							boxLabel: WT.res('rr.type.none')
-						}, {
-							inputValue: 'D',
-							boxLabel: WT.res('rr.type.daily')
-						}, {
-							inputValue: 'W',
-							boxLabel: WT.res('rr.type.weekly')
-						}, {
-							inputValue: 'M',
-							boxLabel: WT.res('rr.type.monthly')
-						}, {
-							inputValue: 'Y',
-							boxLabel: WT.res('rr.type.yearly')
-						}]
-					}],
-					width: 120
-				}, {
-					xtype: 'wtform',
-					layout: 'anchor',
-					modelValidation: true,
-					items: [{
-						xtype: 'displayfield' // none row
-					}, {
-						xtype: 'formseparator'
-					}, {
-						xtype: 'fieldcontainer', // dayly row
-						bind: {
-							disabled: '{!isRRDayly}'
-						},
-						layout: 'hbox',
-						defaults: {
-							margin: '0 10 0 0'
-						},
-						items: [{
-							xtype: 'radiogroup',
-							bind: {
-								value: '{rrDailyType}'
-							},
-							columns: [80, 60, 80, 150],
-							items: [{
-								name: 'rrDailyType',
-								inputValue: '1',
-								boxLabel: WT.res('rr.type.daily.type.1')
-							}, {
-								xtype: 'combo',
-								bind: '{record.rrDailyFreq}',
-								typeAhead: true,
-								queryMode: 'local',
-								forceSelection: true,
-								store: Ext.create('WTA.store.RRDailyFreq'),
-								valueField: 'id',
-								displayField: 'id',
-								width: 60,
-								margin: '0 5 0 0',
-								listeners: {
-									change: function() {
-										// It seems that the handler method and the change event
-										// will fire without any user interaction (eg. binding);
-										// so we need to deactivate the code below durin loading.
-										if (me.modelLoading) return;
-										if (me.suspendEventsInRR) return;
-										me.getModel().set('rrDailyType', '1');
-									}
-								}
-							}, {
-								xtype: 'label',
-								text: WT.res('rr.type.daily.freq')
-							}, {
-								name: 'rrDailyType',
-								inputValue: '2',
-								boxLabel: WT.res('rr.type.daily.type.2')
-							}]
-						}]
-					}, {
-						xtype: 'formseparator'
-					}, {
-						xtype: 'fieldcontainer', // weekly row
-						bind: {
-							disabled: '{!isRRWeekly}'
-						},
-						layout: 'hbox',
-						defaults: {
-							margin: '0 10 0 0'
-						},
-						items: [{
-							xtype: 'label',
-							text: WT.res('rr.type.weekly.msg1'),
-							width: 75
-						}, {
-							xtype: 'combo',
-							bind: '{record.rrWeeklyFreq}',
-							typeAhead: true,
-							queryMode: 'local',
-							forceSelection: true,
-							store: Ext.create('WTA.store.RRWeeklyFreq'),
-							valueField: 'id',
-							displayField: 'id',
-							width: 60
-						}, {
-							xtype: 'label',
-							text: WT.res('rr.type.weekly.freq')
-						}, {
-							xtype: 'label',
-							text: WT.res('rr.type.weekly.msg2')
-						}, {
-							xtype: 'checkboxgroup',
-							items: [{
-								bind: '{rrWeeklyDay1}',
-								boxLabel: Sonicle.Date.getShortestDayName(1)
-							}, {
-								bind: '{rrWeeklyDay2}',
-								boxLabel: Sonicle.Date.getShortestDayName(2)
-							}, {
-								bind: '{rrWeeklyDay3}',
-								boxLabel: Sonicle.Date.getShortestDayName(3)
-							}, {
-								bind: '{rrWeeklyDay4}',
-								boxLabel: Sonicle.Date.getShortestDayName(4)
-							}, {
-								bind: '{rrWeeklyDay5}',
-								boxLabel: Sonicle.Date.getShortestDayName(5)
-							}, {
-								bind: '{rrWeeklyDay6}',
-								boxLabel: Sonicle.Date.getShortestDayName(6)
-							}, {
-								bind: '{rrWeeklyDay7}',
-								boxLabel: Sonicle.Date.getShortestDayName(0)
-							}],
-							width: 270
-						}]
-					}, {
-						xtype: 'formseparator'
-					}, {
-						xtype: 'fieldcontainer', // monthly row
-						bind: {
-							disabled: '{!isRRMonthly}'
-						},
-						layout: 'hbox',
-						defaults: {
-							margin: '0 10 0 0'
-						},
-						items: [{
-							xtype: 'label',
-							text: WT.res('rr.type.monthly.msg1'),
-							width: 75
-						}, {
-							xtype: 'combo',
-							bind: '{record.rrMonthlyDay}',
-							typeAhead: true,
-							queryMode: 'local',
-							forceSelection: true,
-							store: Ext.create('WTA.store.RRMonthlyDay'),
-							valueField: 'id',
-							displayField: 'desc',
-							width: 60
-						}, {
-							xtype: 'label',
-							text: WT.res('rr.type.monthly.msg2')
-						}, {
-							xtype: 'combo',
-							bind: '{record.rrMonthlyFreq}',
-							typeAhead: true,
-							queryMode: 'local',
-							forceSelection: true,
-							store: Ext.create('WTA.store.RRMonthlyFreq'),
-							valueField: 'id',
-							displayField: 'id',
-							width: 60
-						}, {
-							xtype: 'label',
-							text: WT.res('rr.type.monthly.freq')
-						}]
-					}, {
-						xtype: 'formseparator'
-					}, {
-						xtype: 'fieldcontainer', // yearly row
-						bind: {
-							disabled: '{!isRRYearly}'
-						},
-						layout: 'hbox',
-						defaults: {
-							margin: '0 10 0 0'
-						},
-						items: [{
-							xtype: 'label',
-							text: WT.res('rr.type.yearly.msg1'),
-							width: 75
-						}, {
-							xtype: 'combo',
-							bind: '{record.rrYearlyDay}',
-							typeAhead: true,
-							queryMode: 'local',
-							forceSelection: true,
-							store: Ext.create('WTA.store.RRYearlyDay'),
-							valueField: 'id',
-							displayField: 'id',
-							width: 60
-						}, {
-							xtype: 'label',
-							text: WT.res('rr.type.yearly.msg2')
-						}, {
-							xtype: 'combo',
-							bind: '{record.rrYearlyFreq}',
-							typeAhead: true,
-							queryMode: 'local',
-							forceSelection: true,
-							store: Ext.create('WTA.store.RRYearlyFreq'),
-							valueField: 'id',
-							displayField: 'desc',
-							width: 120
-						}]
-					}],
-					flex: 1
-				}],
-				flex: 1
+				xtype: 'sorrfield',
+				bind: {
+					value: '{record.rrule}',
+					startDate: '{startDate}'
+				},
+				startDay: WT.getStartDay(),
+				dateFormat: WT.getShortDateFmt(),
+				repeatsText: WT.res('sorrfield.repeats'),
+				endsText: WT.res('sorrfield.ends'),
+				frequencyTexts: {
+					'-1': WT.res('sorrfield.freq.none'),
+					'3': WT.res('sorrfield.freq.daily'),
+					'2': WT.res('sorrfield.freq.weekly'),
+					'1': WT.res('sorrfield.freq.monthly'),
+					'0': WT.res('sorrfield.freq.yearly')
+				},
+				onEveryText: WT.res('sorrfield.onEvery'),
+				onEveryWeekdayText: WT.res('sorrfield.onEveryWeekday'),
+				onDayText: WT.res('sorrfield.onDay'),
+				onTheText: WT.res('sorrfield.onThe'),
+				thDayText: WT.res('sorrfield.thDay'),
+				ofText: WT.res('sorrfield.of'),
+				ofEveryText: WT.res('sorrfield.ofEvery'),
+				dayText: WT.res('sorrfield.day'),
+				weekText: WT.res('sorrfield.week'),
+				monthText: WT.res('sorrfield.month'),
+				yearText: WT.res('sorrfield.year'),
+				ordinalsTexts: {
+					'1': WT.res('sorrfield.nth.1st'),
+					'2': WT.res('sorrfield.nth.2nd'),
+					'3': WT.res('sorrfield.nth.3rd'),
+					'4': WT.res('sorrfield.nth.4th'),
+					'-2': WT.res('sorrfield.nth.las2nd'),
+					'-1': WT.res('sorrfield.nth.last')
+				},
+				endsNeverText: WT.res('sorrfield.endsNever'),
+				endsAfterText: WT.res('sorrfield.endsAfter'),
+				endsByText: WT.res('sorrfield.endsBy'),
+				occurrenceText: WT.res('sorrfield.occurrence'),
+				showRawValue: true
 			}, {
-				xtype: 'wtform',
-				modelValidation: true,
-				layout: 'anchor',
-				items: [{
-					xtype: 'radiogroup',
-					bind: {
-						value: '{rrEndsMode}',
-						disabled: '{isRRNone}'
-					},
-					columns: [70, 70, 50, 90, 50, 105],
-					items: [{
-						name: 'rrEndsMode',
-						inputValue: 'never',
-						boxLabel: WT.res('rr.end.never')
-					}, {
-						name: 'rrEndsMode',
-						inputValue: 'repeat',
-						boxLabel: WT.res('rr.end.repeat')
-					}, {
-						xtype: 'numberfield',
-						bind: '{record.rrRepeatTimes}',
-						minValue: 1,
-						maxValue: 10,
-						width: 50,
-						margin: '0 5 0 0',
-						listeners: {
-							change: function() {
-								// It seems that the handler method and the change event
-								// will fire without any user interaction (eg. binding);
-								// so we need to deactivate the code below durin loading.
-								if (me.modelLoading) return;
-								if (me.suspendEventsInRR) return;
-								me.getModel().set('rrEndsMode', 'repeat');
-							}
-						}
-					}, {
-						xtype: 'label',
-						text: WT.res('rr.end.repeat.times')
-					}, {
-						name: 'rrEndsMode',
-						inputValue: 'until',
-						boxLabel: WT.res('rr.end.until')
-					}, {
-						xtype: 'datefield',
-						bind: '{record.rrUntilDate}',
-						startDay: WT.getStartDay(),
-						format: WT.getShortDateFmt(),
-						width: 105,
-						listeners: {
-							select: function() {
-								// It seems that the handler method and the change event
-								// will fire without any user interaction (eg. binding);
-								// so we need to deactivate the code below durin loading.
-								//if (me.modelLoading) return;
-								//if (me.suspendEventsInRR) return;
-								me.getModel().set('rrEndsMode', 'until');
-							}
-						}
-					}],
-					fieldLabel: WT.res('rr.end')
-				}],
-				height: 40
+				xtype: 'textfield',
+				bind: '{record.rrule}',
+				fieldLabel: 'rrule',
+				anchor: '100%'
 			}]
-		});
+		};
 		
 		me.add({
 			region: 'center',
@@ -1119,18 +849,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			]
 		});
 		
-		//me.updateCalendarFilters();
-		//me.updateActivityParams(false);
-		//me.updateStatisticParams(false);
-		//me.updateCausalParams(false);
-		
 		me.on('viewload', me.onViewLoad);
 		vm.bind('{record.startDate}', me.onDatesChanged, me);
 		vm.bind('{record.endDate}', me.onDatesChanged, me);
 		vm.bind('{record.timezone}', me.onDatesChanged, me);
-		vm.bind('{record.masterDataId}', me.onMasterDataChanged, me);
-		vm.bind('{record.rrType}', me.onRrTypeChanged, me);
-		vm.bind('{record.rrEndsMode}', me.onRrEndsModeChanged, me);
 		vm.bind('{record.masterDataId}', me.onMasterDataChanged, me);
 	},
 	
@@ -1145,28 +867,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		//if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
 		me.updateCalendarFilters();
 		
-		/*
-		me.suspendEventsInRR = true;
-		mo.setIfNull('rrDailyFreq', 1);
-		mo.setIfNull('rrWeeklyFreq', 1);
-		mo.setIfNull('rrWeeklyDay1', false);
-		mo.setIfNull('rrWeeklyDay2', false);
-		mo.setIfNull('rrWeeklyDay3', false);
-		mo.setIfNull('rrWeeklyDay4', false);
-		mo.setIfNull('rrWeeklyDay5', false);
-		mo.setIfNull('rrWeeklyDay6', false);
-		mo.setIfNull('rrWeeklyDay7', false);
-		mo.setIfNull('rrMonthlyFreq', 1);
-		mo.setIfNull('rrMonthlyDay', 1);
-		mo.setIfNull('rrYearlyFreq', 1);
-		mo.setIfNull('rrYearlyDay', 1);
-		mo.setIfNull('rrRepeatTimes', 1);
-		mo.setIfNull('rrUntilDate', Ext.Date.clone(mo.get('startDate')));
-		Ext.defer(function(){
-			me.suspendEventsInRR = false;
-		}, 100);
-		*/
-		
 		if(me.isMode(me.MODE_NEW)) {
 			owner.setDisabled(false);
 			me.getAct('delete').setDisabled(true);
@@ -1180,61 +880,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			me.getAct('restore').setDisabled(!mo.isBroken());
 			owner.setDisabled(true);
 			me.lref('tabinvitation').setDisabled(mo.isRecurring());
-			me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || !mo.isRecurring());
+			me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || mo.isBroken());
 		}
 		
 		me.lref('fldtitle').focus(true);
-	},
-	
-	onRrTypeChanged: function(v) {
-		var me = this,
-				mo = me.getModel();	
-		if (!me.modelLoading) {
-			me.suspendEventsInRR = true;
-			if (mo.get('rrType') !== '_') {
-				mo.setIfNull('rrRepeatTimes', 1);
-				mo.setIfNull('rrUntilDate', Ext.Date.clone(mo.get('startDate')));
-			}
-			switch(mo.get('rrType')) {
-				case 'D':
-					mo.setIfNull('rrDailyFreq', 1);
-					break;
-				case 'W':
-					mo.setIfNull('rrWeeklyFreq', 1);
-					mo.setIfNull('rrWeeklyDay1', false);
-					mo.setIfNull('rrWeeklyDay2', false);
-					mo.setIfNull('rrWeeklyDay3', false);
-					mo.setIfNull('rrWeeklyDay4', false);
-					mo.setIfNull('rrWeeklyDay5', false);
-					mo.setIfNull('rrWeeklyDay6', false);
-					mo.setIfNull('rrWeeklyDay7', false);
-					break;
-				case 'M':
-					mo.setIfNull('rrMonthlyFreq', 1);
-					mo.setIfNull('rrMonthlyDay', 1);
-					break;
-				case 'Y':
-					mo.setIfNull('rrYearlyFreq', 1);
-					mo.setIfNull('rrYearlyDay', 1);
-					break;
-			}
-			Ext.defer(function(){
-				me.suspendEventsInRR = false;
-			}, 100);
-		}
-	},
-	
-	onRrEndsModeChanged: function(v) {
-		var me = this,
-				mo = me.getModel();
-		if (!me.modelLoading) {
-			me.suspendEventsInRR = true;
-			mo.setIfNull('rrRepeatTimes', 1);
-			mo.setIfNull('rrUntilDate', Ext.Date.clone(mo.get('startDate')));
-			Ext.defer(function(){
-				me.suspendEventsInRR = false;
-			}, 100);
-		}
 	},
 	
 	refreshActivities: function() {
@@ -1305,22 +954,18 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	saveEvent: function() {
 		var me = this,
-				rec = me.getModel();
+				mo = me.getModel();
 		
-		if(rec.isRecurring()) {
+		if(mo.isRecurring()) {
 			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid) {
-				if(bid === 'ok') {
-					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']),
-						proxy = rec.getProxy();
-					
-					// Inject target param into proxy...
-					proxy.setExtraParams(Ext.apply(proxy.getExtraParams(), {
-						target: target
-					}));
+				if (bid === 'ok') {
+					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
+					mo.setExtraParams({target: target});
 					me.saveView(true);
 				}
 			}, me);
 		} else {
+			mo.setExtraParams({target: 'this'});
 			me.saveView(true);
 		}
 	},

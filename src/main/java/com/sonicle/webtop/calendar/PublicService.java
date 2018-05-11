@@ -111,7 +111,7 @@ public class PublicService extends BasePublicService {
 							event = adminCalMgr.updateEventFromSite(eventUrlPath.getPublicUid(), aid, responseStatus);
 							
 						} else {
-							event = adminCalMgr.getEvent(GetEventScope.ALL, true, eventUrlPath.getPublicUid());
+							event = adminCalMgr.getEventFromSite(eventUrlPath.getPublicUid());
 						}
 					}
 					

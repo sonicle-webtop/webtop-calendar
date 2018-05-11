@@ -34,7 +34,6 @@ package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.model.EventKey;
 import com.rits.cloning.Cloner;
-import com.sonicle.webtop.calendar.bol.VVEvent;
 import org.joda.time.DateTimeZone;
 
 /**
@@ -42,14 +41,14 @@ import org.joda.time.DateTimeZone;
  * @author malbinola
  */
 public class VVEventInstance extends VVEvent {
-	private String key;
+	protected String key;
 	
 	public VVEventInstance() {
 		super();
 	}
 	
 	public VVEventInstance(VVEvent event) {
-		this(EventKey.buildKey(event.getEventId(), event.getOriginalEventId()), event);
+		this(EventKey.buildKey(event.getEventId(), event.getSeriesEventId()), event);
 	}
 	
 	public VVEventInstance(String key, VVEvent event) {

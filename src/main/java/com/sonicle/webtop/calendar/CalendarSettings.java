@@ -39,7 +39,14 @@ package com.sonicle.webtop.calendar;
 public class CalendarSettings {
 	
 	/**
-	 * [system+domain][default-only]
+	 * [system+domain][default]
+	 * [boolean]
+	 * Enable/Disable calendar deletions through DAV rest-api interface.
+	 */
+	public static final String DAV_CALENDAR_DELETE_ENABLED = "dav.calendar.delete.enabled";
+	
+	/**
+	 * [][default]
 	 * [enum]
 	 * The default value of the sync field for new calendars.
 	 */

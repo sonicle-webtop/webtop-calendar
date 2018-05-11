@@ -71,6 +71,7 @@ CREATE TABLE "calendar"."events" (
 "revision_status" varchar(1) NOT NULL,
 "revision_timestamp" timestamptz(6) NOT NULL,
 "revision_sequence" int4 DEFAULT 0 NOT NULL,
+"creation_timestamp" timestamptz DEFAULT now() NOT NULL,
 "public_uid" varchar(255) NOT NULL,
 "recurrence_id" int4,
 "read_only" bool NOT NULL,
@@ -116,6 +117,17 @@ WITH (OIDS=FALSE)
 ;
 
 -- ----------------------------
+-- Table structure for events_icalendars
+-- ----------------------------
+CREATE TABLE "calendar"."events_icalendars" (
+"event_id" int4 NOT NULL,
+"raw_data" text
+)
+WITH (OIDS=FALSE)
+
+;
+
+-- ----------------------------
 -- Table structure for recurrences
 -- ----------------------------
 DROP TABLE IF EXISTS "calendar"."recurrences";
@@ -125,7 +137,7 @@ CREATE TABLE "calendar"."recurrences" (
 "until_date" timestamptz(6) NOT NULL,
 "repeat" int4,
 "permanent" bool,
-"type" varchar(1) NOT NULL,
+"type" varchar(1),
 "daily_freq" int4,
 "weekly_freq" int4,
 "weekly_day_1" bool,
@@ -190,6 +202,7 @@ ALTER TABLE "calendar"."calendar_props" ADD PRIMARY KEY ("domain_id", "user_id",
 CREATE INDEX "events_ak1" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "recurrence_id", "start_date", "end_date");
 CREATE INDEX "events_ak3" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "recurrence_id", "title");
 CREATE INDEX "events_ak2" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "start_date", "end_date", "reminder", "reminded_on");
+CREATE INDEX "events_ak4" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "href");
 CREATE INDEX "events_ak99" ON "calendar"."events" USING btree ("handle_invitation");
 
 -- ----------------------------
@@ -201,6 +214,11 @@ ALTER TABLE "calendar"."events" ADD PRIMARY KEY ("event_id");
 -- Indexes structure for table events_attendees
 -- ----------------------------
 CREATE INDEX "events_attendee_ak1" ON "calendar"."events_attendees" USING btree ("event_id", "notify");
+
+-- ----------------------------
+-- Primary Key structure for table events_icalendars
+-- ----------------------------
+ALTER TABLE "calendar"."events_icalendars" ADD PRIMARY KEY ("event_id");
 
 -- ----------------------------
 -- Primary Key structure for table events_attendees

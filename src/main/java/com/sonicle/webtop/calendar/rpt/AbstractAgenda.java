@@ -34,13 +34,9 @@ package com.sonicle.webtop.calendar.rpt;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
-import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
-import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
-import com.sonicle.webtop.calendar.model.FolderEvents;
-import com.sonicle.webtop.calendar.IEvent;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
@@ -117,20 +113,20 @@ public abstract class AbstractAgenda extends AbstractReport {
 		for(SchedEventInstance sei : events) {
 			for(int i=0; i<days; i++) {
 				dayDateFrom = fromDate.plusDays(i);
-				if(isInDay(utz, dayDateFrom, sei)) {
+				if(isInDay(utz, dayDateFrom, sei.getStartDate(), sei.getEndDate())) {
 					Calendar calendar = calendars.get(sei.getCalendarId());
 					boolean spanning = true;
 					Integer spanLeft = null, spanRight  = null;
-					if(!sei.getAllDay() && startsInDay(utz, dayDateFrom, sei) && endsInDay(utz, dayDateFrom, sei)) {
+					if(!sei.getAllDay() && startsInDay(utz, dayDateFrom, sei.getStartDate()) && endsInDay(utz, dayDateFrom, sei.getEndDate())) {
 						spanning = false;
 					} else {
-						if(startsInDay(utz, dayDateFrom, sei)) {
+						if(startsInDay(utz, dayDateFrom, sei.getStartDate())) {
 							spanRight = DateTimeUtils.datesBetween(dayDateFrom, sei.getEndDate().withZone(utz));
 						}
-						if(endsInDay(utz, dayDateFrom, sei)) {
+						if(endsInDay(utz, dayDateFrom, sei.getEndDate())) {
 							spanLeft = DateTimeUtils.datesBetween(sei.getStartDate().withZone(utz), dayDateFrom);
 						}
-						if(!startsInDay(utz, dayDateFrom, sei) && !endsInDay(utz, dayDateFrom, sei)) {
+						if(!startsInDay(utz, dayDateFrom, sei.getStartDate()) && !endsInDay(utz, dayDateFrom, sei.getEndDate())) {
 							spanLeft = DateTimeUtils.datesBetween(sei.getStartDate().withZone(utz), dayDateFrom);
 							spanRight = DateTimeUtils.datesBetween(dayDateFrom, sei.getEndDate().withZone(utz));
 						}
@@ -147,22 +143,22 @@ public abstract class AbstractAgenda extends AbstractReport {
 		setDataSource(createBeanCollection(new Data(utz, fromDate.toLocalDate(), toDate.minusDays(1).toLocalDate(), dayDates, daysSpanningEvents, daysEvents)));
 	}
 	
-	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, IEvent event) {
-		return DateTimeUtils.startsInDay(dayDate, event.getStartDate().withZone(utz));
+	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, DateTime eventStartDate) {
+		return DateTimeUtils.startsInDay(dayDate, eventStartDate.withZone(utz));
 	}
 	
-	private boolean endsInDay(DateTimeZone utz, DateTime dayDate, IEvent event) {
-		return DateTimeUtils.endsInDay(dayDate, event.getEndDate().withZone(utz));
+	private boolean endsInDay(DateTimeZone utz, DateTime dayDate, DateTime eventEndDate) {
+		return DateTimeUtils.endsInDay(dayDate, eventEndDate.withZone(utz));
 	}
 	
-	private boolean isInDay(DateTimeZone utz, DateTime dayDate, IEvent event) {
+	private boolean isInDay(DateTimeZone utz, DateTime dayDate, DateTime eventStartDate, DateTime eventEndDate) {
 		// NB: dayDate must be at midnight!!
 		DateTime dayDateTo = dayDate.plusDays(1);
-		DateTime start = event.getStartDate().withZone(utz);
-		DateTime end = event.getEndDate().withZone(utz);
+		DateTime start = eventStartDate.withZone(utz);
+		DateTime end = eventEndDate.withZone(utz);
 		
-		if (startsInDay(utz, dayDate, event)) return true;
-		if (endsInDay(utz, dayDate, event)) return true;
+		if (startsInDay(utz, dayDate, eventStartDate)) return true;
+		if (endsInDay(utz, dayDate, eventEndDate)) return true;
 		if ((start.compareTo(dayDate) <= 0) && (end.compareTo(dayDateTo) >= 0)) return true;
 		return false;
 	}

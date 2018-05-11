@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> {
 
-	private static final long serialVersionUID = 1187800806;
+	private static final long serialVersionUID = -1944211055;
 
 	/**
 	 * The reference instance of <code>calendar.events</code>
@@ -165,6 +165,11 @@ public class Events extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.
 	 * The column <code>calendar.events.handle_invitation</code>.
 	 */
 	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, java.lang.Boolean> HANDLE_INVITATION = createField("handle_invitation", org.jooq.impl.SQLDataType.BOOLEAN.defaulted(true), this, "");
+
+	/**
+	 * The column <code>calendar.events.creation_timestamp</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord, org.joda.time.DateTime> CREATION_TIMESTAMP = createField("creation_timestamp", org.jooq.impl.SQLDataType.TIMESTAMP.nullable(false).defaulted(true), this, "", new com.sonicle.webtop.core.jooq.DateTimeConverter());
 
 	/**
 	 * Create a <code>calendar.events</code> table reference

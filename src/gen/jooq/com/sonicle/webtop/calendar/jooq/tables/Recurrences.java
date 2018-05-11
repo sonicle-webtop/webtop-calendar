@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Recurrences extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord> {
 
-	private static final long serialVersionUID = -6461156;
+	private static final long serialVersionUID = -292617957;
 
 	/**
 	 * The reference instance of <code>calendar.recurrences</code>
@@ -59,7 +59,7 @@ public class Recurrences extends org.jooq.impl.TableImpl<com.sonicle.webtop.cale
 	/**
 	 * The column <code>calendar.recurrences.type</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord, java.lang.String> TYPE = createField("type", org.jooq.impl.SQLDataType.VARCHAR.length(1).nullable(false), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord, java.lang.String> TYPE = createField("type", org.jooq.impl.SQLDataType.VARCHAR.length(1), this, "");
 
 	/**
 	 * The column <code>calendar.recurrences.daily_freq</code>.

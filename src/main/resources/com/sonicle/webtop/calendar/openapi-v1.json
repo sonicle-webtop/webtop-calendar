@@ -1,0 +1,590 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "v1",
+    "title": "WebTop Calendar",
+    "contact": {
+      "email": "dev-team@sonicle.com"
+    }
+  },
+  "security": [
+    {
+      "Basic authentication": []
+    }
+  ],
+  "paths": {
+    "/caldav/calendars": {
+      "get": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "List all calendars",
+        "operationId": "getCalendars",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Calendar"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Adds a new calendar",
+        "operationId": "addCalendar",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CalendarNew"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Calendar"
+            }
+          }
+        }
+      }
+    },
+    "/caldav/calendars/{calendarId}": {
+      "get": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Gets a single calendar",
+        "operationId": "getCalendar",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Calendar"
+            }
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Calendar not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Updates a calendar",
+        "operationId": "updateCalendar",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CalendarUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Calendar not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Deletes a calendar",
+        "operationId": "deleteCalendar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Calendar not found"
+          },
+          "405": {
+            "description": "Delete operation is not allowed"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "calendarId",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "description": "Calendar ID",
+          "x-example": 1234
+        }
+      ]
+    },
+    "/caldav/calendars/{calendarId}/objects": {
+      "get": {
+        "tags": [
+          "dav-cal-objects"
+        ],
+        "summary": "List all calendar objects belonging to a specific calendar",
+        "operationId": "getCalObjects",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "hrefs",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/CalObject"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "dav-cal-objects"
+        ],
+        "summary": "Adds a new calendar object",
+        "operationId": "addCalObject",
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CalObjectNew"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "calendarId",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "x-example": 1234
+        }
+      ]
+    },
+    "/caldav/calendars/{calendarId}/objects/changes": {
+      "get": {
+        "tags": [
+          "dav-cal-objects"
+        ],
+        "summary": "Get calendar object changes",
+        "description": "Returns changed calendar objects (added/modified/deleted) since the specified syncToken. If token is not provided, the initial sync configuration will be returned.",
+        "operationId": "getCalObjectsChanges",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "syncToken",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Marks changes starting point",
+            "x-example": "20180416130954"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Limits the number of returned results",
+            "x-example": 100
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/CalObjectsChanges"
+            }
+          },
+          "400": {
+            "description": "Invalid parameter"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "calendarId",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "x-example": 1234
+        }
+      ]
+    },
+    "/caldav/calendars/{calendarId}/objects/{href}": {
+      "get": {
+        "tags": [
+          "dav-cal-objects"
+        ],
+        "summary": "Get a single calendar object",
+        "operationId": "getCalObject",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/CalObject"
+            }
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Object not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "dav-cal-objects"
+        ],
+        "summary": "Updates a calendar object",
+        "operationId": "updateCalObject",
+        "consumes": [
+          "text/calendar"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Object not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "dav-cal-objects"
+        ],
+        "summary": "Deletes a calendar object",
+        "operationId": "deleteCalObject",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Object not found"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "calendarId",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "x-example": 1234
+        },
+        {
+          "name": "href",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "securityDefinitions": {
+    "Basic authentication": {
+      "type": "basic"
+    }
+  },
+  "definitions": {
+    "Error": {
+      "type": "object",
+      "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "minimum": 400,
+          "maximum": 599
+        },
+        "description": {
+          "type": "string",
+          "example": "Bad query parameter [$size]: Invalid integer value [abc]"
+        },
+        "reason": {
+          "type": "string",
+          "example": "Bad Request"
+        }
+      },
+      "description": "This general detailed error structure is used throughout this API.",
+      "example": "{\n  \"code\": 400,\n  \"description\": \"Bad query parameter [$size]: Invalid integer value [abc]\",\n  \"reasonPhrase\": \"Bad Request\"\n}"
+    },
+    "Calendar": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Unique ID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description"
+        },
+        "color": {
+          "type": "string",
+          "description": "Assigned color"
+        },
+        "syncToken": {
+          "type": "string",
+          "description": "Current sync token"
+        }
+      },
+      "description": "Bean for carry calendar's fields"
+    },
+    "CalendarNew": {
+      "type": "object",
+      "required": [
+        "displayName"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description"
+        },
+        "color": {
+          "type": "string",
+          "description": "Color"
+        }
+      },
+      "description": "Bean for carry addressbook's fields"
+    },
+    "CalendarUpdate": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "New value for displayName"
+        },
+        "description": {
+          "type": "string",
+          "description": "New value for description"
+        },
+        "color": {
+          "type": "string",
+          "description": "New value for color"
+        },
+        "updatedFields": {
+          "type": "array",
+          "description": "Specifies which of above fields have been updated",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Bean for carry calendar's updateable fields"
+    },
+    "CalObject": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Unique ID"
+        },
+        "uid": {
+          "type": "string",
+          "description": "Unique public ID"
+        },
+        "href": {
+          "type": "string",
+          "description": "Reference URI"
+        },
+        "lastModified": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Last modification time (unix timestamp)"
+        },
+        "etag": {
+          "type": "string",
+          "description": "Revision tag"
+        },
+        "size": {
+          "type": "integer",
+          "description": "Size (in bytes) of calendar data"
+        },
+        "icalendar": {
+          "type": "string",
+          "description": "Calendar data (iCalendar format)"
+        }
+      },
+      "description": "Bean for carry calendar object's fields"
+    },
+    "CalObjectNew": {
+      "type": "object",
+      "required": [
+        "href"
+      ],
+      "properties": {
+        "href": {
+          "type": "string",
+          "description": "Reference URI"
+        },
+        "icalendar": {
+          "type": "string",
+          "description": "Calendar data (iCalendar format)"
+        }
+      },
+      "description": "Bean for carry new calendar object's fields"
+    },
+    "CalObjectChanged": {
+      "type": "object",
+      "required": [
+        "etag",
+        "href",
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Unique ID"
+        },
+        "href": {
+          "type": "string",
+          "description": "Reference URI"
+        },
+        "etag": {
+          "type": "string",
+          "description": "Revision tag"
+        }
+      },
+      "description": "Bean for carry fields of calendar object that have been changed"
+    },
+    "CalObjectsChanges": {
+      "type": "object",
+      "required": [
+        "deleted",
+        "inserted",
+        "syncToken",
+        "updated"
+      ],
+      "properties": {
+        "syncToken": {
+          "type": "string",
+          "description": "Current sync token"
+        },
+        "inserted": {
+          "type": "array",
+          "description": "Items that have been inserted",
+          "items": {
+            "$ref": "#/definitions/CalObjectChanged"
+          }
+        },
+        "updated": {
+          "type": "array",
+          "description": "Items that have been updated",
+          "items": {
+            "$ref": "#/definitions/CalObjectChanged"
+          }
+        },
+        "deleted": {
+          "type": "array",
+          "description": "Items that have been deleted",
+          "items": {
+            "$ref": "#/definitions/CalObjectChanged"
+          }
+        }
+      },
+      "description": "Bean for carry calendar object collection changes"
+    }
+  }
+}

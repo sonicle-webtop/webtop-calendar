@@ -33,8 +33,6 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
-import com.sonicle.webtop.calendar.bol.model.MyShareFolderCalendar;
 import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -111,12 +109,12 @@ public class JsSchedulerEvent {
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = keepDataPrivate || calendar.isRemoteProvider();
+		isReadOnly = keepDataPrivate || calendar.isProviderRemote();
 		hideData = keepDataPrivate;
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.getHasAttendees();
-		isRecurring = event.isRecurring();
-		isBroken = event.isBroken();
+		isRecurring = event.isEventRecurring();
+		isBroken = event.isEventBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();
@@ -160,8 +158,8 @@ public class JsSchedulerEvent {
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.getHasAttendees();
-		isRecurring = event.isRecurring();
-		isBroken = event.isBroken();
+		isRecurring = event.isEventRecurring();
+		isBroken = event.isEventBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		
 		folderName = calendar.getName();

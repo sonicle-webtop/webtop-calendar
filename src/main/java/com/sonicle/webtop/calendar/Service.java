@@ -76,8 +76,8 @@ import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
-import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
+import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.msg.RemoteSyncResult;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
@@ -250,7 +250,7 @@ public class Service extends BaseService {
 			for(ShareRootCalendar root : roots.values()) {
 				foldersByRoot.put(root.getShareId(), new ArrayList<ShareFolderCalendar>());
 				if(root instanceof MyShareRootCalendar) {
-					for(Calendar cal : manager.listCalendars()) {
+					for(Calendar cal : manager.listCalendars().values()) {
 						final MyShareFolderCalendar fold = new MyShareFolderCalendar(root.getShareId(), cal);
 						foldersByRoot.get(root.getShareId()).add(fold);
 						folders.put(cal.getCalendarId(), fold);
@@ -285,7 +285,7 @@ public class Service extends BaseService {
 					ShareRootCalendar root = roots.get(node);
 					
 					if(root instanceof MyShareRootCalendar) {
-						for(Calendar cal : manager.listCalendars()) {
+						for(Calendar cal : manager.listCalendars().values()) {
 							MyShareFolderCalendar folder = new MyShareFolderCalendar(node, cal);
 							children.add(createFolderNode(folder, null, root.getPerms()));
 						}

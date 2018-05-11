@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
@@ -110,12 +111,13 @@ public class JsEvent {
 		}
 		
 		// Read-only fields
-		_recurringInfo = event.getRecurringInfo().toString();
+		_recurringInfo = EnumUtils.toSerializedName(event.getRecurInfo());
 		_profileId = ownerPid;
 	}
 	
 	public static EventInstance buildEventInstance(JsEvent jse) {
-		EventInstance event = new EventInstance(jse.id);
+		EventInstance event = new EventInstance();
+		event.setKey(jse.id);
 		event.setEventId(jse.eventId);
 		event.setCalendarId(jse.calendarId);
 		

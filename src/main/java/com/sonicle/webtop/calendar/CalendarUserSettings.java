@@ -34,10 +34,8 @@ package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.web.json.JsonResult;
 import static com.sonicle.webtop.calendar.CalendarSettings.*;
-import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
 import com.sonicle.webtop.core.sdk.UserProfileId;
-import java.text.MessageFormat;
 import java.util.HashSet;
 import org.joda.time.LocalTime;
 

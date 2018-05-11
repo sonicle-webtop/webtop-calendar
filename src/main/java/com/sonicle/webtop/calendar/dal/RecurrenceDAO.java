@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_RECURRENCES;
+import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord;
@@ -68,6 +69,25 @@ public class RecurrenceDAO extends BaseDAO {
 			.from(RECURRENCES)
 			.where(
 				RECURRENCES.RECURRENCE_ID.equal(recurrenceId)
+			)
+			.fetchOneInto(ORecurrence.class);
+	}
+	
+	public ORecurrence selectByEvent(Connection con, Integer eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(RECURRENCES)
+			.where(
+				RECURRENCES.RECURRENCE_ID.equal(
+					DSL.select(
+						EVENTS.RECURRENCE_ID
+					)
+					.from(EVENTS)
+					.where(
+						EVENTS.EVENT_ID.equal(eventId)
+					)
+				)
 			)
 			.fetchOneInto(ORecurrence.class);
 	}

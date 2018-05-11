@@ -33,6 +33,7 @@ public class Keys {
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord> CALENDARS_PKEY1 = UniqueKeys0.CALENDARS_PKEY1;
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> EVENTS_PKEY = UniqueKeys0.EVENTS_PKEY;
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord> EVENTS_PLANNING_PKEY = UniqueKeys0.EVENTS_PLANNING_PKEY;
+	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord> EVENTS_ICALENDARS_PKEY = UniqueKeys0.EVENTS_ICALENDARS_PKEY;
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord> RECURRENCES_PKEY = UniqueKeys0.RECURRENCES_PKEY;
 	public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesBrokenRecord> RECURRENCES_BROKEN_PKEY = UniqueKeys0.RECURRENCES_BROKEN_PKEY;
 
@@ -56,6 +57,7 @@ public class Keys {
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord> CALENDARS_PKEY1 = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS, com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS.CALENDAR_ID);
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord> EVENTS_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.Events.EVENTS, com.sonicle.webtop.calendar.jooq.tables.Events.EVENTS.EVENT_ID);
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord> EVENTS_PLANNING_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.EventsAttendees.EVENTS_ATTENDEES, com.sonicle.webtop.calendar.jooq.tables.EventsAttendees.EVENTS_ATTENDEES.ATTENDEE_ID);
+		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord> EVENTS_ICALENDARS_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.EventsIcalendars.EVENTS_ICALENDARS, com.sonicle.webtop.calendar.jooq.tables.EventsIcalendars.EVENTS_ICALENDARS.EVENT_ID);
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesRecord> RECURRENCES_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.Recurrences.RECURRENCES, com.sonicle.webtop.calendar.jooq.tables.Recurrences.RECURRENCES.RECURRENCE_ID);
 		public static final org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.RecurrencesBrokenRecord> RECURRENCES_BROKEN_PKEY = createUniqueKey(com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken.RECURRENCES_BROKEN, com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken.RECURRENCES_BROKEN.EVENT_ID, com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken.RECURRENCES_BROKEN.RECURRENCE_ID, com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken.RECURRENCES_BROKEN.EVENT_DATE);
 	}

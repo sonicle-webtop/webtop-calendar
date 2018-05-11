@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables.pojos;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Events implements java.io.Serializable {
 
-	private static final long serialVersionUID = 267122081;
+	private static final long serialVersionUID = 1440595981;
 
 	private java.lang.Integer      eventId;
 	private java.lang.Integer      calendarId;
@@ -45,6 +45,7 @@ public class Events implements java.io.Serializable {
 	private java.lang.String       href;
 	private java.lang.String       etag;
 	private java.lang.Boolean      handleInvitation;
+	private org.joda.time.DateTime creationTimestamp;
 
 	public Events() {}
 
@@ -75,7 +76,8 @@ public class Events implements java.io.Serializable {
 		java.lang.Integer      revisionSequence,
 		java.lang.String       href,
 		java.lang.String       etag,
-		java.lang.Boolean      handleInvitation
+		java.lang.Boolean      handleInvitation,
+		org.joda.time.DateTime creationTimestamp
 	) {
 		this.eventId = eventId;
 		this.calendarId = calendarId;
@@ -104,6 +106,7 @@ public class Events implements java.io.Serializable {
 		this.href = href;
 		this.etag = etag;
 		this.handleInvitation = handleInvitation;
+		this.creationTimestamp = creationTimestamp;
 	}
 
 	public java.lang.Integer getEventId() {
@@ -320,5 +323,13 @@ public class Events implements java.io.Serializable {
 
 	public void setHandleInvitation(java.lang.Boolean handleInvitation) {
 		this.handleInvitation = handleInvitation;
+	}
+
+	public org.joda.time.DateTime getCreationTimestamp() {
+		return this.creationTimestamp;
+	}
+
+	public void setCreationTimestamp(org.joda.time.DateTime creationTimestamp) {
+		this.creationTimestamp = creationTimestamp;
 	}
 }

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2014 Sonicle S.r.l.
+/*
+ * Copyright (C) 2018 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,76 +28,16 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2014 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2018 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.core.sdk.UserProfileId;
+import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsIcalendars;
 
 /**
  *
  * @author malbinola
  */
-public class VVEvent extends OEvent {
-	protected String calendarDomainId;
-	protected String calendarUserId;
-	protected Integer seriesEventId;
-	protected Boolean hasAttendees;
+public class OEventICalendar extends EventsIcalendars {
 	
-	public VVEvent() {
-		super();
-	}
-	
-	public String getCalendarDomainId() {
-		return calendarDomainId;
-	}
-
-	public void setCalendarDomainId(String calendarDomainId) {
-		this.calendarDomainId = calendarDomainId;
-	}
-	
-	public String getCalendarUserId() {
-		return calendarUserId;
-	}
-
-	public void setCalendarUserId(String calendarUserId) {
-		this.calendarUserId = calendarUserId;
-	}
-	
-	public UserProfileId getCalendarProfileId() {
-		return new UserProfileId(calendarDomainId, calendarUserId);
-	}
-	
-	public Integer getSeriesEventId() {
-		return seriesEventId;
-	}
-
-	public void setSeriesEventId(Integer seriesEventId) {
-		this.seriesEventId = seriesEventId;
-	}
-	
-	public Boolean getHasAttendees() {
-		return hasAttendees;
-	}
-
-	public void setHasAttendees(Boolean hasAttendees) {
-		this.hasAttendees = hasAttendees;
-	}
-	
-	public boolean isEventRecurring() {
-		return getRecurrenceId() != null;
-	}
-	
-	public boolean isEventBroken() {
-		return getSeriesEventId() != null;
-		/*
-		if (isEventRecurring()) {
-			// Checking seriesEventId is enought but we prevent any problems
-			// returning false in case of recurring events!
-			return false;
-		} else {
-			return getSeriesEventId() != null;
-		}
-		*/
-	}
 }

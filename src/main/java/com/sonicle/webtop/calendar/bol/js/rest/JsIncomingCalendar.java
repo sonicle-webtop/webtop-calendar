@@ -57,7 +57,7 @@ public class JsIncomingCalendar {
 		this.ownerDisplayName = udata.getDisplayName();
 		this.calendarId = folder.getCalendar().getCalendarId();
 		this.calendarName = folder.getCalendar().getName();
-		if (folder.getCalendar().isRemoteProvider()) {
+		if (folder.getCalendar().isProviderRemote()) {
 			this.readOnly = true;
 		} else if ((folderProps != null) && Calendar.Sync.READ.equals(folderProps.getSync())) {
 			this.readOnly = true;

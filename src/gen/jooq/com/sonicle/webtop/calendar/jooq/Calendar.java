@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Calendar extends org.jooq.impl.SchemaImpl {
 
-	private static final long serialVersionUID = 1703123449;
+	private static final long serialVersionUID = 876682564;
 
 	/**
 	 * The reference instance of <code>calendar</code>
@@ -57,6 +57,7 @@ public class Calendar extends org.jooq.impl.SchemaImpl {
 			com.sonicle.webtop.calendar.jooq.tables.Calendars.CALENDARS,
 			com.sonicle.webtop.calendar.jooq.tables.Events.EVENTS,
 			com.sonicle.webtop.calendar.jooq.tables.EventsAttendees.EVENTS_ATTENDEES,
+			com.sonicle.webtop.calendar.jooq.tables.EventsIcalendars.EVENTS_ICALENDARS,
 			com.sonicle.webtop.calendar.jooq.tables.Recurrences.RECURRENCES,
 			com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken.RECURRENCES_BROKEN);
 	}

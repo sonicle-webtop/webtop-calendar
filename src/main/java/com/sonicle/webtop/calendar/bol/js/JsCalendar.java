@@ -101,7 +101,7 @@ public class JsCalendar {
 		cal.setDefaultReminder(js.reminder);
 		cal.setDefaultSendInvitation(js.invitation);
 		
-		if (cal.isRemoteProvider()) {
+		if (cal.isProviderRemote()) {
 			CalendarRemoteParameters params = LangUtils.deserialize(origParameters, new CalendarRemoteParameters(), CalendarRemoteParameters.class);
 			params.url = URIUtils.createURIQuietly(js.remoteUrl);
 			params.username = js.remoteUsername;

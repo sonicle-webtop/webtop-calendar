@@ -84,7 +84,20 @@ public class CalendarDAO extends BaseDAO {
 			.fetchOneInto(Owner.class);
 	}
 	
-	public OCalendar selectById(Connection con, Integer calendarId) throws DAOException {
+	public String selectProviderById(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				CALENDARS.PROVIDER
+			)
+			.from(CALENDARS)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
+			.fetchOneInto(String.class);
+	}
+	
+	public OCalendar selectById(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()

@@ -24,7 +24,7 @@ public class CalObject   {
   private @Valid String icalendar = null;
 
   /**
-   * Internal unique ID
+   * CalObject ID (internal)
    **/
   public CalObject id(Integer id) {
     this.id = id;
@@ -32,7 +32,7 @@ public class CalObject   {
   }
 
   
-  @ApiModelProperty(value = "Internal unique ID")
+  @ApiModelProperty(value = "CalObject ID (internal)")
   @JsonProperty("id")
   public Integer getId() {
     return id;
@@ -42,7 +42,7 @@ public class CalObject   {
   }
 
   /**
-   * Public unique ID
+   * CalObject UID (public)
    **/
   public CalObject uid(String uid) {
     this.uid = uid;
@@ -50,7 +50,7 @@ public class CalObject   {
   }
 
   
-  @ApiModelProperty(value = "Public unique ID")
+  @ApiModelProperty(value = "CalObject UID (public)")
   @JsonProperty("uid")
   public String getUid() {
     return uid;

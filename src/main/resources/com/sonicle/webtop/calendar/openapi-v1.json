@@ -68,7 +68,7 @@
         }
       }
     },
-    "/caldav/calendars/{calendarId}": {
+    "/caldav/calendars/{calendarUid}": {
       "get": {
         "tags": [
           "dav-calendars"
@@ -149,16 +149,16 @@
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "calendarUid",
           "in": "path",
           "required": true,
-          "type": "integer",
-          "description": "Calendar ID",
+          "type": "string",
+          "description": "Calendar UID",
           "x-example": 1234
         }
       ]
     },
-    "/caldav/calendars/{calendarId}/objects": {
+    "/caldav/calendars/{calendarUid}/objects": {
       "get": {
         "tags": [
           "dav-cal-objects"
@@ -218,15 +218,16 @@
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "calendarUid",
           "in": "path",
           "required": true,
-          "type": "integer",
+          "type": "string",
+          "description": "Calendar UID",
           "x-example": 1234
         }
       ]
     },
-    "/caldav/calendars/{calendarId}/objects/changes": {
+    "/caldav/calendars/{calendarUid}/objects/changes": {
       "get": {
         "tags": [
           "dav-cal-objects"
@@ -269,15 +270,16 @@
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "calendarUid",
           "in": "path",
           "required": true,
-          "type": "integer",
+          "type": "string",
+          "description": "Calendar UID",
           "x-example": 1234
         }
       ]
     },
-    "/caldav/calendars/{calendarId}/objects/{href}": {
+    "/caldav/calendars/{calendarUid}/objects/{href}": {
       "get": {
         "tags": [
           "dav-cal-objects"
@@ -355,16 +357,18 @@
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "calendarUid",
           "in": "path",
           "required": true,
-          "type": "integer",
+          "type": "string",
+          "description": "Calendar UID",
           "x-example": 1234
         },
         {
           "name": "href",
           "in": "path",
           "required": true,
+          "description": "CalObject reference URI",
           "type": "string"
         }
       ]
@@ -410,12 +414,11 @@
       "properties": {
         "id": {
           "type": "integer",
-          "format": "int32",
-          "description": "Internal unique ID"
+          "description": "Calendar ID (internal)"
         },
         "uid": {
           "type": "string",
-          "description": "Public unique ID"
+          "description": "Calendar UID (public)"
         },
         "displayName": {
           "type": "string",
@@ -487,12 +490,11 @@
       "properties": {
         "id": {
           "type": "integer",
-          "format": "int32",
-          "description": "Internal unique ID"
+          "description": "CalObject ID (internal)"
         },
         "uid": {
           "type": "string",
-          "description": "Public unique ID"
+          "description": "CalObject UID (public)"
         },
         "href": {
           "type": "string",
@@ -545,8 +547,7 @@
       "properties": {
         "id": {
           "type": "integer",
-          "format": "int32",
-          "description": "Internal unique ID"
+          "description": "CalObject ID (internal)"
         },
         "href": {
           "type": "string",

@@ -23,7 +23,7 @@ public class Calendar   {
   private @Valid String syncToken = null;
 
   /**
-   * Internal unique ID
+   * Calendar ID (internal)
    **/
   public Calendar id(Integer id) {
     this.id = id;
@@ -31,7 +31,7 @@ public class Calendar   {
   }
 
   
-  @ApiModelProperty(required = true, value = "Internal unique ID")
+  @ApiModelProperty(required = true, value = "Calendar ID (internal)")
   @JsonProperty("id")
   @NotNull
   public Integer getId() {
@@ -42,7 +42,7 @@ public class Calendar   {
   }
 
   /**
-   * Public unique ID
+   * Calendar UID (public)
    **/
   public Calendar uid(String uid) {
     this.uid = uid;
@@ -50,7 +50,7 @@ public class Calendar   {
   }
 
   
-  @ApiModelProperty(required = true, value = "Public unique ID")
+  @ApiModelProperty(required = true, value = "Calendar UID (public)")
   @JsonProperty("uid")
   @NotNull
   public String getUid() {

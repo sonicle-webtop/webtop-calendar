@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "version": "v1",
-    "title": "WebTop Calendar",
+    "title": "WebTop Contacts",
     "contact": {
       "email": "dev-team@sonicle.com"
     }
@@ -13,13 +13,13 @@
     }
   ],
   "paths": {
-    "/caldav/calendars": {
+    "/carddav/addressbooks": {
       "get": {
         "tags": [
-          "dav-calendars"
+          "dav-addressbooks"
         ],
-        "summary": "List all calendars",
-        "operationId": "getCalendars",
+        "summary": "List all address books",
+        "operationId": "getAddressBooks",
         "produces": [
           "application/json"
         ],
@@ -30,7 +30,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Calendar"
+                "$ref": "#/definitions/AddressBook"
               }
             }
           }
@@ -38,10 +38,10 @@
       },
       "post": {
         "tags": [
-          "dav-calendars"
+          "dav-addressbooks"
         ],
-        "summary": "Adds a new calendar",
-        "operationId": "addCalendar",
+        "summary": "Adds a new address book",
+        "operationId": "addAddressBook",
         "consumes": [
           "application/json"
         ],
@@ -54,7 +54,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/CalendarNew"
+              "$ref": "#/definitions/AddressBookNew"
             }
           }
         ],
@@ -62,19 +62,19 @@
           "201": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/Calendar"
+              "$ref": "#/definitions/AddressBook"
             }
           }
         }
       }
     },
-    "/caldav/calendars/{calendarId}": {
+    "/carddav/addressbooks/{addressBookId}": {
       "get": {
         "tags": [
-          "dav-calendars"
+          "dav-addressbooks"
         ],
-        "summary": "Gets a single calendar",
-        "operationId": "getCalendar",
+        "summary": "Gets a single address book",
+        "operationId": "getAddressBook",
         "produces": [
           "application/json"
         ],
@@ -83,23 +83,23 @@
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/Calendar"
+              "$ref": "#/definitions/AddressBook"
             }
           },
           "400": {
             "description": "Invalid parameter"
           },
           "404": {
-            "description": "Calendar not found"
+            "description": "Address book not found"
           }
         }
       },
       "put": {
         "tags": [
-          "dav-calendars"
+          "dav-addressbooks"
         ],
-        "summary": "Updates a calendar",
-        "operationId": "updateCalendar",
+        "summary": "Updates an address book",
+        "operationId": "updateAddressBook",
         "consumes": [
           "application/json"
         ],
@@ -109,7 +109,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/CalendarUpdate"
+              "$ref": "#/definitions/AddressBookUpdate"
             }
           }
         ],
@@ -121,16 +121,16 @@
             "description": "Invalid parameter"
           },
           "404": {
-            "description": "Calendar not found"
+            "description": "Address book not found"
           }
         }
       },
       "delete": {
         "tags": [
-          "dav-calendars"
+          "dav-addressbooks"
         ],
-        "summary": "Deletes a calendar",
-        "operationId": "deleteCalendar",
+        "summary": "Deletes an address book",
+        "operationId": "deleteAddressBook",
         "parameters": [],
         "responses": {
           "204": {
@@ -140,7 +140,7 @@
             "description": "Invalid parameter"
           },
           "404": {
-            "description": "Calendar not found"
+            "description": "Address book not found"
           },
           "405": {
             "description": "Delete operation is not allowed"
@@ -149,22 +149,22 @@
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "addressBookId",
           "in": "path",
           "required": true,
           "type": "integer",
-          "description": "Calendar ID",
+          "description": "Address book ID",
           "x-example": 1234
         }
       ]
     },
-    "/caldav/calendars/{calendarId}/objects": {
+    "/carddav/addressbooks/{addressBookId}/cards": {
       "get": {
         "tags": [
-          "dav-cal-objects"
+          "dav-cards"
         ],
-        "summary": "List all calendar objects belonging to a specific calendar",
-        "operationId": "getCalObjects",
+        "summary": "List all cards for a specific addressbook",
+        "operationId": "getCards",
         "produces": [
           "application/json"
         ],
@@ -185,7 +185,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/CalObject"
+                "$ref": "#/definitions/Card"
               }
             }
           }
@@ -193,10 +193,10 @@
       },
       "post": {
         "tags": [
-          "dav-cal-objects"
+          "dav-cards"
         ],
-        "summary": "Adds a new calendar object",
-        "operationId": "addCalObject",
+        "summary": "Adds a new card",
+        "operationId": "addCard",
         "consumes": [
           "application/json"
         ],
@@ -206,7 +206,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/CalObjectNew"
+              "$ref": "#/definitions/CardNew"
             }
           }
         ],
@@ -218,7 +218,7 @@
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "addressBookId",
           "in": "path",
           "required": true,
           "type": "integer",
@@ -226,14 +226,14 @@
         }
       ]
     },
-    "/caldav/calendars/{calendarId}/objects/changes": {
+    "/carddav/addressbooks/{addressBookId}/cards/changes": {
       "get": {
         "tags": [
-          "dav-cal-objects"
+          "dav-cards"
         ],
-        "summary": "Get calendar object changes",
-        "description": "Returns changed calendar objects (added/modified/deleted) since the specified syncToken. If token is not provided, the initial sync configuration will be returned.",
-        "operationId": "getCalObjectsChanges",
+        "summary": "Get card changes",
+        "description": "Returns changed cards (added/modified/deleted) since the specified syncToken. If token is not provided, the initial sync configuration will be returned.",
+        "operationId": "getCardsChanges",
         "produces": [
           "application/json"
         ],
@@ -259,7 +259,7 @@
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/CalObjectsChanges"
+              "$ref": "#/definitions/CardsChanges"
             }
           },
           "400": {
@@ -269,7 +269,7 @@
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "addressBookId",
           "in": "path",
           "required": true,
           "type": "integer",
@@ -277,13 +277,13 @@
         }
       ]
     },
-    "/caldav/calendars/{calendarId}/objects/{href}": {
+    "/carddav/addressbooks/{addressBookId}/cards/{href}": {
       "get": {
         "tags": [
-          "dav-cal-objects"
+          "dav-cards"
         ],
-        "summary": "Get a single calendar object",
-        "operationId": "getCalObject",
+        "summary": "Get a single card",
+        "operationId": "getCard",
         "produces": [
           "application/json"
         ],
@@ -292,25 +292,25 @@
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/CalObject"
+              "$ref": "#/definitions/Card"
             }
           },
           "400": {
             "description": "Invalid parameter"
           },
           "404": {
-            "description": "Object not found"
+            "description": "Card not found"
           }
         }
       },
       "put": {
         "tags": [
-          "dav-cal-objects"
+          "dav-cards"
         ],
-        "summary": "Updates a calendar object",
-        "operationId": "updateCalObject",
+        "summary": "Updates a card",
+        "operationId": "updateCard",
         "consumes": [
-          "text/calendar"
+          "text/vcard"
         ],
         "parameters": [
           {
@@ -330,16 +330,16 @@
             "description": "Invalid parameter"
           },
           "404": {
-            "description": "Object not found"
+            "description": "Card not found"
           }
         }
       },
       "delete": {
         "tags": [
-          "dav-cal-objects"
+          "dav-cards"
         ],
-        "summary": "Deletes a calendar object",
-        "operationId": "deleteCalObject",
+        "summary": "Deletes a card",
+        "operationId": "deleteCard",
         "parameters": [],
         "responses": {
           "204": {
@@ -349,13 +349,13 @@
             "description": "Invalid parameter"
           },
           "404": {
-            "description": "Object not found"
+            "description": "Card not found"
           }
         }
       },
       "parameters": [
         {
-          "name": "calendarId",
+          "name": "addressBookId",
           "in": "path",
           "required": true,
           "type": "integer",
@@ -399,23 +399,23 @@
       "description": "This general detailed error structure is used throughout this API.",
       "example": "{\n  \"code\": 400,\n  \"description\": \"Bad query parameter [$size]: Invalid integer value [abc]\",\n  \"reasonPhrase\": \"Bad Request\"\n}"
     },
-    "Calendar": {
+    "AddressBook": {
       "type": "object",
       "required": [
         "displayName",
         "id",
-        "uid",
+        "publicId",
         "syncToken"
       ],
       "properties": {
         "id": {
           "type": "integer",
           "format": "int32",
-          "description": "Internal unique ID"
+          "description": "Unique ID"
         },
-        "uid": {
+        "publicId": {
           "type": "string",
-          "description": "Public unique ID"
+          "description": "Unique public ID"
         },
         "displayName": {
           "type": "string",
@@ -425,18 +425,14 @@
           "type": "string",
           "description": "Description"
         },
-        "color": {
-          "type": "string",
-          "description": "Assigned color"
-        },
         "syncToken": {
           "type": "string",
           "description": "Current sync token"
         }
       },
-      "description": "Bean for carry calendar's fields"
+      "description": "Bean for carry addressbook's fields"
     },
-    "CalendarNew": {
+    "AddressBookNew": {
       "type": "object",
       "required": [
         "displayName"
@@ -449,15 +445,11 @@
         "description": {
           "type": "string",
           "description": "Description"
-        },
-        "color": {
-          "type": "string",
-          "description": "Color"
         }
       },
       "description": "Bean for carry addressbook's fields"
     },
-    "CalendarUpdate": {
+    "AddressBookUpdate": {
       "type": "object",
       "properties": {
         "displayName": {
@@ -468,31 +460,32 @@
           "type": "string",
           "description": "New value for description"
         },
-        "color": {
-          "type": "string",
-          "description": "New value for color"
-        },
         "updatedFields": {
           "type": "array",
-          "description": "Specifies which of above fields have been updated",
+          "description": "Specifies which fields have been updated",
           "items": {
             "type": "string"
           }
         }
       },
-      "description": "Bean for carry calendar's updateable fields"
+      "description": "Bean for carry addressbook's updateable fields"
     },
-    "CalObject": {
+    "Card": {
       "type": "object",
+      "required": [
+        "href",
+        "id",
+        "uid"
+      ],
       "properties": {
         "id": {
           "type": "integer",
           "format": "int32",
-          "description": "Internal unique ID"
+          "description": "Unique ID"
         },
         "uid": {
           "type": "string",
-          "description": "Public unique ID"
+          "description": "Unique public ID"
         },
         "href": {
           "type": "string",
@@ -509,33 +502,34 @@
         },
         "size": {
           "type": "integer",
-          "description": "Size (in bytes) of calendar data"
+          "description": "Size (in bytes) of card data"
         },
-        "icalendar": {
+        "vcard": {
           "type": "string",
-          "description": "Calendar data (iCalendar format)"
+          "description": "Card data (vCard format)"
         }
       },
-      "description": "Bean for carry calendar object's fields"
+      "description": "Bean for carry card fields"
     },
-    "CalObjectNew": {
+    "CardNew": {
       "type": "object",
       "required": [
-        "href"
+        "href",
+        "vcard"
       ],
       "properties": {
         "href": {
           "type": "string",
           "description": "Reference URI"
         },
-        "icalendar": {
+        "vcard": {
           "type": "string",
-          "description": "Calendar data (iCalendar format)"
+          "description": "Card data (vCard format)"
         }
       },
-      "description": "Bean for carry new calendar object's fields"
+      "description": "Bean for carry new card fields"
     },
-    "CalObjectChanged": {
+    "CardChanged": {
       "type": "object",
       "required": [
         "etag",
@@ -546,7 +540,7 @@
         "id": {
           "type": "integer",
           "format": "int32",
-          "description": "Internal unique ID"
+          "description": "Unique ID"
         },
         "href": {
           "type": "string",
@@ -557,9 +551,9 @@
           "description": "Revision tag"
         }
       },
-      "description": "Bean for carry fields of calendar object that have been changed"
+      "description": "Bean for carry fields of card that have been changed"
     },
-    "CalObjectsChanges": {
+    "CardsChanges": {
       "type": "object",
       "required": [
         "deleted",
@@ -576,25 +570,25 @@
           "type": "array",
           "description": "Items that have been inserted",
           "items": {
-            "$ref": "#/definitions/CalObjectChanged"
+            "$ref": "#/definitions/CardChanged"
           }
         },
         "updated": {
           "type": "array",
           "description": "Items that have been updated",
           "items": {
-            "$ref": "#/definitions/CalObjectChanged"
+            "$ref": "#/definitions/CardChanged"
           }
         },
         "deleted": {
           "type": "array",
           "description": "Items that have been deleted",
           "items": {
-            "$ref": "#/definitions/CalObjectChanged"
+            "$ref": "#/definitions/CardChanged"
           }
         }
       },
-      "description": "Bean for carry calendar object collection changes"
+      "description": "Bean for carry card collection changes"
     }
   }
 }

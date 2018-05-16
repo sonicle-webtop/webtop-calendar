@@ -82,7 +82,7 @@ public class Migration {
 		orec.setYearlyDay(yearlyDay);
 		
 		EventRecurrence rec = createEventRecurrence(orec);
-		orec.fillFrom(true, rec, dtEventStart, dtEventEnd, eventTimezone);
+		orec.__fillFrom(true, rec, dtEventStart, dtEventEnd, eventTimezone);
 		return orec;
 	}
 	

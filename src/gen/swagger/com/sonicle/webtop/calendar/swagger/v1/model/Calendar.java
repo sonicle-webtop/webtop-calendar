@@ -16,13 +16,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Calendar   {
   
   private @Valid Integer id = null;
+  private @Valid String uid = null;
   private @Valid String displayName = null;
   private @Valid String description = null;
   private @Valid String color = null;
   private @Valid String syncToken = null;
 
   /**
-   * Unique ID
+   * Internal unique ID
    **/
   public Calendar id(Integer id) {
     this.id = id;
@@ -30,13 +31,33 @@ public class Calendar   {
   }
 
   
-  @ApiModelProperty(value = "Unique ID")
+  @ApiModelProperty(required = true, value = "Internal unique ID")
   @JsonProperty("id")
+  @NotNull
   public Integer getId() {
     return id;
   }
   public void setId(Integer id) {
     this.id = id;
+  }
+
+  /**
+   * Public unique ID
+   **/
+  public Calendar uid(String uid) {
+    this.uid = uid;
+    return this;
+  }
+
+  
+  @ApiModelProperty(required = true, value = "Public unique ID")
+  @JsonProperty("uid")
+  @NotNull
+  public String getUid() {
+    return uid;
+  }
+  public void setUid(String uid) {
+    this.uid = uid;
   }
 
   /**
@@ -48,8 +69,9 @@ public class Calendar   {
   }
 
   
-  @ApiModelProperty(value = "Display name")
+  @ApiModelProperty(required = true, value = "Display name")
   @JsonProperty("displayName")
+  @NotNull
   public String getDisplayName() {
     return displayName;
   }
@@ -102,8 +124,9 @@ public class Calendar   {
   }
 
   
-  @ApiModelProperty(value = "Current sync token")
+  @ApiModelProperty(required = true, value = "Current sync token")
   @JsonProperty("syncToken")
+  @NotNull
   public String getSyncToken() {
     return syncToken;
   }
@@ -122,6 +145,7 @@ public class Calendar   {
     }
     Calendar calendar = (Calendar) o;
     return Objects.equals(id, calendar.id) &&
+        Objects.equals(uid, calendar.uid) &&
         Objects.equals(displayName, calendar.displayName) &&
         Objects.equals(description, calendar.description) &&
         Objects.equals(color, calendar.color) &&
@@ -130,7 +154,7 @@ public class Calendar   {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, displayName, description, color, syncToken);
+    return Objects.hash(id, uid, displayName, description, color, syncToken);
   }
 
   @Override
@@ -139,6 +163,7 @@ public class Calendar   {
     sb.append("class Calendar {\n");
     
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    uid: ").append(toIndentedString(uid)).append("\n");
     sb.append("    displayName: ").append(toIndentedString(displayName)).append("\n");
     sb.append("    description: ").append(toIndentedString(description)).append("\n");
     sb.append("    color: ").append(toIndentedString(color)).append("\n");

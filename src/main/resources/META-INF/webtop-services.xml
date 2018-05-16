@@ -27,6 +27,9 @@
 		</userOptions>
 		
 		<restApiEndpoint name=".RestApi" />
+		<restApis>
+			<restApi oasFile="openapi-v1.json" />
+		</restApis>
 		
 		<permissions>
 			<sharePermission group="CALENDAR" />

@@ -20,7 +20,7 @@ public class CalObjectChanged   {
   private @Valid String etag = null;
 
   /**
-   * Unique ID
+   * Internal unique ID
    **/
   public CalObjectChanged id(Integer id) {
     this.id = id;
@@ -28,7 +28,7 @@ public class CalObjectChanged   {
   }
 
   
-  @ApiModelProperty(required = true, value = "Unique ID")
+  @ApiModelProperty(required = true, value = "Internal unique ID")
   @JsonProperty("id")
   @NotNull
   public Integer getId() {

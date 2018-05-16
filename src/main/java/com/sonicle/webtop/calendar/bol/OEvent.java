@@ -43,9 +43,6 @@ import org.joda.time.DateTimeZone;
  * @author malbinola
  */
 public class OEvent extends Events implements IEvent {
-	public final static String REV_STATUS_NEW = "N";
-	public final static String REV_STATUS_MODIFIED = "M";
-	public final static String REV_STATUS_DELETED = "D";
 	
 	public DateTimeZone getDateTimezone() {
 		return DateTimeZone.forID(getTimezone());

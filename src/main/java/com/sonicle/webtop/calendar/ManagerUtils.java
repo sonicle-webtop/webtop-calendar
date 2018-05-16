@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.Base58;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
@@ -72,9 +73,21 @@ public class ManagerUtils {
 		return WT.getPlatformName() + " Calendar";
 	}
 	
+	public static int decodeAsCalendarId(String calendarPublicUid) {
+		return Integer.valueOf(new String(Base58.decode(calendarPublicUid)));
+	}
+	
+	public static String encodeAsCalendarUid(int calendarId) {
+		return Base58.encode(StringUtils.leftPad(String.valueOf(calendarId), 10, "0").getBytes());
+	}
+	
 	public static String buildEventUid(int eventId, String internetName) {
 		String id = IdentifierUtils.getUUIDTimeBased(true) + "." + String.valueOf(eventId);
 		return ICalendarUtils.buildUid(DigestUtils.md5Hex(id), internetName);
+	}
+	
+	public static String buildHref(String publicUid) {
+		return publicUid + ".ics";
 	}
 	
 	/*

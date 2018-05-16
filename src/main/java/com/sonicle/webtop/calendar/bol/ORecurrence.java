@@ -77,11 +77,13 @@ public class ORecurrence extends Recurrences {
 		return ICal4jUtils.parseRRule(getRule());
 	}
 	
-	public void fillFrom(EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
-		fillFrom(false, rec, eventStartDate, eventEndDate, eventTimeZone);
+	@Deprecated
+	public void __fillFrom(EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
+		ORecurrence.this.__fillFrom(false, rec, eventStartDate, eventEndDate, eventTimeZone);
 	}
 	
-	public void fillFrom(boolean setRule, EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
+	@Deprecated
+	public void __fillFrom(boolean setRule, EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimeZone);
 		
 		setStartDate(eventStartDate);
@@ -143,18 +145,19 @@ public class ORecurrence extends Recurrences {
 		
 		RRule rr = null;
 		if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_NEVER)) {
-			rr = applyEndNever(etz, setRule);
+			rr = __applyEndNever(etz, setRule);
 		} else if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_REPEAT)) {
-			rr = applyEndRepeat(rec.getRepeatTimes(), eventStartDate, eventEndDate, etz, setRule);
+			rr = __applyEndRepeat(rec.getRepeatTimes(), eventStartDate, eventEndDate, etz, setRule);
 		} else if(StringUtils.equals(rec.getEndsMode(), EventRecurrence.ENDS_MODE_UNTIL)) {
-			rr = applyEndUntil(rec.getUntilDate(), etz, setRule);
+			rr = __applyEndUntil(rec.getUntilDate(), etz, setRule);
 		} else {
 			throw new RuntimeException("Recurrence end-mode unknown or undefined");
 		}
 		setRule(rr.getValue());
 	}
 	
-	public RRule applyEndNever(DateTimeZone etz, boolean setRule) {
+	@Deprecated
+	public RRule __applyEndNever(DateTimeZone etz, boolean setRule) {
 		RRule rr = null;
 		setRepeat(null);
 		setPermanent(true);
@@ -164,7 +167,8 @@ public class ORecurrence extends Recurrences {
 		return rr;
 	}
 	
-	public RRule applyEndRepeat(int repeatTimes, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone etz, boolean setRule) {
+	@Deprecated
+	public RRule __applyEndRepeat(int repeatTimes, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone etz, boolean setRule) {
 		RRule rr = null;
 		setRepeat(repeatTimes);
 		setPermanent(false);
@@ -175,7 +179,8 @@ public class ORecurrence extends Recurrences {
 		return rr;
 	}
 	
-	public RRule applyEndUntil(DateTime untilDate, DateTimeZone etz, boolean setRule) {
+	@Deprecated
+	public RRule __applyEndUntil(DateTime untilDate, DateTimeZone etz, boolean setRule) {
 		RRule rr = null;
 		setRepeat(null);
 		setPermanent(false);
@@ -185,10 +190,12 @@ public class ORecurrence extends Recurrences {
 		return rr;
 	}
 	
+	@Deprecated
 	public void updateRRule(DateTimeZone etz) {
 		setRule(buildRRule(etz).getValue());
 	}
 	
+	@Deprecated
 	public RRule buildRRule(DateTimeZone etz) {
 		Recur rec = null;
 		
@@ -252,14 +259,17 @@ public class ORecurrence extends Recurrences {
 		return new RRule(rec);
 	}
 	
+	@Deprecated
 	public boolean isEndNever() {
 		return getPermanent() && (getRepeat() == null);
 	}
 	
+	@Deprecated
 	public boolean isEndRepeat() {
 		return !getPermanent() && ((getRepeat() != null) && (getRepeat() > 0));
 	}
 	
+	@Deprecated
 	public boolean isEndUntil() {
 		return !getPermanent() && (((getRepeat() == null) || (getRepeat() == 0)) && (getUntilDate() != null));
 	}

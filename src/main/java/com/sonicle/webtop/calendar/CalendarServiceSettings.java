@@ -48,12 +48,7 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 	}
 	
 	public boolean getDavCalendarDeleteEnabled() {
-		Boolean value = getBoolean(DAV_CALENDAR_DELETE_ENABLED, null);
-		return (value != null) ? value : getDefaultDavCalendarDeleteEnabled();
-	}
-	
-	public boolean getDefaultDavCalendarDeleteEnabled() {
-		return getBoolean(DEFAULT_PREFIX + DAV_CALENDAR_DELETE_ENABLED, false);
+		return getBoolean(DAV_CALENDAR_DELETE_ENABLED, false);
 	}
 	
 	public Calendar.Sync getDefaultCalendarSync() {

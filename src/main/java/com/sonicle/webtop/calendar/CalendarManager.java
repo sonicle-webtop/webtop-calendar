@@ -647,8 +647,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendarFolder(calendarId, "READ");
 			
 			ArrayList<EventCalObject> items = new ArrayList<>();
-			Map<String, VEventCalObject> vobjs = evtDao.viewCalObjectsByCalendar(con, calendarId);
-			for (VEventCalObject vobj : vobjs.values()) {
+			Map<String, List<VEventCalObject>> vobjMap = evtDao.viewCalObjectsByCalendar(con, calendarId);
+			for (List<VEventCalObject> vobjs : vobjMap.values()) {
+				if (vobjs.isEmpty()) continue;
+				VEventCalObject vobj = vobjs.get(vobjs.size()-1);
+				if (vobjs.size() > 1) {
+					logger.trace("Many CalObjects ({}) found for same href [{} -> {}]", vobjs.size(), vobj.getHref(), vobj.getEventId());
+				}
+				
 				items.add(doEventCalObjectPrepare(con, vobj));
 			}
 			return items;
@@ -719,10 +725,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendarFolder(calendarId, "READ");
 			
 			ArrayList<EventCalObject> items = new ArrayList<>();
-			Map<String, VEventCalObject> vobjs = evtDao.viewCalObjectsByCalendarHrefs(con, calendarId, hrefs);
+			Map<String, List<VEventCalObject>> vobjMap = evtDao.viewCalObjectsByCalendarHrefs(con, calendarId, hrefs);
 			for (String href : hrefs) {
-				VEventCalObject vobj = vobjs.get(href);
-				if (vobj == null) continue;
+				List<VEventCalObject> vobjs = vobjMap.get(href);
+				if (vobjs == null) continue;
+				if (vobjs.isEmpty()) continue;
+				VEventCalObject vobj = vobjs.get(vobjs.size()-1);
+				if (vobjs.size() > 1) {
+					logger.trace("Many CalObjects ({}) found for same href [{} -> {}]", vobjs.size(), vobj.getHref(), vobj.getEventId());
+				}
 				
 				items.add(doEventCalObjectPrepare(con, vobj));
 			}
@@ -761,7 +772,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	public void updateEventCalObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
-		int eventId = getEventIdByCategoryHref(calendarId, href);
+		int eventId = getEventIdByCategoryHref(calendarId, href, true);
 		
 		ICalendarInput in = new ICalendarInput(udata.getTimeZone());
 		ArrayList<EventInput> eis = in.fromICalendarFile(iCalendar, null);
@@ -774,11 +785,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public void deleteEventCalObject(int calendarId, String href) throws WTException {
-		int eventId = getEventIdByCategoryHref(calendarId, href);
+		int eventId = getEventIdByCategoryHref(calendarId, href, true);
 		deleteEvent(eventId, true);
 	}
 	
-	private int getEventIdByCategoryHref(int calendarId, String href) throws WTException {
+	private int getEventIdByCategoryHref(int calendarId, String href, boolean throwExIfManyMatchesFound) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -787,8 +798,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			List<Integer> ids = evtDao.selectAliveIdsByCalendarHrefs(con, calendarId, href);
 			if (ids.isEmpty()) throw new WTNotFoundException("Event not found [{}, {}]", calendarId, href);
-			if (ids.size() > 1) throw new WTException("Many matches for href [{}]", href);
-			return ids.get(0);
+			if (throwExIfManyMatchesFound && (ids.size() > 1)) throw new WTException("Many matches for href [{}]", href);
+			return ids.get(ids.size()-1);
 			
 		} catch (SQLException | DAOException ex) {
 			throw wrapThrowable(ex);
@@ -1251,7 +1262,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				parsedEvent.setCalendarId(original.getCalendarId());
 				parsedEvent.setReadOnly(original.getReadOnly());
 				parsedEvent.setReminder(original.getReminder());
-				parsedEvent.setHref(original.getHref());
 				parsedEvent.setEtag(original.getEtag());
 				parsedEvent.setActivityId(original.getActivityId());
 				parsedEvent.setMasterDataId(original.getMasterDataId());
@@ -2312,12 +2322,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			ArrayList<Integer> processed = new ArrayList<>();
 			for (OEvent oevt : evtDao.selectHandleInvitationByRevision(con)) {
+				Event.RevisionStatus revStatus = EnumUtils.forSerializedName(oevt.getRevisionStatus(), Event.RevisionStatus.class);
 				String crud = null;
-				if (OEvent.REV_STATUS_NEW.equals(oevt.getRevisionStatus())) {
+				if (Event.RevisionStatus.NEW.equals(revStatus)) {
 					crud = Crud.CREATE;
-				} else if (OEvent.REV_STATUS_MODIFIED.equals(oevt.getRevisionStatus())) {
+				} else if (Event.RevisionStatus.MODIFIED.equals(revStatus)) {
 					crud = Crud.UPDATE;
-				} else if (OEvent.REV_STATUS_DELETED.equals(oevt.getRevisionStatus())) {
+				} else if (Event.RevisionStatus.DELETED.equals(revStatus)) {
 					crud = Crud.DELETE;
 				}
 				if (crud == null) {
@@ -2560,7 +2571,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						params.syncToken = dcal.getSyncToken();
 						
 						EventDAO evtDao = EventDAO.getInstance();
-						Map<String, Integer> eventIdsByHref = evtDao.selectHrefsByByCalendar(con, calendarId);
+						Map<String, List<Integer>> eventIdsByHref = evtDao.selectHrefsByByCalendar(con, calendarId);
 						
 						logger.debug("Retrieving changes [{}, {}]", params.url.toString(), savedSyncToken);
 						List<DavSyncStatus> changes = dav.getCalendarChanges(params.url.toString(), savedSyncToken);
@@ -2571,14 +2582,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								// Process changes...
 								logger.debug("Processing changes...");
 								HashSet<String> hrefs = new HashSet<>();
-								for(DavSyncStatus change : changes) {
+								for (DavSyncStatus change : changes) {
 									if (DavUtil.HTTP_SC_TEXT_OK.equals(change.getResponseStatus())) {
 										hrefs.add(change.getPath());
 
 									} else { // Event deleted
-										final Integer eventId = eventIdsByHref.get(change.getPath());
-
-										if (eventId == null) throw new WTException("Event path not found [{0}]", change.getPath());
+										List<Integer> eventIds = eventIdsByHref.get(change.getPath());
+										Integer eventId = (eventIds != null) ? eventIds.get(eventIds.size()-1) : null;
+										if (eventId == null) {
+											logger.warn("Deletion not possible. Event path not found [{}]", change.getPath());
+											continue;
+										}
 										doEventDelete(con, eventId, false);
 									}
 								}
@@ -2592,7 +2606,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								HashMap<String, OEvent> cache = new HashMap<>();
 								for(DavCalendarEvent devt : devts) {
 									if (logger.isTraceEnabled()) logger.trace("{}", ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
-									final Integer eventId = eventIdsByHref.get(devt.getPath());
+									List<Integer> eventIds = eventIdsByHref.get(devt.getPath());
+									Integer eventId = (eventIds != null) ? eventIds.get(eventIds.size()-1) : null;
 
 									final ArrayList<EventInput> input = icalInput.fromICalendarFile(devt.getCalendar(), null);
 									if (input.size() != 1) throw new WTException("Unexpected size");
@@ -3146,7 +3161,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		OEvent oevt = ManagerUtils.createOEvent(event);
 		oevt.setEventId(evtDao.getSequence(con).intValue());
-		oevt.setRevisionStatus(OEvent.REV_STATUS_NEW);
+		oevt.setRevisionStatus(EnumUtils.toSerializedName(Event.RevisionStatus.NEW));
 		fillOEventWithDefaults(oevt);
 		oevt.ensureCoherence();
 		
@@ -3224,7 +3239,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		if (DoOption.UPDATE.equals(recurrence)) {
 			ORecurrence orec = recDao.select(con, originalEvent.getRecurrenceId());
-			if (event.hasRecurrence()&& (orec != null)) {
+			if (event.hasRecurrence() && (orec != null)) {
 				Recur recur = ICal4jUtils.parseRRule(event.getRecurrenceRule());
 				orec.set(recur, event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
 				recDao.update(con, orec);
@@ -3376,6 +3391,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (StringUtils.isBlank(tgt.getPublicUid())) {
 				tgt.setPublicUid(ManagerUtils.buildEventUid(tgt.getEventId(), WT.getDomainInternetName(getTargetProfileId().getDomainId())));
 			}
+			tgt.setHref(ManagerUtils.buildHref(tgt.getPublicUid()));
 			if (tgt.getReadOnly() == null) tgt.setReadOnly(false);
 			if (StringUtils.isBlank(tgt.getOrganizer())) tgt.setOrganizer(ManagerUtils.buildOrganizer(getTargetProfileId()));
 		}

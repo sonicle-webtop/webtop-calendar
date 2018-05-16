@@ -41,6 +41,7 @@ import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ICALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
 import com.sonicle.webtop.calendar.jooq.tables.Events;
@@ -110,8 +111,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 					EVENTS.EVENT_ID.equal(eventId)
 					.and(
-						EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-						.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+						EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+						.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 					)
 			)
 			.fetchOneInto(OEvent.class);
@@ -125,8 +126,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 					EVENTS.PUBLIC_UID.equal(publicUid)
 					.and(
-						EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-						.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+						EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+						.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 					)
 			)
 			.fetchInto(Integer.class);
@@ -141,8 +142,8 @@ public class EventDAO extends BaseDAO {
 				EVENTS.CALENDAR_ID.in(calendarIds)
 				.and(EVENTS.PUBLIC_UID.equal(publicUid))
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 			)
 			.fetchInto(Integer.class);
@@ -155,14 +156,12 @@ public class EventDAO extends BaseDAO {
 			.select(
 				EVENTS.EVENT_ID
 			)
-			.from(
-				RECURRENCES_BROKEN.join(EVENTS).on(RECURRENCES_BROKEN.EVENT_ID.equal(EVENTS.EVENT_ID))
-			)
+			.from(RECURRENCES_BROKEN.join(EVENTS).on(RECURRENCES_BROKEN.EVENT_ID.equal(EVENTS.EVENT_ID)))
 			.where(
 				RECURRENCES_BROKEN.NEW_EVENT_ID.equal(eventId)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 			).fetchOneInto(Integer.class);
 	}
@@ -174,9 +173,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.EVENT_ID
 			)
 			.from(EVENTS)
-			.join(CALENDARS).on(
-				CALENDARS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID)
-			)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
@@ -185,10 +182,13 @@ public class EventDAO extends BaseDAO {
 				)
 				.and(EVENTS.HREF.equal(href))
 			)
+			.orderBy(
+				EVENTS.EVENT_ID.asc()
+			)
 			.fetchInto(Integer.class);
 	}
 	
-	public Map<String, Integer> selectHrefsByByCalendar(Connection con, int calendarId) throws DAOException {
+	public Map<String, List<Integer>> selectHrefsByByCalendar(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -199,11 +199,14 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 			)
-			.fetchMap(EVENTS.HREF, EVENTS.EVENT_ID);
+			.orderBy(
+				EVENTS.EVENT_ID.asc()
+			)
+			.fetchGroups(EVENTS.HREF, EVENTS.EVENT_ID);
 	}
 	
 	public Map<Integer, DateTime> selectMaxRevTimestampByCalendars(Connection con, Collection<Integer> calendarIds) throws DAOException {
@@ -226,9 +229,10 @@ public class EventDAO extends BaseDAO {
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		item.ensureCoherence();
-		item.setRevisionStatus(OEvent.REV_STATUS_NEW);
+		item.setRevisionStatus(EnumUtils.toSerializedName(Event.RevisionStatus.NEW));
 		item.setRevisionTimestamp(revisionTimestamp);
 		item.setRevisionSequence(0);
+		item.setCreationTimestamp(revisionTimestamp);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)
@@ -239,7 +243,7 @@ public class EventDAO extends BaseDAO {
 	public int update(Connection con, OEvent item, DateTime revisionTimestamp, boolean clearRemindedOn) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		item.ensureCoherence();
-		item.setRevisionStatus(OEvent.REV_STATUS_MODIFIED);
+		item.setRevisionStatus(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED));
 		item.setRevisionTimestamp(revisionTimestamp);
 		
 		if (clearRemindedOn) {
@@ -260,7 +264,6 @@ public class EventDAO extends BaseDAO {
 				.set(EVENTS.IS_PRIVATE, item.getIsPrivate())
 				.set(EVENTS.BUSY, item.getBusy())
 				.set(EVENTS.REMINDER, item.getReminder())
-				.set(EVENTS.HREF, item.getHref())
 				.set(EVENTS.ETAG, item.getEtag())
 				.set(EVENTS.ACTIVITY_ID, item.getActivityId())
 				.set(EVENTS.MASTER_DATA_ID, item.getMasterDataId())
@@ -289,7 +292,6 @@ public class EventDAO extends BaseDAO {
 				.set(EVENTS.IS_PRIVATE, item.getIsPrivate())
 				.set(EVENTS.BUSY, item.getBusy())
 				.set(EVENTS.REMINDER, item.getReminder())
-				.set(EVENTS.HREF, item.getHref())
 				.set(EVENTS.ETAG, item.getEtag())
 				.set(EVENTS.ACTIVITY_ID, item.getActivityId())
 				.set(EVENTS.MASTER_DATA_ID, item.getMasterDataId())
@@ -307,7 +309,7 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.update(EVENTS)
 			.set(EVENTS.CALENDAR_ID,calendarId)
-			.set(EVENTS.REVISION_STATUS, OEvent.REV_STATUS_MODIFIED)
+			.set(EVENTS.REVISION_STATUS, EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED))
 			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
@@ -411,7 +413,7 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.REVISION_STATUS, OEvent.REV_STATUS_DELETED)
+			.set(EVENTS.REVISION_STATUS, EnumUtils.toSerializedName(Event.RevisionStatus.DELETED))
 			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
@@ -423,7 +425,7 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.REVISION_STATUS, OEvent.REV_STATUS_DELETED)
+			.set(EVENTS.REVISION_STATUS, EnumUtils.toSerializedName(Event.RevisionStatus.DELETED))
 			.set(EVENTS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
@@ -460,7 +462,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
 				rbk1.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve1.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
 		// New field: info about attendees
@@ -487,8 +489,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 			)
 			.fetchOneInto(VVEvent.class);
@@ -505,7 +507,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
 				rbk1.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve1.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
 		// New field: info about attendees
@@ -532,8 +534,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.PUBLIC_UID.equal(publicUid)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 			)
 			.fetchOneInto(VVEvent.class);
@@ -550,7 +552,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
 				rbk1.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve1.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
 		return dsl
@@ -575,8 +577,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -621,8 +623,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNotNull())
 				.and(
@@ -664,7 +666,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
 				rbk1.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve1.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
 		// New field: info about attendees
@@ -691,8 +693,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.in(calendarIds)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -756,8 +758,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.CALENDAR_ID.in(calendarIds)
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNotNull())
 				.and(
@@ -784,7 +786,7 @@ public class EventDAO extends BaseDAO {
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
 				rbk1.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
-				.and(eve1.REVISION_STATUS.notEqual(OEvent.REV_STATUS_DELETED))
+				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
 		// New field: info about attendees
@@ -821,8 +823,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
 				.and(
@@ -877,8 +879,8 @@ public class EventDAO extends BaseDAO {
 			.where(
 				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
 				.and(
-					EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_NEW)
-					.or(EVENTS.REVISION_STATUS.equal(OEvent.REV_STATUS_MODIFIED))
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(
 					RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
@@ -893,11 +895,11 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VVEvent.class);
 	}
 	
-	public Map<String, VEventCalObject> viewCalObjectsByCalendar(Connection con, int calendarId) throws DAOException {
+	public Map<String, List<VEventCalObject>> viewCalObjectsByCalendar(Connection con, int calendarId) throws DAOException {
 		return viewCalObjectsByCalendarHrefs(con, calendarId, null);
 	}
 	
-	public Map<String, VEventCalObject> viewCalObjectsByCalendarHrefs(Connection con, int calendarId, Collection<String> hrefs) throws DAOException {
+	public Map<String, List<VEventCalObject>> viewCalObjectsByCalendarHrefs(Connection con, int calendarId, Collection<String> hrefs) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		// New field: info about attendees
@@ -919,18 +921,14 @@ public class EventDAO extends BaseDAO {
 				EVENTS.fields()
 			)
 			.select(
-				hasAttendees
-				//DSL.nvl2(EVENTS_ICALENDARS.CONTACT_ID, true, false).as("has_icalendar")
+				hasAttendees,
+				DSL.nvl2(EVENTS_ICALENDARS.EVENT_ID, true, false).as("has_icalendar")
 			)
 			.from(EVENTS)
-			.join(CALENDARS).on(
-				EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID)
-			)
-			/*
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
 			.leftOuterJoin(EVENTS_ICALENDARS).on(
 				EVENTS.EVENT_ID.equal(EVENTS_ICALENDARS.EVENT_ID)
 			)
-			*/
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
 				.and(
@@ -942,7 +940,7 @@ public class EventDAO extends BaseDAO {
 			.orderBy(
 				EVENTS.EVENT_ID.asc()
 			)
-			.fetchMap(EVENTS.HREF, VEventCalObject.class);
+			.fetchGroups(EVENTS.HREF, VEventCalObject.class);
 	}
 	
 	public List<VEventCalObjectChanged> viewChangedByCalendar(Connection con, int calendarId, int limit) throws DAOException {
@@ -985,7 +983,7 @@ public class EventDAO extends BaseDAO {
 			.from(EVENTS)
 			.where(
 				EVENTS.CALENDAR_ID.equal(calendarId)
-				.and(EVENTS.REVISION_TIMESTAMP.greaterOrEqual(since))
+				.and(EVENTS.REVISION_TIMESTAMP.greaterThan(since))
 			)
 			.orderBy(
 				EVENTS.CREATION_TIMESTAMP.asc()

@@ -32,11 +32,13 @@
  */
 package com.sonicle.webtop.calendar.rest.v1;
 
+import com.sonicle.commons.Base58;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarServiceSettings;
+import com.sonicle.webtop.calendar.ManagerUtils;
 import com.sonicle.webtop.calendar.model.EventCalObject;
 import com.sonicle.webtop.calendar.model.EventCalObjectChanged;
 import com.sonicle.webtop.calendar.swagger.v1.api.CaldavApi;
@@ -70,8 +72,8 @@ import org.joda.time.format.DateTimeFormatter;
  * @author malbinola
  */
 public class CalDav extends CaldavApi {
-	private static final String DEFAULT_ETAG = "19700101000000";
-	private static final DateTimeFormatter ETAG_FORMATTER = DateTimeUtils.createFormatter("yyyyMMddHHmmss", DateTimeZone.UTC);
+	private static final String DEFAULT_ETAG = "19700101000000000";
+	private static final DateTimeFormatter ETAG_FORMATTER = DateTimeUtils.createFormatter("yyyyMMddHHmmssSSS", DateTimeZone.UTC);
 	
 	@Override
 	public Response getCalendars() {
@@ -186,14 +188,14 @@ public class CalDav extends CaldavApi {
 			if ((hrefs == null) || hrefs.isEmpty()) {
 				List<EventCalObject> calObjs = manager.listEventCalObjects(calendarId);
 				for (EventCalObject calObj : calObjs) {
-					items.add(createCalObject(calObj));
+					items.add(createCalObjectWithData(calObj));
 				}
 				return respOk(items);
 				
 			} else {
 				List<EventCalObject> calObjs = manager.getEventCalObjects(calendarId, hrefs);
 				for (EventCalObject calObj : calObjs) {
-					items.add(createCalObject(calObj));
+					items.add(createCalObjectWithData(calObj));
 				}
 				return respOk(items);
 			}
@@ -208,11 +210,10 @@ public class CalDav extends CaldavApi {
 		
 		try {
 			com.sonicle.webtop.calendar.model.Calendar cal = manager.getCalendar(calendarId);
-			if (cal == null) return respErrorBadRequest();
+			if (cal == null) return respErrorNotFound();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(Arrays.asList(calendarId));
-			if (revisions.isEmpty()) return respErrorNotFound();
 			
 			DateTime since = null;
 			if (!StringUtils.isBlank(syncToken)) {
@@ -299,6 +300,7 @@ public class CalDav extends CaldavApi {
 	private Calendar createCalendar(com.sonicle.webtop.calendar.model.Calendar cal, DateTime lastRevisionTimestamp) {
 		return new Calendar()
 				.id(cal.getCalendarId())
+				.uid(ManagerUtils.encodeAsCalendarUid(cal.getCalendarId()))
 				.displayName(cal.getName())
 				.description(cal.getDescription())
 				.color(cal.getColor())
@@ -348,6 +350,10 @@ public class CalDav extends CaldavApi {
 				.inserted(inserted)
 				.updated(updated)
 				.deleted(deleted);
+	}
+	
+	private String buildPublicUid(int id) {
+		return Base58.encode(StringUtils.leftPad(String.valueOf(id), 10, "0").getBytes());
 	}
 	
 	private String buildEtag(DateTime revisionTimestamp) {

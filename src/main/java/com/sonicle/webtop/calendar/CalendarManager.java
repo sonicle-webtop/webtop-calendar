@@ -776,8 +776,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		ICalendarInput in = new ICalendarInput(udata.getTimeZone());
 		ArrayList<EventInput> eis = in.fromICalendarFile(iCalendar, null);
+		if (eis.isEmpty()) throw new WTException("iCalendar object does not contain any events");
 		EventInput ei = eis.get(0);
-		if (ei == null) throw new WTException("iCalendar object does not contain any events");
 		ei.event.setEventId(eventId);
 		ei.event.setCalendarId(calendarId);
 		
@@ -1179,7 +1179,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		
 		ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
-		if (parsed.size() > 1) throw new WTException("iCal must contain at least one event");
+		if (parsed.isEmpty()) throw new WTException("iCal must contain at least one event");
 		
 		Event event = parsed.get(0).event;
 		event.setCalendarId(calendarId);
@@ -1231,31 +1231,31 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		String uid = ICalendarUtils.getUidValue(ve);
 		if (StringUtils.isBlank(uid)) throw new WTException("Event does not provide a valid Uid");
 		
-		if (ical.getMethod().equals(Method.REQUEST)) {
-			// Organizer -> Attendee
-			// The organizer after updating the event details send a mail message
-			// to all attendees telling to update their saved information
+		try {
+			con = WT.getConnection(SERVICE_ID, false);
 			
-			// Gets the event...
-			//Event evt = getEventForICalUpdate(uid);
-			
-			Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
-			if (evt == null) throw new WTException("Event not found [{}]", uid);
-			
-			EventDAO edao = EventDAO.getInstance();
-			final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
-			
-			// Parse the ical using the code used in import
-			ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
-			Event parsedEvent = parsed.get(0).event;
-			parsedEvent.setCalendarId(evt.getCalendarId());
-			
-			try {
+			if (ical.getMethod().equals(Method.REQUEST)) {
+				// Organizer -> Attendee
+				// The organizer after updating the event details send a mail message
+				// to all attendees telling to update their saved information
+
+				// Gets the event...
+				Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
+				if (evt == null) throw new WTException("Event not found [{}]", uid);
+
+				EventDAO edao = EventDAO.getInstance();
+				final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+
+				// Parse the ical using the code used in import
+				ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
+				if (parsed.isEmpty()) throw new WTException("iCal must contain at least one event");
+				Event parsedEvent = parsed.get(0).event;
+				parsedEvent.setCalendarId(evt.getCalendarId());
+
 				checkRightsOnCalendarElements(evt.getCalendarId(), "UPDATE");
-				
-				con = WT.getConnection(SERVICE_ID, false);
+
 				OEvent original = edao.selectById(con, evt.getEventId());
-				
+
 				// Set into parsed all fields tha can't be changed by the iCal
 				// update otherwise data can be lost inside doEventUpdate
 				parsedEvent.setEventId(original.getEventId());
@@ -1267,80 +1267,76 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				parsedEvent.setMasterDataId(original.getMasterDataId());
 				parsedEvent.setStatMasterDataId(original.getStatMasterDataId());
 				parsedEvent.setCausalId(original.getCausalId());
-				
+
 				doEventUpdate(con, original, parsedEvent, true);
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+				
+			} else if (ical.getMethod().equals(Method.REPLY)) {
+				// Attendee -> Organizer
+				// The attendee replies to an event sending to the organizer a mail 
+				// message with an attached ical (the above param), properly configured.
+				// The ical should be kept untouched in the reply except for the 
+				// attendee list: it should contains only the references of the 
+				// attendee that replies to the invitation.
 
-			} catch(SQLException | DAOException | WTException ex) {
-				DbUtils.rollbackQuietly(con);
-				throw wrapThrowable(ex);
-			} catch(Throwable t) {
-				DbUtils.rollbackQuietly(con);
-				throw t;
-			} finally {
-				DbUtils.closeQuietly(con);
-			}
-			
-		} else if (ical.getMethod().equals(Method.REPLY)) {
-			// Attendee -> Organizer
-			// The attendee replies to an event sending to the organizer a mail 
-			// message with an attached ical (the above param), properly configured.
-			// The ical should be kept untouched in the reply except for the 
-			// attendee list: it should contains only the references of the 
-			// attendee that replies to the invitation.
-			
-			Attendee att = ICalendarUtils.getAttendee(ve);
-			if (att == null) throw new WTException("Event does not provide any attendees");
-			
-			// Extract response info...
-			PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
-			String responseStatus = ICalHelper.partStatToResponseStatus(partStat);
-			
-			// Gets the event looking also into incoming calendars...
-			// (i can be the organizer of a meeting created for my boss that 
-			// share his calendar with me; all received replies must be bringed
-			// back to the event in the shared calendar)
-			//Event evt = getEvent(uid);
-			
-			// Previous impl. forced (forceOriginal == true)
-			Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
-			if (evt == null) throw new WTException("Event not found [{0}]", uid);
-			
-			List<String> updatedAttIds = updateEventAttendeeResponseByRecipient(evt, att.getCalAddress().getSchemeSpecificPart(), responseStatus);
-			
-			// Commented to not send notification email in this case: 
-			// the organizer already knows this info, he updated 'manually' the 
-			// event by clicking the "Update event" button on the preview!
-			/*
-			if (!updatedAttIds.isEmpty()) {
-				evt = getEvent(evt.getEventId());
-				for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
-			}
-			*/
-			
-		} else if (ical.getMethod().equals(Method.CANCEL)) {
-			// Organizer -> Attendee
-			// The organizer after cancelling the event send a mail message
-			// to all attendees telling to update their saved information
-			
-			// Gets the event...
-			//Event evt = getEventForICalUpdate(uid);
-			Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
-			if (evt == null) throw new WTException("Event not found [{0}]", uid);
-			
-			try {
-				con = WT.getConnection(SERVICE_ID);
+				Attendee att = ICalendarUtils.getAttendee(ve);
+				if (att == null) throw new WTException("Event does not provide any attendees");
+
+				// Extract response info...
+				PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
+				String responseStatus = ICalHelper.partStatToResponseStatus(partStat);
+
+				// Gets the event looking also into incoming calendars...
+				// (i can be the organizer of a meeting created for my boss that 
+				// share his calendar with me; all received replies must be bringed
+				// back to the event in the shared calendar)
+				//Event evt = getEvent(uid);
+				// Previous impl. forced (forceOriginal == true)
+				Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
+				if (evt == null) throw new WTException("Event not found [{0}]", uid);
+				
+				List<String> updatedAttIds = doEventAttendeeUpdateResponseByRecipient(con, evt, att.getCalAddress().getSchemeSpecificPart(), responseStatus);
+				//List<String> updatedAttIds = updateEventAttendeeResponseByRecipient(evt, att.getCalAddress().getSchemeSpecificPart(), responseStatus);
+				
+				DbUtils.commitQuietly(con);
+				
+				// Commented to not send notification email in this case: 
+				// the organizer already knows this info, he updated 'manually' the 
+				// event by clicking the "Update event" button on the preview!
+				/*
+				if (!updatedAttIds.isEmpty()) {
+					evt = getEvent(evt.getEventId());
+					for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
+				}
+				*/
+				
+			} else if (ical.getMethod().equals(Method.CANCEL)) {
+				// Organizer -> Attendee
+				// The organizer after cancelling the event send a mail message
+				// to all attendees telling to update their saved information
+
+				// Gets the event...
+				//Event evt = getEventForICalUpdate(uid);
+				Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
+				if (evt == null) throw new WTException("Event not found [{0}]", uid);
+				
 				doEventDelete(con, evt.getEventId(), true);
-
-			} catch(SQLException | DAOException ex) {
-				throw wrapThrowable(ex);
-			} finally {
-				DbUtils.closeQuietly(con);
+				DbUtils.commitQuietly(con);
+				writeLog("EVENT_DELETE", String.valueOf(evt.getEventId()));
+				
+			} else {
+				throw new WTException("Unsupported Calendar's method [{0}]", ical.getMethod().toString());
 			}
 			
-		} else {
-			throw new WTException("Unsupported Calendar's method [{0}]", ical.getMethod().toString());
+		} catch(SQLException | DAOException | WTException ex) {
+			DbUtils.rollbackQuietly(con);
+			throw wrapThrowable(ex);
+		} catch(Throwable t) {
+			DbUtils.rollbackQuietly(con);
+			throw t;
+		} finally {
+			DbUtils.closeQuietly(con);
 		}
 	}
 	
@@ -1381,6 +1377,30 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
+	private List<String> doEventAttendeeUpdateResponseByRecipient(Connection con, Event event, String recipient, String responseStatus) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+
+		// Find matching attendees
+		ArrayList<String> matchingIds = new ArrayList<>();
+		List<OEventAttendee> atts = attDao.selectByEvent(con, event.getEventId());
+		for (OEventAttendee att : atts) {
+			final InternetAddress ia = InternetAddressUtils.toInternetAddress(att.getRecipient());
+			if (ia == null) continue;
+			if (StringUtils.equalsIgnoreCase(ia.getAddress(), recipient)) matchingIds.add(att.getAttendeeId());
+		}
+		
+		// Update responses
+		int ret = attDao.updateAttendeeResponseByIds(con, responseStatus, matchingIds);
+		evtDao.updateRevision(con, event.getEventId(), BaseDAO.createRevisionTimestamp());
+		if (matchingIds.size() == ret) {
+			return matchingIds;
+		} else {
+			throw new WTException("# of attendees to update don't match the uptated ones");
+		}
+	}
+	
+	/*
 	private List<String> updateEventAttendeeResponseByRecipient(Event event, String recipient, String responseStatus) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
@@ -1421,6 +1441,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.closeQuietly(con);
 		}
 	}
+	*/
 	
 	@Override
 	public String getEventInstanceKey(int eventId) throws WTException {
@@ -2547,7 +2568,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								}
 								
 								final ArrayList<EventInput> input = icalInput.fromICalendarFile(devt.getCalendar(), null);
-								if (input.size() != 1) throw new WTException("Unexpected size");
+								if (input.size() != 1) throw new WTException("iCal must contain one event");
 								final EventInput ei = input.get(0);
 								
 								ei.event.setCalendarId(calendarId);
@@ -2610,7 +2631,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 									Integer eventId = (eventIds != null) ? eventIds.get(eventIds.size()-1) : null;
 
 									final ArrayList<EventInput> input = icalInput.fromICalendarFile(devt.getCalendar(), null);
-									if (input.size() != 1) throw new WTException("Unexpected size");
+									if (input.size() != 1) throw new WTException("iCal must contain one event");
 									final EventInput ei = input.get(0);
 
 									if (eventId != null) {
@@ -3051,6 +3072,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			logger.debug("Looking for publicId in restricted set of calendars...");
 			ids = evtDao.selectAliveIdsByCalendarsPublicUid(con, calendarIdMustBeIn, publicUid);
 		}
+		if (ids.isEmpty()) return null;
 		if (ids.size() > 1) logger.warn("Multiple events found for public id [{}]", publicUid);
 		return ids.get(0);
 	}

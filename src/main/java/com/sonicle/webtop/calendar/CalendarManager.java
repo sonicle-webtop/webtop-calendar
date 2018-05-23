@@ -169,6 +169,7 @@ import freemarker.template.TemplateException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -391,6 +392,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
+	}
+	
+	public Map<String, String> getCalendarLinks(int calendarId) throws WTException {
+		checkRightsOnCalendarFolder(calendarId, "READ");
+		
+		UserProfile.Data ud = WT.getUserData(getTargetProfileId());
+		String davServerBaseUrl = WT.getDavServerBaseUrl(getTargetProfileId().getDomainId());
+		String calendarUid = ManagerUtils.encodeAsCalendarUid(calendarId);
+		String calendarUrl = MessageFormat.format(ManagerUtils.CALDAV_CALENDAR_URL, ud.getProfileEmailAddress(), calendarUid);
+		
+		LinkedHashMap<String, String> links = new LinkedHashMap<>();
+		links.put(ManagerUtils.CALENDAR_LINK_CALDAV, PathUtils.concatPathParts(davServerBaseUrl, calendarUrl));
+		return links;
 	}
 	
 	@Override

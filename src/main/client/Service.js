@@ -47,6 +47,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	uses: [
 		'Sonicle.webtop.calendar.view.Sharing',
 		'Sonicle.webtop.calendar.view.Calendar',
+		'Sonicle.webtop.calendar.view.CalendarLinks',
 		'Sonicle.webtop.calendar.view.Event',
 		'Sonicle.webtop.calendar.view.CalendarChooser',
 		'Sonicle.webtop.calendar.view.HiddenCalendars',
@@ -509,6 +510,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (node) me.addRemoteCalendarUI(node.get('_pid'));
 			}
 		});
+		me.addAct('viewCalendarLinks', {
+			tooltip: null,
+			handler: function() {
+				var node = me.getSelectedFolder(me.trFolders());
+				if (node) me.viewCalendarLinks(node.get('_calId'));
+			}
+		});
 		me.addAct('editCalendar', {
 			tooltip: null,
 			handler: function() {
@@ -788,6 +796,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				},
 				'-',
 				me.getAct('editSharing'),
+				me.getAct('viewCalendarLinks'),
 				{
 					text: me.res('mni-customizeFolder.lbl'),
 					menu: {
@@ -1181,6 +1190,23 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			Ext.callback(opts.callback, opts.scope || me, [true, s.getVMData()]);
 		});
 		vct.show();
+	},
+	
+	viewCalendarLinks: function(calendarId, opts) {
+		opts = opts || {};
+		var me = this,
+				vct = WT.createView(me.ID, 'view.CalendarLinks');
+		
+		vct.getView().on('viewclose', function(s, success, model) {
+			Ext.callback(opts.callback, opts.scope || me, [success, model]);
+		});
+		vct.show(false, function() {
+			vct.getView().begin('view', {
+				data: {
+					calendarId: calendarId
+				}
+			});
+		});
 	},
 	
 	editCalendar: function(calendarId, opts) {

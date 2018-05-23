@@ -361,10 +361,6 @@ public class CalDav extends CaldavApi {
 				.deleted(deleted);
 	}
 	
-	private String buildPublicUid(int id) {
-		return Base58.encode(StringUtils.leftPad(String.valueOf(id), 10, "0").getBytes());
-	}
-	
 	private String buildEtag(DateTime revisionTimestamp) {
 		if (revisionTimestamp != null) {
 			return ETAG_FORMATTER.print(revisionTimestamp);

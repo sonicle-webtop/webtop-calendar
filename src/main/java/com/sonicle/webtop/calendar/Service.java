@@ -56,6 +56,7 @@ import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee;
 import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
 import com.sonicle.webtop.calendar.bol.js.JsCalendar;
+import com.sonicle.webtop.calendar.bol.js.JsCalendarLinks;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
@@ -123,6 +124,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletRequest;
@@ -434,7 +436,7 @@ public class Service extends BaseService {
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			if(crud.equals(Crud.READ)) {
+			if (crud.equals(Crud.READ)) {
 				int id = ServletUtils.getIntParameter(request, "id", true);
 				
 				item = manager.getCalendar(id);
@@ -464,6 +466,14 @@ public class Service extends BaseService {
 				updateFoldersCache();
 				toggleCheckedFolder(pl.data.calendarId, false);
 				new JsonResult().printTo(out);
+				
+			} else if (crud.equals("readLinks")) {
+				int id = ServletUtils.getIntParameter(request, "id", true);
+				
+				ShareFolderCalendar fold = folders.get(id);
+				if (fold == null) throw new WTException("Calendar not found [{}]", id);
+				Map<String, String> links = manager.getCalendarLinks(id);
+				new JsonResult(new JsCalendarLinks(id, fold.getCalendar().getName(), links)).printTo(out);
 				
 			} else if (crud.equals("sync")) {
 				int id = ServletUtils.getIntParameter(request, "id", true);

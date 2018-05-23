@@ -50,6 +50,7 @@ import com.sonicle.webtop.calendar.model.SchedEvent;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
+import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.IdentifierUtils;
 import java.util.ArrayList;
@@ -69,12 +70,19 @@ import org.joda.time.Days;
  */
 public class ManagerUtils {
 	
+	public static final String CALDAV_CALENDAR_URL = "/calendars/{0}/{1}";
+	public static final String CALENDAR_LINK_CALDAV = "calDav";
+	
 	public static String buildProductName() {
 		return WT.getPlatformName() + " Calendar";
 	}
 	
-	public static int decodeAsCalendarId(String calendarPublicUid) {
-		return Integer.valueOf(new String(Base58.decode(calendarPublicUid)));
+	public static int decodeAsCalendarId(String calendarPublicUid) throws WTException {
+		try {
+			return Integer.valueOf(new String(Base58.decode(calendarPublicUid)));
+		} catch(RuntimeException ex) { // Not a Base58 input
+			throw new WTException(ex, "Invalid calendar UID encoding");
+		}
 	}
 	
 	public static String encodeAsCalendarUid(int calendarId) {

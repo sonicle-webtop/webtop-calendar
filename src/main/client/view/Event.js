@@ -63,6 +63,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	fieldTitle: 'title',
 	modelName: 'Sonicle.webtop.calendar.model.Event',
 	
+	suspendCheckboxChange: true,
 	suspendPlanningRefresh: 0,
 	suspendEventsInRR: false,
 	
@@ -277,11 +278,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
 					boxLabel: me.mys.res('event.fld-allDay.lbl'),
-					handler: function(s,nv) {
-						// It seems that the handler method and the change event
-						// will fire without any user interaction (eg. binding);
-						// so we need to deactivate the code below durin loading.
-						if (me.modelLoading) return;
+					handler: function(s, nv) {
+						// This handler method and the change event will fire 
+						// without any user interaction using binding. We have
+						// to do a trick for disabling the code below just after
+						// model loading.
+						if (me.suspendCheckboxChange) return;
 						// ---
 						var mo = me.getModel(),
 								soDate = Sonicle.Date,
@@ -788,7 +790,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				repeatsText: WT.res('sorrfield.repeats'),
 				endsText: WT.res('sorrfield.ends'),
 				frequencyTexts: {
-					'-1': WT.res('sorrfield.freq.none'),
+					'none': WT.res('sorrfield.freq.none'),
+					'raw': WT.res('sorrfield.freq.raw'),
 					'3': WT.res('sorrfield.freq.daily'),
 					'2': WT.res('sorrfield.freq.weekly'),
 					'1': WT.res('sorrfield.freq.monthly'),
@@ -813,16 +816,19 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					'-2': WT.res('sorrfield.nth.las2nd'),
 					'-1': WT.res('sorrfield.nth.last')
 				},
+				byDayText: WT.res('sorrfield.byDay'),
+				byWeekdayText: WT.res('sorrfield.byWeekday'),
+				byWeText: WT.res('sorrfield.byWe'),
 				endsNeverText: WT.res('sorrfield.endsNever'),
 				endsAfterText: WT.res('sorrfield.endsAfter'),
 				endsByText: WT.res('sorrfield.endsBy'),
 				occurrenceText: WT.res('sorrfield.occurrence'),
-				showRawValue: true
-			}, {
-				xtype: 'textfield',
-				bind: '{record.rrule}',
-				fieldLabel: 'rrule',
-				anchor: '100%'
+				rawFieldEmptyText: WT.res('sorrfield.raw.emp'),
+				listeners: {
+					rawpasteinvalid: function() {
+						WT.warn(me.mys.res('event.error.rrpaste'));
+					}
+				}
 			}]
 		};
 		
@@ -857,7 +863,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	onViewLoad: function(s, success) {
-		if(!success) return;
 		var me = this,
 				mo = me.getModel(),
 				owner = me.lref('fldowner');
@@ -884,6 +889,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		}
 		
 		me.lref('fldtitle').focus(true);
+		
+		// Disable checkbox change event suspension!!!
+		Ext.defer(function() {
+			me.suspendCheckboxChange = false;
+		}, 500);
 	},
 	
 	refreshActivities: function() {

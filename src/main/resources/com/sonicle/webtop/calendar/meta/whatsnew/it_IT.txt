@@ -1,0 +1,8 @@
+$	5.2.0
+	%	Versione 5.2.0
+	*	<h1>Nuovo pannello ricorrenza</h1>
+		<p>Interfaccia di gestione completamente ridisegnata che permette di creare 
+		regole più complesse con il minimo sforzo. Ora si puù fare riferimento 
+		a date ordinali, giorni feriali e weekend in modo semplice, decidere il 
+		numero di ripetizioni desiderato sia per le frequenze mensili che annuali.</p>
+		<img src="5.2.0_rrfield.png"/>

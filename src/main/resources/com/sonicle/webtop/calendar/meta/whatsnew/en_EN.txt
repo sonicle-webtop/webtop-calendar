@@ -1,0 +1,8 @@
+$	5.2.0
+	%	Version 5.2.0
+	*	<h1>New recurrence panel</h1>
+		<p>Completely redesigned interface that allow to build more complex 
+		recerrence rules with minimum effort. You can now refer to ordinal (or last) 
+		dates, weekdays and we in a simple way, decide repetitions for both yearly and 
+		monthly frequencies.</p>
+		<img src="5.2.0_rrfield.png"/>

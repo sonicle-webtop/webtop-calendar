@@ -37,6 +37,7 @@ import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.VEventCalObject;
 import com.sonicle.webtop.calendar.bol.VEventCalObjectChanged;
+import com.sonicle.webtop.calendar.bol.VEventHrefSync;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
@@ -990,5 +991,24 @@ public class EventDAO extends BaseDAO {
 			)
 			.limit(limit)
 			.fetchInto(VEventCalObjectChanged.class);
+	}
+	
+	public Map<String, VEventHrefSync> viewHrefSyncDataByCalendar(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.HREF,
+				EVENTS.ETAG
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+			)
+			.fetchMap(EVENTS.HREF, VEventHrefSync.class);
 	}
 }

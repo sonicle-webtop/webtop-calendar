@@ -73,7 +73,7 @@ public class ManagerUtils {
 	public static final String CALDAV_CALENDAR_URL = "/calendars/{0}/{1}";
 	public static final String CALENDAR_LINK_CALDAV = "calDav";
 	
-	public static String buildProductName() {
+	public static String getProductName() {
 		return WT.getPlatformName() + " Calendar";
 	}
 	

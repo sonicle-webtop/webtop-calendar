@@ -3294,7 +3294,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		if (ids.isEmpty()) return null;
-		if (ids.size() > 1) throw new WTException("Multiple events found for public id [{}]", publicUid);
+		// Filled array could contains more than one result, eg. in case of 
+		// invitation between two users of the same domain where the target
+		// calendar of one user is shared to the other.
+		// Returning the first result is the most appropriated action because
+		// personal elements are returned first.
+		//if (ids.size() > 1) throw new WTException("Multiple events found for public id [{}]", publicUid);
 		return doEventGet(con, ids.get(0), false);
 	}
 	

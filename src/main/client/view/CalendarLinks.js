@@ -65,7 +65,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarLinks', {
 			items: [{
 				xtype: 'textfield',
 				bind: '{record.calDavUrl}',
-				fieldLabel: me.mys.res('calendarLinks.fld-calDavUrl.lbl')
+				fieldLabel: me.mys.res('calendarLinks.fld-davCalUrl.lbl')
 			}]
 		});
 	}

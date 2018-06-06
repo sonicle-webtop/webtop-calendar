@@ -775,7 +775,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (iCalendar != null) {
 			String prodId = ICalendarUtils.buildProdId(ManagerUtils.buildProductName());
 			try {
-				rawData = new ICalendarOutput(prodId).write(iCalendar);
+				rawData = new ICalendarOutput(prodId, true).write(iCalendar);
 			} catch(IOException ex) {
 				throw new WTException(ex, "Error serializing iCalendar");
 			}
@@ -788,7 +788,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		int eventId = getEventIdByCategoryHref(calendarId, href, true);
 		
-		ICalendarInput in = new ICalendarInput(udata.getTimeZone());
+		ICalendarInput in = new ICalendarInput(udata.getTimeZone(), false, true);
 		ArrayList<EventInput> eis = in.fromICalendarFile(iCalendar, null);
 		if (eis.isEmpty()) throw new WTException("iCalendar object does not contain any events");
 		EventInput ei = eis.get(0);
@@ -3062,7 +3062,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		String prodId = ICalendarUtils.buildProdId(ManagerUtils.buildProductName());
-		ICalendarOutput out = new ICalendarOutput(prodId);
+		ICalendarOutput out = new ICalendarOutput(prodId, true);
 		net.fortuna.ical4j.model.Calendar iCal = out.toCalendar(event);
 		if (vobj.getHasIcalendar()) {
 			//TODO: in order to be fully compliant, merge generated vcard with the original one in db table!

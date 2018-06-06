@@ -765,7 +765,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public void addEventCalObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		
-		ICalendarInput in = new ICalendarInput(udata.getTimeZone());
+		ICalendarInput in = new ICalendarInput(udata.getTimeZone(), false, true);
 		ArrayList<EventInput> eis = in.fromICalendarFile(iCalendar, null);
 		if (eis.isEmpty()) throw new WTException("iCalendar object does not contain any events");
 		if (eis.size() > 1) throw new WTException("iCalendar object should contain one event");

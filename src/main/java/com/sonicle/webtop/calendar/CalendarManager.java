@@ -2877,11 +2877,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private void notifyAttendees(UserProfileId senderProfileId, String crud, Event event) {
+		if (event.getAttendees().isEmpty()) return;
+		
 		try {
+			String organizerAddress = event.getOrganizerAddress();
+			
 			// Finds attendees to be notified...
 			ArrayList<EventAttendee> toBeNotified = new ArrayList<>();
-			for(EventAttendee attendee : event.getAttendees()) {
-				if (attendee.getNotify()) toBeNotified.add(attendee);
+			for (EventAttendee attendee : event.getAttendees()) {
+				if (!StringUtils.equalsIgnoreCase(organizerAddress, attendee.getRecipientAddress()) && attendee.getNotify()) {
+					toBeNotified.add(attendee);
+				}
+				//if (attendee.getNotify()) toBeNotified.add(attendee);
 			}
 			
 			if (!toBeNotified.isEmpty()) {
@@ -2910,7 +2917,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail");
 				Session session = getMailSession();
 				InternetAddress from = ud.getEmail();
-				for(EventAttendee attendee : toBeNotified) {
+				for (EventAttendee attendee : toBeNotified) {
 					InternetAddress to = InternetAddressUtils.toInternetAddress(attendee.getRecipient());
 					if (InternetAddressUtils.isAddressValid(to)) {
 						final String customBody = TplHelper.buildEventInvitationBodyTpl(ud.getLocale(), dateFormat, timeFormat, event, crud, attendee.getAddress(), servicePublicUrl);

@@ -2885,9 +2885,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// Finds attendees to be notified...
 			ArrayList<EventAttendee> toBeNotified = new ArrayList<>();
 			for (EventAttendee attendee : event.getAttendees()) {
-				if (!StringUtils.equalsIgnoreCase(organizerAddress, attendee.getRecipientAddress()) && attendee.getNotify()) {
-					toBeNotified.add(attendee);
-				}
+				if (!attendee.getNotify()) continue;
+				if (StringUtils.equalsIgnoreCase(organizerAddress, attendee.getRecipientAddress())
+						&& !EventAttendee.RESPONSE_STATUS_NEEDSACTION.equals(attendee.getResponseStatus())) continue;
+				toBeNotified.add(attendee);
 				//if (attendee.getNotify()) toBeNotified.add(attendee);
 			}
 			

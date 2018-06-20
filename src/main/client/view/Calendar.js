@@ -37,6 +37,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		'Sonicle.FakeInput',
 		'Sonicle.plugin.NoAutocomplete',
 		'Sonicle.form.RadioGroup',
+		'Sonicle.form.Separator',
 		'Sonicle.form.Spacer',
 		'Sonicle.form.field.Palette',
 		'Sonicle.webtop.calendar.store.Provider',
@@ -47,8 +48,8 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	dockableConfig: {
 		title: '{calendar.tit}',
 		iconCls: 'wtcal-icon-calendar-xs',
-		width: 380,
-		height: 480
+		width: 440,
+		height: 530
 	},
 	fieldTitle: 'name',
 	modelName: 'Sonicle.webtop.calendar.model.Calendar',
@@ -66,7 +67,8 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 			isDefault: WTF.checkboxBind('record', 'isDefault'),
 			visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
 			showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
-			invitation: WTF.checkboxBind('record', 'invitation')
+			invitation: WTF.checkboxBind('record', 'invitation'),
+			notifyOnExtUpdate: WTF.checkboxBind('record', 'notifyOnExtUpdate')
 		});
 	},
 	
@@ -193,6 +195,17 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						},
 						hideEmptyLabel: false,
 						boxLabel: me.mys.res('calendar.fld-invitation.lbl')
+					}, {
+						xtype: 'soformseparator'
+					}, {
+						xtype: 'checkbox',
+						bind: {
+							value: '{notifyOnExtUpdate}',
+							disabled: '{foIsRemote}'
+						},
+						hideEmptyLabel: false,
+						boxLabel: me.mys.res('calendar.fld-notifyOnExtUpdate.lbl'),
+						labelWidth: 0
 				}]
 			}, {
 				xtype: 'wtform',

@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables.pojos;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Calendars implements java.io.Serializable {
 
-	private static final long serialVersionUID = 1304359579;
+	private static final long serialVersionUID = 1998386231;
 
 	private java.lang.Integer calendarId;
 	private java.lang.String  domainId;
@@ -33,6 +33,7 @@ public class Calendars implements java.io.Serializable {
 	private java.lang.Boolean isDefault;
 	private java.lang.String  provider;
 	private java.lang.String  parameters;
+	private java.lang.Boolean notifyOnExtUpdate;
 
 	public Calendars() {}
 
@@ -51,7 +52,8 @@ public class Calendars implements java.io.Serializable {
 		java.lang.Boolean isPrivate,
 		java.lang.Boolean isDefault,
 		java.lang.String  provider,
-		java.lang.String  parameters
+		java.lang.String  parameters,
+		java.lang.Boolean notifyOnExtUpdate
 	) {
 		this.calendarId = calendarId;
 		this.domainId = domainId;
@@ -68,6 +70,7 @@ public class Calendars implements java.io.Serializable {
 		this.isDefault = isDefault;
 		this.provider = provider;
 		this.parameters = parameters;
+		this.notifyOnExtUpdate = notifyOnExtUpdate;
 	}
 
 	public java.lang.Integer getCalendarId() {
@@ -188,5 +191,13 @@ public class Calendars implements java.io.Serializable {
 
 	public void setParameters(java.lang.String parameters) {
 		this.parameters = parameters;
+	}
+
+	public java.lang.Boolean getNotifyOnExtUpdate() {
+		return this.notifyOnExtUpdate;
+	}
+
+	public void setNotifyOnExtUpdate(java.lang.Boolean notifyOnExtUpdate) {
+		this.notifyOnExtUpdate = notifyOnExtUpdate;
 	}
 }

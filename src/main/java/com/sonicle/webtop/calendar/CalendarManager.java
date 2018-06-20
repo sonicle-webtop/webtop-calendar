@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.webtop.core.app.util.EmailNotification;
 import com.sonicle.webtop.calendar.model.GetEventScope;
 import com.rits.cloning.Cloner;
 import com.sonicle.webtop.core.util.ICal4jUtils;
@@ -57,6 +58,7 @@ import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.calendar.bol.OCalendarOwnerInfo;
 import com.sonicle.webtop.calendar.bol.OCalendarPropSet;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
@@ -153,6 +155,7 @@ import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import com.sonicle.webtop.calendar.model.EventCalObject;
 import com.sonicle.webtop.calendar.model.EventCalObjectChanged;
+import com.sonicle.webtop.calendar.model.EventFootprint;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
@@ -1163,6 +1166,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			storeAsSuggestion(core, SUGGESTION_EVENT_TITLE, event.getTitle());
 			storeAsSuggestion(core, SUGGESTION_EVENT_LOCATION, event.getLocation());
 			
+			// Notify last modification
+			List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.CREATE, insert.event.getCalendarId());
+			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.CREATE, getEvent(insert.event.getEventId()).getFootprint());
+			
 			//TODO: gestire le notifiche invito per gli eventi ricorrenti
 			// Handle attendees invitation
 			if (notifyAttendees && !insert.attendees.isEmpty()) { // Checking it here avoids unuseful calls!
@@ -1220,6 +1227,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			doEventUpdate(con, oevtOrig, event, DoOption.UPDATE, true);
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
+			
+			// Notify last modification
+			List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.UPDATE, oevtOrig.getCalendarId());
+			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.UPDATE, getEvent(oevtOrig.getEventId()).getFootprint());
 
 			// Handle attendees notification
 			if (notifyAttendees && event.hasAttendees()) {
@@ -1374,6 +1385,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			doEventDelete(con, eventId, true);
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_DELETE", String.valueOf(eventDump.getEventId()));
+			
+			// Notify last modification
+			List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.DELETE, eventDump.getCalendarId());
+			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.CREATE, eventDump.getFootprint());
 			
 			// Handle attendees notification
 			if (notifyAttendees && eventDump.hasAttendees()) {
@@ -1534,6 +1549,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 					writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
 					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.CREATE, oevtOrig.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.CREATE, getEvent(insert.event.getEventId()).getFootprint());
+					
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, insert.event.getLocation());
 					
@@ -1574,6 +1593,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
 					writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.CREATE, oevtOrig.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.CREATE, getEvent(insert.event.getEventId()).getFootprint());
+					
 					//TODO: gestire notifica invitati?
 					
 				} else if (UpdateEventTarget.ALL_SERIES.equals(target)) {
@@ -1603,6 +1626,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
 					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.UPDATE, oevtOrig.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.UPDATE, getEvent(oevtOrig.getEventId()).getFootprint());
+					
 					//TODO: gestire notifica invitati?
 				}
 			} else if (vevt.isEventBroken()) {
@@ -1614,6 +1641,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(ekey.eventId));
+					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.UPDATE, oevtOrig.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.UPDATE, getEvent(oevtOrig.getEventId()).getFootprint());
 					
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
@@ -1628,6 +1659,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
+					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.UPDATE, oevtOrig.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.UPDATE, getEvent(oevtOrig.getEventId()).getFootprint());
 					
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
 					//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
@@ -1796,6 +1831,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(oevt.getEventId()));
 				
+				// Notify last modification
+				List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.UPDATE, oevt.getCalendarId());
+				if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.UPDATE, getEvent(oevt.getEventId()).getFootprint());
+				
 				// Handle attendees invitation
 				if (vevt.getHasAttendees()) notifyAttendees(Crud.UPDATE, getEventInstance(eventKey));
 			}
@@ -1827,6 +1866,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			InsertResult insert = doEventInsert(con, event, true, true, null);
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
+			
+			// Notify last modification
+			List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.CREATE, insert.event.getCalendarId());
+			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.CREATE, getEvent(insert.event.getEventId()).getFootprint());
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -1867,6 +1910,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
 					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.UPDATE, vevt.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.UPDATE, getEvent(ekey.originalEventId).getFootprint());
+					
 				} else if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) {
 					// Changes are only valid from this instance onward
 					
@@ -1885,18 +1932,28 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
 					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.UPDATE, vevt.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.UPDATE, getEvent(ekey.originalEventId).getFootprint());
+					
 				} else if (UpdateEventTarget.ALL_SERIES.equals(target)) {
 					// Changes are valid for all the instances (whole recurrence)
+					
+					Event eventDump = getEvent(ekey.eventId); // Save for later use!
 					
 					// 1 - logically delete original event
 					doEventDelete(con, ekey.originalEventId, true);
 					
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(ekey.originalEventId));
+					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.DELETE, eventDump.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.DELETE, eventDump.getFootprint());
 				}
 				
 			} else if (vevt.isEventBroken()) {
-				Event dump = (vevt.getHasAttendees()) ? getEventInstance(eventKey) : null;
+				Event eventDump = getEventInstance(eventKey); // Save for later use!
 				if (UpdateEventTarget.THIS_INSTANCE.equals(target)) {
 					// 1 - logically delete newevent (broken one)
 					doEventDelete(con, ekey.eventId, true);
@@ -1907,12 +1964,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
 					writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
 					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.DELETE, eventDump.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.DELETE, eventDump.getFootprint());
+					
 					// Handle attendees invitation
-					if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, dump);
+					if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, eventDump);
 				}
 				
 			} else {
-				Event dump = (vevt.getHasAttendees()) ? getEventInstance(eventKey) : null;
+				Event eventDump = getEventInstance(eventKey); // Save for later use!
 				if (UpdateEventTarget.THIS_INSTANCE.equals(target)) {
 					if (!ekey.eventId.equals(ekey.originalEventId)) throw new WTException("In this case both ids must be equals");
 					doEventDelete(con, ekey.eventId, true);
@@ -1920,8 +1981,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					DbUtils.commitQuietly(con);
 					writeLog("EVENT_DELETE", String.valueOf(ekey.originalEventId));
 					
+					// Notify last modification
+					List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.DELETE, eventDump.getCalendarId());
+					if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.DELETE, eventDump.getFootprint());
+					
 					// Handle attendees invitation
-					if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, dump);
+					if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, eventDump);
 				}
 			}
 			
@@ -1952,10 +2017,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			if (!vevt.isEventBroken()) throw new WTException("Cannot restore an event that is not broken");
 			
-			Event dump = null;
-			if (vevt.getHasAttendees()) {
-				dump = getEventInstance(eventKey); // Gets event for later use
-			}
+			Event eventDump = getEventInstance(eventKey); // Save for later use!
 			
 			// 1 - removes the broken record
 			rbdao.deleteByNewEvent(con, ekey.eventId);
@@ -1968,8 +2030,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			writeLog("EVENT_DELETE", String.valueOf(ekey.eventId));
 			writeLog("EVENT_UPDATE", String.valueOf(ekey.originalEventId));
 			
+			// Notify last modification
+			List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.DELETE, eventDump.getCalendarId());
+			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.DELETE, eventDump.getFootprint());
+			
 			// Handle attendees invitation
-			if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, dump);
+			if (vevt.getHasAttendees()) notifyAttendees(Crud.DELETE, eventDump);
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -1998,6 +2064,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				doEventMove(con, copy, evt, targetCalendarId);
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(evt.getEventId()));
+				
+				// Notify last modification
+				List<RecipientTuple> nmRcpts = getModificationRecipients(Crud.DELETE, evt.getCalendarId());
+				if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, Crud.DELETE, evt.getFootprint());
 			}
 			
 		} catch(SQLException | DAOException | WTException ex) {
@@ -3176,11 +3246,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private UserProfileId doCalendarGetOwner(int calendarId) throws WTException {
+		OCalendarOwnerInfo ocoi = doCalendarGetOwnerInfo(calendarId);
+		return (ocoi == null) ? null : new UserProfileId(ocoi.getDomainId(), ocoi.getUserId());
+	}
+	
+	private OCalendarOwnerInfo doCalendarGetOwnerInfo(int calendarId) throws WTException {
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			return doCalendarGetOwner(con, calendarId);
+			return doCalendarGetOwnerInfo(con, calendarId);
 			
 		} catch(SQLException | DAOException ex) {
 			throw wrapThrowable(ex);
@@ -3189,10 +3264,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private UserProfileId doCalendarGetOwner(Connection con, int calendarId) throws DAOException {
+	private OCalendarOwnerInfo doCalendarGetOwnerInfo(Connection con, int calendarId) throws DAOException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
-		Owner owner = calDao.selectOwnerById(con, calendarId);
-		return (owner == null) ? null : new UserProfileId(owner.getDomainId(), owner.getUserId());
+		return calDao.selectOwnerInfoById(con, calendarId);
 	}
 	
 	private Calendar doCalendarUpdate(boolean insert, Connection con, Calendar cal) throws DAOException {
@@ -3596,6 +3670,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (tgt.getIsPrivate() == null) tgt.setIsPrivate(false);
 			if (tgt.getBusy() == null) tgt.setBusy(false);
 			if (tgt.getInvitation() == null) tgt.setInvitation(false);
+			//if (tgt.getNotifyOnSelfUpdate() == null) tgt.setNotifyOnSelfUpdate(false); // Not yet supported!
+			if (tgt.getNotifyOnExtUpdate() == null) tgt.setNotifyOnExtUpdate(false);
 			
 			Calendar.Provider provider = EnumUtils.forSerializedName(tgt.getProvider(), Calendar.Provider.class);
 			if (Calendar.Provider.WEBCAL.equals(provider) || Calendar.Provider.CALDAV.equals(provider)) {
@@ -3615,6 +3691,51 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (StringUtils.isBlank(tgt.getOrganizer())) tgt.setOrganizer(ManagerUtils.buildOrganizer(getTargetProfileId()));
 		}
 		return tgt;
+	}
+	
+	private List<RecipientTuple> getModificationRecipients(String crud, int calendarId) throws WTException {
+		ArrayList<RecipientTuple> rcpts = new ArrayList<>();
+		
+		OCalendarOwnerInfo ocoi = doCalendarGetOwnerInfo(calendarId);
+		if (ocoi != null) {
+			UserProfileId owner = ocoi.getProfileId();
+			if (ocoi.getNotifyOnExtUpdate() && !owner.equals(RunContext.getRunProfileId())) {
+				UserProfile.Data ud = WT.getUserData(owner);
+				if (ud != null) rcpts.add(new RecipientTuple(ud.getPersonalEmailAddress(), owner));
+			}
+		}
+		
+		return rcpts;
+	}
+	
+	private void notifyForEventModification(UserProfileId fromProfileId, List<RecipientTuple> recipients, String crud, EventFootprint event) {
+		UserProfile.Data udFrom = WT.getUserData(fromProfileId);
+		InternetAddress from = udFrom.getPersonalEmail();
+		
+		Session session = getMailSession();
+		for (RecipientTuple rcpt : recipients) {
+			InternetAddress to = InternetAddressUtils.toInternetAddress(rcpt.recipient);
+			if (!InternetAddressUtils.isAddressValid(to)) continue;
+			UserProfile.Data ud = WT.getUserData(rcpt.profileId);
+			if (ud == null) continue;
+			
+			try {
+				String bodyHeader = TplHelper.buildEventModificationTitle(ud.getLocale(), crud, event.getTitle());
+				String html = TplHelper.buildEventModificationBody(ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), event);
+				String source = EmailNotification.buildSource(ud.getLocale(), SERVICE_ID);
+				String because = WT.lookupResource(SERVICE_ID, ud.getLocale(), CalendarLocale.EMAIL_EVENTMODIFICATION_FOOTER_BECAUSE);
+
+				String msgSubject = EmailNotification.buildSubject(ud.getLocale(), SERVICE_ID, bodyHeader);
+				String msgBody = new EmailNotification.BecauseBuilder()
+						.withCustomBody(bodyHeader, html)
+						.build(ud.getLocale(), source, because, rcpt.recipient).write();
+				
+				WT.sendEmail(session, true, from, to, msgSubject, msgBody);
+
+			} catch(IOException | TemplateException | MessagingException ex) {
+				logger.error("Unable to notify recipient after event modification [{}]", ex, rcpt.recipient);
+			}
+		}	
 	}
 	
 	private VVEventInstance cloneEvent(VVEventInstance sourceEvent, DateTime newStart, DateTime newEnd) {
@@ -3831,6 +3952,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		public ProbeCalendarRemoteUrlResult(String displayName) {
 			this.displayName = displayName;
+		}
+	}
+	
+	private static class RecipientTuple {
+		public final String recipient;
+		public final UserProfileId profileId;
+		
+		public RecipientTuple(String recipient, UserProfileId profileId) {
+			this.recipient = recipient;
+			this.profileId = profileId;
 		}
 	}
 	

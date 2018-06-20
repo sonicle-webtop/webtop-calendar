@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Calendars extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord> {
 
-	private static final long serialVersionUID = -1863841836;
+	private static final long serialVersionUID = 1879436353;
 
 	/**
 	 * The reference instance of <code>calendar.calendars</code>
@@ -105,6 +105,11 @@ public class Calendars extends org.jooq.impl.TableImpl<com.sonicle.webtop.calend
 	 * The column <code>calendar.calendars.parameters</code>.
 	 */
 	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.String> PARAMETERS = createField("parameters", org.jooq.impl.SQLDataType.CLOB, this, "");
+
+	/**
+	 * The column <code>calendar.calendars.notify_on_ext_update</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.Boolean> NOTIFY_ON_EXT_UPDATE = createField("notify_on_ext_update", org.jooq.impl.SQLDataType.BOOLEAN.nullable(false).defaulted(true), this, "");
 
 	/**
 	 * Create a <code>calendar.calendars</code> table reference

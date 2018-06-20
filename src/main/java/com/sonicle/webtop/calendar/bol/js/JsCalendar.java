@@ -58,6 +58,7 @@ public class JsCalendar {
 	public Boolean busy;
 	public Integer reminder;
 	public Boolean invitation;
+	public Boolean notifyOnExtUpdate;
 	public String remoteUrl;
 	public String remoteUsername;
 	public String remotePassword;
@@ -77,6 +78,7 @@ public class JsCalendar {
 		busy = cal.getDefaultBusy();
 		reminder = cal.getDefaultReminder();
 		invitation = cal.getDefaultSendInvitation();
+		notifyOnExtUpdate = cal.getNotifyOnExtUpdate();
 		
 		CalendarRemoteParameters params = LangUtils.deserialize(cal.getParameters(), new CalendarRemoteParameters(), CalendarRemoteParameters.class);
 		remoteUrl = URIUtils.toString(params.url);
@@ -100,6 +102,7 @@ public class JsCalendar {
 		cal.setDefaultBusy(js.busy);
 		cal.setDefaultReminder(js.reminder);
 		cal.setDefaultSendInvitation(js.invitation);
+		cal.setNotifyOnExtUpdate(js.notifyOnExtUpdate);
 		
 		if (cal.isProviderRemote()) {
 			CalendarRemoteParameters params = LangUtils.deserialize(origParameters, new CalendarRemoteParameters(), CalendarRemoteParameters.class);

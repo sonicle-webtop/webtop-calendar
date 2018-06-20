@@ -142,6 +142,7 @@ public class ManagerUtils {
 			tgt.setDefaultBusy(src.getBusy());
 			tgt.setDefaultReminder(src.getReminder());
 			tgt.setDefaultSendInvitation(src.getInvitation());
+			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
 		}
 		return tgt;
@@ -167,6 +168,7 @@ public class ManagerUtils {
 			tgt.setBusy(src.getDefaultBusy());
 			tgt.setReminder(src.getDefaultReminder());
 			tgt.setInvitation(src.getDefaultSendInvitation());
+			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
 		}
 		return tgt;

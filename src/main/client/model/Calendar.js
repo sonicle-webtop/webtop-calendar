@@ -51,6 +51,7 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 		WTF.field('busy', 'boolean', false, {defaultValue: false}),
 		WTF.field('reminder', 'int', true),
 		WTF.field('invitation', 'boolean', false, {defaultValue: false}),
+		WTF.field('notifyOnExtUpdate', 'boolean', false, {defaultValue: false}),
 		WTF.field('remoteUrl', 'string', true, {
 			validators: [{
 				type: 'sopresence',

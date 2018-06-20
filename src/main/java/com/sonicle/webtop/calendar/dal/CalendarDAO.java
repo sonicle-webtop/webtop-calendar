@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.OCalendar;
+import com.sonicle.webtop.calendar.bol.OCalendarOwnerInfo;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
@@ -60,7 +61,7 @@ public class CalendarDAO extends BaseDAO {
 		return nextID;
 	}
 	
-	public boolean existByIdProfile(Connection con, Integer calendarId, String domainId, String userId) throws DAOException {
+	public boolean existByIdProfile(Connection con, int calendarId, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.selectCount()
@@ -73,15 +74,19 @@ public class CalendarDAO extends BaseDAO {
 			.fetchOne(0, Integer.class) == 1;
 	}
 	
-	public Owner selectOwnerById(Connection con, Integer calendarId) throws DAOException {
+	public OCalendarOwnerInfo selectOwnerInfoById(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.select()
+			.select(
+				CALENDARS.DOMAIN_ID,
+				CALENDARS.USER_ID,
+				CALENDARS.NOTIFY_ON_EXT_UPDATE
+			)
 			.from(CALENDARS)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
-			.fetchOneInto(Owner.class);
+			.fetchOneInto(OCalendarOwnerInfo.class);
 	}
 	
 	public String selectProviderById(Connection con, int calendarId) throws DAOException {
@@ -226,6 +231,7 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.BUSY, item.getBusy())
 			.set(CALENDARS.REMINDER, item.getReminder())
 			.set(CALENDARS.INVITATION, item.getInvitation())
+			.set(CALENDARS.NOTIFY_ON_EXT_UPDATE, item.getNotifyOnExtUpdate())
 			.set(CALENDARS.PARAMETERS, item.getParameters())
 			.where(
 				CALENDARS.CALENDAR_ID.equal(item.getCalendarId())

@@ -38,6 +38,7 @@ import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.Event;
+import com.sonicle.webtop.calendar.model.EventFootprint;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.core.CoreLocaleKey;
 import com.sonicle.webtop.core.app.CoreManifest;
@@ -53,6 +54,7 @@ import javax.mail.internet.AddressException;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.helpers.MessageFormatter;
 
 /**
  *
@@ -60,6 +62,33 @@ import org.joda.time.format.DateTimeFormatter;
  */
 public class TplHelper {
 	private static final String SERVICE_ID = "com.sonicle.webtop.calendar";
+	
+	public static String buildEventModificationTitle(Locale locale, String crud, String eventTitle) {
+		String SUJECT_KEY = MessageFormatter.format(CalendarLocale.EMAIL_EVENTMODIFICATION_SUBJECT_X, crud).getMessage();
+		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUJECT_KEY), StringUtils.abbreviate(eventTitle, 30));
+	}
+	
+	public static String buildEventModificationBody(Locale locale, String dateFormat, String timeFormat, EventFootprint event) throws IOException, TemplateException, AddressException {
+		MapItem i18n = new MapItem();
+		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
+		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
+		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
+		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+		MapItem evt = new MapItem();
+		evt.put("timezone", event.getTimezone());
+		evt.put("startDate", fmt.print(event.getStartDate()));
+		evt.put("endDate", fmt.print(event.getEndDate()));
+		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
+		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
+		
+		MapItem vars = new MapItem();
+		vars.put("i18n", i18n);
+		vars.put("event", evt);
+		
+		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventModification-body.html", vars);
+	}
 	
 	public static String buildInvitationTpl(Locale locale, String source, String recipientEmail, String bodyHeader, String customBodyHtml, String becauseString, String crud) throws IOException, TemplateException {
 		MapItem notMap = new MapItem();

@@ -66,12 +66,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author malbinola
  */
 public class CalDav extends CaldavApi {
+	private static final Logger logger = LoggerFactory.getLogger(CalDav.class);
 	private static final String DEFAULT_ETAG = "19700101000000000";
 	private static final DateTimeFormatter ETAG_FORMATTER = DateTimeUtils.createFormatter("yyyyMMddHHmmssSSS", DateTimeZone.UTC);
 	
@@ -79,6 +82,10 @@ public class CalDav extends CaldavApi {
 	public Response getCalendars() {
 		CalendarManager manager = getManager();
 		List<Calendar> items = new ArrayList<>();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] getCalendars()", RunContext.getRunProfileId());
+		}
 		
 		try {
 			Map<Integer, com.sonicle.webtop.calendar.model.Calendar> cats = manager.listCalendars();
@@ -90,6 +97,7 @@ public class CalDav extends CaldavApi {
 			return respOk(items);
 			
 		} catch(WTException ex) {
+			logger.error("[{}] getCalendars()", ex, RunContext.getRunProfileId());
 			return respError(ex);
 		}
 	}
@@ -97,6 +105,10 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response getCalendar(String calendarUid) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] getCalendar({})", RunContext.getRunProfileId(), calendarUid);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -108,6 +120,7 @@ public class CalDav extends CaldavApi {
 			return respOk(createCalendar(cal, revisions.get(cal.getCalendarId())));
 			
 		} catch(WTException ex) {
+			logger.error("[{}] getCalendar({})", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -115,6 +128,11 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response addCalendar(CalendarNew body) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] addCalendar(...)", RunContext.getRunProfileId());
+			logger.debug("{}", body);
+		}
 		
 		try {
 			com.sonicle.webtop.calendar.model.Calendar cal = new com.sonicle.webtop.calendar.model.Calendar();
@@ -124,6 +142,7 @@ public class CalDav extends CaldavApi {
 			return respOkCreated(createCalendar(cal, null));
 			
 		} catch(WTException ex) {
+			logger.error("[{}] addCalendar(...)", ex, RunContext.getRunProfileId());
 			return respError(ex);
 		}
 	}
@@ -131,6 +150,11 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response updateCalendar(String calendarUid, CalendarUpdate body) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] updateCalendar({}, ...)", RunContext.getRunProfileId(), calendarUid);
+			logger.debug("{}", body);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -153,6 +177,7 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
+			logger.error("[{}] updateCalendar({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -160,6 +185,10 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response deleteCalendar(String calendarUid) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] deleteCalendar({})", RunContext.getRunProfileId(), calendarUid);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -174,6 +203,7 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
+			logger.error("[{}] deleteCalendar({})", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -182,6 +212,10 @@ public class CalDav extends CaldavApi {
 	public Response getCalObjects(String calendarUid, List<String> hrefs) {
 		CalendarManager manager = getManager();
 		List<CalObject> items = new ArrayList<>();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] getCalObjects({})", RunContext.getRunProfileId(), calendarUid);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -204,6 +238,7 @@ public class CalDav extends CaldavApi {
 				return respOk(items);
 			}
 		} catch(WTException ex) {
+			logger.error("[{}] getCalObjects({})", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -211,6 +246,10 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response getCalObjectsChanges(String calendarUid, String syncToken, Integer limit) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] getCalObjectsChanges({}, {}, {})", RunContext.getRunProfileId(), calendarUid, syncToken, limit);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -230,6 +269,7 @@ public class CalDav extends CaldavApi {
 			return respOk(createCalObjectsChanges(revisions.get(calendarId), changes));
 			
 		} catch(WTException ex) {
+			logger.error("[{}] getCalObjectsChanges({}, {}, {})", ex, RunContext.getRunProfileId(), calendarUid, syncToken, limit);
 			return respError(ex);
 		}
 	}
@@ -237,6 +277,10 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response getCalObject(String calendarUid, String href) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] getCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -252,6 +296,7 @@ public class CalDav extends CaldavApi {
 			}
 			
 		} catch(WTException ex) {
+			logger.error("[{}] getCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
 			return respError(ex);
 		}
 	}
@@ -259,6 +304,11 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response addCalObject(String calendarUid, CalObjectNew body) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] addCalObject({}, ...)", RunContext.getRunProfileId(), calendarUid);
+			logger.debug("{}", body);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -268,6 +318,7 @@ public class CalDav extends CaldavApi {
 			return respOk();
 			
 		} catch(WTException ex) {
+			logger.error("[{}] addCalObject({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -275,6 +326,11 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response updateCalObject(String calendarUid, String href, String body) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] updateCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href);
+			logger.debug("{}", body);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -286,6 +342,7 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
+			logger.error("[{}] updateCalObject({}, {}, ...)", ex, RunContext.getRunProfileId(), calendarUid, href);
 			return respError(ex);
 		}
 	}
@@ -293,6 +350,10 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response deleteCalObject(String calendarUid, String href) {
 		CalendarManager manager = getManager();
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("[{}] deleteCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href);
+		}
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
@@ -302,6 +363,7 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
+			logger.error("[{}] deleteCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
 			return respError(ex);
 		}
 	}

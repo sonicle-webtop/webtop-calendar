@@ -39,17 +39,13 @@ import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventFootprint;
-import com.sonicle.webtop.calendar.model.EventInstance;
-import com.sonicle.webtop.core.CoreLocaleKey;
-import com.sonicle.webtop.core.app.CoreManifest;
 import com.sonicle.webtop.core.app.WT;
-import com.sonicle.webtop.core.util.NotificationHelper;
+import com.sonicle.webtop.core.app.util.EmailNotification;
+import com.sonicle.webtop.core.util.RRuleStringify;
 import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import javax.mail.internet.AddressException;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
@@ -63,23 +59,95 @@ import org.slf4j.helpers.MessageFormatter;
 public class TplHelper {
 	private static final String SERVICE_ID = "com.sonicle.webtop.calendar";
 	
-	public static String buildEventModificationTitle(Locale locale, String crud, String eventTitle) {
+	private static String buildEventTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event) {
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
+		sb.append(" @");
+		
+		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			sb.append(" (");
+			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrenceRule()));
+			sb.append(")");
+		}
+		
+		//TODO: solo l'orario se date coincidono!!!
+		sb.append(" ");
+		sb.append(fmt.print(event.getStartDate()));
+		sb.append(" - ");
+		sb.append(fmt.print(event.getEndDate()));
+		
+		return sb.toString();
+	}
+	
+	public static String buildEventModificationTitle(Locale locale, EventFootprint event, String crud) {
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
+		sb.append(" @");
+		
+		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			sb.append(" (");
+			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrenceRule()));
+			sb.append(")");
+		}
+		
 		String SUJECT_KEY = MessageFormatter.format(CalendarLocale.EMAIL_EVENTMODIFICATION_SUBJECT_X, crud).getMessage();
-		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUJECT_KEY), StringUtils.abbreviate(eventTitle, 30));
+		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUJECT_KEY), sb.toString());
+	}
+	
+	public static String buildEventInvitationTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event, String crud) {
+		String title = buildEventTitle(locale, dateFormat, timeFormat, event);
+		String SUJECT_KEY = MessageFormat.format(CalendarLocale.EMAIL_INVITATION_SUBJECT_X, crud);
+		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUJECT_KEY), title);
+	}
+	
+	public static String buildEventReminderTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event) {
+		String title = buildEventTitle(locale, dateFormat, timeFormat, event);
+		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_REMINDER_SUBJECT), title);
+	}
+	
+	public static String buildResponseUpdateTitle(Locale locale, Event event, EventAttendee attendee) {
+		String pattern;
+		if (StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED);
+		} else if (StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_TENTATIVE);
+		} else if (StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_DECLINED)) {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_DECLINED);
+		} else {
+			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_OTHER);
+		}
+		return MessageFormat.format(pattern, event.getTitle());
 	}
 	
 	public static String buildEventModificationBody(Locale locale, String dateFormat, String timeFormat, EventFootprint event) throws IOException, TemplateException, AddressException {
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
+		
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
 		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
 		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
 		evt.put("timezone", event.getTimezone());
 		evt.put("startDate", fmt.print(event.getStartDate()));
 		evt.put("endDate", fmt.print(event.getEndDate()));
+		evt.put("occurs", null);
+		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			evt.put("occurs", rrs.toHumanReadableTextQuietly(event.getRecurrenceRule()));
+		}
 		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
 		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
 		
@@ -90,51 +158,9 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventModification-body.html", vars);
 	}
 	
-	public static String buildInvitationTpl(Locale locale, String source, String recipientEmail, String bodyHeader, String customBodyHtml, String becauseString, String crud) throws IOException, TemplateException {
-		MapItem notMap = new MapItem();
-		notMap.putAll(createInvitationTplStrings(locale, source, recipientEmail, bodyHeader, customBodyHtml, becauseString, crud));
-		MapItem map = new MapItem();
-		map.put("recipientEmail", StringUtils.defaultString(recipientEmail));
-		return NotificationHelper.builTpl(notMap, map);
-	}
-	
-	public static Map<String, String> createInvitationTplStrings(Locale locale, String source, String recipientEmail, String bodyHeader, String customBody, String becauseString, String crud) {
-		HashMap<String, String> map = new HashMap<>();
-		if(StringUtils.equals(crud, "update")) {
-			map.put("greenMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_UPDATED));
-		} else if(StringUtils.equals(crud, "delete")) {
-			map.put("redMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_DELETED));
-		}
-		map.put("bodyHeader", StringUtils.defaultString(bodyHeader));
-		map.put("customBody", StringUtils.defaultString(customBody));
-		if(StringUtils.equals(crud, "create")) {
-			map.put("footerHeader", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_HEADER), source));
-		} else {
-			map.put("footerHeader", MessageFormat.format(WT.lookupResource(CoreManifest.ID, locale, CoreLocaleKey.TPL_NOTIFICATION_FOOTER_HEADER), source));
-		}
-		String foomsg = MessageFormat.format(WT.lookupResource(CoreManifest.ID, locale, CoreLocaleKey.TPL_NOTIFICATION_FOOTER_MESSAGE), recipientEmail, becauseString);
-		foomsg += "<br>"+WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER);
-		map.put("footerMessage", foomsg);
-		return map;
-	}
-	
-	public static String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, Event event, String crud) {
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
-		StringBuilder sb = new StringBuilder();
+	public static String buildTplEventInvitationBody(Locale locale, String dateFormat, String timeFormat, Event event, String crud, String recipientEmail, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
 		
-		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
-		sb.append(" @ ");
-		
-		//TODO: solo l'orario se date coincidono!!!
-		sb.append(fmt.print(event.getStartDate()));
-		sb.append(" - ");
-		sb.append(fmt.print(event.getEndDate()));
-		
-		String pattern = WT.lookupResource(SERVICE_ID, locale, MessageFormat.format(CalendarLocale.EMAIL_INVITATION_SUBJECT_X, crud));
-		return NotificationHelper.buildSubject(locale, SERVICE_ID, MessageFormat.format(pattern, sb.toString()));
-	}
-	
-	public static String buildEventInvitationBodyTpl(Locale locale, String dateFormat, String timeFormat, Event event, String crud, String recipientEmail, String servicePublicUrl) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
@@ -143,18 +169,25 @@ public class TplHelper {
 		i18n.put("organizer", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
 		i18n.put("who", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHO));
 		i18n.put("going", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING));
+		i18n.put("goingToAll", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOINGTOALL));
 		i18n.put("goingYes", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING_YES));
 		i18n.put("goingMaybe", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING_MAYBE));
 		i18n.put("goingNo", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING_NO));
 		i18n.put("view", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
-		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), ""));
+		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
 		evt.put("timezone", event.getTimezone());
 		evt.put("startDate", fmt.print(event.getStartDate()));
 		evt.put("endDate", fmt.print(event.getEndDate()));
+		evt.put("occurs", null);
+		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			evt.put("occurs", rrs.toHumanReadableTextQuietly(event.getRecurrenceRule()));
+		}
 		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
 		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
@@ -187,21 +220,9 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventInvitation-body.html", vars);
 	}
 	
-	public static String buildResponseUpdateEmailSubject(Locale locale, Event event, EventAttendee attendee) {
-		String pattern;
-		if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED);
-		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_TENTATIVE);
-		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_DECLINED)) {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_DECLINED);
-		} else {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_OTHER);
-		}
-		return MessageFormat.format(pattern, event.getTitle());
-	}
-	
-	public static String buildResponseUpdateBodyTpl(Locale locale, String dateFormat, String timeFormat, Event event, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+	public static String buildTplResponseUpdateBody(Locale locale, String dateFormat, String timeFormat, Event event, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
+		
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
@@ -209,12 +230,18 @@ public class TplHelper {
 		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
 		i18n.put("view", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
 		evt.put("timezone", event.getTimezone());
 		evt.put("startDate", fmt.print(event.getStartDate()));
 		evt.put("endDate", fmt.print(event.getEndDate()));
+		evt.put("occurs", null);
+		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			evt.put("occurs", rrs.toHumanReadableTextQuietly(event.getRecurrenceRule()));
+		}
 		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
 		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
 		
@@ -228,38 +255,29 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/responseUpdate-body.html", vars);
 	}
 	
-	public static String buildResponseUpdateTpl(Locale locale, String source, String bodyHeader, String customBodyHtml, EventAttendee attendee) throws IOException, TemplateException {
-		MapItem notMap = new MapItem();
-		notMap.putAll(NotificationHelper.createNoReplayCustomBodyTplStrings(locale, source, bodyHeader, customBodyHtml));
-		if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
-			notMap.put("greenMessage", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_ACCEPTED), attendee.getRecipient()));
-		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
-			notMap.put("yellowMessage", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_TENTATIVE), attendee.getRecipient()));
-		} else if(StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_DECLINED)) {
-			notMap.put("redMessage", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_DECLINED), attendee.getRecipient()));
-		} else {
-			notMap.put("greyMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_OTHER));
+	public static String buildEventInvitationHtml(Locale locale, String bodyHeader, String customBodyHtml, String source, String because, String recipientEmail, String crud) throws IOException, TemplateException {
+		EmailNotification.BecauseBuilder builder = new EmailNotification.BecauseBuilder()
+				.withCustomBody(bodyHeader, customBodyHtml);
+
+		if (StringUtils.equals(crud, "update")) {
+			builder.greenMessage(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_UPDATED));
+		} else if(StringUtils.equals(crud, "delete")) {
+			builder.redMessage(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_DELETED));
 		}
-		return NotificationHelper.builTpl(notMap, null);
+		if (StringUtils.equals(crud, "create")) {
+			builder.customFooterHeaderPattern(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_HEADER));
+		}
+		
+		String fooMsgPatt = builder.getDefaultFooterMessagePattern(locale);
+		fooMsgPatt += "<br>"+WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER);
+		builder.customFooterMessagePattern(fooMsgPatt);
+		
+		return builder.build(locale, source, because, recipientEmail).write();
 	}
 	
-	public static String buildEventReminderEmailSubject(Locale locale, String dateFormat, String timeFormat, EventInstance event) {
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
-		StringBuilder sb = new StringBuilder();
+	public static String buildTplEventReminderBody(Locale locale, String dateFormat, String timeFormat, Event event) throws IOException, TemplateException, AddressException {
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
 		
-		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
-		sb.append(" @ ");
-		
-		//TODO: solo l'orario se date coincidono!!!
-		sb.append(fmt.print(event.getStartDate()));
-		sb.append(" - ");
-		sb.append(fmt.print(event.getEndDate()));
-		
-		String pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_REMINDER_SUBJECT);
-		return NotificationHelper.buildSubject(locale, SERVICE_ID, MessageFormat.format(pattern, sb.toString()));
-	}
-	
-	public static String buildEventReminderBodyTpl(Locale locale, String dateFormat, String timeFormat, EventInstance event) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
@@ -268,10 +286,10 @@ public class TplHelper {
 		i18n.put("organizer", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
 		i18n.put("who", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHO));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, DateTimeZone.forID(event.getTimezone()));
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
-		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), ""));
+		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
 		evt.put("timezone", event.getTimezone());
 		evt.put("startDate", fmt.print(event.getStartDate()));
 		evt.put("endDate", fmt.print(event.getEndDate()));
@@ -296,6 +314,62 @@ public class TplHelper {
 		
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventInvitation-body.html", vars);
 	}
+	
+	/*
+	public static String buildInvitationTpl(Locale locale, String source, String recipientEmail, String bodyHeader, String customBodyHtml, String becauseString, String crud) throws IOException, TemplateException {
+		MapItem notMap = new MapItem();
+		notMap.putAll(createInvitationTplStrings(locale, source, recipientEmail, bodyHeader, customBodyHtml, becauseString, crud));
+		MapItem map = new MapItem();
+		map.put("recipientEmail", StringUtils.defaultString(recipientEmail));
+		return NotificationHelper.builTpl(notMap, map);
+	}
+	
+	public static Map<String, String> createInvitationTplStrings(Locale locale, String source, String recipientEmail, String bodyHeader, String customBody, String becauseString, String crud) {
+		HashMap<String, String> map = new HashMap<>();
+		if(StringUtils.equals(crud, "update")) {
+			map.put("greenMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_UPDATED));
+		} else if(StringUtils.equals(crud, "delete")) {
+			map.put("redMessage", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_DELETED));
+		}
+		map.put("bodyHeader", StringUtils.defaultString(bodyHeader));
+		map.put("customBody", StringUtils.defaultString(customBody));
+		if(StringUtils.equals(crud, "create")) {
+			map.put("footerHeader", MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_HEADER), source));
+		} else {
+			map.put("footerHeader", MessageFormat.format(WT.lookupResource(CoreManifest.ID, locale, CoreLocaleKey.TPL_NOTIFICATION_FOOTER_HEADER), source));
+		}
+		String foomsg = MessageFormat.format(WT.lookupResource(CoreManifest.ID, locale, CoreLocaleKey.TPL_NOTIFICATION_FOOTER_MESSAGE), recipientEmail, becauseString);
+		foomsg += "<br>"+WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER);
+		map.put("footerMessage", foomsg);
+		return map;
+	}
+	
+	public static String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, Event event, String crud) {
+		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
+		sb.append(" @");
+		
+		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			sb.append(" (");
+			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrenceRule()));
+			sb.append(")");
+		}
+		
+		//TODO: solo l'orario se date coincidono!!!
+		sb.append(" ");
+		sb.append(fmt.print(event.getStartDate()));
+		sb.append(" - ");
+		sb.append(fmt.print(event.getEndDate()));
+		
+		String pattern = WT.lookupResource(SERVICE_ID, locale, MessageFormat.format(CalendarLocale.EMAIL_INVITATION_SUBJECT_X, crud));
+		return NotificationHelper.buildSubject(locale, SERVICE_ID, MessageFormat.format(pattern, sb.toString()));
+	}
+	*/
 	
 	public static String buildGoogleMapsUrl(String s) {
 		return "https://maps.google.com/maps?q=" + StringUtils.defaultString(LangUtils.encodeURL(s));

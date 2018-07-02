@@ -53,6 +53,7 @@ public class CalendarLocale {
 	public static final String TPL_EMAIL_INVITATION_ORGANIZER = "tpl.email.invitation.organizer";
 	public static final String TPL_EMAIL_INVITATION_WHO = "tpl.email.invitation.who";
 	public static final String TPL_EMAIL_INVITATION_GOING = "tpl.email.invitation.going";
+	public static final String TPL_EMAIL_INVITATION_GOINGTOALL = "tpl.email.invitation.goingToAll";
 	public static final String TPL_EMAIL_INVITATION_GOING_YES = "tpl.email.invitation.going.yes";
 	public static final String TPL_EMAIL_INVITATION_GOING_MAYBE = "tpl.email.invitation.going.maybe";
 	public static final String TPL_EMAIL_INVITATION_GOING_NO = "tpl.email.invitation.going.no";

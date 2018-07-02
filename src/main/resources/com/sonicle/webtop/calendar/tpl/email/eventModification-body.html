@@ -15,6 +15,15 @@
             ${event.endDate} <span style="color:#888">${event.timezone}</span>
         </td>
     </tr>
+    <#if event.occurs??>
+    <tr>
+        <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
+        </td>
+        <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
+            <span style="color:#888">${event.occurs}</span>
+        </td>
+    </tr>
+    </#if>
     <#if event.location??>
     <tr>
         <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">

@@ -109,6 +109,7 @@ import com.sonicle.webtop.core.sdk.WTRuntimeException;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
+import com.sonicle.webtop.core.util.RRuleStringify;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -1109,41 +1110,6 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private com.sonicle.webtop.core.util.RRuleStringify.Strings getRRuleStringifyStrings(Locale locale) {
-		com.sonicle.webtop.core.util.RRuleStringify.Strings strings = new com.sonicle.webtop.core.util.RRuleStringify.Strings(locale);
-		strings.freqSecondly = WT.lookupCoreResource(locale, "rr.stringify.freq.secondly");
-		strings.freqHourly = WT.lookupCoreResource(locale, "rr.stringify.freq.hourly");
-		strings.freqDaily = WT.lookupCoreResource(locale, "rr.stringify.freq.daily");
-		strings.freqWeekly = WT.lookupCoreResource(locale, "rr.stringify.freq.weekly");
-		strings.freqMonthly = WT.lookupCoreResource(locale, "rr.stringify.freq.monthly");
-		strings.freqYearly = WT.lookupCoreResource(locale, "rr.stringify.freq.yearly");
-		strings.onEvery = WT.lookupCoreResource(locale, "rr.stringify.onEvery");
-		strings.day = WT.lookupCoreResource(locale, "rr.stringify.day");
-		strings.days = WT.lookupCoreResource(locale, "rr.stringify.days");
-		strings.weekday = WT.lookupCoreResource(locale, "rr.stringify.weekday");
-		strings.weekdays = WT.lookupCoreResource(locale, "rr.stringify.weekdays");
-		strings.week = WT.lookupCoreResource(locale, "rr.stringify.week");
-		strings.weeks = WT.lookupCoreResource(locale, "rr.stringify.weeks");
-		strings.month = WT.lookupCoreResource(locale, "rr.stringify.month");
-		strings.months = WT.lookupCoreResource(locale, "rr.stringify.months");
-		strings.year = WT.lookupCoreResource(locale, "rr.stringify.year");
-		strings.years = WT.lookupCoreResource(locale, "rr.stringify.years");
-		strings.and = WT.lookupCoreResource(locale, "rr.stringify.and");
-		strings.on = WT.lookupCoreResource(locale, "rr.stringify.on");
-		strings.of = WT.lookupCoreResource(locale, "rr.stringify.of");
-		strings.onthe = WT.lookupCoreResource(locale, "rr.stringify.onthe");
-		strings.time = WT.lookupCoreResource(locale, "rr.stringify.time");
-		strings.times = WT.lookupCoreResource(locale, "rr.stringify.times");
-		strings.endsBy = WT.lookupCoreResource(locale, "rr.stringify.endsBy");
-		strings.nth1st = WT.lookupCoreResource(locale, "rr.stringify.nth.1st");
-		strings.nth2nd = WT.lookupCoreResource(locale, "rr.stringify.nth.2nd");
-		strings.nth3rd = WT.lookupCoreResource(locale, "rr.stringify.nth.3rd");
-		strings.nth4th = WT.lookupCoreResource(locale, "rr.stringify.nth.4th");
-		strings.nthLast2nd = WT.lookupCoreResource(locale, "rr.stringify.nth.last2nd");
-		strings.nthLast = WT.lookupCoreResource(locale, "rr.stringify.nth.last");
-		return strings;
-	}
-	
 	public void processPrintEventsDetail(HttpServletRequest request, HttpServletResponse response) {
 		ArrayList<RBEventDetail> items = new ArrayList<>();
 		ByteArrayOutputStream baos = null;
@@ -1154,8 +1120,8 @@ public class Service extends BaseService {
 			String filename = ServletUtils.getStringParameter(request, "filename", "print");
 			StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
 			
-			com.sonicle.webtop.core.util.RRuleStringify.Strings strings = getRRuleStringifyStrings(up.getLocale());
-			com.sonicle.webtop.core.util.RRuleStringify rrs = new com.sonicle.webtop.core.util.RRuleStringify(strings, up.getTimeZone());
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(up.getLocale());
+			RRuleStringify rrs = new RRuleStringify(strings, up.getTimeZone());
 			
 			EventInstance event = null;
 			Calendar calendar = null;

@@ -99,10 +99,8 @@ public class RBEventDetail {
 		this.recurrenceDescription = null;
 		
 		if (event.hasRecurrence()) {
-			try {
-				this.recurrenceType = rrStringify.toHumanReadableFrequency(event.getRecurrenceRule());
-				this.recurrenceDescription = rrStringify.toHumanReadableText(event.getRecurrenceRule());
-			} catch(Throwable t) {}
+			this.recurrenceType = rrStringify.toHumanReadableFrequencyQuietly(event.getRecurrenceRule());
+			this.recurrenceDescription = rrStringify.toHumanReadableTextQuietly(event.getRecurrenceRule());
 		}
 		
 		this.isPrivate = event.getIsPrivate();

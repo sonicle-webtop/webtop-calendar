@@ -884,8 +884,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		} else if(me.isMode(me.MODE_EDIT)) {
 			me.getAct('restore').setDisabled(!mo.isBroken());
 			owner.setDisabled(true);
-			me.lref('tabinvitation').setDisabled(mo.isRecurring());
-			me.lref('tabrecurrence').setDisabled(mo.hasAttendees() || mo.isBroken());
+			//me.lref('tabinvitation').setDisabled(mo.isRecurring());
+			me.lref('tabrecurrence').setDisabled(mo.isBroken());
 		}
 		
 		me.lref('fldtitle').focus(true);

@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.dal;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
+import com.sonicle.webtop.calendar.bol.OEventInfo;
 import com.sonicle.webtop.calendar.bol.VEventCalObject;
 import com.sonicle.webtop.calendar.bol.VEventCalObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
@@ -78,6 +79,19 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		Long nextID = dsl.nextval(SEQ_EVENTS);
 		return nextID;
+	}
+	
+	public Integer selectCalendarId(Connection con, int eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.CALENDAR_ID
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+			)
+			.fetchOne(0, Integer.class);
 	}
 	
 	public Integer selectRecurrenceId(Connection con, int eventId) throws DAOException {
@@ -450,6 +464,39 @@ public class EventDAO extends BaseDAO {
 				)				
 			)
 			.execute();
+	}
+	
+	public OEventInfo selectOEventInfoById(Connection con, int eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		
+		// New field: targets the eventId of the original series event
+		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
+		Events eve1 = EVENTS.as("eve1");
+		Field<Integer> seriesEventId = DSL
+			.select(eve1.EVENT_ID)
+			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
+			.where(
+				rbk1.NEW_EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
+			).asField("linked_event_id");
+		
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.RECURRENCE_ID
+			)
+			.select(
+				seriesEventId
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+			)
+			.fetchOneInto(OEventInfo.class);
 	}
 	
 	public VVEvent viewById(Connection con, int eventId) throws DAOException {

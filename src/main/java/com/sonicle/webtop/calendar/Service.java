@@ -193,7 +193,7 @@ public class Service extends BaseService {
 	public ServiceVars returnServiceVars() {
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 		ServiceVars co = new ServiceVars();
-		co.put("calendarRemoteSyncEnabled", ss.getCalendarRemoteSyncEnabled());
+		co.put("calendarRemoteSyncEnabled", ss.getCalendarRemoteAutoSyncEnabled());
 		co.put("defaultCalendarSync", EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 		co.put("view", us.getView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));

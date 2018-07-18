@@ -48,16 +48,16 @@ public class CalendarSettings {
 	/**
 	 * [system+domain]
 	 * [boolean](true)
-	 * Enable/Disable remote calendar sync.
+	 * Enable/Disable remote calendar auto-sync.
 	 */
-	public static final String CALENDAR_REMOTE_SYNC_ENABLED = "calendar.remote.sync.enabled";
+	public static final String CALENDAR_REMOTE_AUTOSYNC_ENABLED = "calendar.remote.autosync.enabled";
 	
 	/**
 	 * [system+domain]
 	 * [boolean](true)
-	 * Enable/Disable remote sync only when calendar owner is online.
+	 * Enable/Disable remote auto-sync only when calendar owner is online.
 	 */
-	public static final String CALENDAR_REMOTE_SYNC_ONLYWHENONLINE = "calendar.remote.sync.onlywhenonline";
+	public static final String CALENDAR_REMOTE_AUTOSYNC_ONLYWHENONLINE = "calendar.remote.autosync.onlywhenonline";
 	
 	/**
 	 * [][default]

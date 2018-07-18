@@ -117,7 +117,7 @@ public class RemoteCalendarSyncJob extends BaseJobServiceTask {
 	private boolean isCalendarRemoteSyncEnabled(Map<String, Boolean> cache, String domainId) {
 		if (!cache.containsKey(domainId)) {
 			CalendarServiceSettings css = new CalendarServiceSettings(jobService.SERVICE_ID, domainId);
-			cache.put(domainId, css.getCalendarRemoteSyncEnabled());
+			cache.put(domainId, css.getCalendarRemoteAutoSyncEnabled());
 		}
 		return cache.get(domainId);
 	}
@@ -125,7 +125,7 @@ public class RemoteCalendarSyncJob extends BaseJobServiceTask {
 	private boolean isRemoteSyncOnlyWhenOnline(Map<String, Boolean> cache, String domainId) {
 		if (!cache.containsKey(domainId)) {
 			CalendarServiceSettings css = new CalendarServiceSettings(jobService.SERVICE_ID, domainId);
-			cache.put(domainId, css.getCalendarRemoteSyncOnlyWhenOnline());
+			cache.put(domainId, css.getCalendarRemoteAutoSyncOnlyWhenOnline());
 		}
 		return cache.get(domainId);
 	}

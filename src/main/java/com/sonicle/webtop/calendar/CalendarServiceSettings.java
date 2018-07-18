@@ -51,12 +51,12 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 		return getBoolean(DAV_CALENDAR_DELETE_ENABLED, false);
 	}
 	
-	public boolean getCalendarRemoteSyncEnabled() {
-		return getBoolean(CALENDAR_REMOTE_SYNC_ENABLED, false);
+	public boolean getCalendarRemoteAutoSyncEnabled() {
+		return getBoolean(CALENDAR_REMOTE_AUTOSYNC_ENABLED, false);
 	}
 	
-	public boolean getCalendarRemoteSyncOnlyWhenOnline() {
-		return getBoolean(CALENDAR_REMOTE_SYNC_ONLYWHENONLINE, true);
+	public boolean getCalendarRemoteAutoSyncOnlyWhenOnline() {
+		return getBoolean(CALENDAR_REMOTE_AUTOSYNC_ONLYWHENONLINE, true);
 	}
 	
 	public Calendar.Sync getDefaultCalendarSync() {

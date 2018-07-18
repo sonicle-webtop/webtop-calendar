@@ -42,7 +42,8 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		'Sonicle.form.field.Palette',
 		'Sonicle.webtop.calendar.store.Provider',
 		'Sonicle.webtop.calendar.store.Reminder',
-		'Sonicle.webtop.calendar.store.Sync'
+		'Sonicle.webtop.calendar.store.Sync',
+		'Sonicle.webtop.contacts.store.RemoteSyncFreq'
 	],
 	
 	dockableConfig: {
@@ -61,14 +62,17 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		me.callParent([cfg]);
 		
 		WTU.applyFormulas(me.getVM(), {
-			foIsRemote: WTF.foGetFn('record', 'provider', function(v) {
-				return Sonicle.webtop.calendar.view.Calendar.isRemote(v);
-			}),
 			isDefault: WTF.checkboxBind('record', 'isDefault'),
 			visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
 			showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
 			invitation: WTF.checkboxBind('record', 'invitation'),
-			notifyOnExtUpdate: WTF.checkboxBind('record', 'notifyOnExtUpdate')
+			notifyOnExtUpdate: WTF.checkboxBind('record', 'notifyOnExtUpdate'),
+			foIsRemote: WTF.foGetFn('record', 'provider', function(v) {
+				return Sonicle.webtop.calendar.view.Calendar.isRemote(v);
+			}),
+			foRemoteLastSync: WTF.foGetFn('record', 'remoteLastSync', function(v) {
+				return Ext.isEmpty(v) ? WT.res('word.na') : Ext.Date.format(v, WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt());
+			})
 		});
 	},
 	
@@ -94,7 +98,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 							autoLoad: true
 						}),
 						fieldLabel: me.mys.res('calendar.fld-provider.lbl'),
-						width: 250
+						width: 110+140
 					}), 
 					{
 						xtype: 'textfield',
@@ -120,7 +124,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						bind: '{record.color}',
 						colors: WT.getColorPalette(),
 						fieldLabel: me.mys.res('calendar.fld-color.lbl'),
-						width: 210
+						width: 110+100
 					},
 					WTF.lookupCombo('id', 'desc', {
 						reference: 'fldsync',
@@ -129,7 +133,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 							autoLoad: true
 						}),
 						fieldLabel: me.mys.res('calendar.fld-sync.lbl'),
-						width: 250
+						width: 110+140
 					}),
 					{
 						xtype: 'radiogroup',
@@ -186,7 +190,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						},
 						emptyText: WT.res('word.none.male'),
 						fieldLabel: me.mys.res('calendar.fld-reminder.lbl'),
-						width: 250
+						width: 110+140
 					}, {
 						xtype: 'checkbox',
 						bind: {
@@ -233,36 +237,63 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 					bind: '{record.remoteUsername}',
 					plugins: 'sonoautocomplete',
 					fieldLabel: me.mys.res('calendar.fld-remoteUsername.lbl'),
-					width: 280
+					width: 90+190
 				}, {
 					xtype: 'textfield',
 					bind: '{record.remotePassword}',
 					inputType: 'password',
 					plugins: 'sonoautocomplete',
 					fieldLabel: me.mys.res('calendar.fld-remotePassword.lbl'),
-					width: 280
-				}],
-				tbar: ['->', {
-					xtype: 'splitbutton',
-					tooltip: me.mys.res('calendar.btn-syncnow.tip'),
-					iconCls: 'wt-icon-refresh-xs',
-					handler: function() {
-						me.syncRemoteCalendarUI(me.getModel().get('calendarId'), false);
+					width: 90+190
+				}, {
+					xtype: 'combo',
+					bind: '{record.remoteSyncFrequency}',
+					editable: false,
+					store: Ext.create('Sonicle.webtop.calendar.store.RemoteSyncFreq', {
+						autoLoad: true
+					}),
+					valueField: 'id',
+					displayField: 'desc',
+					triggers: {
+						clear: WTF.clearTrigger()
 					},
-					menu: {
-						items: [{
-							itemId: 'partial',
-							text: me.mys.res('calendar.btn-syncnow.partial.lbl')
-						}, {
-							itemId: 'full',
-							text: me.mys.res('calendar.btn-syncnow.full.lbl')
-						}],
-						listeners: {
-							click: function(s, itm) {
-								me.syncRemoteCalendarUI(me.getModel().get('calendarId'), itm.getItemId() === 'full');
+					hidden: !me.mys.getVar('calendarRemoteSyncEnabled', false),
+					fieldLabel: me.mys.res('calendar.fld-remoteSyncFrequency.lbl'),
+					emptyText: me.mys.res('calendar.fld-remoteSyncFrequency.emp'),
+					width: 90+140
+				}],
+				tbar: [{
+						xtype: 'tbtext',
+						cls: 'x-unselectable',
+						html: me.mys.res('calendar.tbi-lastSync.lbl')
+					}, {
+						xtype: 'tbtext',
+						bind: {
+							html: '{foRemoteLastSync}'
+						}
+					},
+					'->',
+					{
+						xtype: 'splitbutton',
+						tooltip: me.mys.res('calendar.btn-syncnow.tip'),
+						iconCls: 'wt-icon-refresh-xs',
+						handler: function() {
+							me.syncRemoteCalendarUI(me.getModel().get('calendarId'), false);
+						},
+						menu: {
+							items: [{
+								itemId: 'partial',
+								text: me.mys.res('calendar.btn-syncnow.partial.lbl')
+							}, {
+								itemId: 'full',
+								text: me.mys.res('calendar.btn-syncnow.full.lbl')
+							}],
+							listeners: {
+								click: function(s, itm) {
+									me.syncRemoteCalendarUI(me.getModel().get('calendarId'), itm.getItemId() === 'full');
+								}
 							}
 						}
-					}
 				}]
 			}]
 		});

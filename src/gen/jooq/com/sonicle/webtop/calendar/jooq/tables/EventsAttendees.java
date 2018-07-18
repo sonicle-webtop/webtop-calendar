@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class EventsAttendees extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord> {
 
-	private static final long serialVersionUID = 311901132;
+	private static final long serialVersionUID = -1462852901;
 
 	/**
 	 * The reference instance of <code>calendar.events_attendees</code>
@@ -39,32 +39,32 @@ public class EventsAttendees extends org.jooq.impl.TableImpl<com.sonicle.webtop.
 	/**
 	 * The column <code>calendar.events_attendees.event_id</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.Integer> EVENT_ID = createField("event_id", org.jooq.impl.SQLDataType.INTEGER, this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.Integer> EVENT_ID = createField("event_id", org.jooq.impl.SQLDataType.INTEGER.nullable(false), this, "");
 
 	/**
 	 * The column <code>calendar.events_attendees.recipient</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RECIPIENT = createField("recipient", org.jooq.impl.SQLDataType.VARCHAR.length(320), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RECIPIENT = createField("recipient", org.jooq.impl.SQLDataType.VARCHAR.length(320).nullable(false), this, "");
 
 	/**
 	 * The column <code>calendar.events_attendees.recipient_role</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RECIPIENT_ROLE = createField("recipient_role", org.jooq.impl.SQLDataType.VARCHAR.length(20), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RECIPIENT_ROLE = createField("recipient_role", org.jooq.impl.SQLDataType.VARCHAR.length(3).nullable(false), this, "");
 
 	/**
 	 * The column <code>calendar.events_attendees.response_status</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RESPONSE_STATUS = createField("response_status", org.jooq.impl.SQLDataType.VARCHAR.length(20), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RESPONSE_STATUS = createField("response_status", org.jooq.impl.SQLDataType.VARCHAR.length(2).nullable(false), this, "");
 
 	/**
 	 * The column <code>calendar.events_attendees.notify</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.Boolean> NOTIFY = createField("notify", org.jooq.impl.SQLDataType.BOOLEAN, this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.Boolean> NOTIFY = createField("notify", org.jooq.impl.SQLDataType.BOOLEAN.nullable(false), this, "");
 
 	/**
 	 * The column <code>calendar.events_attendees.recipient_type</code>.
 	 */
-	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RECIPIENT_TYPE = createField("recipient_type", org.jooq.impl.SQLDataType.VARCHAR.length(3), this, "");
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord, java.lang.String> RECIPIENT_TYPE = createField("recipient_type", org.jooq.impl.SQLDataType.VARCHAR.length(3).nullable(false), this, "");
 
 	/**
 	 * Create a <code>calendar.events_attendees</code> table reference

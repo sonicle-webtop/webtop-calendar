@@ -46,6 +46,20 @@ public class CalendarSettings {
 	public static final String DAV_CALENDAR_DELETE_ENABLED = "dav.calendar.delete.enabled";
 	
 	/**
+	 * [system+domain]
+	 * [boolean](true)
+	 * Enable/Disable remote calendar sync.
+	 */
+	public static final String CALENDAR_REMOTE_SYNC_ENABLED = "calendar.remote.sync.enabled";
+	
+	/**
+	 * [system+domain]
+	 * [boolean](true)
+	 * Enable/Disable remote sync only when calendar owner is online.
+	 */
+	public static final String CALENDAR_REMOTE_SYNC_ONLYWHENONLINE = "calendar.remote.sync.onlywhenonline";
+	
+	/**
 	 * [][default]
 	 * [enum {O:OFF, R:READ, W:WRITE}] (O)
 	 * The default value of the sync field for new calendars.

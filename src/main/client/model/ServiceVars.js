@@ -35,6 +35,7 @@ Ext.define('Sonicle.webtop.calendar.model.ServiceVars', {
 	extend: 'WTA.sdk.model.ServiceVars',
 	
 	fields: [
+		WTF.field('calendarRemoteSyncEnabled', 'boolean', true),
 		WTF.field('defaultCalendarSync', 'string', true),
 		WTF.field('view', 'string', true),
 		WTF.field('workdayStart', 'date', true, {dateFormat: 'H:i'}),

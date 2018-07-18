@@ -38,7 +38,8 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 		'Sonicle.plugin.NoAutocomplete',
 		'Sonicle.form.field.Palette',
 		'WTA.ux.panel.Form',
-		'Sonicle.webtop.calendar.store.ProviderRemote'
+		'Sonicle.webtop.calendar.store.ProviderRemote',
+		'Sonicle.webtop.calendar.store.RemoteSyncFreq'
 	],
 	
 	dockableConfig: {
@@ -57,7 +58,8 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 			username: null,
 			password: null,
 			name: null,
-			color: '#FFFFFF'
+			color: '#FFFFFF',
+			syncFrequency: null
 		}
 	},
 	
@@ -73,6 +75,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 		if (!Ext.isEmpty(data.password)) me.getVM().set('password', data.password);
 		if (!Ext.isEmpty(data.name)) me.getVM().set('name', data.name);
 		if (!Ext.isEmpty(data.color)) me.getVM().set('color', data.color);
+		if (!Ext.isEmpty(data.syncFrequency)) me.getVM().set('syncFrequency', data.syncFrequency);
 		me.callParent(arguments);
 		me.on('beforenavigate', me.onBeforeNavigate);
 	},
@@ -110,7 +113,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 						autoLoad: true
 					}),
 					fieldLabel: me.mys.res('calendarRemoteWiz.fld-provider.lbl'),
-					width: 250
+					width: 80+170
 				}),	
 				{
 					xtype: 'textfield',
@@ -129,14 +132,14 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 					bind: '{username}',
 					plugins: 'sonoautocomplete',
 					fieldLabel: me.mys.res('calendarRemoteWiz.fld-username.lbl'),
-					width: 280
+					width: 80+200
 				}, {
 					xtype: 'textfield',
 					bind: '{password}',
 					inputType: 'password',
 					plugins: 'sonoautocomplete',
 					fieldLabel: me.mys.res('calendarRemoteWiz.fld-password.lbl'),
-					width: 280
+					width: 80+200
 				}]
 			}]
 		}, {
@@ -163,14 +166,30 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 					bind: '{name}',
 					allowBlank: false,
 					fieldLabel: me.mys.res('calendarRemoteWiz.fld-name.lbl'),
-					width: 400
+					anchor: '100%'
 				}, {
 					xtype: 'sopalettefield',
 					bind: '{color}',
 					allowBlank: false,
 					colors: WT.getColorPalette(),
 					fieldLabel: me.mys.res('calendarRemoteWiz.fld-color.lbl'),
-					width: 210
+					width: 80+100
+				}, {
+					xtype: 'combo',
+					bind: '{syncFrequency}',
+					editable: false,
+					store: Ext.create('Sonicle.webtop.calendar.store.RemoteSyncFreq', {
+						autoLoad: true
+					}),
+					valueField: 'id',
+					displayField: 'desc',
+					triggers: {
+						clear: WTF.clearTrigger()
+					},
+					hidden: !me.mys.getVar('calendarRemoteSyncEnabled', false),
+					fieldLabel: me.mys.res('calendarRemoteWiz.fld-syncFrequency.lbl'),
+					emptyText: me.mys.res('calendarRemoteWiz.fld-syncFrequency.emp'),
+					width: 80+140
 				}]
 			}]
 		}, {
@@ -231,7 +250,8 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 					tag: vm.get('tag'),
 					profileId: vm.get('profileId'),
 					name: vm.get('name'),
-					color: vm.get('color')
+					color: vm.get('color'),
+					syncFrequency: vm.get('syncFrequency')
 				},
 				callback: function(success, json) {
 					if (success) {

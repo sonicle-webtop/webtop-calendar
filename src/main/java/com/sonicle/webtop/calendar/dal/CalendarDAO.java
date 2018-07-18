@@ -32,17 +32,21 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
+import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OCalendarOwnerInfo;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
+import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.bol.Owner;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 
 /**
@@ -209,6 +213,22 @@ public class CalendarDAO extends BaseDAO {
 			.fetchInto(OCalendar.class);
 	}
 	
+	public List<OCalendar> selectByProvider(Connection con, Collection<Calendar.Provider> providers) throws DAOException {
+		List<String> providerList = providers.stream().map(prov -> EnumUtils.toSerializedName(prov)).collect(Collectors.toList());
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.PROVIDER.in(providerList)
+				.and(CALENDARS.REMOTE_SYNC_FREQUENCY.isNotNull())
+			)
+			.orderBy(
+				CALENDARS.CALENDAR_ID.asc()
+			)
+			.fetchInto(OCalendar.class);
+	}
+	
 	public int insert(Connection con, OCalendar item) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
@@ -233,6 +253,7 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.INVITATION, item.getInvitation())
 			.set(CALENDARS.NOTIFY_ON_EXT_UPDATE, item.getNotifyOnExtUpdate())
 			.set(CALENDARS.PARAMETERS, item.getParameters())
+			.set(CALENDARS.REMOTE_SYNC_FREQUENCY, item.getRemoteSyncFrequency())
 			.where(
 				CALENDARS.CALENDAR_ID.equal(item.getCalendarId())
 			)
@@ -250,11 +271,12 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateParametersById(Connection con, int calendarId, String parameters) throws DAOException {
+	public int updateRemoteSyncById(Connection con, int calendarId, DateTime syncTimestamp, String syncTag) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(CALENDARS)
-			.set(CALENDARS.PARAMETERS, parameters)
+			.set(CALENDARS.REMOTE_SYNC_TIMESTAMP, syncTimestamp)
+			.set(CALENDARS.REMOTE_SYNC_TAG, syncTag)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)

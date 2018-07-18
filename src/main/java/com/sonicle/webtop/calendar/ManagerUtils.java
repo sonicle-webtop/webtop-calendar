@@ -144,6 +144,9 @@ public class ManagerUtils {
 			tgt.setDefaultSendInvitation(src.getInvitation());
 			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
+			tgt.setRemoteSyncFrequency(src.getRemoteSyncFrequency());
+			tgt.setRemoteSyncTimestamp(src.getRemoteSyncTimestamp());
+			tgt.setRemoteSyncTag(src.getRemoteSyncTag());
 		}
 		return tgt;
 	}
@@ -170,6 +173,9 @@ public class ManagerUtils {
 			tgt.setInvitation(src.getDefaultSendInvitation());
 			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
+			tgt.setRemoteSyncFrequency(src.getRemoteSyncFrequency());
+			tgt.setRemoteSyncTimestamp(src.getRemoteSyncTimestamp());
+			tgt.setRemoteSyncTag(src.getRemoteSyncTag());
 		}
 		return tgt;
 	}
@@ -305,6 +311,26 @@ public class ManagerUtils {
 			tgt.setNotify(src.getNotify());
 		}
 		return tgt;
+	}
+	
+	static boolean validateForInsert(EventAttendee src) {
+		if (StringUtils.isBlank(src.getAttendeeId())) return false;
+		if (StringUtils.isBlank(src.getRecipient())) return false;
+		if (StringUtils.isBlank(src.getRecipientType())) return false;
+		if (StringUtils.isBlank(src.getRecipientRole())) return false;
+		if (StringUtils.isBlank(src.getResponseStatus())) return false;
+		if (src.getNotify() == null) return false;
+		return true;
+	}
+	
+	static boolean validateForUpdate(EventAttendee src) {
+		if (StringUtils.isBlank(src.getAttendeeId())) return false;
+		if (StringUtils.isBlank(src.getRecipient())) return false;
+		if (StringUtils.isBlank(src.getRecipientType())) return false;
+		//if (StringUtils.isBlank(src.getRecipientRole())) return false;
+		if (StringUtils.isBlank(src.getResponseStatus())) return false;
+		if (src.getNotify() == null) return false;
+		return true;
 	}
 	
 	static OEventAttendee createOEventAttendee(EventAttendee src) {

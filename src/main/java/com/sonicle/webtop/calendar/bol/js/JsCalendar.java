@@ -36,8 +36,11 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.URIUtils;
+import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormatter;
 
 /**
  *
@@ -62,8 +65,10 @@ public class JsCalendar {
 	public String remoteUrl;
 	public String remoteUsername;
 	public String remotePassword;
+	public Short remoteSyncFrequency;
+	public String remoteLastSync;
 	
-	public JsCalendar(Calendar cal) {
+	public JsCalendar(Calendar cal, DateTimeZone utz) {
 		calendarId = cal.getCalendarId();
 		domainId = cal.getDomainId();
 		userId = cal.getUserId();
@@ -80,13 +85,19 @@ public class JsCalendar {
 		invitation = cal.getDefaultSendInvitation();
 		notifyOnExtUpdate = cal.getNotifyOnExtUpdate();
 		
-		CalendarRemoteParameters params = LangUtils.deserialize(cal.getParameters(), new CalendarRemoteParameters(), CalendarRemoteParameters.class);
-		remoteUrl = URIUtils.toString(params.url);
-		remoteUsername = params.username;
-		remotePassword = params.password;
+		if (cal.isProviderRemote()) {
+			CalendarRemoteParameters params = cal.getParametersAsObject(new CalendarRemoteParameters(), CalendarRemoteParameters.class);
+			remoteUrl = URIUtils.toString(params.url);
+			remoteUsername = params.username;
+			remotePassword = params.password;
+			remoteSyncFrequency = cal.getRemoteSyncFrequency();
+			if (cal.getRemoteSyncTimestamp() != null) {
+				remoteLastSync = DateTimeUtils.createYmdHmsFormatter(utz).print(cal.getRemoteSyncTimestamp());
+			}
+		}
 	}
 	
-	public static Calendar createCalendar(JsCalendar js, String origParameters) {
+	public static Calendar createCalendar(JsCalendar js) {
 		Calendar cal = new Calendar();
 		cal.setCalendarId(js.calendarId);
 		cal.setDomainId(js.domainId);
@@ -105,13 +116,12 @@ public class JsCalendar {
 		cal.setNotifyOnExtUpdate(js.notifyOnExtUpdate);
 		
 		if (cal.isProviderRemote()) {
-			CalendarRemoteParameters params = LangUtils.deserialize(origParameters, new CalendarRemoteParameters(), CalendarRemoteParameters.class);
+			CalendarRemoteParameters params = new CalendarRemoteParameters();
 			params.url = URIUtils.createURIQuietly(js.remoteUrl);
 			params.username = js.remoteUsername;
 			params.password = js.remotePassword;
 			cal.setParameters(LangUtils.serialize(params, CalendarRemoteParameters.class));
-		} else {
-			cal.setParameters(null);
+			cal.setRemoteSyncFrequency(js.remoteSyncFrequency);
 		}
 		
 		return cal;

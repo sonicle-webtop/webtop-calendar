@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2014 Sonicle S.r.l.
+/*
+ * Copyright (C) 2018 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,54 +28,39 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2014 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2018 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar;
 
-import static com.sonicle.webtop.calendar.CalendarSettings.*;
-import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.core.sdk.BaseServiceSettings;
-import org.joda.time.LocalTime;
+import com.sonicle.webtop.calendar.job.RemoteCalendarSyncJob;
+import com.sonicle.webtop.core.sdk.BaseJobService;
+import java.util.Arrays;
+import java.util.List;
+import org.quartz.SimpleScheduleBuilder;
+import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarServiceSettings extends BaseServiceSettings {
+public class JobService extends BaseJobService {
+	
+	@Override
+	public void initialize() throws Exception {}
 
-	public CalendarServiceSettings(String serviceId, String domainId) {
-		super(serviceId, domainId);
+	@Override
+	public void cleanup() throws Exception {}
+
+	@Override
+	public List<BaseJobService.TaskDefinition> returnTasks() {
+		Trigger rcsTrigger = TriggerBuilder.newTrigger()
+				.withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(15))
+				.build();
+		
+		return Arrays.asList(
+				new BaseJobService.TaskDefinition(RemoteCalendarSyncJob.class, rcsTrigger)
+		);
 	}
 	
-	public boolean getDavCalendarDeleteEnabled() {
-		return getBoolean(DAV_CALENDAR_DELETE_ENABLED, false);
-	}
-	
-	public boolean getCalendarRemoteSyncEnabled() {
-		return getBoolean(CALENDAR_REMOTE_SYNC_ENABLED, false);
-	}
-	
-	public boolean getCalendarRemoteSyncOnlyWhenOnline() {
-		return getBoolean(CALENDAR_REMOTE_SYNC_ONLYWHENONLINE, true);
-	}
-	
-	public Calendar.Sync getDefaultCalendarSync() {
-		return getEnum(DEFAULT_PREFIX + CALENDAR_SYNC, Calendar.Sync.OFF, Calendar.Sync.class);
-	}
-	
-	public String getDefaultView() {
-		return getString(DEFAULT_PREFIX + VIEW, "w5");
-	}
-	
-	public LocalTime getDefaultWorkdayStart() {
-		return getTime(DEFAULT_PREFIX + WORKDAY_START, "09:00", "HH:mm");
-	}
-	
-	public LocalTime getDefaultWorkdayEnd() {
-		return getTime(DEFAULT_PREFIX + WORKDAY_END, "18:00", "HH:mm");
-	}
-	
-	public String getDefaultEventReminderDelivery() {
-		return getString(DEFAULT_PREFIX + EVENT_REMINDER_DELIVERY, EVENT_REMINDER_DELIVERY_APP);
-	}
 }

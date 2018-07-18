@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Calendars extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord> {
 
-	private static final long serialVersionUID = 1879436353;
+	private static final long serialVersionUID = -1754052960;
 
 	/**
 	 * The reference instance of <code>calendar.calendars</code>
@@ -110,6 +110,21 @@ public class Calendars extends org.jooq.impl.TableImpl<com.sonicle.webtop.calend
 	 * The column <code>calendar.calendars.notify_on_ext_update</code>.
 	 */
 	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.Boolean> NOTIFY_ON_EXT_UPDATE = createField("notify_on_ext_update", org.jooq.impl.SQLDataType.BOOLEAN.nullable(false).defaulted(true), this, "");
+
+	/**
+	 * The column <code>calendar.calendars.remote_sync_frequency</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.Short> REMOTE_SYNC_FREQUENCY = createField("remote_sync_frequency", org.jooq.impl.SQLDataType.SMALLINT, this, "");
+
+	/**
+	 * The column <code>calendar.calendars.remote_sync_timestamp</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, org.joda.time.DateTime> REMOTE_SYNC_TIMESTAMP = createField("remote_sync_timestamp", org.jooq.impl.SQLDataType.TIMESTAMP, this, "", new com.sonicle.webtop.core.jooq.DateTimeConverter());
+
+	/**
+	 * The column <code>calendar.calendars.remote_sync_tag</code>.
+	 */
+	public final org.jooq.TableField<com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord, java.lang.String> REMOTE_SYNC_TAG = createField("remote_sync_tag", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
 
 	/**
 	 * Create a <code>calendar.calendars</code> table reference

@@ -33,7 +33,6 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
-import com.sonicle.commons.LangUtils;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import com.sonicle.webtop.core.sdk.UserProfileId;
@@ -51,6 +50,7 @@ public class SetupDataCalendarRemote {
 	protected URI url;
 	protected String username;
 	protected String password;
+	protected Short syncFrequency;
 	
 	public SetupDataCalendarRemote() {}
 
@@ -106,6 +106,14 @@ public class SetupDataCalendarRemote {
 		this.password = password;
 	}
 	
+	public Short getSyncFrequency() {
+		return this.syncFrequency;
+	}
+	
+	public void setSyncFrequency(Short syncFrequency) {
+		this.syncFrequency = syncFrequency;
+	}
+	
 	public Calendar toCalendar() {
 		Calendar cal = new Calendar();
 		if (profileId != null) cal.setProfileId(new UserProfileId(profileId));
@@ -114,7 +122,8 @@ public class SetupDataCalendarRemote {
 		cal.setName(name);
 		cal.setColor(color);
 		cal.setSync(Calendar.Sync.OFF);
-		cal.setParameters(LangUtils.serialize(toCalendarRemoteParameters(), CalendarRemoteParameters.class));
+		cal.setParametersAsObject(toCalendarRemoteParameters(), CalendarRemoteParameters.class);
+		cal.setRemoteSyncFrequency(syncFrequency);
 		return cal;
 	}
 	

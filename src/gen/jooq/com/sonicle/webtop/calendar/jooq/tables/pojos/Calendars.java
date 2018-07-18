@@ -16,44 +16,50 @@ package com.sonicle.webtop.calendar.jooq.tables.pojos;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Calendars implements java.io.Serializable {
 
-	private static final long serialVersionUID = 1998386231;
+	private static final long serialVersionUID = 2056420721;
 
-	private java.lang.Integer calendarId;
-	private java.lang.String  domainId;
-	private java.lang.String  userId;
-	private java.lang.Boolean builtIn;
-	private java.lang.String  name;
-	private java.lang.String  description;
-	private java.lang.String  color;
-	private java.lang.String  sync;
-	private java.lang.Boolean busy;
-	private java.lang.Integer reminder;
-	private java.lang.Boolean invitation;
-	private java.lang.Boolean isPrivate;
-	private java.lang.Boolean isDefault;
-	private java.lang.String  provider;
-	private java.lang.String  parameters;
-	private java.lang.Boolean notifyOnExtUpdate;
+	private java.lang.Integer      calendarId;
+	private java.lang.String       domainId;
+	private java.lang.String       userId;
+	private java.lang.Boolean      builtIn;
+	private java.lang.String       name;
+	private java.lang.String       description;
+	private java.lang.String       color;
+	private java.lang.String       sync;
+	private java.lang.Boolean      busy;
+	private java.lang.Integer      reminder;
+	private java.lang.Boolean      invitation;
+	private java.lang.Boolean      isPrivate;
+	private java.lang.Boolean      isDefault;
+	private java.lang.String       provider;
+	private java.lang.String       parameters;
+	private java.lang.Boolean      notifyOnExtUpdate;
+	private java.lang.Short        remoteSyncFrequency;
+	private org.joda.time.DateTime remoteSyncTimestamp;
+	private java.lang.String       remoteSyncTag;
 
 	public Calendars() {}
 
 	public Calendars(
-		java.lang.Integer calendarId,
-		java.lang.String  domainId,
-		java.lang.String  userId,
-		java.lang.Boolean builtIn,
-		java.lang.String  name,
-		java.lang.String  description,
-		java.lang.String  color,
-		java.lang.String  sync,
-		java.lang.Boolean busy,
-		java.lang.Integer reminder,
-		java.lang.Boolean invitation,
-		java.lang.Boolean isPrivate,
-		java.lang.Boolean isDefault,
-		java.lang.String  provider,
-		java.lang.String  parameters,
-		java.lang.Boolean notifyOnExtUpdate
+		java.lang.Integer      calendarId,
+		java.lang.String       domainId,
+		java.lang.String       userId,
+		java.lang.Boolean      builtIn,
+		java.lang.String       name,
+		java.lang.String       description,
+		java.lang.String       color,
+		java.lang.String       sync,
+		java.lang.Boolean      busy,
+		java.lang.Integer      reminder,
+		java.lang.Boolean      invitation,
+		java.lang.Boolean      isPrivate,
+		java.lang.Boolean      isDefault,
+		java.lang.String       provider,
+		java.lang.String       parameters,
+		java.lang.Boolean      notifyOnExtUpdate,
+		java.lang.Short        remoteSyncFrequency,
+		org.joda.time.DateTime remoteSyncTimestamp,
+		java.lang.String       remoteSyncTag
 	) {
 		this.calendarId = calendarId;
 		this.domainId = domainId;
@@ -71,6 +77,9 @@ public class Calendars implements java.io.Serializable {
 		this.provider = provider;
 		this.parameters = parameters;
 		this.notifyOnExtUpdate = notifyOnExtUpdate;
+		this.remoteSyncFrequency = remoteSyncFrequency;
+		this.remoteSyncTimestamp = remoteSyncTimestamp;
+		this.remoteSyncTag = remoteSyncTag;
 	}
 
 	public java.lang.Integer getCalendarId() {
@@ -199,5 +208,29 @@ public class Calendars implements java.io.Serializable {
 
 	public void setNotifyOnExtUpdate(java.lang.Boolean notifyOnExtUpdate) {
 		this.notifyOnExtUpdate = notifyOnExtUpdate;
+	}
+
+	public java.lang.Short getRemoteSyncFrequency() {
+		return this.remoteSyncFrequency;
+	}
+
+	public void setRemoteSyncFrequency(java.lang.Short remoteSyncFrequency) {
+		this.remoteSyncFrequency = remoteSyncFrequency;
+	}
+
+	public org.joda.time.DateTime getRemoteSyncTimestamp() {
+		return this.remoteSyncTimestamp;
+	}
+
+	public void setRemoteSyncTimestamp(org.joda.time.DateTime remoteSyncTimestamp) {
+		this.remoteSyncTimestamp = remoteSyncTimestamp;
+	}
+
+	public java.lang.String getRemoteSyncTag() {
+		return this.remoteSyncTag;
+	}
+
+	public void setRemoteSyncTag(java.lang.String remoteSyncTag) {
+		this.remoteSyncTag = remoteSyncTag;
 	}
 }

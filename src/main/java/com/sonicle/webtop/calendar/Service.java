@@ -124,7 +124,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.mail.internet.InternetAddress;
@@ -194,6 +193,7 @@ public class Service extends BaseService {
 	public ServiceVars returnServiceVars() {
 		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 		ServiceVars co = new ServiceVars();
+		co.put("calendarRemoteSyncEnabled", ss.getCalendarRemoteSyncEnabled());
 		co.put("defaultCalendarSync", EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 		co.put("view", us.getView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
@@ -441,12 +441,12 @@ public class Service extends BaseService {
 				int id = ServletUtils.getIntParameter(request, "id", true);
 				
 				item = manager.getCalendar(id);
-				new JsonResult(new JsCalendar(item)).printTo(out);
+				new JsonResult(new JsCalendar(item, getEnv().getProfile().getTimeZone())).printTo(out);
 				
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				item = manager.addCalendar(JsCalendar.createCalendar(pl.data, null));
+				item = manager.addCalendar(JsCalendar.createCalendar(pl.data));
 				updateFoldersCache();
 				toggleCheckedFolder(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
@@ -454,9 +454,7 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				item = manager.getCalendar(pl.data.calendarId);
-				if (item == null) throw new WTException("Calendar not found [{0}]", pl.data.calendarId);
-				manager.updateCalendar(JsCalendar.createCalendar(pl.data, item.getParameters()));
+				manager.updateCalendar(JsCalendar.createCalendar(pl.data));
 				updateFoldersCache();
 				new JsonResult().printTo(out);
 				
@@ -511,7 +509,7 @@ public class Service extends BaseService {
 				URI uri = URIUtils.createURI(url);
 				
 				CalendarManager.ProbeCalendarRemoteUrlResult result = manager.probeCalendarRemoteUrl(remoteProvider, uri, username, password);
-				if (result == null) throw new WTException("URL problem");
+				if (result == null) throw new CalendarProbeException(this.lookupResource("setupCalendarRemote.error.probe"));
 				
 				SetupDataCalendarRemote setup = new SetupDataCalendarRemote();
 				setup.setProfileId(profileId);
@@ -528,11 +526,13 @@ public class Service extends BaseService {
 				String tag = ServletUtils.getStringParameter(request, "tag", true);
 				String name = ServletUtils.getStringParameter(request, "name", true);
 				String color = ServletUtils.getStringParameter(request, "color", true);
+				Short syncFrequency = ServletUtils.getShortParameter(request, "syncFrequency", null);
 				
 				wts.hasPropertyOrThrow(SERVICE_ID, PROPERTY_PREFIX+tag);
 				SetupDataCalendarRemote setup = (SetupDataCalendarRemote) wts.getProperty(SERVICE_ID, PROPERTY_PREFIX+tag);
 				setup.setName(name);
 				setup.setColor(color);
+				setup.setSyncFrequency(syncFrequency);
 				
 				Calendar cal = manager.addCalendar(setup.toCalendar());
 				wts.clearProperty(SERVICE_ID, PROPERTY_PREFIX+tag);
@@ -542,10 +542,12 @@ public class Service extends BaseService {
 				
 				new JsonResult().printTo(out);
 			}
-			
+		
+		} catch (CalendarProbeException ex) {
+			new JsonResult(ex).printTo(out);
 		} catch (Exception ex) {
 			logger.error("Error in SetupCalendarRemote", ex);
-			new JsonResult(false, ex.getMessage()).printTo(out);
+			new JsonResult(ex).printTo(out);
 		}
 	}
 	
@@ -1478,6 +1480,12 @@ public class Service extends BaseService {
 					syncRemoteCalendarAAs.remove(calendarId);
 				}
 			}
+		}
+	}
+	
+	private static class CalendarProbeException extends WTException {
+		public CalendarProbeException(String message, Object... arguments) {
+			super(message, arguments);
 		}
 	}
 	

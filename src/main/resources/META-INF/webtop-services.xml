@@ -12,12 +12,8 @@
 		<companyWebSite>http://www.sonicle.com</companyWebSite>
 		<supportEmail>sonicle@sonicle.com</supportEmail>
 		
-		<controller name=".CalendarController" />
-		<manager name=".CalendarManager" />
-		<!--
-		<controllerClassName>CalendarController</controllerClassName>
-		<managerClassName>CalendarManager</managerClassName>
-		-->
+		<controller className=".CalendarController" />
+		<manager className=".CalendarManager" />
 		<serviceClassName>Service</serviceClassName>
 		<publicServiceClassName>PublicService</publicServiceClassName>
 		<userOptions>
@@ -25,6 +21,7 @@
 			<viewJsClassName>view.UserOptions</viewJsClassName>
 			<modelJsClassName>model.UserOptions</modelJsClassName>
 		</userOptions>
+		<jobService className=".JobService" />
 		
 		<restApiEndpoint name=".RestApi" />
 		<restApis>

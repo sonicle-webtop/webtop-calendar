@@ -41,23 +41,23 @@ public class CalendarSettings {
 	/**
 	 * [system+domain]
 	 * [boolean](false)
-	 * Enable/Disable calendars deletions through DAV rest-api interface.
-	 */
-	public static final String DAV_CALENDAR_DELETE_ENABLED = "dav.calendar.delete.enabled";
-	
-	/**
-	 * [system+domain]
-	 * [boolean](true)
-	 * Enable/Disable remote calendar auto-sync.
+	 * Enable/Disable remote calendars auto-sync functionality. Defaults to `false`.
 	 */
 	public static final String CALENDAR_REMOTE_AUTOSYNC_ENABLED = "calendar.remote.autosync.enabled";
 	
 	/**
 	 * [system+domain]
 	 * [boolean](true)
-	 * Enable/Disable remote auto-sync only when calendar owner is online.
+	 * Enable/Disable remote auto-sync only when calendar's owner is online. Defaults to `true`.
 	 */
 	public static final String CALENDAR_REMOTE_AUTOSYNC_ONLYWHENONLINE = "calendar.remote.autosync.onlywhenonline";
+	
+	/**
+	 * [system+domain]
+	 * [boolean](false)
+	 * Enable/Disable calendars deletions through DAV rest-api interface. Defaults to `false`.
+	 */
+	public static final String DAV_CALENDAR_DELETE_ENABLED = "dav.calendar.delete.enabled";
 	
 	/**
 	 * [][default]

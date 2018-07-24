@@ -135,7 +135,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.addAct('delete', {
 					text: null,
 					tooltip: WT.res('act-delete.lbl'),
-					iconCls: 'wt-icon-delete-xs',
+					iconCls: 'wt-icon-delete',
 					handler: function() {
 						me.deleteEvent();
 					}
@@ -153,7 +153,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.addAct('print', {
 					text: null,
 					tooltip: WT.res('act-print.lbl'),
-					iconCls: 'wt-icon-print-xs',
+					iconCls: 'wt-icon-print',
 					handler: function() {
 						//TODO: aggiungere l'azione 'salva' permettendo così la stampa senza chiudere la form
 						me.printEvent(me.getModel().getId());
@@ -619,7 +619,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.addAct('deleteAttendee', {
 							text: WT.res('act-delete.lbl'),
 							tooltip: null,
-							iconCls: 'wt-icon-delete-xs',
+							iconCls: 'wt-icon-delete',
 							handler: function() {
 								var sm = me.lref('tabinvitation.gpattendees').getSelectionModel();
 								me.deleteAttendee(sm.getSelection());
@@ -709,7 +709,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.addAct('reloadPlanning', {
 							text: WT.res('act-refresh.lbl'),
 							tooltip: null,
-							iconCls: 'wt-icon-refresh-xs',
+							iconCls: 'wt-icon-refresh',
 							handler: function() {
 								me.reloadPlanning();
 							}

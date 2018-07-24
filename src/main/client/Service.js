@@ -411,7 +411,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAct('refresh', {
 			text: '',
 			tooltip: WT.res('act-refresh.lbl'),
-			iconCls: 'wt-icon-refresh-xs',
+			iconCls: 'wt-icon-refresh',
 			handler: function() {
 				me.reloadEvents();
 			}
@@ -684,7 +684,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAct('deleteEvent', {
 			text: WT.res('act-delete.lbl'),
 			tooltip: null,
-			iconCls: 'wt-icon-delete-xs',
+			iconCls: 'wt-icon-delete',
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
 				if (rec) me.deleteEventUI(rec.get('id'), rec.get('title'), rec.get('isRecurring'));
@@ -716,7 +716,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAct('printScheduler', {
 			text: null,
 			tooltip: WT.res('act-print.lbl'),
-			iconCls: 'wt-icon-print-xs',
+			iconCls: 'wt-icon-print',
 			handler: function() {
 				var sched = me.scheduler(),
 						bounds = sched.getActiveView().getViewBounds(),
@@ -732,7 +732,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAct('printEvent', {
 			text: WT.res('act-print.lbl'),
 			tooltip: null,
-			iconCls: 'wt-icon-print-xs',
+			iconCls: 'wt-icon-print',
 			handler: function(s,e) {
 				var rec = e.menuData.event;
 				if (rec) me.printEventsDetail([rec.getId()]);

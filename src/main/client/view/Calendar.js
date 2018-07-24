@@ -276,7 +276,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 					{
 						xtype: 'splitbutton',
 						tooltip: me.mys.res('calendar.btn-syncnow.tip'),
-						iconCls: 'wt-icon-refresh-xs',
+						iconCls: 'wt-icon-refresh',
 						handler: function() {
 							me.syncRemoteCalendarUI(me.getModel().get('calendarId'), false);
 						},

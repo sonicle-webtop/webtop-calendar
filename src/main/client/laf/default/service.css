@@ -1,8 +1,8 @@
 .wtcal-icon-service { background-image: url('service_16.svg') !important; background-size: contain; }
 .wtcal-icon-service-xs { background-image: url('service_16.svg') !important; background-size: contain; }
 .wtcal-icon-service-s { background-image: url('service_16.svg') !important; background-size: contain; }
-.wtcal-icon-service-m { background-image: url('service_16.svg') !important; background-size: contain; }
-.wtcal-icon-service-l { background-image: url('service_16.svg') !important; background-size: contain; }
+.wtcal-icon-service-m { background-image: url('service_32.svg') !important; background-size: contain; }
+.wtcal-icon-service-l { background-image: url('service_32.svg') !important; background-size: contain; }
 .wtcal-icon-root-my-xs { background-image: url('root-my_16.png') !important; }
 .wtcal-icon-root-incoming-xs { background-image: url('root-incoming_16.png') !important; }
 .wtcal-icon-today { background-image: url('move-today_16.svg') !important; background-size: contain; }
@@ -33,9 +33,9 @@
 .wtcal-icon-response-TE-xs { background-image: url('response-tentative_16.png') !important; }
 
 .wtcal-icon-calendar { background-image: url('calendar_16.svg') !important; background-size: contain; }
-.wtcal-icon-calendar-my { background-image: url('calendar-my_16.svg') !important; background-size: contain; }
-.wtcal-icon-calendar-incoming { background-image: url('calendar-incoming_16.svg') !important; background-size: contain; }
-.wtcal-icon-calendar-remote { background-image: url('calendar-remote_16.svg') !important; background-size: contain; }
+.wtcal-icon-calendarMy { background-image: url('calendar-my_16.svg') !important; background-size: contain; }
+.wtcal-icon-calendarIncoming { background-image: url('calendar-incoming_16.svg') !important; background-size: contain; }
+.wtcal-icon-calendarRemote { background-image: url('calendar-remote_16.svg') !important; background-size: contain; }
 .wtcal-icon-addCalendar { background-image: url('calendar-add_16.svg') !important; background-size: contain; }
 .wtcal-icon-editCalendar { background-image: url('calendar-edit_16.svg') !important; background-size: contain; }
 .wtcal-icon-deleteCalendar { background-image: url('calendar-delete_16.svg') !important; background-size: contain; }

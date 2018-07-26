@@ -113,14 +113,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('printScheduler'),
 				'-',
 				me.getAct('today'),
-				me.getAct('previousday'),
-				me.getAct('nextday'),
-				'-',
-				me.getAct('dayview'),
-				me.getAct('week5view'),
-				me.getAct('weekview'),
-				me.getAct('dweekview'),
-				me.getAct('monthview'),
 				'->',
 				{
 					xtype: 'textfield',
@@ -142,7 +134,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					},
 					width: 200
-				}
+				},
+				'->'
 			]
 		}));
 		
@@ -265,6 +258,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					}
 				},
+				tbar: [
+					me.getAct('previousday'),
+					me.getAct('nextday'),
+					'->',
+					me.getAct('dayview'),
+					me.getAct('week5view'),
+					me.getAct('weekview'),
+					me.getAct('dweekview'),
+					me.getAct('monthview'),
+					'->'
+				],
 				listeners: {
 					rangeselect: function(s,dates,onComplete) {
 						onComplete();
@@ -394,9 +398,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	initActions: function() {
 		var me = this,
+				hdscale = WT.getHeaderScale(),
 				view = me.getVar('view');
 		
 		me.addAct('new', 'newEvent', {
+			ignoreSize: true,
 			handler: function() {
 				me.getAct('addEvent').execute();
 			}
@@ -408,32 +414,23 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.erpExport();
 			}
 		});
-		me.addAct('refresh', {
-			text: '',
-			tooltip: WT.res('act-refresh.lbl'),
-			iconCls: 'wt-icon-refresh',
-			handler: function() {
-				me.reloadEvents();
-			}
-		});
-		me.addAct('today', {
-			handler: function() {
-				me.moveDate(0);
-			}
-		});
+		
 		me.addAct('previousday', {
+			ignoreSize: true,
 			text: null,
 			handler: function() {
 				me.moveDate(-1);
 			}
 		});
 		me.addAct('nextday', {
+			ignoreSize: true,
 			text: null,
 			handler: function() {
 				me.moveDate(1);
 			}
 		});
 		me.addAct('dayview', {
+			ignoreSize: true,
 			itemId: 'd',
 			pressed: view === 'd',
 			toggleGroup: 'view',
@@ -442,6 +439,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('week5view', {
+			ignoreSize: true,
 			itemId: 'w5',
 			pressed: view === 'w5',
 			toggleGroup: 'view',
@@ -450,6 +448,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('weekview', {
+			ignoreSize: true,
 			itemId: 'w',
 			pressed: view === 'w',
 			toggleGroup: 'view',
@@ -458,6 +457,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('dweekview', {
+			ignoreSize: true,
 			itemId: 'dw',
 			pressed: view === 'dw',
 			toggleGroup: 'view',
@@ -466,6 +466,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('monthview', {
+			ignoreSize: true,
 			itemId: 'm',
 			pressed: view === 'm',
 			toggleGroup: 'view',
@@ -611,16 +612,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('viewThisFolderOnly', {
+			ignoreSize: true,
 			tooltip: null,
-			iconCls: 'wt-icon-select-one-xs',
+			iconCls: 'wt-icon-select-one',
 			handler: function() {
 				var node = me.getSelectedFolder(me.trFolders());
 				if(node) me.showOneF3FolderOnly(me.getSelectedRootFolder(me.trFolders()), node.getId());
 			}
 		});
 		me.addAct('viewAllFolders', {
+			ignoreSize: true,
 			tooltip: null,
-			iconCls: 'wt-icon-select-all-xs',
+			iconCls: 'wt-icon-select-all',
 			handler: function() {
 				var node = me.getSelectedRootFolder(me.trFolders());
 				if (node) {
@@ -633,8 +636,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('viewNoneFolders', {
+			ignoreSize: true,
 			tooltip: null,
-			iconCls: 'wt-icon-select-none-xs',
+			iconCls: 'wt-icon-select-none',
 			handler: function() {
 				var node = me.getSelectedRootFolder(me.trFolders());
 				if (node) {
@@ -713,7 +717,28 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (rec) me.moveEventUI(false, rec.get('id'), rec.get('calendarId'), rec.get('_profileId'));
 			}
 		});
+		me.addAct('printEvent', {
+			text: WT.res('act-print.lbl'),
+			tooltip: null,
+			iconCls: 'wt-icon-print',
+			handler: function(s,e) {
+				var rec = e.menuData.event;
+				if (rec) me.printEventsDetail([rec.getId()]);
+			}
+		});
+		
+		me.addAct('refresh', {
+			scale: hdscale,
+			text: '',
+			tooltip: WT.res('act-refresh.lbl'),
+			iconCls: 'wt-icon-refresh',
+			handler: function() {
+				me.reloadEvents();
+			}
+		});
 		me.addAct('printScheduler', {
+			ignoreSize: true,
+			scale: hdscale,
 			text: null,
 			tooltip: WT.res('act-print.lbl'),
 			iconCls: 'wt-icon-print',
@@ -729,13 +754,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				Sonicle.URLMgr.openFile(url, {filename: 'agenda', newWindow: true});
 			}
 		});
-		me.addAct('printEvent', {
-			text: WT.res('act-print.lbl'),
-			tooltip: null,
-			iconCls: 'wt-icon-print',
-			handler: function(s,e) {
-				var rec = e.menuData.event;
-				if (rec) me.printEventsDetail([rec.getId()]);
+		me.addAct('today', {
+			ignoreSize: true,
+			scale: hdscale,
+			handler: function() {
+				me.moveDate(0);
 			}
 		});
 	},

@@ -1,3 +1,10 @@
+$	5.3.0
+	%	Versione 5.3.0
+	*	<h1>Notifica gli aggiornamenti esterni</h1>
+		<p>La nuova casella di spunta, nelle proprietà del calendario, consente di 
+		scegliere se essere avvisato (mezzo email) dopo ogni modifica effettuata
+		da altri utenti sui propri calendari personali.</p>
+		<img src="5.3.0_notifyonchange.png"/>
 $	5.2.0
 	%	Versione 5.2.0
 	*	<h1>Nuovo pannello ricorrenza</h1>

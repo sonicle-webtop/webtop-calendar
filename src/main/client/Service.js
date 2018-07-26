@@ -106,10 +106,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		me.setToolbar(Ext.create({
 			xtype: 'toolbar',
-			referenceHolder: true,
-			defaults: {
-				scale: WT.serviceToolbarScale
-			},			
+			referenceHolder: true,			
 			items: [
 				'-',
 				me.getAct('refresh'),

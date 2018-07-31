@@ -55,7 +55,7 @@ public class JobService extends BaseJobService {
 	@Override
 	public List<BaseJobService.TaskDefinition> returnTasks() {
 		Trigger rcsTrigger = TriggerBuilder.newTrigger()
-				.withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(15))
+				.withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(5))
 				.build();
 		
 		return Arrays.asList(

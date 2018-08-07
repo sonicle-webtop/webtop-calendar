@@ -2176,7 +2176,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					try {
 						httpCli = HttpClientUtils.createBasicHttpClient(HttpClientUtils.configureSSLAcceptAll(), newUrl);
 						os = new FileOutputStream(tempFile);
-						HttpClientUtils.get(httpCli, newUrl, os);
+						HttpClientUtils.writeContent(httpCli, newUrl, os);
 						
 					} catch(IOException ex) {
 						throw new WTException(ex, "Unable to retrieve webcal [{0}]", newUrl);

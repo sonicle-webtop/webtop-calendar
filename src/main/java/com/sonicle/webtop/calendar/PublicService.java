@@ -32,7 +32,6 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.calendar.model.GetEventScope;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
@@ -47,7 +46,7 @@ import com.sonicle.webtop.core.bol.js.JsWTSPublic;
 import com.sonicle.webtop.core.sdk.BasePublicService;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.servlet.ServletHelper;
+import com.sonicle.webtop.core.app.servlet.ServletHelper;
 import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.text.MessageFormat;

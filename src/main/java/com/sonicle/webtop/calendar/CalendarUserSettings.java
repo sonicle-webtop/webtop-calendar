@@ -51,7 +51,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 		css = new CalendarServiceSettings(serviceId, profileId.getDomainId());
 	}
 	
-	public String getView() {
+	 public String getView() {
 		String value = getString(VIEW, null);
 		if(value != null) return value;
 		return css.getDefaultView();

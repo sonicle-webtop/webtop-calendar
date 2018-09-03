@@ -78,4 +78,7 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 	public String getDefaultEventReminderDelivery() {
 		return getString(DEFAULT_PREFIX + EVENT_REMINDER_DELIVERY, EVENT_REMINDER_DELIVERY_APP);
 	}
+	public boolean areVisibleStaticFields() {
+        return getBoolean(VISIBLE_STATIC_FIELDS_EVENT,true);
+    }
 }

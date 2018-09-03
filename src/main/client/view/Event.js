@@ -69,6 +69,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	constructor: function(cfg) {
 		var me = this;
+		Ext.merge(cfg || {}, {
+            dockableConfig: {
+               height: cfg.showStatisticFields === true ? 530 : 400
+         }});
 		me.callParent([cfg]);
 		
 		WTU.applyFormulas(me.getVM(), {
@@ -407,6 +411,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				reference: 'fldactivity',
 				bind: '{record.activityId}',
 				autoLoadOnValue: true,
+				hidden: !me.mys.getVar('visiblestaticfields'),
 				store: {
 					model: 'WTA.model.ActivityLkp',
 					proxy: WTF.proxy(WT.ID, 'LookupActivities'),
@@ -440,6 +445,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				reference: 'fldmasterdata',
 				bind: '{record.masterDataId}',
 				autoLoadOnValue: true,
+				hidden: !me.mys.getVar('visiblestaticfields'),
 				store: {
 					model: 'WTA.model.Simple',
 					proxy: WTF.proxy(WT.ID, 'LookupCustomersSuppliers')
@@ -466,6 +472,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				reference: 'fldstatmasterdata',
 				bind: '{record.statMasterDataId}',
 				autoLoadOnValue: true,
+				hidden: !me.mys.getVar('visiblestaticfields'),
 				store: {
 					model: 'WTA.model.Simple',
 					proxy: WTF.proxy(WT.ID, 'LookupStatisticCustomersSuppliers'),
@@ -489,6 +496,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				reference: 'fldcausal',
 				bind: '{record.causalId}',
 				autoLoadOnValue: true,
+				hidden: !me.mys.getVar('visiblestaticfields'),
 				store: {
 					model: 'WTA.model.CausalLkp',
 					proxy: WTF.proxy(WT.ID, 'LookupCausals'),

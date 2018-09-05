@@ -195,6 +195,7 @@ public class Service extends BaseService {
 		ServiceVars co = new ServiceVars();
 		co.put("calendarRemoteSyncEnabled", ss.getCalendarRemoteAutoSyncEnabled());
 		co.put("defaultCalendarSync", EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
+		co.put("visiblestaticfields",ss.areVisibleStaticFields());
 		co.put("view", us.getView());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));

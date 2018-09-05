@@ -62,7 +62,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
 
 /**
  *
@@ -396,24 +395,13 @@ public class ManagerUtils {
 	}
 	
 	/**
-	 * Computes event length in days.
-	 * For events that starts and ends in same date, returned lenght will be 0.
-	 * @param startDate
-	 * @param endDate
-	 * @return 
-	 */
-	static int calculateEventLengthInDays(DateTime startDate, DateTime endDate) {
-		return Days.daysBetween(startDate.toLocalDate(), endDate.toLocalDate()).getDays();
-	}
-	
-	/**
 	 * Fills passed dates hashmap within ones coming from specified event.
 	 * If event starts on 21 Apr and ends on 25 Apr, 21->25 dates will be added to the set.
 	 * @param dates
 	 * @param event 
 	 */
 	static void pushDatesBetweenStartEnd(HashSet<DateTime> dates, DateTime startDate, DateTime endDate) {
-		int days = calculateEventLengthInDays(startDate, endDate) +1;
+		int days = CalendarUtils.calculateLengthInDays(startDate, endDate) +1;
 		DateTime date = startDate.withTimeAtStartOfDay();
 		for(int count = 1; count <= days; count++) {
 			dates.add(date);

@@ -1384,7 +1384,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			Integer calendarId = evtDao.selectCalendarId(con, eventId);
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", eventId);
-			
 			checkRightsOnCalendarElements(calendarId, "DELETE");
 			
 			String provider = calDao.selectProviderById(con, calendarId);
@@ -2531,7 +2530,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			try {
 				// Calculate event length in order to generate events like original one
-				int eventDays = ManagerUtils.calculateEventLengthInDays(eventStartDate, eventEndDate);
+				int eventDays = CalendarUtils.calculateLengthInDays(eventStartDate, eventEndDate);
 				RRule rr = new RRule(orec.getRule());
 
 				// Calcutate recurrence set for required dates range
@@ -2870,7 +2869,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (orec != null) {
 			if (date == null) throw new WTException("Date is required for recurring events [{}]", eventId);
 			
-			int eventDays = ManagerUtils.calculateEventLengthInDays(oevt.getStartDate(), oevt.getEndDate());
+			int eventDays = CalendarUtils.calculateLengthInDays(oevt.getStartDate(), oevt.getEndDate());
 			ei.setStartDate(ei.getStartDate().withDate(date));
 			ei.setEndDate(ei.getEndDate().withDate(ei.getStartDate().plusDays(eventDays).toLocalDate()));
 			ei.setRecurrenceRule(orec.getRule());

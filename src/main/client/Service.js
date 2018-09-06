@@ -1363,7 +1363,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		opts = opts || {};
 		var me = this,
 				data = me.prepareEventNewData(evt),
-				vct = WT.createView(me.ID, 'view.Event');	
+				vct = WT.createView(me.ID, 'view.Event', {
+					viewCfg: {
+						showStatisticFields: me.getVar('visiblestaticfields')
+					}
+				});	
 		
 		vct.getView().on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
@@ -1384,7 +1388,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEvent: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts) {
 		opts = opts || {};
 		var me = this,
-				vct = WT.createView(me.ID, 'view.Event');
+				vct = WT.createView(me.ID, 'view.Event', {
+					viewCfg: {
+						showStatisticFields: me.getVar('visiblestaticfields')
+					}
+				});
 		
 		vct.getView().on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
@@ -1409,7 +1417,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	openEvent: function(edit, ekey, opts) {
 		opts = opts || {};
 		var me = this,
-				vct = WT.createView(me.ID, 'view.Event'),
+				vct = WT.createView(me.ID, 'view.Event', {
+					viewCfg: {
+						showStatisticFields: me.getVar('visiblestaticfields')
+					}
+				}),
 				mode = edit ? 'edit' : 'view';
 		
 		vct.getView().on('viewsave', function(s, success, model) {

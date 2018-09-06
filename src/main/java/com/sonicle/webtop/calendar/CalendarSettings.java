@@ -116,4 +116,11 @@ public class CalendarSettings {
 	 * List of checked (or visible) calendars.
 	 */
 	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
+	
+	/**
+	 * [user]
+	 * [int[]]
+	 * List of checked (or visible) calendars.
+	 */
+	public static final String VISIBLE_STATIC_FIELDS_EVENT = "event.statistic.fields.visible";
 }

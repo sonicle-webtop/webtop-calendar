@@ -119,8 +119,8 @@ public class CalendarSettings {
 	
 	/**
 	 * [user]
-	 * [int[]]
-	 * List of checked (or visible) calendars.
+	 * [boolean]
+	 * Enable/disable statistic fields (activity, customer, stat.customer, causal) display.
 	 */
-	public static final String VISIBLE_STATIC_FIELDS_EVENT = "event.statistic.fields.visible";
+	public static final String EVENT_STATISTIC_FIELDS_VISIBLE = "event.statistic.fields.visible";
 }

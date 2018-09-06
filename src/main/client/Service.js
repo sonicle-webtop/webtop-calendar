@@ -1365,7 +1365,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				data = me.prepareEventNewData(evt),
 				vct = WT.createView(me.ID, 'view.Event', {
 					viewCfg: {
-						showStatisticFields: me.getVar('visiblestaticfields')
+						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
 					}
 				});	
 		
@@ -1390,7 +1390,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				vct = WT.createView(me.ID, 'view.Event', {
 					viewCfg: {
-						showStatisticFields: me.getVar('visiblestaticfields')
+						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
 					}
 				});
 		
@@ -1419,7 +1419,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 				vct = WT.createView(me.ID, 'view.Event', {
 					viewCfg: {
-						showStatisticFields: me.getVar('visiblestaticfields')
+						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
 					}
 				}),
 				mode = edit ? 'edit' : 'view';

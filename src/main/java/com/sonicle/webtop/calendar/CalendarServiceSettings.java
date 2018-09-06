@@ -59,6 +59,10 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 		return getBoolean(DAV_CALENDAR_DELETE_ENABLED, false);
 	}
 	
+	public boolean getEventStatisticFieldsVisible() {
+        return getBoolean(EVENT_STATISTIC_FIELDS_VISIBLE, true);
+    }
+	
 	public Calendar.Sync getDefaultCalendarSync() {
 		return getEnum(DEFAULT_PREFIX + CALENDAR_SYNC, Calendar.Sync.OFF, Calendar.Sync.class);
 	}
@@ -78,7 +82,4 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 	public String getDefaultEventReminderDelivery() {
 		return getString(DEFAULT_PREFIX + EVENT_REMINDER_DELIVERY, EVENT_REMINDER_DELIVERY_APP);
 	}
-	public boolean areVisibleStaticFields() {
-        return getBoolean(VISIBLE_STATIC_FIELDS_EVENT,true);
-    }
 }

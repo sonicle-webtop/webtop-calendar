@@ -116,7 +116,7 @@ public class RBEventDetail {
 		this.causalDescription = lookupCausalDescription(coreMgr, this.causalId);
 		this.organizer = event.getOrganizer();
 		
-		if(event.hasAttendees()) {
+		if (event.getAttendees() != null) {
 			attendees = new ArrayList<>();
 			for(EventAttendee att : event.getAttendees()) {
 				attendees.add(new Attendee(att));

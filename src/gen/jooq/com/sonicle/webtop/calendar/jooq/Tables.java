@@ -32,6 +32,16 @@ public class Tables {
 	public static final com.sonicle.webtop.calendar.jooq.tables.Events EVENTS = com.sonicle.webtop.calendar.jooq.tables.Events.EVENTS;
 
 	/**
+	 * The table calendar.events_attachments
+	 */
+	public static final com.sonicle.webtop.calendar.jooq.tables.EventsAttachments EVENTS_ATTACHMENTS = com.sonicle.webtop.calendar.jooq.tables.EventsAttachments.EVENTS_ATTACHMENTS;
+
+	/**
+	 * The table calendar.events_attachments_data
+	 */
+	public static final com.sonicle.webtop.calendar.jooq.tables.EventsAttachmentsData EVENTS_ATTACHMENTS_DATA = com.sonicle.webtop.calendar.jooq.tables.EventsAttachmentsData.EVENTS_ATTACHMENTS_DATA;
+
+	/**
 	 * The table calendar.events_attendees
 	 */
 	public static final com.sonicle.webtop.calendar.jooq.tables.EventsAttendees EVENTS_ATTENDEES = com.sonicle.webtop.calendar.jooq.tables.EventsAttendees.EVENTS_ATTENDEES;

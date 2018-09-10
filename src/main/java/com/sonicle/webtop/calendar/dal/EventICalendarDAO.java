@@ -92,22 +92,4 @@ public class EventICalendarDAO extends BaseDAO {
 			)
 			.execute();
 	}
-	
-	public int deleteByCalendar(Connection con, int calendarId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.delete(EVENTS_ICALENDARS)
-			.where(
-				EVENTS_ICALENDARS.EVENT_ID.in(
-					DSL.select(
-						EVENTS.EVENT_ID
-					)
-					.from(EVENTS)
-					.where(
-						EVENTS.CALENDAR_ID.equal(calendarId)
-					)
-				)				
-			)
-			.execute();
-	}
 }

@@ -38,10 +38,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.ColorComboBox',
 		'Sonicle.form.field.rr.Recurrence',
+		'Sonicle.plugin.FileDrop',
 		'WTA.ux.data.EmptyModel',
 		'WTA.ux.data.ValueModel',
 		'WTA.ux.field.RecipientSuggestCombo',
 		'WTA.ux.field.SuggestCombo',
+		'WTA.ux.grid.Attachments',
 		'WTA.model.ActivityLkp',
 		'WTA.model.CausalLkp',
 		'WTA.store.Timezone',
@@ -122,8 +124,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	initComponent: function() {
 		var me = this,
-				vm = me.getViewModel(),
-				main, appointment, invitation, recurrence;
+				vm = me.getViewModel();
 		
 		Ext.apply(me, {
 			tbar: [
@@ -203,7 +204,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		});
 		me.callParent(arguments);
 		
-		main = Ext.create({
+		var main, appo, attends, recur, attachs;
+		main = {
 			xtype: 'wtform',
 			modelValidation: true,
 			defaults: {
@@ -357,8 +359,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					labelWidth: 75
 				}]
 			}]
-		});
-		appointment = Ext.create({
+		};
+		
+		appo = {
 			xtype: 'wtform',
 			title: me.mys.res('event.appointment.tit'),
 			modelValidation: true,
@@ -529,8 +532,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				fieldLabel: me.mys.res('event.fld-causal.lbl'),
 				anchor: '100%'
 			})]
-		});
-		invitation = Ext.create({
+		};
+		
+		attends = {
 			xtype: 'container',
 			reference: 'tabinvitation',
 			referenceHolder: true,
@@ -777,9 +781,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}
 				}
 			]
-		});
+		};
 		
-		recurrence = {
+		recur = {
 			xtype: 'wtform',
 			reference: 'tabrecurrence',
 			itemId: 'recurrence',
@@ -841,6 +845,40 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			}]
 		};
 		
+		attachs = {
+			xtype: 'wtattachmentsgrid',
+			title: me.mys.res('event.attachments.tit'),
+			bind: {
+				store: '{record.attachments}'
+			},
+			sid: me.mys.ID,
+			uploadContext: 'EventAttachment',
+			uploadTag: WT.uiid(me.getId()),
+			dropElementId: null,
+			highlightDrop: true,
+			typeField: 'ext',
+			listeners: {
+				attachmentlinkclick: function(s, rec) {
+					me.openAttachmentUI(rec, false);
+				},
+				attachmentdownloadclick: function(s, rec) {
+					me.openAttachmentUI(rec, true);
+				},
+				attachmentdeleteclick: function(s, rec) {
+					s.getStore().remove(rec);
+				},
+				attachmentuploaded: function(s, uploadId, file) {
+					var sto = s.getStore();
+					sto.add(sto.createModel({
+						name: file.name,
+						size: file.size,
+						_uplId: uploadId
+					}));
+					me.lref('tpnlinner').getLayout().setActiveItem(s);
+				}
+			}
+		};
+		
 		me.add({
 			region: 'center',
 			xtype: 'container',
@@ -852,12 +890,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				main,
 				{
 					xtype: 'wttabpanel',
+					reference: 'tpnlinner',
 					activeTab: 0,
 					deferredRender: false,
 					items: [
-						appointment,
-						invitation,
-						recurrence
+						appo,
+						attends,
+						recur,
+						attachs
 					],
 					flex: 1
 				}
@@ -865,6 +905,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		});
 		
 		me.on('viewload', me.onViewLoad);
+		me.on('viewclose', me.onViewClose);
 		vm.bind('{record.startDate}', me.onDatesChanged, me);
 		vm.bind('{record.endDate}', me.onDatesChanged, me);
 		vm.bind('{record.timezone}', me.onDatesChanged, me);
@@ -903,6 +944,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		Ext.defer(function() {
 			me.suspendCheckboxChange = false;
 		}, 500);
+	},
+	
+	onViewClose: function(s) {
+		s.mys.cleanupUploadedFiles(WT.uiid(s.getId()));
 	},
 	
 	refreshActivities: function() {
@@ -969,6 +1014,31 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	onMasterDataChanged: function() {
 		this.refreshStatMasterData();
 		this.refreshCausals();
+	},
+	
+	openAttachmentUI: function(rec, download) {
+		var me = this,
+				name = rec.get('name'),
+				uploadId = rec.get('_uplId'),
+				url;
+		
+		if (!Ext.isEmpty(uploadId)) {
+			url = WTF.processBinUrl(me.mys.ID, 'DownloadEventAttachment', {
+				inline: !download,
+				uploadId: uploadId
+			});
+		} else {
+			url = WTF.processBinUrl(me.mys.ID, 'DownloadEventAttachment', {
+				inline: !download,
+				eventId: me.getModel().get('eventId'),
+				attachmentId: rec.get('id')
+			});
+		}
+		if (download) {
+			Sonicle.URLMgr.downloadFile(url, {filename: name});
+		} else {
+			Sonicle.URLMgr.openFile(url, {filename: name});
+		}
 	},
 	
 	saveEvent: function() {

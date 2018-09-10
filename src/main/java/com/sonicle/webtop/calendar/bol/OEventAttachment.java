@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2014 Sonicle S.r.l.
+/*
+ * Copyright (C) 2018 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,33 +28,16 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2014 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2018 Sonicle S.r.l.".
  */
-package com.sonicle.webtop.calendar.bol.js;
+package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.commons.web.json.JsonResult;
-import java.util.ArrayList;
+import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsAttachments;
 
 /**
  *
  * @author malbinola
  */
-public class JsAttendee {
-	public String _fk;
-	public String attendeeId;
-	public String recipient;
-	public String recipientType;
-	public String recipientRole;
-	public String responseStatus;
-	public Boolean notify;
+public class OEventAttachment extends EventsAttachments {
 	
-	public static class JsAttendeeList extends ArrayList<JsAttendee> {
-		public JsAttendeeList() {
-			super();
-		}
-		
-		public static JsAttendeeList fromJson(String value) {
-			return JsonResult.gson.fromJson(value, JsAttendeeList.class);
-		}
-	}
 }

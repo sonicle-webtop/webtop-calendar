@@ -34,6 +34,8 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import java.util.ArrayList;
@@ -65,7 +67,8 @@ public class JsEvent {
 	public String statMasterDataId;
 	public Integer causalId;
 	public String rrule;
-	public ArrayList<JsAttendee> attendees;
+	public ArrayList<Attendee> attendees;
+	public ArrayList<Attachment> attachments;
 	
 	// Read-only fields
 	public String _recurringInfo;
@@ -96,18 +99,27 @@ public class JsEvent {
 		causalId = event.getCausalId();
 		
 		rrule = event.getRecurrenceRule();
+		
 		attendees = new ArrayList<>();
-		JsAttendee attendee = null;
-		for(EventAttendee att : event.getAttendees()) {
-			attendee = new JsAttendee();
-			attendee._fk = id;
-			attendee.attendeeId = att.getAttendeeId();
-			attendee.recipient = att.getRecipient();
-			attendee.recipientType = att.getRecipientType();
-			attendee.recipientRole = att.getRecipientRole();
-			attendee.responseStatus = att.getResponseStatus();
-			attendee.notify = att.getNotify();
-			attendees.add(attendee);
+		for (EventAttendee att : event.getAttendees()) {
+			Attendee jsa = new Attendee();
+			jsa.attendeeId = att.getAttendeeId();
+			jsa.recipient = att.getRecipient();
+			jsa.recipientType = att.getRecipientType();
+			jsa.recipientRole = att.getRecipientRole();
+			jsa.responseStatus = att.getResponseStatus();
+			jsa.notify = att.getNotify();
+			attendees.add(jsa);
+		}
+		
+		attachments = new ArrayList<>();
+		for (EventAttachment att : event.getAttachments()) {
+			Attachment jsa = new Attachment();
+			jsa.id = att.getAttachmentId();
+			//jsatt.lastModified = DateTimeUtils.printYmdHmsWithZone(att.getRevisionTimestamp(), profileTz);
+			jsa.name = att.getFilename();
+			jsa.size = att.getSize();
+			attachments.add(jsa);
 		}
 		
 		// Read-only fields
@@ -115,38 +127,38 @@ public class JsEvent {
 		_profileId = ownerPid;
 	}
 	
-	public static EventInstance buildEventInstance(JsEvent jse) {
+	public static EventInstance buildEventInstance(JsEvent js) {
 		EventInstance event = new EventInstance();
-		event.setKey(jse.id);
-		event.setEventId(jse.eventId);
-		event.setCalendarId(jse.calendarId);
+		event.setKey(js.id);
+		event.setEventId(js.eventId);
+		event.setCalendarId(js.calendarId);
 		
 		// Incoming fields are in a precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
-		DateTimeZone eventTz = DateTimeZone.forID(jse.timezone);
+		DateTimeZone eventTz = DateTimeZone.forID(js.timezone);
 		event.setDatesAndTimes(
-				jse.allDay,
-				jse.timezone,
-				DateTimeUtils.parseYmdHmsWithZone(jse.startDate, eventTz),
-				DateTimeUtils.parseYmdHmsWithZone(jse.endDate, eventTz)
+				js.allDay,
+				js.timezone,
+				DateTimeUtils.parseYmdHmsWithZone(js.startDate, eventTz),
+				DateTimeUtils.parseYmdHmsWithZone(js.endDate, eventTz)
 		);
 		
-		event.setTitle(jse.title);
-		event.setDescription(jse.description);
-		event.setLocation(jse.location);
-		event.setIsPrivate(jse.isPrivate);
-		event.setBusy(jse.busy);
-		event.setReminder(jse.reminder);
-		event.setActivityId(jse.activityId);
-		event.setMasterDataId(jse.masterDataId);
-		event.setStatMasterDataId(jse.statMasterDataId);
-		event.setCausalId(jse.causalId);
+		event.setTitle(js.title);
+		event.setDescription(js.description);
+		event.setLocation(js.location);
+		event.setIsPrivate(js.isPrivate);
+		event.setBusy(js.busy);
+		event.setReminder(js.reminder);
+		event.setActivityId(js.activityId);
+		event.setMasterDataId(js.masterDataId);
+		event.setStatMasterDataId(js.statMasterDataId);
+		event.setCausalId(js.causalId);
 		
-		event.setRecurrenceRule(jse.rrule);
-		EventAttendee attendee = null;
-		for(JsAttendee jsa : jse.attendees) {
-			attendee = new EventAttendee();
+		event.setRecurrenceRule(js.rrule);
+		
+		for (JsEvent.Attendee jsa : js.attendees) {
+			EventAttendee attendee = new EventAttendee();
 			attendee.setAttendeeId(jsa.attendeeId);
 			attendee.setRecipient(jsa.recipient);
 			attendee.setRecipientType(jsa.recipientType);
@@ -155,6 +167,9 @@ public class JsEvent {
 			attendee.setNotify(jsa.notify);
 			event.getAttendees().add(attendee);
 		}
+		
+		// Attachment needs to be treated outside this class in order to have complete access to their streams
+		
 		return event;
 	}
 	
@@ -179,4 +194,26 @@ public class JsEvent {
 		}
 	}
 	*/
+	
+	public static class Attendee {
+		public String attendeeId;
+		public String recipient;
+		public String recipientType;
+		public String recipientRole;
+		public String responseStatus;
+		public Boolean notify;
+		
+		public static class List extends ArrayList<Attendee> {
+			public static List fromJson(String value) {
+				return JsonResult.gson.fromJson(value, List.class);
+			}
+		}
+	}
+	
+	public static class Attachment {
+		public String id;
+		public String name;
+		public Long size;
+		public String _uplId;
+	}
 }

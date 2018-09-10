@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -42,6 +43,7 @@ import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -97,8 +99,15 @@ public class JsSchedulerEvent {
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
 		// Formatter will be instantiated specifying desired timezone.
-		startDate = ymdhmsZoneFmt.print(event.getStartDate());
-		endDate = ymdhmsZoneFmt.print(event.getEndDate());
+		if (event.getAllDay()) {
+			startDate = ymdhmsZoneFmt.print(event.getStartDate());
+			int days = CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate());
+			DateTime newEnd = event.getStartDate().plusDays(days).withTimeAtStartOfDay();
+			endDate = ymdhmsZoneFmt.print(newEnd);
+		} else {
+			startDate = ymdhmsZoneFmt.print(event.getStartDate());
+			endDate = ymdhmsZoneFmt.print(event.getEndDate());
+		}
 		timezone = event.getTimezone();
 		isAllDay = event.getAllDay();
 		

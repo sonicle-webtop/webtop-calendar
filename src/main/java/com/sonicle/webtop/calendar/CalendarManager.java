@@ -37,6 +37,7 @@ import com.sonicle.webtop.calendar.model.GetEventScope;
 import com.rits.cloning.Cloner;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.IdentifierUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.http.HttpClientUtils;
 import com.sonicle.commons.LangUtils;
@@ -61,6 +62,8 @@ import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OCalendarOwnerInfo;
 import com.sonicle.webtop.calendar.bol.OCalendarPropSet;
 import com.sonicle.webtop.calendar.bol.OEvent;
+import com.sonicle.webtop.calendar.bol.OEventAttachment;
+import com.sonicle.webtop.calendar.bol.OEventAttachmentData;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.OEventICalendar;
 import com.sonicle.webtop.calendar.bol.OEventInfo;
@@ -77,6 +80,7 @@ import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.model.EventKey;
 import com.sonicle.webtop.calendar.dal.CalendarDAO;
 import com.sonicle.webtop.calendar.dal.CalendarPropsDAO;
+import com.sonicle.webtop.calendar.dal.EventAttachmentDAO;
 import com.sonicle.webtop.calendar.dal.EventAttendeeDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.EventICalendarDAO;
@@ -108,7 +112,6 @@ import com.sonicle.webtop.core.sdk.ReminderInApp;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
-import com.sonicle.webtop.core.util.IdentifierUtils;
 import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
@@ -160,6 +163,9 @@ import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.io.ICalendarInput;
+import com.sonicle.webtop.calendar.model.EventAttachment;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOIntegrityViolationException;
 import com.sonicle.webtop.core.model.MasterData;
@@ -172,6 +178,7 @@ import com.sonicle.webtop.mail.IMailManager;
 import freemarker.template.TemplateException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Collection;
@@ -332,7 +339,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return items;
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -352,7 +359,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return items;
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -372,7 +379,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return evtDao.selectMaxRevTimestampByCalendars(con, okCalendarIds);
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -394,7 +401,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return doCalendarGet(con, calendarId);
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -416,7 +423,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return ManagerUtils.createCalendar(ocal);
 			
 		} catch(SQLException | DAOException | WTException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -444,7 +451,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			calendar.setBuiltIn(false);
-			calendar = doCalendarUpdate(true, con, calendar);
+			calendar = doCalendarInsert(con, calendar);
 			DbUtils.commitQuietly(con);
 			writeLog("CALENDAR_INSERT", String.valueOf(calendar.getCalendarId()));
 			
@@ -452,10 +459,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -481,7 +485,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cal.setName(WT.getPlatformName());
 			cal.setDescription("");
 			cal.setIsDefault(true);
-			cal = doCalendarUpdate(true, con, cal);
+			cal = doCalendarInsert(con, cal);
 			DbUtils.commitQuietly(con);
 			writeLog("CALENDAR_INSERT",  String.valueOf(cal.getCalendarId()));
 			
@@ -489,17 +493,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	@Override
-	public Calendar updateCalendar(Calendar calendar) throws WTException {
+	public void updateCalendar(Calendar calendar) throws WTException {
 		Connection con = null;
 		
 		try {
@@ -507,20 +508,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendarFolder(calendarId, "UPDATE");
 			
 			con = WT.getConnection(SERVICE_ID, false);
-			calendar = doCalendarUpdate(false, con, calendar);
-			if (calendar == null) throw new WTNotFoundException("Calendar not found [{}]", calendarId);
+			boolean updated = doCalendarUpdate(con, calendar);
+			if (!updated) throw new WTNotFoundException("Calendar not found [{}]", calendarId);
 			
 			DbUtils.commitQuietly(con);
 			writeLog("CALENDAR_UPDATE", String.valueOf(calendarId));
 			
-			return calendar;
-			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -562,10 +558,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -586,7 +579,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return (opset == null) ? new CalendarPropSet() : ManagerUtils.createCalendarPropSet(opset);
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -612,7 +605,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return psets;
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -643,7 +636,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return propertySet;
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -673,7 +666,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return new ArrayList<>(dates);
 			
 		} catch (SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -702,7 +695,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return items;
 			
 		} catch (SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -746,7 +739,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return new CollectionChangeSet<>(inserted, updated, deleted);
 			
 		} catch (SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -782,7 +775,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return items;
 			
 		} catch (SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -847,7 +840,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return ids.get(ids.size()-1);
 			
 		} catch (SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -896,7 +889,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return events;
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -937,7 +930,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return foInstances;
 			
 		} catch (SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -952,7 +945,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				return calculateRecurringInstances(con, event, fromDate, toDate, userTimezone, 200);
 
 			} catch(SQLException | DAOException ex) {
-				throw wrapThrowable(ex);
+				throw wrapException(ex);
 			} finally {
 				DbUtils.closeQuietly(con);
 			}
@@ -1011,7 +1004,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return null;
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1027,7 +1020,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return (ve == null) ? null : EventKey.buildKey(ve.getEventId(), ve.getSeriesEventId());
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1044,12 +1037,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer eventId = doEventGetId(con, null, publicUid);
 			if (eventId == null) throw new WTException("Event ID lookup failed [{0}]", publicUid);
 			
-			Event event = doEventGet(con, eventId, false);
+			Event event = doEventGet(con, eventId, false, false);
 			if (event == null) throw new WTException("Event not found [{0}]", eventId);
 			return event;
 		
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1069,7 +1062,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 			int ret = evtDao.updateAttendeeResponseByIdEvent(con, responseStatus, attendeeUid, eventId);
 			if (ret == 1) {
-				Event event = doEventGet(con, eventId, false);
+				Event event = doEventGet(con, eventId, false, false);
 				if (event == null) throw new WTException("Event not found [{0}]", eventId);
 				// Computes senderProfile: if available the calendarOnwer,
 				// otherwise the targetProfile (in this case admin@domain)
@@ -1083,7 +1076,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1099,54 +1092,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			Event event = doEventGet(con, eventId, forZPushFix);
+			Event event = doEventGet(con, eventId, forZPushFix ? false : true, forZPushFix);
 			checkRightsOnCalendarFolder(event.getCalendarId(), "READ");
 			
 			return event;
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
-	
-	/*
-	public Event getEvent_old_checkIf_doEventGet_works(int eventId, boolean forZPushFix) throws WTException {
-		EventDAO edao = EventDAO.getInstance();
-		RecurrenceDAO rdao = RecurrenceDAO.getInstance();
-		EventAttendeeDAO adao = EventAttendeeDAO.getInstance();
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			
-			OEvent oevt = forZPushFix?edao.selectById(con, eventId):edao.selectAliveById(con, eventId);
-			if(oevt == null) return null;
-			checkRightsOnCalendarFolder(oevt.getCalendarId(), "READ"); // Rights check!
-			
-			List<OEventAttendee> oatts = adao.selectByEvent(con, eventId);
-			ORecurrence orec = null;
-			if (oevt.getRecurrenceId() != null) {
-				orec = rdao.select(con, oevt.getRecurrenceId());
-				if(orec == null) throw new WTException("Unable to retrieve recurrence [{0}]", oevt.getRecurrenceId());
-			}
-			
-			Event evt = createEvent(oevt);
-			evt.setAttendees(createEventAttendeeList(oatts));
-			evt.setRecurrenceRule((orec != null) ? orec.getRule() : null);
-			//evt.setRecurrence(createEventRecurrence(orec));
-			return evt;
-			
-		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	*/
-	
-	
 	
 	@Override
 	public Event getEvent(GetEventScope scope, String publicUid) throws WTException {
@@ -1157,7 +1113,32 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return doEventGet(con, scope, publicUid);
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
+	public EventAttachmentWithBytes getEventAttachment(int eventId, String attachmentId) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		EventAttachmentDAO attDao = EventAttachmentDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			Integer calId = evtDao.selectCalendarId(con, eventId);
+			if (calId == null) return null;
+			checkRightsOnCalendarFolder(calId, "READ");
+			
+			OEventAttachment oatt = attDao.selectByIdEvent(con, attachmentId, eventId);
+			if (oatt == null) return null;
+			
+			OEventAttachmentData oattData = attDao.selectBytes(con, attachmentId);
+			return ManagerUtils.fillEventAttachment(new EventAttachmentWithBytes(oattData.getBytes()), oatt);
+		
+		} catch(SQLException | DAOException ex) {
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1185,7 +1166,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			String provider = calDao.selectProviderById(con, event.getCalendarId());
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", event.getCalendarId());
 			
-			InsertResult insert = doEventInsert(con, event, true, true, iCalendarRawData);
+			EventInsertResult insert = doEventInsert(con, event, iCalendarRawData, true, true, true);
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 			
@@ -1205,16 +1186,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			Event evt = ManagerUtils.createEvent(insert.event);
-			evt.setAttendees(ManagerUtils.createEventAttendeeList(insert.attendees));
 			evt.setRecurrenceRule((insert.recurrence != null) ? insert.recurrence.getRule() : null);
+			evt.setAttendees(ManagerUtils.createEventAttendeeList(insert.attendees));
+			evt.setAttachments(ManagerUtils.createEventAttachmentList(insert.attachments));
 			return evt;
 			
-		} catch(SQLException | DAOException | WTException ex) {
+		} catch(SQLException | DAOException | IOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1245,12 +1224,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			doEventInstanceUpdateAndCommit(con, UpdateEventTarget.ALL_SERIES, new EventKey(event.getEventId()), event, notifyAttendees);
 			
-		} catch(SQLException | DAOException | WTException ex) {
+		} catch(SQLException | DAOException | IOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1302,7 +1278,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				parsedEvent.setStatMasterDataId(original.getStatMasterDataId());
 				parsedEvent.setCausalId(original.getCausalId());
 
-				doEventUpdate(con, original, parsedEvent, true);
+				doEventUpdate(con, original, parsedEvent, true, false);
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
 				
@@ -1363,12 +1339,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				throw new WTException("Unsupported Calendar's method [{0}]", ical.getMethod().toString());
 			}
 			
-		} catch(SQLException | DAOException | WTException ex) {
+		} catch(SQLException | DAOException | IOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1393,10 +1366,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1441,7 +1411,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return EventKey.buildKey(oevt.getEventId(), oevt.getEventId());
 		
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1457,10 +1427,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			return doEventInstanceGet(con, key.eventId, key.instanceDate);
+			return doEventInstanceGet(con, key.eventId, key.instanceDate, true);
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1487,12 +1457,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			EventKey eventKey = new EventKey(event.getKey());
 			doEventInstanceUpdateAndCommit(con, target, eventKey, event, true);
 			
-		} catch(SQLException | DAOException | WTException ex) {
+		} catch(SQLException | DAOException | IOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1541,10 +1508,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1563,7 +1527,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			InsertResult insert = doEventInsert(con, event, true, true, null);
+			EventInsertResult insert = doEventInsert(con, event, null, true, true, false);
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_INSERT", String.valueOf(insert.event.getEventId()));
 			
@@ -1571,12 +1535,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			List<RecipientTuple> nmRcpts = getModificationRecipients(insert.event.getCalendarId(), Crud.CREATE);
 			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, getEvent(insert.event.getEventId()).getFootprint(), Crud.CREATE);
 			
-		} catch(SQLException | DAOException | WTException ex) {
+		} catch(SQLException | DAOException | IOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1607,10 +1568,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1641,10 +1599,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1678,12 +1633,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// There is no need to notify attendees, the event is simply move from a calendar to another!
 			}
 			
-		} catch(SQLException | DAOException | WTException ex) {
+		} catch(SQLException | DAOException | IOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1730,7 +1682,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 		
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1759,7 +1711,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return getEventAttendees(con, eventId, notifiedOnly);
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1825,10 +1777,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Ended at {0}", new DateTime()));
@@ -1933,7 +1882,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		EventAttendeeDAO attdao = EventAttendeeDAO.getInstance();
 		RecurrenceDAO recdao = RecurrenceDAO.getInstance();
 		RecurrenceBrokenDAO recbrkdao = RecurrenceBrokenDAO.getInstance();
-		EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
 		Connection con = null;
 		
 		//TODO: controllo permessi
@@ -1945,7 +1893,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// Erase events and related tables
 			if (deep) {
 				for (OCalendar ocal : caldao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
-					icaDao.deleteByCalendar(con, ocal.getCalendarId());
 					attdao.deleteByCalendar(con, ocal.getCalendarId());
 					recdao.deleteByCalendar(con, ocal.getCalendarId());
 					recbrkdao.deleteByCalendar(con, ocal.getCalendarId());
@@ -1966,10 +1913,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch(SQLException | DAOException ex) {
 			DbUtils.rollbackQuietly(con);
-			throw wrapThrowable(ex);
-		} catch(Throwable t) {
-			DbUtils.rollbackQuietly(con);
-			throw t;
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2016,9 +1960,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			DbUtils.commitQuietly(con);
 			
-		} catch(Throwable t) {
+		} catch(Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			logger.error("Error collecting reminder alerts", t);
+			logger.error("Error collecting reminder alerts", ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2069,9 +2013,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			evtDao.updateHandleInvitationIn(con, processed, false);
 			DbUtils.commitQuietly(con);
 			
-		} catch(Throwable t) {
+		} catch(Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			logger.error("Error collecting reminder alerts", t);
+			logger.error("Error collecting reminder alerts", ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2283,9 +2227,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						calDao.updateRemoteSyncById(con, calendarId, newLastSync, null);
 						DbUtils.commitQuietly(con);
 
-					} catch(Throwable t) {
+					} catch(Exception ex) {
 						DbUtils.rollbackQuietly(con);
-						throw new WTException(t, "Error importing iCalendar");
+						throw new WTException(ex, "Error importing iCalendar");
 					}
 					
 				} finally {
@@ -2373,9 +2317,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							calDao.updateRemoteSyncById(con, calendarId, newLastSync, newSyncToken);
 							DbUtils.commitQuietly(con);
 							
-						} catch(Throwable t) {
+						} catch(Exception ex) {
 							DbUtils.rollbackQuietly(con);
-							throw new WTException(t, "Error importing iCalendar");
+							throw new WTException(ex, "Error importing iCalendar");
 						}
 						
 					} else { // Full update or partial computing hashes
@@ -2473,9 +2417,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							calDao.updateRemoteSyncById(con, calendarId, newLastSync, newSyncToken);
 							DbUtils.commitQuietly(con);
 							
-						} catch(Throwable t) {
+						} catch(Exception ex) {
 							DbUtils.rollbackQuietly(con);
-							throw new WTException(t, "Error importing iCalendar");
+							throw new WTException(ex, "Error importing iCalendar");
 						}
 					}
 					
@@ -2485,7 +2429,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 			pendingRemoteCalendarSyncs.remove(PENDING_KEY);
@@ -2563,7 +2507,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 
 			} catch(DAOException ex) {
-				throw wrapThrowable(ex);
+				throw wrapException(ex);
 			} catch(ParseException ex) {
 				throw new WTException(ex, "Unable to parse rrule");
 			}
@@ -2647,7 +2591,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return instances;
 			
 		} catch(DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} catch(ParseException ex) {
 			throw new WTException(ex, "Unable to parse rrule");
 		}
@@ -2727,7 +2671,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			return doCalendarGetOwnerInfo(con, calendarId);
 			
 		} catch(SQLException | DAOException ex) {
-			throw wrapThrowable(ex);
+			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2738,21 +2682,26 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return calDao.selectOwnerInfoById(con, calendarId);
 	}
 	
-	private Calendar doCalendarUpdate(boolean insert, Connection con, Calendar cal) throws DAOException {
+	private Calendar doCalendarInsert(Connection con, Calendar cal) throws DAOException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		
 		OCalendar ocal = ManagerUtils.createOCalendar(cal);
-		if (insert) {
-			ocal.setCalendarId(calDao.getSequence(con).intValue());
-		}
+		ocal.setCalendarId(calDao.getSequence(con).intValue());
 		fillOCalendarWithDefaults(ocal);
 		if (ocal.getIsDefault()) calDao.resetIsDefaultByProfile(con, ocal.getDomainId(), ocal.getUserId());
-		if (insert) {
-			calDao.insert(con, ocal);
-		} else {
-			calDao.update(con, ocal);
-		}
+		
+		calDao.insert(con, ocal);
 		return ManagerUtils.createCalendar(ocal);
+	}
+	
+	private boolean doCalendarUpdate(Connection con, Calendar cal) throws DAOException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		
+		OCalendar ocal = ManagerUtils.createOCalendar(cal);
+		fillOCalendarWithDefaults(ocal);
+		if (ocal.getIsDefault()) calDao.resetIsDefaultByProfile(con, ocal.getDomainId(), ocal.getUserId());
+		
+		return calDao.update(con, ocal) == 1;
 	}
 	
 	private EventCalObject doEventCalObjectPrepare(Connection con, VEventCalObject vobj) throws WTException {
@@ -2809,10 +2758,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return ids.get(0);
 	}
 	
-	private Event doEventGet(Connection con, int eventId, boolean forZPushFix) throws DAOException, WTException {
+	private Event doEventGet(Connection con, int eventId, boolean attachments, boolean forZPushFix) throws DAOException, WTException {
 		EventDAO evtDao = EventDAO.getInstance();
-		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+		EventAttendeeDAO atteDao = EventAttendeeDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
 		
 		OEvent oevt = forZPushFix ? evtDao.selectById(con, eventId) : evtDao.selectAliveById(con, eventId);
 		if (oevt == null) return null;
@@ -2825,9 +2775,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			evt.setRecurrenceRule(orec.getRule());
 		}
 		
-		List<OEventAttendee> oatts = attDao.selectByEvent(con, eventId);
-		if (!oatts.isEmpty()) {
-			evt.setAttendees(ManagerUtils.createEventAttendeeList(oatts));
+		List<OEventAttendee> oattes = atteDao.selectByEvent(con, eventId);
+		//evt.setAttendees(ManagerUtils.createEventAttendeeList(oattes));
+		if (!oattes.isEmpty()) {
+			evt.setAttendees(ManagerUtils.createEventAttendeeList(oattes));
+		}
+		// Fill attachments (if necessary)
+		if (attachments) {
+			List<OEventAttachment> oattchs = attchDao.selectByEvent(con, eventId);
+			evt.setAttachments(ManagerUtils.createEventAttachmentList(oattchs));
 		}
 		
 		return evt;
@@ -2851,13 +2807,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		// Returning the first result is the most appropriated action because
 		// personal elements are returned first.
 		//if (ids.size() > 1) throw new WTException("Multiple events found for public id [{}]", publicUid);
-		return doEventGet(con, ids.get(0), false);
+		return doEventGet(con, ids.get(0), false, false);
 	}
 	
-	private EventInstance doEventInstanceGet(Connection con, int eventId, LocalDate date) throws WTException {
+	private EventInstance doEventInstanceGet(Connection con, int eventId, LocalDate date, boolean attachments) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
-		EventAttendeeDAO eattDao = EventAttendeeDAO.getInstance();
+		EventAttendeeDAO atteDao = EventAttendeeDAO.getInstance();
+		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
 		
 		OEvent oevt = evtDao.selectById(con, eventId);
 		if (oevt == null) throw new WTException("Unable to get event [{}]", eventId);
@@ -2884,13 +2841,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		// Fill attendees
-		List<OEventAttendee> attendees = eattDao.selectByEvent(con, eventId);
-		ei.setAttendees(ManagerUtils.createEventAttendeeList(attendees));
+		List<OEventAttendee> oattes = atteDao.selectByEvent(con, eventId);
+		ei.setAttendees(ManagerUtils.createEventAttendeeList(oattes));
+		
+		// Fill attachments (if necessary)
+		if (attachments) {
+			List<OEventAttachment> oattchs = attchDao.selectByEvent(con, eventId);
+			ei.setAttachments(ManagerUtils.createEventAttachmentList(oattchs));
+		}
 		
 		return ei;
 	}
 	
-	private void doEventInstanceUpdateAndCommit(Connection con, UpdateEventTarget target, EventKey eventKey, Event event, boolean notifyAttendees) throws WTException {
+	private void doEventInstanceUpdateAndCommit(Connection con, UpdateEventTarget target, EventKey eventKey, Event event, boolean notifyAttendees) throws IOException, WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		
@@ -2906,7 +2869,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (einfo.isRecurring()) {
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts new broken event (attendees and rr are not supported here)
-				InsertResult insert = doEventInsert(con, event, false, false, null);
+				EventInsertResult insert = doEventInsert(con, event, null, false, false, false);
 
 				// 2 - Inserts new broken record (marks recurring event) on modified date
 				doRecurrenceExcludeDate(con, oevtOrig, eventKey.instanceDate, insert.event.getEventId());
@@ -2950,7 +2913,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					ICal4jUtils.setRecurUntilDate(oldRecur, recUntil);
 				}
 				event.setRecurrenceRule(oldRecur.toString());
-				InsertResult insert = doEventInsert(con, event, true, false, null);
+				EventInsertResult insert = doEventInsert(con, event, null, true, false, false);
 
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(einfo.getEventId()));
@@ -2967,7 +2930,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				event.setEndDate(event.getEndDate().withDate(oevtOrig.getEndDate().toLocalDate()));
 
 				// 1 - Updates event with new data
-				doEventUpdate(con, oevtOrig, event, DoOption.UPDATE, true);
+				doEventUpdate(con, oevtOrig, event, DoOption.UPDATE, true, true);
 
 				DbUtils.commitQuietly(con);
 				writeLog("EVENT_UPDATE", String.valueOf(einfo.getEventId()));
@@ -2977,7 +2940,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} else if (einfo.isBroken()) {
 			// 1 - Updates broken event (follow eventId) with new data
-			doEventUpdate(con, oevtOrig, event, DoOption.SKIP, true);
+			doEventUpdate(con, oevtOrig, event, DoOption.SKIP, true, true);
 			
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_UPDATE", String.valueOf(einfo.getEventId()));
@@ -2989,7 +2952,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} else {
 			// 1 - Updates this event with new data
-			doEventUpdate(con, oevtOrig, event, DoOption.UPDATE, true);
+			doEventUpdate(con, oevtOrig, event, DoOption.UPDATE, true, true);
 			
 			DbUtils.commitQuietly(con);
 			writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
@@ -3158,15 +3121,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	
-	private boolean doEventInputUpdate(Connection con, HashMap<String, OEvent> cache, EventInput input) throws DAOException {
+	private boolean doEventInputUpdate(Connection con, HashMap<String, OEvent> cache, EventInput input) throws DAOException, IOException {
 		//TODO: Make this smart avoiding delete/insert!
 		doEventDelete(con, input.event.getEventId(), false);
 		doEventInputInsert(con, cache, input);
 		return true;
 	}
 	
-	private InsertResult doEventInputInsert(Connection con, HashMap<String, OEvent> cache, EventInput ei) throws DAOException {
-		InsertResult insert = doEventInsert(con, ei.event, true, true, null);
+	private EventInsertResult doEventInputInsert(Connection con, HashMap<String, OEvent> cache, EventInput ei) throws DAOException, IOException {
+		EventInsertResult insert = doEventInsert(con, ei.event, null, true, true, false);
 		if (insert.recurrence != null) {
 			// Cache recurring event for future use within broken references 
 			cache.put(insert.event.getPublicUid(), insert.event);
@@ -3187,11 +3150,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return insert;
 	}
 	
-	private InsertResult doEventInsert(Connection con, Event event, boolean insertRecurrence, boolean insertAttendees, String rawICalendar) {
+	private EventInsertResult doEventInsert(Connection con, Event event, String rawICalendar, boolean processRecurrence, boolean processAttendees, boolean processAttachments) throws DAOException, IOException {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
-		DateTime revision = BaseDAO.createRevisionTimestamp();
 		
 		OEvent oevt = ManagerUtils.createOEvent(event);
 		oevt.setEventId(evtDao.getSequence(con).intValue());
@@ -3199,20 +3161,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		fillOEventWithDefaults(oevt);
 		oevt.ensureCoherence();
 		
-		ArrayList<OEventAttendee> oatts = new ArrayList<>();
-		if (insertAttendees && event.hasAttendees()) {
-			for (EventAttendee att : event.getAttendees()) {
-				if (!ManagerUtils.validateForInsert(att)) continue;
-				final OEventAttendee oatt = ManagerUtils.createOEventAttendee(att);
-				oatt.setAttendeeId(IdentifierUtils.getUUID());
-				oatt.setEventId(oevt.getEventId());
-				attDao.insert(con, oatt);
-				oatts.add(oatt);
-			}
+		if (!StringUtils.isBlank(rawICalendar)) {
+			doEventICalendarInsert(con, oevt.getEventId(), rawICalendar);
 		}
 		
 		ORecurrence orec = null;
-		if (insertRecurrence && event.hasRecurrence()) {
+		if (processRecurrence && event.hasRecurrence()) {
 			Recur recur = ICal4jUtils.parseRRule(event.getRecurrenceRule());
 			if (recur != null) {
 				orec = ManagerUtils.createORecurrence(recur, event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
@@ -3221,22 +3175,42 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 		}
 		
-		if (!StringUtils.isBlank(rawICalendar)) {
-			doEventICalendarInsert(con, oevt.getEventId(), rawICalendar);
+		oevt.setRecurrenceId((orec != null) ? orec.getRecurrenceId() : null);
+		evtDao.insert(con, oevt, BaseDAO.createRevisionTimestamp());
+		
+		ArrayList<OEventAttendee> oattes = null;
+		if (processAttendees && (event.getAttendees() != null)) {
+			oattes = new ArrayList<>();
+			for (EventAttendee att : event.getAttendees()) {
+				if (!ManagerUtils.validateForInsert(att)) continue;
+				OEventAttendee oatt = ManagerUtils.createOEventAttendee(att);
+				oatt.setAttendeeId(IdentifierUtils.getUUID());
+				oatt.setEventId(oevt.getEventId());
+				attDao.insert(con, oatt);
+				oattes.add(oatt);
+			}
 		}
 		
-		oevt.setRecurrenceId((orec != null) ? orec.getRecurrenceId() : null);
-		evtDao.insert(con, oevt, revision);
-		return new InsertResult(oevt, orec, oatts);
+		ArrayList<OEventAttachment> oattchs = null;
+		if (processAttachments && (event.getAttachments() != null)) {
+			oattchs = new ArrayList<>();
+			for (EventAttachment att : event.getAttachments()) {
+				if (!(att instanceof EventAttachmentWithStream)) throw new IOException("Attachment stream not available [" + att.getAttachmentId() + "]");
+				oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithStream)att));
+			}
+		}
+		
+		return new EventInsertResult(oevt, orec, oattes, oattchs);
 	}
 	
-	private OEvent doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean attendees) throws WTException {
-		return doEventUpdate(con, originalEvent, event, DoOption.SKIP, attendees);
+	private boolean doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean processAttendees, boolean processAttachments) throws IOException, WTException {
+		return doEventUpdate(con, originalEvent, event, DoOption.SKIP, processAttendees, processAttachments);
 	}
 	
-	private OEvent doEventUpdate(Connection con, OEvent originalEvent, Event event, DoOption recurrence, boolean attendees) throws WTException {
+	private boolean doEventUpdate(Connection con, OEvent originalEvent, Event event, DoOption recurrence, boolean processAttendees, boolean processAttachments) throws IOException, WTException {
 		EventDAO evtDao = EventDAO.getInstance();
-		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+		EventAttendeeDAO atteDao = EventAttendeeDAO.getInstance();
+		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		RecurrenceBrokenDAO rbkDao = RecurrenceBrokenDAO.getInstance();
 		DateTime revision = BaseDAO.createRevisionTimestamp();
@@ -3270,43 +3244,45 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 		}
 		
-		if (attendees) {
-			List<EventAttendee> fromList = ManagerUtils.createEventAttendeeList(attDao.selectByEvent(con, originalEvent.getEventId()));
-			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(fromList, event.getAttendees());
+		boolean ret = evtDao.update(con, originalEvent, revision, originalEvent.getStartDate().isAfterNow()) == 1;
+		
+		if (processAttendees && (event.getAttendees() != null)) {
+			List<EventAttendee> oldAtts = ManagerUtils.createEventAttendeeList(atteDao.selectByEvent(con, originalEvent.getEventId()));
+			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(oldAtts, event.getAttendees());
 			
 			for (EventAttendee att : changeSet.inserted) {
 				if (!ManagerUtils.validateForInsert(att)) continue;
 				final OEventAttendee oatt = ManagerUtils.createOEventAttendee(att);
 				oatt.setAttendeeId(IdentifierUtils.getUUID());
 				oatt.setEventId(originalEvent.getEventId());
-				attDao.insert(con, oatt);
+				atteDao.insert(con, oatt);
 			}
 			for (EventAttendee att : changeSet.updated) {
 				if (!ManagerUtils.validateForUpdate(att)) continue;
 				final OEventAttendee oatt = ManagerUtils.createOEventAttendee(att);
-				attDao.update(con, oatt);
+				atteDao.update(con, oatt);
 			}
 			for (EventAttendee att : changeSet.deleted) {
-				attDao.delete(con, att.getAttendeeId());
+				atteDao.delete(con, att.getAttendeeId());
 			}
 		}
-		
-		evtDao.update(con, originalEvent, revision, originalEvent.getStartDate().isAfterNow());
-		return originalEvent;
-	}
-	
-	private boolean doEventICalendarInsert(Connection con, int eventId, String rawICalendar) throws DAOException {
-		EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
-		
-		OEventICalendar ovca = new OEventICalendar();
-		ovca.setEventId(eventId);
-		ovca.setRawData(rawICalendar);
-		return icaDao.insert(con, ovca) == 1;
-	}
-	
-	private boolean doEventICalendarDelete(Connection con, int eventId) throws DAOException {
-		EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
-		return icaDao.deleteById(con, eventId) == 1;
+		if (processAttachments && (event.getAttachments() != null)) {
+			List<EventAttachment> oldAttchs = ManagerUtils.createEventAttachmentList(attchDao.selectByEvent(con, event.getEventId()));
+			CollectionChangeSet<EventAttachment> changeSet = LangUtils.getCollectionChanges(oldAttchs, event.getAttachments());
+
+			for (EventAttachment att : changeSet.inserted) {					
+				if (!(att instanceof EventAttachmentWithStream)) throw new IOException("Attachment stream not available [" + att.getAttachmentId() + "]");
+				doEventAttachmentInsert(con, originalEvent.getEventId(), (EventAttachmentWithStream)att);
+			}
+			for (EventAttachment att : changeSet.updated) {
+				if (!(att instanceof EventAttachmentWithStream)) continue;
+				doEventAttachmentUpdate(con, (EventAttachmentWithStream)att);
+			}
+			for (EventAttachment att : changeSet.deleted) {
+				attchDao.delete(con, att.getAttachmentId());
+			}
+		}
+		return ret;
 	}
 	
 	private int doEventDelete(Connection con, int eventId, boolean logicDelete) throws DAOException {
@@ -3345,14 +3321,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void doEventMove(Connection con, boolean copy, Event event, int targetCalendarId) throws DAOException {
-		EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
-		
+	private void doEventMove(Connection con, boolean copy, Event event, int targetCalendarId) throws DAOException, IOException {
 		if (copy) {
+			EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
+			
 			event.setCalendarId(targetCalendarId);
 			OEventICalendar oica = icaDao.selectById(con, event.getEventId());
 			String rawICalendar = (oica != null) ? oica.getRawData() : null;
-			doEventInsert(con, event, true, true, rawICalendar);
+			//TODO: maybe add support to attachments copy
+			doEventInsert(con, event, rawICalendar, true, true, false);
 			
 		} else {
 			EventDAO evtDao = EventDAO.getInstance();
@@ -3395,6 +3372,53 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		*/
 		return instances;
+	}
+	
+	private boolean doEventICalendarInsert(Connection con, int eventId, String rawICalendar) throws DAOException {
+		EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
+		
+		OEventICalendar ovca = new OEventICalendar();
+		ovca.setEventId(eventId);
+		ovca.setRawData(rawICalendar);
+		return icaDao.insert(con, ovca) == 1;
+	}
+	
+	private boolean doEventICalendarDelete(Connection con, int eventId) throws DAOException {
+		EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
+		return icaDao.deleteById(con, eventId) == 1;
+	}
+	
+	private OEventAttachment doEventAttachmentInsert(Connection con, int eventId, EventAttachmentWithStream attachment) throws DAOException, IOException {
+		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
+		
+		OEventAttachment oattch = ManagerUtils.createOTaskAttachment(attachment);
+		oattch.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
+		oattch.setEventId(eventId);
+		attchDao.insert(con, oattch, BaseDAO.createRevisionTimestamp());
+		
+		InputStream is = attachment.getStream();
+		try {
+			attchDao.insertBytes(con, oattch.getEventAttachmentId(), IOUtils.toByteArray(is));
+		} finally {
+			IOUtils.closeQuietly(is);
+		}
+		
+		return oattch;
+	}
+	
+	private boolean doEventAttachmentUpdate(Connection con, EventAttachmentWithStream attachment) throws DAOException, IOException {
+		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
+		
+		OEventAttachment oattch = ManagerUtils.createOTaskAttachment(attachment);
+		attchDao.update(con, oattch, BaseDAO.createRevisionTimestamp());
+		
+		InputStream is = attachment.getStream();
+		try {
+			attchDao.deleteBytes(con, oattch.getEventAttachmentId());
+			return attchDao.insertBytes(con, oattch.getEventAttachmentId(), IOUtils.toByteArray(is)) == 1;
+		} finally {
+			IOUtils.closeQuietly(is);
+		}
 	}
 	
 	private OCalendar fillOCalendarWithDefaults(OCalendar tgt) {
@@ -3922,16 +3946,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		public T createInstance(String key, DateTime startDate, DateTime endDate);
 	}
 	
-	public static class InsertResult {
-		OEvent event;
-		ORecurrence recurrence;
-		ArrayList<OEventAttendee> attendees;
+	public static class EventInsertResult {
+		public final OEvent event;
+		public final ORecurrence recurrence;
+		public final List<OEventAttendee> attendees;
+		public final List<OEventAttachment> attachments;
 		
-		public InsertResult(OEvent event, ORecurrence recurrence, ArrayList<OEventAttendee> attendees) {
+		public EventInsertResult(OEvent event, ORecurrence recurrence, ArrayList<OEventAttendee> attendees, List<OEventAttachment> attachments) {
 			this.event = event;
 			this.recurrence = recurrence;
 			this.attendees = attendees;
-			
+			this.attachments = attachments;
 		}
 	}
 	

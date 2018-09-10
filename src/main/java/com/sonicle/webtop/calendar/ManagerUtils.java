@@ -38,12 +38,14 @@ import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OCalendarPropSet;
 import com.sonicle.webtop.calendar.bol.OEvent;
+import com.sonicle.webtop.calendar.bol.OEventAttachment;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.Event;
+import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventCalObject;
 import com.sonicle.webtop.calendar.model.SchedEvent;
@@ -390,6 +392,48 @@ public class ManagerUtils {
 			tgt.setSeriesEventId(src.getSeriesEventId());
 			tgt.setHasAttendees(src.getHasAttendees());
 			tgt.setRecurInfo(src.isEventRecurring(), src.isEventBroken());
+		}
+		return tgt;
+	}
+	
+	static List<EventAttachment> createEventAttachmentList(List<OEventAttachment> items) {
+		ArrayList<EventAttachment> list = new ArrayList<>(items.size());
+		for (OEventAttachment item : items) {
+			list.add(createEventAttachment(item));
+		}
+		return list;
+	}
+	
+	static EventAttachment createEventAttachment(OEventAttachment src) {
+		if (src == null) return null;
+		return fillEventAttachment(new EventAttachment(), src);
+	}
+	
+	static <T extends EventAttachment> T fillEventAttachment(T tgt, OEventAttachment src) {
+		if ((tgt != null) && (src != null)) {
+			tgt.setAttachmentId(src.getEventAttachmentId());
+			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
+			tgt.setRevisionSequence(src.getRevisionSequence());
+			tgt.setFilename(src.getFilename());
+			tgt.setSize(src.getSize());
+			tgt.setMediaType(src.getMediaType());
+		}
+		return tgt;
+	}
+	
+	static OEventAttachment createOTaskAttachment(EventAttachment src) {
+		if (src == null) return null;
+		return fillOContactAttachment(new OEventAttachment(), src);
+	}
+	
+	static <T extends OEventAttachment> T fillOContactAttachment(T tgt, EventAttachment src) {
+		if ((tgt != null) && (src != null)) {
+			tgt.setEventAttachmentId(src.getAttachmentId());
+			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
+			tgt.setRevisionSequence(src.getRevisionSequence());
+			tgt.setFilename(src.getFilename());
+			tgt.setSize(src.getSize());
+			tgt.setMediaType(src.getMediaType());
 		}
 		return tgt;
 	}

@@ -53,8 +53,6 @@ import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
 import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
-import com.sonicle.webtop.calendar.bol.js.JsAttendee;
-import com.sonicle.webtop.calendar.bol.js.JsAttendee.JsAttendeeList;
 import com.sonicle.webtop.calendar.bol.js.JsCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarLinks;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
@@ -76,6 +74,9 @@ import com.sonicle.webtop.calendar.bol.model.SetupDataCalendarRemote;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
+import com.sonicle.webtop.calendar.model.EventAttachment;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
@@ -110,10 +111,12 @@ import com.sonicle.webtop.core.util.LogEntries;
 import com.sonicle.webtop.core.util.LogEntry;
 import com.sonicle.webtop.core.util.MessageLogEntry;
 import com.sonicle.webtop.core.util.RRuleStringify;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.sql.Connection;
@@ -775,8 +778,6 @@ public class Service extends BaseService {
 		JsEvent item = null;
 		
 		try {
-			UserProfile up = getEnv().getProfile();
-			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
 				String eventKey = ServletUtils.getStringParameter(request, "id", true);
@@ -789,21 +790,48 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				//TODO: verificare che il calendario supporti la scrittura (specialmente per quelli condivisi)
-				
-				EventInstance evt = JsEvent.buildEventInstance(pl.data);
+				EventInstance event = JsEvent.buildEventInstance(pl.data);
 				CoreManager core = WT.getCoreManager();
-				evt.setOrganizer(core.getUserData().getFullEmailAddress());
+				event.setOrganizer(core.getUserData().getFullEmailAddress());
 				
-				manager.addEvent(evt);
+				for (JsEvent.Attachment jsa : pl.data.attachments) {
+					UploadedFile upFile = getUploadedFileOrThrow(jsa._uplId);
+					EventAttachmentWithStream att = new EventAttachmentWithStream(upFile.getFile());
+					att.setAttachmentId(jsa.id);
+					att.setFilename(upFile.getFilename());
+					att.setSize(upFile.getSize());
+					att.setMediaType(upFile.getMediaType());
+					event.getAttachments().add(att);
+				}
+				manager.addEvent(event);
+				
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				EventInstance evt = JsEvent.buildEventInstance(pl.data);
-				manager.updateEventInstance(target, evt);
+				EventInstance event = JsEvent.buildEventInstance(pl.data);
+				
+				for (JsEvent.Attachment jsa : pl.data.attachments) {
+					if (!StringUtils.isBlank(jsa._uplId)) {
+						UploadedFile upFile = getUploadedFileOrThrow(jsa._uplId);
+						EventAttachmentWithStream att = new EventAttachmentWithStream(upFile.getFile());
+						att.setAttachmentId(jsa.id);
+						att.setFilename(upFile.getFilename());
+						att.setSize(upFile.getSize());
+						att.setMediaType(upFile.getMediaType());
+						event.getAttachments().add(att);
+					} else {
+						EventAttachment att = new EventAttachment();
+						att.setAttachmentId(jsa.id);
+						att.setFilename(jsa.name);
+						att.setSize(jsa.size);
+						event.getAttachments().add(att);
+					}
+				}
+				manager.updateEventInstance(target, event);
+				
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.MOVE)) {
@@ -818,6 +846,42 @@ public class Service extends BaseService {
 		} catch(Exception ex) {
 			logger.error("Error in ManageEvents", ex);
 			new JsonResult(false, "Error").printTo(out);	
+		}
+	}
+	
+	public void processDownloadEventAttachment(HttpServletRequest request, HttpServletResponse response) {
+		
+		try {
+			boolean inline = ServletUtils.getBooleanParameter(request, "inline", false);
+			String attachmentId = ServletUtils.getStringParameter(request, "attachmentId", null);
+			
+			if (!StringUtils.isBlank(attachmentId)) {
+				Integer eventId = ServletUtils.getIntParameter(request, "eventId", true);
+				
+				EventAttachmentWithBytes attch = manager.getEventAttachment(eventId, attachmentId);
+				InputStream is = null;
+				try {
+					is = new ByteArrayInputStream(attch.getBytes());
+					ServletUtils.writeFileResponse(response, inline, attch.getFilename(), null, attch.getSize(), is);
+				} finally {
+					IOUtils.closeQuietly(is);
+				}
+			} else {
+				String uploadId = ServletUtils.getStringParameter(request, "uploadId", true);
+				
+				UploadedFile uplFile = getUploadedFileOrThrow(uploadId);
+				InputStream is = null;
+				try {
+					is = new FileInputStream(uplFile.getFile());
+					ServletUtils.writeFileResponse(response, inline, uplFile.getFilename(), null, uplFile.getSize(), is);
+				} finally {
+					IOUtils.closeQuietly(is);
+				}
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Error in DownloadEventAttachment", ex);
+			ServletUtils.writeErrorHandlingJs(response, ex.getMessage());
 		}
 	}
 	
@@ -944,7 +1008,8 @@ public class Service extends BaseService {
 			String eventStartDate = ServletUtils.getStringParameter(request, "startDate", true);
 			String eventEndDate = ServletUtils.getStringParameter(request, "endDate", true);
 			String timezone = ServletUtils.getStringParameter(request, "timezone", true);
-			JsAttendeeList attendees = ServletUtils.getObjectParameter(request, "attendees", new JsAttendeeList(), JsAttendeeList.class);
+			JsEvent.Attendee.List attendees = ServletUtils.getObjectParameter(request, "attendees", new JsEvent.Attendee.List(), JsEvent.Attendee.List.class);
+			//JsAttendeeList attendees = ServletUtils.getObjectParameter(request, "attendees", new JsAttendeeList(), JsAttendeeList.class);
 			
 			// Parses string parameters
 			DateTimeZone eventTz = DateTimeZone.forID(timezone);
@@ -987,7 +1052,7 @@ public class Service extends BaseService {
 			UserProfileId profileId = null;
 			LinkedHashSet<String> busyHours = null;
 			MapItem item = null;
-			for(JsAttendee attendee : attendees) {
+			for (JsEvent.Attendee attendee : attendees) {
 				item = new MapItem();
 				item.put("recipient", attendee.recipient);
 				
@@ -1012,7 +1077,7 @@ public class Service extends BaseService {
 			new JsonResult(items, meta, items.size()).printTo(out);
 			
 		} catch(Exception ex) {
-			logger.error("Error in ManageEvents", ex);
+			logger.error("Error in GetPlanning", ex);
 			new JsonResult(false, "Error").printTo(out);
 			
 		} finally {

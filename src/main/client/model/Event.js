@@ -35,6 +35,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WTA.ux.data.BaseModel',
 	requires: [
 		'Sonicle.webtop.calendar.model.EventAttendee',
+		'Sonicle.webtop.calendar.model.EventAttachment',
 		'Sonicle.data.writer.Json'
 	],
 	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents', 'data', {
@@ -73,7 +74,8 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.roField('_recurringInfo', 'string', {defaultValue: 'none'})
 	],
 	hasMany: [
-		WTF.hasMany('attendees', 'Sonicle.webtop.calendar.model.EventAttendee')
+		WTF.hasMany('attendees', 'Sonicle.webtop.calendar.model.EventAttendee'),
+		WTF.hasMany('attachments', 'Sonicle.webtop.calendar.model.EventAttachment')
 	],
 	
 	isRecurring: function() {

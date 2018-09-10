@@ -104,6 +104,35 @@ WITH (OIDS=FALSE)
 ;
 
 -- ----------------------------
+-- Table structure for events_attachments
+-- ----------------------------
+DROP TABLE IF EXISTS "calendar"."events_attachments";
+CREATE TABLE "calendar"."events_attachments" (
+"event_attachment_id" varchar(36) NOT NULL,
+"event_id" int4 NOT NULL,
+"revision_timestamp" timestamptz(6) NOT NULL,
+"revision_sequence" int2 NOT NULL,
+"filename" varchar(255) NOT NULL,
+"size" int8 NOT NULL,
+"media_type" varchar(255) NOT NULL
+)
+WITH (OIDS=FALSE)
+
+;
+
+-- ----------------------------
+-- Table structure for events_attachments_data
+-- ----------------------------
+DROP TABLE IF EXISTS "calendar"."events_attachments_data";
+CREATE TABLE "calendar"."events_attachments_data" (
+"event_attachment_id" varchar(36) NOT NULL,
+"bytes" bytea NOT NULL
+)
+WITH (OIDS=FALSE)
+
+;
+
+-- ----------------------------
 -- Table structure for events_attendees
 -- ----------------------------
 DROP TABLE IF EXISTS "calendar"."events_attendees";
@@ -216,6 +245,21 @@ CREATE INDEX "events_ak99" ON "calendar"."events" USING btree ("handle_invitatio
 ALTER TABLE "calendar"."events" ADD PRIMARY KEY ("event_id");
 
 -- ----------------------------
+-- Indexes structure for table events_attachments
+-- ----------------------------
+CREATE INDEX "events_attachments_ak1" ON "calendar"."events_attachments" USING btree ("event_id");
+
+-- ----------------------------
+-- Primary Key structure for table events_attachments
+-- ----------------------------
+ALTER TABLE "calendar"."events_attachments" ADD PRIMARY KEY ("event_attachment_id");
+
+-- ----------------------------
+-- Primary Key structure for table events_attachments_data
+-- ----------------------------
+ALTER TABLE "calendar"."events_attachments_data" ADD PRIMARY KEY ("event_attachment_id");
+
+-- ----------------------------
 -- Indexes structure for table events_attendees
 -- ----------------------------
 CREATE INDEX "events_attendee_ak1" ON "calendar"."events_attendees" USING btree ("event_id", "notify");
@@ -241,8 +285,28 @@ ALTER TABLE "calendar"."recurrences" ADD PRIMARY KEY ("recurrence_id");
 ALTER TABLE "calendar"."recurrences_broken" ADD PRIMARY KEY ("event_id", "recurrence_id", "event_date");
 
 -- ----------------------------
+-- Foreign Key structure for table "calendar"."events_attachments"
+-- ----------------------------
+ALTER TABLE "calendar"."events_attachments" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- ----------------------------
+-- Foreign Key structure for table "calendar"."events_attachments_data"
+-- ----------------------------
+ALTER TABLE "calendar"."events_attachments_data" ADD FOREIGN KEY ("event_attachment_id") REFERENCES "calendar"."events_attachments" ("event_attachment_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- ----------------------------
+-- Foreign Key structure for table "calendar"."events_attendees"
+-- ----------------------------
+ALTER TABLE "calendar"."events_attendees" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- ----------------------------
+-- Foreign Key structure for table "calendar"."events_icalendars"
+-- ----------------------------
+ALTER TABLE "calendar"."events_icalendars" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- ----------------------------
 -- Align service version
 -- ----------------------------
 @DataSource[default@com.sonicle.webtop.core]
 DELETE FROM "core"."settings" WHERE ("settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("settings"."key" = 'manifest.version');
-INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.3.0');
+INSERT INTO "core"."settings" ("service_id", "key", "value") VALUES ('com.sonicle.webtop.calendar', 'manifest.version', '5.4.0');

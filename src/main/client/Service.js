@@ -111,8 +111,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				'-',
 				me.getAct('refresh'),
 				me.getAct('printScheduler'),
-				'-',
-				me.getAct('today'),
 				'->',
 				{
 					xtype: 'textfield',
@@ -259,6 +257,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}
 				},
 				tbar: [
+					me.getAct('today'),
 					me.getAct('previousday'),
 					me.getAct('nextday'),
 					'->',
@@ -414,7 +413,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.erpExport();
 			}
 		});
-		
+		me.addAct('today', {
+			ignoreSize: true,
+			text: null,
+			handler: function() {
+				me.moveDate(0);
+			}
+		});
 		me.addAct('previousday', {
 			ignoreSize: true,
 			text: null,
@@ -431,6 +436,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAct('dayview', {
 			ignoreSize: true,
+			text: WT.plTags.desktop ? undefined : null,
 			itemId: 'd',
 			pressed: view === 'd',
 			toggleGroup: 'view',
@@ -440,6 +446,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAct('week5view', {
 			ignoreSize: true,
+			text: WT.plTags.desktop ? undefined : null,
 			itemId: 'w5',
 			pressed: view === 'w5',
 			toggleGroup: 'view',
@@ -449,6 +456,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAct('weekview', {
 			ignoreSize: true,
+			text: WT.plTags.desktop ? undefined : null,
 			itemId: 'w',
 			pressed: view === 'w',
 			toggleGroup: 'view',
@@ -458,6 +466,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAct('dweekview', {
 			ignoreSize: true,
+			text: WT.plTags.desktop ? undefined : null,
 			itemId: 'dw',
 			pressed: view === 'dw',
 			toggleGroup: 'view',
@@ -467,6 +476,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAct('monthview', {
 			ignoreSize: true,
+			text: WT.plTags.desktop ? undefined : null,
 			itemId: 'm',
 			pressed: view === 'm',
 			toggleGroup: 'view',
@@ -752,13 +762,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						},
 						url = WTF.processBinUrl(me.ID, 'PrintScheduler', params);
 				Sonicle.URLMgr.openFile(url, {filename: 'agenda', newWindow: true});
-			}
-		});
-		me.addAct('today', {
-			ignoreSize: true,
-			scale: hdscale,
-			handler: function() {
-				me.moveDate(0);
 			}
 		});
 	},

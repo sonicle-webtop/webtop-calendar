@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="32px" height="32px" viewBox="0 0 32 32" enable-background="new 0 0 32 32" xml:space="preserve">
+  <g id="main">
+    <clipPath id="clip_mask">
+      <path d="M22.1277,31.4732l-0.012,-0.0327l-3.9343,-11.3363c-0.138,-0.3893,-0.3727,-1.0513,0.0207,-1.608c0.2184,-0.3091,0.5732,-0.4864,0.9735,-0.4864c0.2472,0,0.5108,0.0623,0.9062,0.2146l11.3589,3.895c0.122,0.0432,0.3364,0.1197,0.5593,0.2477V0H0v32h22.3907C22.2964,31.8531,22.2075,31.6798,22.1277,31.4732z" fill-rule="evenodd"/>
+    </clipPath>
+    <g id="icon" clip-path="url(#clip_mask)">
+      <g id="transformed_icon" transform="translate(-1 -1)">
+        <path d="M30,28.5H2c-0.276,0,-0.5,-0.224,-0.5,-0.5V8.5h29v19.5C30.5,28.276,30.276,28.5,30,28.5z" fill="#FFFFFF"/>
+        <path d="M29.6,3H2.4c-0.773,0,-1.4,0.627,-1.4,1.4v3.6v1v19c0,0.551,0.449,1,1,1h28c0.551,0,1,-0.449,1,-1V9V8V4.4C31,3.627,30.373,3,29.6,3zM30.001,28H2V9h28L30.001,28z" fill="#797979"/>
+        <path d="M7,13v6h7v-6H7zM13,18H8v-4h5V18z" fill="#CD4C32"/>
+        <g>
+          <rect x="13" y="9" width="1" height="3" fill="#B4B4B5"/>
+          <rect x="7" y="9" width="1" height="3" fill="#B4B4B5"/>
+          <path d="M7,28h1v-4h5v4h1v-4h5v4h1v-4h5v4h1v-4h4v-1h-4v-4h4v-1h-4v-4h4v-1h-4V9h-1v4h-5V9h-1v4h-4v1h4v4h-4v1h4v4h-5v-3h-1v3H8v-3H7v3H2v1h5V28zM20,14h5v4h-5V14zM20,19h5v4h-5V19z" fill="#B4B4B5"/>
+          <rect x="2" y="13" width="4" height="1" fill="#B4B4B5"/>
+          <rect x="2" y="18" width="4" height="1" fill="#B4B4B5"/>
+        </g>
+      </g>
+    </g>
+    <g id="overlay">
+      <path d="M31.1164,23.0652L19.7393,19.164c-0.7781,-0.302,-0.8981,-0.192,-0.6131,0.6123l3.9343,11.3364c0.324,0.8383,0.7476,0.8402,1.2737,-0.0174l1.9822,-3.2436l4.1129,4.0748c0.4253,0.4248,1.9208,-1.113,1.4955,-1.5378l-4.0726,-4.071l3.247,-1.98C32.0318,23.7335,32.0318,23.3892,31.1164,23.0652z" fill-rule="evenodd" fill="#CC4B31"/>
+    </g>
+  </g>
+</svg>

@@ -392,6 +392,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return ownerCache.get(calendarId);
 	}
 	
+	public String getIncomingCalendarShareRootId(int calendarId) throws WTException {
+		return shareCache.getShareRootIdByFolderId(calendarId);
+	}
+	
 	@Override
 	public Calendar getCalendar(int calendarId) throws WTException {
 		Connection con = null;
@@ -3314,12 +3318,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} else {
 			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 			RecurrenceBrokenDAO recbkDao = RecurrenceBrokenDAO.getInstance();
-			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+			//EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 			
 			recDao.deleteByEvent(con, eventId);
 			recbkDao.deleteByEvent(con, eventId);
-			attDao.deleteByEvent(con, eventId);
-			doEventICalendarDelete(con, eventId);
+			//attDao.deleteByEvent(con, eventId);
+			//doEventICalendarDelete(con, eventId);
 			return evtDao.deleteById(con, eventId);
 		}
 	}
@@ -3333,9 +3337,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} else {
 			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 			RecurrenceBrokenDAO recbkDao = RecurrenceBrokenDAO.getInstance();
-			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+			//EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 			
-			attDao.deleteByCalendar(con, calendarId);
+			//attDao.deleteByCalendar(con, calendarId);
 			recbkDao.deleteByCalendar(con, calendarId);
 			recDao.deleteByCalendar(con, calendarId);
 			return evtDao.deleteByCalendar(con, calendarId);

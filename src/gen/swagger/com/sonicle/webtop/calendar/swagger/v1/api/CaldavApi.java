@@ -19,7 +19,7 @@ import javax.validation.Valid;
 
 @Path("/caldav")
 @Api(description = "the caldav API")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2018-05-16T13:12:10.819+02:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2018-10-04T14:05:25.220+02:00")
 public class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -56,7 +56,7 @@ public class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
         @ApiResponse(code = 204, message = "Success", response = Void.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Object not found", response = Void.class) })
-    public Response deleteCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") String href) {
+    public Response deleteCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -84,7 +84,7 @@ public class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
         @ApiResponse(code = 200, message = "Success", response = CalObject.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Object not found", response = Void.class) })
-    public Response getCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") String href) {
+    public Response getCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -149,7 +149,7 @@ public class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
         @ApiResponse(code = 200, message = "Success", response = Void.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Object not found", response = Void.class) })
-    public Response updateCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") String href,@Valid String body) {
+    public Response updateCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href,@Valid String body) {
         return Response.ok().entity("magic!").build();
     }
 

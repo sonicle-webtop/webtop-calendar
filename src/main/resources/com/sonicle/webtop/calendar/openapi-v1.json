@@ -154,7 +154,7 @@
           "required": true,
           "type": "string",
           "description": "Calendar UID",
-          "x-example": 1234
+          "x-example": "1234"
         }
       ]
     },
@@ -223,7 +223,7 @@
           "required": true,
           "type": "string",
           "description": "Calendar UID",
-          "x-example": 1234
+          "x-example": "1234"
         }
       ]
     },
@@ -275,7 +275,7 @@
           "required": true,
           "type": "string",
           "description": "Calendar UID",
-          "x-example": 1234
+          "x-example": "1234"
         }
       ]
     },
@@ -362,14 +362,14 @@
           "required": true,
           "type": "string",
           "description": "Calendar UID",
-          "x-example": 1234
+          "x-example": "1234"
         },
         {
           "name": "href",
           "in": "path",
           "required": true,
-          "description": "CalObject reference URI",
-          "type": "string"
+          "type": "string",
+          "description": "CalObject reference URI"
         }
       ]
     }
@@ -406,10 +406,13 @@
     "Calendar": {
       "type": "object",
       "required": [
+        "aclEle",
+        "aclFol",
         "displayName",
         "id",
-        "uid",
-        "syncToken"
+        "ownerUsername",
+        "syncToken",
+        "uid"
       ],
       "properties": {
         "id": {
@@ -435,6 +438,18 @@
         "syncToken": {
           "type": "string",
           "description": "Current sync token"
+        },
+        "aclFol": {
+          "type": "string",
+          "description": "ACL info for folder itself"
+        },
+        "aclEle": {
+          "type": "string",
+          "description": "ACL info for folder elements"
+        },
+        "ownerUsername": {
+          "type": "string",
+          "description": "The owner profile's username"
         }
       },
       "description": "Bean for carry calendar's fields"

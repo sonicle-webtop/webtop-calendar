@@ -32,7 +32,6 @@
  */
 package com.sonicle.webtop.calendar.rest.v1;
 
-import com.sonicle.commons.Base58;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.time.DateTimeUtils;
@@ -41,6 +40,8 @@ import com.sonicle.webtop.calendar.CalendarServiceSettings;
 import com.sonicle.webtop.calendar.ManagerUtils;
 import com.sonicle.webtop.calendar.model.EventCalObject;
 import com.sonicle.webtop.calendar.model.EventCalObjectChanged;
+import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.swagger.v1.api.CaldavApi;
 import com.sonicle.webtop.calendar.swagger.v1.model.CalObject;
 import com.sonicle.webtop.calendar.swagger.v1.model.CalObjectChanged;
@@ -51,6 +52,10 @@ import com.sonicle.webtop.calendar.swagger.v1.model.CalendarNew;
 import com.sonicle.webtop.calendar.swagger.v1.model.CalendarUpdate;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
+import com.sonicle.webtop.core.model.SharePerms;
+import com.sonicle.webtop.core.model.SharePermsElements;
+import com.sonicle.webtop.core.model.SharePermsFolder;
+import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTNotFoundException;
@@ -80,11 +85,12 @@ public class CalDav extends CaldavApi {
 	
 	@Override
 	public Response getCalendars() {
+		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		List<Calendar> items = new ArrayList<>();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] getCalendars()", RunContext.getRunProfileId());
+			logger.debug("[{}] getCalendars()", currentProfileId);
 		}
 		
 		try {
@@ -92,22 +98,36 @@ public class CalDav extends CaldavApi {
 			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(cats.keySet());
 			for (com.sonicle.webtop.calendar.model.Calendar cal : cats.values()) {
 				if (cal.isProviderRemote()) continue;
-				items.add(createCalendar(cal, revisions.get(cal.getCalendarId())));
+				items.add(createCalendar(currentProfileId, cal, revisions.get(cal.getCalendarId()), null, null));
 			}
+			
+			List<ShareRootCalendar> shareRoots = manager.listIncomingCalendarRoots();
+			for (ShareRootCalendar shareRoot : shareRoots) {
+				Map<Integer, ShareFolderCalendar> folders = manager.listIncomingCalendarFolders(shareRoot.getShareId());
+				revisions = manager.getCalendarsLastRevision(cats.keySet());
+				//Map<Integer, CategoryPropSet> props = manager.getCategoryCustomProps(folders.keySet());
+				for (ShareFolderCalendar folder : folders.values()) {
+					com.sonicle.webtop.calendar.model.Calendar cal = folder.getCalendar();
+					if (cal.isProviderRemote()) continue;
+					items.add(createCalendar(currentProfileId, cal, revisions.get(cal.getCalendarId()), folder.getPerms(), folder.getElementsPerms()));
+				}
+			}
+			
 			return respOk(items);
 			
 		} catch(WTException ex) {
-			logger.error("[{}] getCalendars()", ex, RunContext.getRunProfileId());
+			logger.error("[{}] getCalendars()", currentProfileId, ex);
 			return respError(ex);
 		}
 	}
 
 	@Override
 	public Response getCalendar(String calendarUid) {
+		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] getCalendar({})", RunContext.getRunProfileId(), calendarUid);
+			logger.debug("[{}] getCalendar({})", currentProfileId, calendarUid);
 		}
 		
 		try {
@@ -117,20 +137,30 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(Arrays.asList(cal.getCalendarId()));
-			return respOk(createCalendar(cal, revisions.get(cal.getCalendarId())));
+			
+			String rootShareId = manager.getIncomingCalendarShareRootId(calendarId);
+			if (rootShareId != null) {
+				Map<Integer, ShareFolderCalendar> folders = manager.listIncomingCalendarFolders(rootShareId);
+				ShareFolderCalendar folder = folders.get(calendarId);
+				return respOk(createCalendar(currentProfileId, cal, revisions.get(cal.getCalendarId()), folder.getPerms(), folder.getElementsPerms()));
+				
+			} else {
+				return respOk(createCalendar(currentProfileId, cal, revisions.get(cal.getCalendarId()), null, null));
+			}
 			
 		} catch(WTException ex) {
-			logger.error("[{}] getCalendar({})", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] getCalendar({})", currentProfileId, calendarUid, ex);
 			return respError(ex);
 		}
 	}
 
 	@Override
 	public Response addCalendar(CalendarNew body) {
+		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] addCalendar(...)", RunContext.getRunProfileId());
+			logger.debug("[{}] addCalendar(...)", currentProfileId);
 			logger.debug("{}", body);
 		}
 		
@@ -139,10 +169,11 @@ public class CalDav extends CaldavApi {
 			cal.setName(body.getDisplayName());
 			cal.setDescription(body.getDescription());
 			cal = manager.addCalendar(cal);
-			return respOkCreated(createCalendar(cal, null));
+			// Calendars are always added in currentProfile so we do not handle perms here (passing null = full rights)
+			return respOkCreated(createCalendar(currentProfileId, cal, null, null, null));
 			
 		} catch(WTException ex) {
-			logger.error("[{}] addCalendar(...)", ex, RunContext.getRunProfileId());
+			logger.error("[{}] addCalendar(...)", currentProfileId, ex);
 			return respError(ex);
 		}
 	}
@@ -177,7 +208,7 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
-			logger.error("[{}] updateCalendar({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] updateCalendar({}, ...)", RunContext.getRunProfileId(), calendarUid, ex);
 			return respError(ex);
 		}
 	}
@@ -203,7 +234,7 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
-			logger.error("[{}] deleteCalendar({})", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] deleteCalendar({})", RunContext.getRunProfileId(), calendarUid, ex);
 			return respError(ex);
 		}
 	}
@@ -238,7 +269,7 @@ public class CalDav extends CaldavApi {
 				return respOk(items);
 			}
 		} catch(WTException ex) {
-			logger.error("[{}] getCalObjects({})", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] getCalObjects({})", RunContext.getRunProfileId(), calendarUid, ex);
 			return respError(ex);
 		}
 	}
@@ -269,7 +300,7 @@ public class CalDav extends CaldavApi {
 			return respOk(createCalObjectsChanges(revisions.get(calendarId), changes));
 			
 		} catch(WTException ex) {
-			logger.error("[{}] getCalObjectsChanges({}, {}, {})", ex, RunContext.getRunProfileId(), calendarUid, syncToken, limit);
+			logger.error("[{}] getCalObjectsChanges({}, {}, {})", RunContext.getRunProfileId(), calendarUid, syncToken, limit, ex);
 			return respError(ex);
 		}
 	}
@@ -296,7 +327,7 @@ public class CalDav extends CaldavApi {
 			}
 			
 		} catch(WTException ex) {
-			logger.error("[{}] getCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
+			logger.error("[{}] getCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href, ex);
 			return respError(ex);
 		}
 	}
@@ -318,7 +349,7 @@ public class CalDav extends CaldavApi {
 			return respOk();
 			
 		} catch(WTException ex) {
-			logger.error("[{}] addCalObject({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] addCalObject({}, ...)", RunContext.getRunProfileId(), calendarUid, ex);
 			return respError(ex);
 		}
 	}
@@ -342,7 +373,7 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
-			logger.error("[{}] updateCalObject({}, {}, ...)", ex, RunContext.getRunProfileId(), calendarUid, href);
+			logger.error("[{}] updateCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href, ex);
 			return respError(ex);
 		}
 	}
@@ -363,19 +394,31 @@ public class CalDav extends CaldavApi {
 		} catch(WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
-			logger.error("[{}] deleteCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
+			logger.error("[{}] deleteCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href, ex);
 			return respError(ex);
 		}
 	}
 	
-	private Calendar createCalendar(com.sonicle.webtop.calendar.model.Calendar cal, DateTime lastRevisionTimestamp) {
+	private Calendar createCalendar(UserProfileId currentProfileId, com.sonicle.webtop.calendar.model.Calendar cal, DateTime lastRevisionTimestamp, SharePerms folderPerms, SharePerms elementPerms) {
+		UserProfile.Data owud = WT.getUserData(cal.getProfileId());
+		
+		String displayName = cal.getName();
+		if (!currentProfileId.equals(cal.getProfileId())) {
+			//String apn = LangUtils.abbreviatePersonalName(false, owud.getDisplayName());
+			displayName = "[" + owud.getDisplayName() + "] " + displayName;
+		}
+		String ownerUsername = owud.getProfileEmailAddress();
+		
 		return new Calendar()
 				.id(cal.getCalendarId())
 				.uid(ManagerUtils.encodeAsCalendarUid(cal.getCalendarId()))
-				.displayName(cal.getName())
+				.displayName(displayName)
 				.description(cal.getDescription())
 				.color(cal.getColor())
-				.syncToken(buildEtag(lastRevisionTimestamp));
+				.syncToken(buildEtag(lastRevisionTimestamp))
+				.aclFol((folderPerms == null) ? SharePermsFolder.full().toString() : folderPerms.toString())
+				.aclEle((elementPerms == null) ? SharePermsElements.full().toString() : elementPerms.toString())
+				.ownerUsername(ownerUsername);
 	}
 	
 	private CalObject createCalObject(EventCalObject calObject) {

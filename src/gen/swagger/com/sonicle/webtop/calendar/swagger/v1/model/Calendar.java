@@ -21,6 +21,9 @@ public class Calendar   {
   private @Valid String description = null;
   private @Valid String color = null;
   private @Valid String syncToken = null;
+  private @Valid String aclFol = null;
+  private @Valid String aclEle = null;
+  private @Valid String ownerUsername = null;
 
   /**
    * Calendar ID (internal)
@@ -134,6 +137,63 @@ public class Calendar   {
     this.syncToken = syncToken;
   }
 
+  /**
+   * ACL info for folder itself
+   **/
+  public Calendar aclFol(String aclFol) {
+    this.aclFol = aclFol;
+    return this;
+  }
+
+  
+  @ApiModelProperty(required = true, value = "ACL info for folder itself")
+  @JsonProperty("aclFol")
+  @NotNull
+  public String getAclFol() {
+    return aclFol;
+  }
+  public void setAclFol(String aclFol) {
+    this.aclFol = aclFol;
+  }
+
+  /**
+   * ACL info for folder elements
+   **/
+  public Calendar aclEle(String aclEle) {
+    this.aclEle = aclEle;
+    return this;
+  }
+
+  
+  @ApiModelProperty(required = true, value = "ACL info for folder elements")
+  @JsonProperty("aclEle")
+  @NotNull
+  public String getAclEle() {
+    return aclEle;
+  }
+  public void setAclEle(String aclEle) {
+    this.aclEle = aclEle;
+  }
+
+  /**
+   * The owner profile&#39;s username
+   **/
+  public Calendar ownerUsername(String ownerUsername) {
+    this.ownerUsername = ownerUsername;
+    return this;
+  }
+
+  
+  @ApiModelProperty(required = true, value = "The owner profile's username")
+  @JsonProperty("ownerUsername")
+  @NotNull
+  public String getOwnerUsername() {
+    return ownerUsername;
+  }
+  public void setOwnerUsername(String ownerUsername) {
+    this.ownerUsername = ownerUsername;
+  }
+
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -149,12 +209,15 @@ public class Calendar   {
         Objects.equals(displayName, calendar.displayName) &&
         Objects.equals(description, calendar.description) &&
         Objects.equals(color, calendar.color) &&
-        Objects.equals(syncToken, calendar.syncToken);
+        Objects.equals(syncToken, calendar.syncToken) &&
+        Objects.equals(aclFol, calendar.aclFol) &&
+        Objects.equals(aclEle, calendar.aclEle) &&
+        Objects.equals(ownerUsername, calendar.ownerUsername);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, uid, displayName, description, color, syncToken);
+    return Objects.hash(id, uid, displayName, description, color, syncToken, aclFol, aclEle, ownerUsername);
   }
 
   @Override
@@ -168,6 +231,9 @@ public class Calendar   {
     sb.append("    description: ").append(toIndentedString(description)).append("\n");
     sb.append("    color: ").append(toIndentedString(color)).append("\n");
     sb.append("    syncToken: ").append(toIndentedString(syncToken)).append("\n");
+    sb.append("    aclFol: ").append(toIndentedString(aclFol)).append("\n");
+    sb.append("    aclEle: ").append(toIndentedString(aclEle)).append("\n");
+    sb.append("    ownerUsername: ").append(toIndentedString(ownerUsername)).append("\n");
     sb.append("}");
     return sb.toString();
   }

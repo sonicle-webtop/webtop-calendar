@@ -72,6 +72,8 @@ import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
 import com.sonicle.webtop.calendar.bol.VEventCalObject;
 import com.sonicle.webtop.calendar.bol.VEventCalObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
+import com.sonicle.webtop.calendar.bol.VExpEvent;
+import com.sonicle.webtop.calendar.bol.VExpEventInstance;
 import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
@@ -1920,54 +1922,73 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public List<BaseReminder> getRemindersToBeNotified(DateTime now) {
-		EventDAO edao = EventDAO.getInstance();
-		ArrayList<BaseReminder> alerts = new ArrayList<>();
-		HashMap<UserProfileId, Boolean> byEmailCache = new HashMap<>();
+		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
+		ensureSysAdmin();
+		ArrayList<VExpEventInstance> evtInstCandidates = new ArrayList<>();
+		
+		logger.debug("Analyzing event instances...");
 		try {
+			final DateTime from = now.withTimeAtStartOfDay();
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			logger.debug("Getting expired events");
-			final DateTime from = now.withTimeAtStartOfDay();
-			for (SchedEventInstance event : doEventGetExpiredForUpdate(con, from, from.plusDays(7), DateTimeZone.UTC)) {
-				//TODO: implementare gestione reminder anche per le ricorrenze
-				final DateTime remindOn = event.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(event.getReminder());
-				if (now.compareTo(remindOn) >= 0) {
-					if (!byEmailCache.containsKey(event.getCalendarProfileId())) {
-					CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, event.getCalendarProfileId());
-						boolean bool = cus.getEventReminderDelivery().equals(CalendarSettings.EVENT_REMINDER_DELIVERY_EMAIL);
-						byEmailCache.put(event.getCalendarProfileId(), bool);
-					}
-					
-					int ret = edao.updateRemindedOnIfNull(con, event.getEventId(), now);
-					if (ret != 1) continue;
-					
-					if (byEmailCache.get(event.getCalendarProfileId())) {
-						UserProfile.Data ud = WT.getUserData(event.getCalendarProfileId());
-						CoreUserSettings cus = new CoreUserSettings(event.getCalendarProfileId());
-						
-						try {
-							EventInstance eventInstance = getEventInstance(event.getKey());
-							alerts.add(createEventReminderAlertEmail(ud.getLocale(), cus.getShortDateFormat(), cus.getShortTimeFormat(), ud.getPersonalEmailAddress(), event.getCalendarProfileId(), eventInstance));
-						} catch(WTException ex1) {
-							logger.warn("Unable to create reminder alert body", ex1);
-						}	
-					} else {
-						alerts.add(createEventReminderAlertWeb(event));
-					}
+			for (VExpEventInstance evtInst : doEventGetExpiredForUpdate(con, from, from.plusDays(7*2+1))) {
+				final DateTime remindOn = evtInst.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(evtInst.getReminder());
+				if (now.compareTo(remindOn) < 0) continue;
+				// If instance should have been reminded in past...
+				if (evtInst.getRemindedOn() != null) {
+					// Only recurring event instances should pass here, classic events are already excluded by the db query
+					if (evtInst.getRecurrenceId() == null) throw new WTException("This should never happen (famous last words)");
+					final DateTime lastRemindedOn = evtInst.getRemindedOn().withZone(DateTimeZone.UTC);
+					if (remindOn.compareTo(lastRemindedOn) < 0) continue;
+					// If instance should have been reminded after last remind...
 				}
+				
+				int ret = evtDao.updateRemindedOn(con, evtInst.getEventId(), now);
+				evtInstCandidates.add(evtInst);
 			}
 			DbUtils.commitQuietly(con);
 			
-		} catch(Exception ex) {
+		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
-			logger.error("Error collecting reminder alerts", ex);
+			logger.error("Error collecting instances", ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 		
+		logger.debug("Found {} instances to be reminded", evtInstCandidates.size());
+		
+		ArrayList<BaseReminder> alerts = new ArrayList<>();
+		HashMap<UserProfileId, Boolean> byEmailCache = new HashMap<>();
+		
+		logger.debug("Preparing alerts...");
+		for (VExpEventInstance evtInst : evtInstCandidates) {
+			logger.debug("Working on [{}, {}]", evtInst.getEventId(), evtInst.getEndDate());
+			if (!byEmailCache.containsKey(evtInst.getCalendarProfileId())) {
+				CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, evtInst.getCalendarProfileId());
+				boolean bool = cus.getEventReminderDelivery().equals(CalendarSettings.EVENT_REMINDER_DELIVERY_EMAIL);
+				byEmailCache.put(evtInst.getCalendarProfileId(), bool);
+			}
+			
+			if (byEmailCache.get(evtInst.getCalendarProfileId())) {
+				UserProfile.Data ud = WT.getUserData(evtInst.getCalendarProfileId());
+				CoreUserSettings cus = new CoreUserSettings(evtInst.getCalendarProfileId());
+				
+				try {
+					EventInstance eventInstance = getEventInstance(evtInst.getKey());
+					alerts.add(createEventReminderAlertEmail(ud.getLocale(), cus.getShortDateFormat(), cus.getShortTimeFormat(), ud.getPersonalEmailAddress(), evtInst.getCalendarProfileId(), eventInstance));
+				} catch(WTException ex) {
+					logger.error("Error preparing email", ex);
+				}
+			} else {
+				alerts.add(createEventReminderAlertWeb(evtInst));
+			}
+		}
+		
+		//FIXME: remove this when zpush is using manager methods
 		sendInvitationForZPushEvents();
+		// ----------------------------
 		
 		return alerts;
 	}
@@ -3357,20 +3378,21 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return orb;
 	}
 	
-	private List<SchedEventInstance> doEventGetExpiredForUpdate(Connection con, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
-		EventDAO eveDao = EventDAO.getInstance();
-		//TODO: gestire alert su eventi ricorrenti
-		final ArrayList<SchedEventInstance> instances = new ArrayList<>();
-		for (VVEvent vevt : eveDao.viewExpiredForUpdateByFromTo(con, fromDate, toDate)) {
-			SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), vevt);
-			item.setKey(EventKey.buildKey(vevt.getEventId(), vevt.getSeriesEventId()));
+	private List<VExpEventInstance> doEventGetExpiredForUpdate(Connection con, DateTime fromDate, DateTime toDate) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		final ArrayList<VExpEventInstance> instances = new ArrayList<>();
+		
+		for (VExpEvent vee : evtDao.viewExpiredForUpdateByFromTo(con, fromDate, toDate)) {
+			VExpEventInstance item = new VExpEventInstance();
+			Cloner.standard().copyPropertiesOfInheritedClass(vee, item);
+			item.setKey(EventKey.buildKey(vee.getEventId(), vee.getSeriesEventId()));
 			instances.add(item);
 		}
-		/*
-		for (VSchedulerEvent vevt : eveDao.viewRecurringExpiredForUpdateByFromTo(con, fromDate, toDate)) {
-			instances.addAll(calculateRecurringInstances(con, createSchedEvent(vevt), fromDate, toDate, DateTimeZone.UTC, 200));
+		for (VExpEvent vee : evtDao.viewRecurringExpiredForUpdateByFromTo(con, fromDate, toDate)) {
+			// Returns 15 instances only, this should be enough for serving max day range from underlying reminder
+			instances.addAll(calculateRecurringInstances(con, new VExpEventInstanceMapper(vee), fromDate, toDate, DateTimeZone.UTC, 14+1));
 		}
-		*/
+		
 		return instances;
 	}
 	
@@ -3803,11 +3825,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
 	}
 	
-	private ReminderInApp createEventReminderAlertWeb(SchedEventInstance event) {
-		ReminderInApp alert = new ReminderInApp(SERVICE_ID, event.getCalendarProfileId(), "event", event.getKey());
-		alert.setTitle(event.getTitle());
-		alert.setDate(event.getStartDate().withZone(event.getDateTimeZone()));
-		alert.setTimezone(event.getTimezone());
+	private ReminderInApp createEventReminderAlertWeb(VExpEventInstance instance) {
+		ReminderInApp alert = new ReminderInApp(SERVICE_ID, instance.getCalendarProfileId(), "event", instance.getKey());
+		alert.setTitle(instance.getTitle());
+		alert.setDate(instance.getStartDate().withZone(instance.getDateTimeZone()));
+		alert.setTimezone(instance.getTimezone());
 		return alert;
 	}
 	
@@ -3869,6 +3891,59 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			item.setKey(key);
 			item.setStartDate(startDate);
 			item.setEndDate(endDate);
+			return item;
+		}
+	}
+	
+	private class VExpEventInstanceMapper implements RecurringInstanceMapper<VExpEventInstance> {
+		private final VExpEvent event;
+		
+		public VExpEventInstanceMapper(VExpEvent event) {
+			this.event = event;
+		}
+		
+		@Override
+		public int getEventId() {
+			return event.getEventId();
+		}
+
+		@Override
+		public DateTime getEventStartDate() {
+			return event.getStartDate();
+		}
+
+		@Override
+		public DateTime getEventEndDate() {
+			return event.getEndDate();
+		}
+		
+		@Override
+		public VExpEventInstance createInstance(String key, DateTime startDate, DateTime endDate) {
+			VExpEventInstance item = new VExpEventInstance();
+			Cloner.standard().copyPropertiesOfInheritedClass(event, item);
+			item.setKey(key);
+			item.setStartDate(startDate);
+			item.setEndDate(endDate);
+			
+			/*
+			VExpEventInstance item = new VExpEventInstance();
+			item.setKey(key);
+			item.setEventId(event.getEventId());
+			item.setCalendarId(event.getCalendarId());
+			item.setRecurrenceId(event.getRecurrenceId());
+			item.setStartDate(startDate);
+			item.setEndDate(endDate);
+			item.setTimezone(event.getTimezone());
+			item.setAllDay(event.getAllDay());
+			item.setTitle(event.getTitle());
+			item.setReminder(event.getReminder());
+			item.setRemindedOn(event.getRemindedOn());
+			item.setCalendarDomainId(event.getCalendarDomainId());
+			item.setCalendarUserId(event.getCalendarUserId());
+			item.setSeriesEventId(event.getSeriesEventId());
+			item.setHasAttendees(event.getHasAttendees());
+			//item.setRecurInfo(src.isEventRecurring(), src.isEventBroken());
+			*/
 			return item;
 		}
 	}

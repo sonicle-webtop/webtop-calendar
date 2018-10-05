@@ -39,6 +39,7 @@ import com.sonicle.webtop.calendar.bol.OEventInfo;
 import com.sonicle.webtop.calendar.bol.VEventCalObject;
 import com.sonicle.webtop.calendar.bol.VEventCalObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
+import com.sonicle.webtop.calendar.bol.VExpEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
@@ -823,7 +824,7 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VVEvent.class);
 	}
 	
-	public List<VVEvent> viewExpiredForUpdateByFromTo(Connection con, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<VExpEvent> viewExpiredForUpdateByFromTo(Connection con, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		// New field: targets the eventId of the original series event
@@ -837,15 +838,6 @@ public class EventDAO extends BaseDAO {
 				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
-		// New field: info about attendees
-		Field<Boolean> hasAttendees = field(exists(
-			selectOne()
-			.from(EVENTS_ATTENDEES)
-			.where(
-				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
-			)
-		)).as("has_attendees");
-		
 		return dsl
 			.select(
 				EVENTS.EVENT_ID,
@@ -857,19 +849,17 @@ public class EventDAO extends BaseDAO {
 				EVENTS.ALL_DAY,
 				EVENTS.TITLE,
 				EVENTS.REMINDER,
-				EVENTS.ORGANIZER,
-				EVENTS.REVISION_TIMESTAMP
+				EVENTS.REMINDED_ON
 			)
 			.select(
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
-				seriesEventId,
-				hasAttendees
+				seriesEventId
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
 			.where(
-				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
+				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull()) // Note this NULL test on REMINDED_ON field!!!
 				.and(
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
@@ -885,23 +875,14 @@ public class EventDAO extends BaseDAO {
 				EVENTS.START_DATE
 			)
 			.forUpdate()
-			.fetchInto(VVEvent.class);
+			.fetchInto(VExpEvent.class);
 	}
 	
-	public List<VVEvent> viewRecurringExpiredForUpdateByFromTo(Connection con, DateTime fromDate, DateTime toDate) throws DAOException {
+	public List<VExpEvent> viewRecurringExpiredForUpdateByFromTo(Connection con, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		// NB: recurring events cannot have a reference to a master series event
 		Field<Integer> seriesEventId = value(null, Integer.class).as("series_event_id");
-		
-		// New field: info about attendees
-		Field<Boolean> hasAttendees = field(exists(
-			selectOne()
-			.from(EVENTS_ATTENDEES)
-			.where(
-				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
-			)
-		)).as("has_attendees");
 		
 		return dsl
 			.select(
@@ -912,20 +893,20 @@ public class EventDAO extends BaseDAO {
 				EVENTS.END_DATE,
 				EVENTS.TIMEZONE,
 				EVENTS.ALL_DAY,
+				EVENTS.TITLE,
 				EVENTS.REMINDER,
-				EVENTS.ORGANIZER
+				EVENTS.REMINDED_ON
 			)
 			.select(
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
-				seriesEventId,
-				hasAttendees
+				seriesEventId
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
 			.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID))
 			.where(
-				EVENTS.REMINDER.isNotNull().and(EVENTS.REMINDED_ON.isNull())
+				EVENTS.REMINDER.isNotNull()
 				.and(
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
@@ -940,7 +921,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.START_DATE
 			)
 			.forUpdate()
-			.fetchInto(VVEvent.class);
+			.fetchInto(VExpEvent.class);
 	}
 	
 	public Map<String, List<VEventCalObject>> viewCalObjectsByCalendar(Connection con, int calendarId) throws DAOException {

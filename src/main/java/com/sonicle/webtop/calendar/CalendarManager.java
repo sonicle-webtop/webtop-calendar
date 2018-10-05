@@ -3161,10 +3161,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		fillOEventWithDefaults(oevt);
 		oevt.ensureCoherence();
 		
-		if (!StringUtils.isBlank(rawICalendar)) {
-			doEventICalendarInsert(con, oevt.getEventId(), rawICalendar);
-		}
-		
 		ORecurrence orec = null;
 		if (processRecurrence && event.hasRecurrence()) {
 			Recur recur = ICal4jUtils.parseRRule(event.getRecurrenceRule());
@@ -3177,6 +3173,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		oevt.setRecurrenceId((orec != null) ? orec.getRecurrenceId() : null);
 		evtDao.insert(con, oevt, BaseDAO.createRevisionTimestamp());
+		
+		if (!StringUtils.isBlank(rawICalendar)) {
+			doEventICalendarInsert(con, oevt.getEventId(), rawICalendar);
+		}
 		
 		ArrayList<OEventAttendee> oattes = null;
 		if (processAttendees && (event.getAttendees() != null)) {

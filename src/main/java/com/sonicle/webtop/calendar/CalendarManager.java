@@ -1932,7 +1932,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		ensureSysAdmin();
 		ArrayList<VExpEventInstance> evtInstCandidates = new ArrayList<>();
 		
-		logger.debug("Analyzing event instances...");
+		logger.trace("Analyzing event instances...");
 		try {
 			final DateTime from = now.withTimeAtStartOfDay();
 			con = WT.getConnection(SERVICE_ID, false);
@@ -1945,7 +1945,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					// Only recurring event instances should pass here, classic events are already excluded by the db query
 					if (evtInst.getRecurrenceId() == null) throw new WTException("This should never happen (famous last words)");
 					final DateTime lastRemindedOn = evtInst.getRemindedOn().withZone(DateTimeZone.UTC);
-					if (remindOn.compareTo(lastRemindedOn) < 0) continue;
+					if (remindOn.compareTo(lastRemindedOn) <= 0) continue;
 					// If instance should have been reminded after last remind...
 				}
 				
@@ -1966,9 +1966,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		ArrayList<BaseReminder> alerts = new ArrayList<>();
 		HashMap<UserProfileId, Boolean> byEmailCache = new HashMap<>();
 		
-		logger.debug("Preparing alerts...");
+		logger.trace("Preparing alerts...");
 		for (VExpEventInstance evtInst : evtInstCandidates) {
-			logger.debug("Working on [{}, {}]", evtInst.getEventId(), evtInst.getEndDate());
+			logger.debug("Working on instance [{}, {}]", evtInst.getEventId(), evtInst.getStartDate());
 			if (!byEmailCache.containsKey(evtInst.getCalendarProfileId())) {
 				CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, evtInst.getCalendarProfileId());
 				boolean bool = cus.getEventReminderDelivery().equals(CalendarSettings.EVENT_REMINDER_DELIVERY_EMAIL);
@@ -2775,7 +2775,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			ids = evtDao.selectAliveIdsByPublicUid(con, publicUid);
 			
 		} else {
-			logger.debug("Looking for publicId in restricted set of calendars...");
+			logger.trace("Looking for publicId in restricted set of calendars...");
 			ids = evtDao.selectAliveIdsByCalendarsPublicUid(con, calendarIdMustBeIn, publicUid);
 		}
 		if (ids.isEmpty()) return null;

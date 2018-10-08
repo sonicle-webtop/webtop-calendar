@@ -45,6 +45,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.model.GridEvent'
 	],
 	uses: [
+		'Sonicle.webtop.calendar.ux.RecurringConfirmBox',
 		'Sonicle.webtop.calendar.view.Sharing',
 		'Sonicle.webtop.calendar.view.Calendar',
 		'Sonicle.webtop.calendar.view.CalendarLinks',
@@ -1119,10 +1120,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		
 		if(isRecurring) {
-			me.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid) {
-				if(bid === 'ok') {
-					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
-					me.deleteEvent(id, target, {
+			me.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid, value) {
+				if (bid === 'ok') {
+					me.deleteEvent(id, value, {
 						callback: function(succ) {
 							if(succ) me.reloadEvents();
 						}
@@ -1555,17 +1555,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		return (this.getMainComponent().getLayout().getActiveItem() === id);
 	},
 	
-	confirmForRecurrence: function(msg, cb, scope, opts) {
-		var me = this, html;
-		html = "</br></br>"
-				+ "<table width='70%' style='font-size: 12px'>"
-				+ "<tr><td><input type='radio' name='recurrence' id='this' checked='true' /></td><td width='95%'>"+me.res("confirm.recurrence.this")+"</td></tr>"
-				+ "<tr><td><input type='radio' name='recurrence' id='since' /></td><td width='95%'>"+me.res("confirm.recurrence.since")+"</td></tr>"
-				+ "<tr><td><input type='radio' name='recurrence' id='all' /></td><td width='95%'>"+me.res("confirm.recurrence.all")+"</td></tr>"
-				+ "</table>";
-		WT.confirm(msg + html, cb, scope, Ext.apply({
-			buttons: Ext.Msg.OKCANCEL
-		}, opts));
+	confirmForRecurrence: function(msg, cb, scope) {
+		var me = this;
+		WT.confirm(msg, cb, scope, {
+			buttons: Ext.Msg.OKCANCEL,
+			instClass: 'Sonicle.webtop.calendar.ux.RecurringConfirmBox',
+			instConfig: {
+				thisText: me.res('confirm.recurrence.this'),
+				sinceText: me.res('confirm.recurrence.since'),
+				allText: me.res('confirm.recurrence.all')
+			},
+			config: {
+				value: 'this'
+			}
+		});
 	},
 	
 	/**

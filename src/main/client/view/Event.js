@@ -1045,14 +1045,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this,
 				mo = me.getModel();
 		
-		if(mo.isRecurring()) {
-			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid) {
+		if (mo.isRecurring()) {
+			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid, value) {
 				if (bid === 'ok') {
-					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
-					mo.setExtraParams({target: target});
+					mo.setExtraParams({target: value});
 					me.saveView(true);
 				}
 			}, me);
+			
 		} else {
 			mo.setExtraParams({target: 'this'});
 			me.saveView(true);
@@ -1083,10 +1083,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		};
 		
 		if(rec.isRecurring()) {
-			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.delete'), function(bid) {
-				if(bid === 'ok') {
-					var target = WTA.Util.getCheckedRadioUsingDOM(['this', 'since', 'all']);
-					ajaxFn(target, rec.get('id'));
+			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.delete'), function(bid, value) {
+				if (bid === 'ok') {
+					ajaxFn(value, rec.get('id'));
 				}
 			}, me);
 		} else {

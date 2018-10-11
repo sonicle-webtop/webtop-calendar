@@ -42,7 +42,8 @@ public class VVEvent extends OEvent {
 	protected String calendarDomainId;
 	protected String calendarUserId;
 	protected Integer seriesEventId;
-	protected Boolean hasAttendees;
+	protected Integer attendeesCount;
+	protected Integer notifyableAttendeesCount;
 	
 	public VVEvent() {
 		super();
@@ -76,12 +77,28 @@ public class VVEvent extends OEvent {
 		this.seriesEventId = seriesEventId;
 	}
 	
-	public Boolean getHasAttendees() {
-		return hasAttendees;
+	public Integer getAttendeesCount() {
+		return attendeesCount;
 	}
 
-	public void setHasAttendees(Boolean hasAttendees) {
-		this.hasAttendees = hasAttendees;
+	public void setAttendeesCount(Integer attendeesCount) {
+		this.attendeesCount = attendeesCount;
+	}
+	
+	public Integer getNotifyableAttendeesCount() {
+		return notifyableAttendeesCount;
+	}
+
+	public void setNotifyableAttendeesCount(Integer notifyableAttendeesCount) {
+		this.notifyableAttendeesCount = notifyableAttendeesCount;
+	}
+
+	public boolean hasAttendees() {
+		return (attendeesCount != null) && (attendeesCount > 0);
+	}
+	
+	public boolean hasNotifyableAttendees() {
+		return (notifyableAttendeesCount != null) && (notifyableAttendeesCount > 0);
 	}
 	
 	public boolean isEventRecurring() {

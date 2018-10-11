@@ -39,7 +39,6 @@ import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.core.bol.Owner;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
@@ -250,7 +249,6 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.IS_PRIVATE, item.getIsPrivate())
 			.set(CALENDARS.BUSY, item.getBusy())
 			.set(CALENDARS.REMINDER, item.getReminder())
-			.set(CALENDARS.INVITATION, item.getInvitation())
 			.set(CALENDARS.NOTIFY_ON_EXT_UPDATE, item.getNotifyOnExtUpdate())
 			.set(CALENDARS.PARAMETERS, item.getParameters())
 			.set(CALENDARS.REMOTE_SYNC_FREQUENCY, item.getRemoteSyncFrequency())

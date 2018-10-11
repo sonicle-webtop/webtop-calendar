@@ -40,7 +40,6 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormatter;
 
 /**
  *
@@ -60,7 +59,6 @@ public class JsCalendar {
 	public Boolean isPrivate;
 	public Boolean busy;
 	public Integer reminder;
-	public Boolean invitation;
 	public Boolean notifyOnExtUpdate;
 	public String remoteUrl;
 	public String remoteUsername;
@@ -82,7 +80,6 @@ public class JsCalendar {
 		isPrivate = cal.getIsPrivate();
 		busy = cal.getDefaultBusy();
 		reminder = cal.getDefaultReminder();
-		invitation = cal.getDefaultSendInvitation();
 		notifyOnExtUpdate = cal.getNotifyOnExtUpdate();
 		
 		if (cal.isProviderRemote()) {
@@ -112,7 +109,6 @@ public class JsCalendar {
 		cal.setIsPrivate(js.isPrivate);
 		cal.setDefaultBusy(js.busy);
 		cal.setDefaultReminder(js.reminder);
-		cal.setDefaultSendInvitation(js.invitation);
 		cal.setNotifyOnExtUpdate(js.notifyOnExtUpdate);
 		
 		if (cal.isProviderRemote()) {

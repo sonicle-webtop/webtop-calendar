@@ -142,7 +142,6 @@ public class ManagerUtils {
 			tgt.setIsPrivate(src.getIsPrivate());
 			tgt.setDefaultBusy(src.getBusy());
 			tgt.setDefaultReminder(src.getReminder());
-			tgt.setDefaultSendInvitation(src.getInvitation());
 			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
 			tgt.setRemoteSyncFrequency(src.getRemoteSyncFrequency());
@@ -171,7 +170,6 @@ public class ManagerUtils {
 			tgt.setIsPrivate(src.getIsPrivate());
 			tgt.setBusy(src.getDefaultBusy());
 			tgt.setReminder(src.getDefaultReminder());
-			tgt.setInvitation(src.getDefaultSendInvitation());
 			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
 			tgt.setRemoteSyncFrequency(src.getRemoteSyncFrequency());
@@ -306,9 +304,9 @@ public class ManagerUtils {
 		if ((tgt != null) && (src != null)) {
 			tgt.setAttendeeId(src.getAttendeeId());
 			tgt.setRecipient(src.getRecipient());
-			tgt.setRecipientType(src.getRecipientType());
-			tgt.setRecipientRole(src.getRecipientRole());
-			tgt.setResponseStatus(src.getResponseStatus());
+			tgt.setRecipientType(EnumUtils.forSerializedName(src.getRecipientType(), EventAttendee.RecipientType.class));
+			tgt.setRecipientRole(EnumUtils.forSerializedName(src.getRecipientRole(), EventAttendee.RecipientRole.class));
+			tgt.setResponseStatus(EnumUtils.forSerializedName(src.getResponseStatus(), EventAttendee.ResponseStatus.class));
 			tgt.setNotify(src.getNotify());
 		}
 		return tgt;
@@ -317,9 +315,9 @@ public class ManagerUtils {
 	static boolean validateForInsert(EventAttendee src) {
 		if (StringUtils.isBlank(src.getAttendeeId())) return false;
 		if (StringUtils.isBlank(src.getRecipient())) return false;
-		if (StringUtils.isBlank(src.getRecipientType())) return false;
-		if (StringUtils.isBlank(src.getRecipientRole())) return false;
-		if (StringUtils.isBlank(src.getResponseStatus())) return false;
+		if (src.getRecipientType() == null) return false;
+		if (src.getRecipientRole() == null) return false;
+		if (src.getResponseStatus() == null) return false;
 		if (src.getNotify() == null) return false;
 		return true;
 	}
@@ -327,9 +325,9 @@ public class ManagerUtils {
 	static boolean validateForUpdate(EventAttendee src) {
 		if (StringUtils.isBlank(src.getAttendeeId())) return false;
 		if (StringUtils.isBlank(src.getRecipient())) return false;
-		if (StringUtils.isBlank(src.getRecipientType())) return false;
-		//if (StringUtils.isBlank(src.getRecipientRole())) return false;
-		if (StringUtils.isBlank(src.getResponseStatus())) return false;
+		if (src.getRecipientType() == null) return false;
+		//if (src.getRecipientRole() == null) return false;
+		if (src.getResponseStatus() == null) return false;
 		if (src.getNotify() == null) return false;
 		return true;
 	}
@@ -342,9 +340,9 @@ public class ManagerUtils {
 		if ((tgt != null) && (src != null)) {
 			tgt.setAttendeeId(src.getAttendeeId());
 			tgt.setRecipient(src.getRecipient());
-			tgt.setRecipientType(src.getRecipientType());
-			tgt.setRecipientRole(src.getRecipientRole());
-			tgt.setResponseStatus(src.getResponseStatus());
+			tgt.setRecipientType(EnumUtils.toSerializedName(src.getRecipientType()));
+			tgt.setRecipientRole(EnumUtils.toSerializedName(src.getRecipientRole()));
+			tgt.setResponseStatus(EnumUtils.toSerializedName(src.getResponseStatus()));
 			tgt.setNotify(src.getNotify());
 		}
 		return tgt;
@@ -390,7 +388,8 @@ public class ManagerUtils {
 			tgt.setCalendarDomainId(src.getCalendarDomainId());
 			tgt.setCalendarUserId(src.getCalendarUserId());
 			tgt.setSeriesEventId(src.getSeriesEventId());
-			tgt.setHasAttendees(src.getHasAttendees());
+			tgt.setAttendeesCount(src.getAttendeesCount());
+			tgt.setNotifyableAttendeesCount(src.getNotifyableAttendeesCount());
 			tgt.setRecurInfo(src.isEventRecurring(), src.isEventBroken());
 		}
 		return tgt;

@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.core.bol.js.JsFkModel;
 import java.util.ArrayList;
@@ -66,9 +67,9 @@ public class JsPubEvent {
 			super(fk);
 			//TODO: completare il campo email con l'indirizzo di posta
 			name = attendee.getRecipient();
-			type = attendee.getRecipientType();
-			role = attendee.getRecipientRole();
-			response = attendee.getResponseStatus();
+			type = EnumUtils.toSerializedName(attendee.getRecipientType());
+			role = EnumUtils.toSerializedName(attendee.getRecipientRole());
+			response = EnumUtils.toSerializedName(attendee.getResponseStatus());
 		}
 	}
 }

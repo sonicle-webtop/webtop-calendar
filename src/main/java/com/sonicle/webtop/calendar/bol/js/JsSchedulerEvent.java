@@ -69,6 +69,7 @@ public class JsSchedulerEvent {
 	public Boolean hideData;
 	public Boolean hasTz;
 	public Boolean hasAtts;
+	public Boolean isNtf;
 	public Boolean isRecurring;
 	public Boolean isBroken;
 	public Boolean hasCmts;
@@ -121,7 +122,8 @@ public class JsSchedulerEvent {
 		isReadOnly = keepDataPrivate || calendar.isProviderRemote();
 		hideData = keepDataPrivate;
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
-		hasAtts = event.getHasAttendees();
+		hasAtts = event.hasAttendees();
+		isNtf = event.hasNotifyableAttendees();
 		isRecurring = event.isEventRecurring();
 		isBroken = event.isEventBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());
@@ -166,7 +168,8 @@ public class JsSchedulerEvent {
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
-		hasAtts = event.getHasAttendees();
+		hasAtts = event.hasAttendees();
+		isNtf = event.hasNotifyableAttendees();
 		isRecurring = event.isEventRecurring();
 		isBroken = event.isEventBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());

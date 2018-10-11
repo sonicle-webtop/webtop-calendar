@@ -33,6 +33,7 @@
  */
 Ext.define('Sonicle.webtop.calendar.store.AttendeeRcptRole', {
 	extend: 'Ext.data.ArrayStore',
+	alias: 'store.wtcalattendeercptrole',
 	
 	model: 'WTA.model.Simple',
 	data: [

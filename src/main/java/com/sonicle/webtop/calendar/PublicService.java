@@ -104,7 +104,7 @@ public class PublicService extends BasePublicService {
 							String aid = ServletUtils.getStringParameter(request, "aid", true);
 							String resp = ServletUtils.getStringParameter(request, "resp", true);
 							
-							String responseStatus = toResponseStatus(resp);
+							EventAttendee.ResponseStatus responseStatus = toResponseStatus(resp);
 							if (responseStatus == null) throw new WTException("Invalid resp [{0}]", resp);
 							
 							event = adminCalMgr.updateEventFromSite(eventUrlPath.getPublicUid(), aid, responseStatus);
@@ -137,13 +137,13 @@ public class PublicService extends BasePublicService {
 		}
 	}
 	
-	private String toResponseStatus(String resp) {
+	private EventAttendee.ResponseStatus toResponseStatus(String resp) {
 		if(resp.equals("yes")) {
-			return EventAttendee.RESPONSE_STATUS_ACCEPTED;
+			return EventAttendee.ResponseStatus.ACCEPTED;
 		} else if(resp.equals("no")) {
-			return EventAttendee.RESPONSE_STATUS_DECLINED;
+			return EventAttendee.ResponseStatus.DECLINED;
 		} else if(resp.equals("maybe")) {
-			return EventAttendee.RESPONSE_STATUS_TENTATIVE;
+			return EventAttendee.ResponseStatus.TENTATIVE;
 		} else {
 			return null;
 		}

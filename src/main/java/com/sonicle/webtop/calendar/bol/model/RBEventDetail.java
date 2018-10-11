@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol.model;
 
+import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -261,8 +262,8 @@ public class RBEventDetail {
 		
 		public Attendee(EventAttendee att) {
 			recipient = att.getRecipient();
-			recipientType = att.getRecipientType();
-			recipientRole = att.getRecipientRole();
+			recipientType = EnumUtils.toSerializedName(att.getRecipientType());
+			recipientRole = EnumUtils.toSerializedName(att.getRecipientRole());
 		}
 		
 		public String getRecipient() {

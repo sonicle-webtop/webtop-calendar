@@ -248,14 +248,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					showWeekNumbers: true
 				},
 				store: {
-					autoSync: true,
 					model: 'Sonicle.calendar.data.EventModel',
-					proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true}),
-					listeners: {
-						write: function() {
-							me.multical().getStore().load();
-						}
-					}
+					proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true})
 				},
 				tbar: [
 					me.getAct('today'),
@@ -303,6 +297,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 								start = allDay ? soDate.copyTime(me.getVar('workdayStart'), dt) : dt,
 								end = allDay ? soDate.copyTime(me.getVar('workdayEnd'), dt) : soDate.add(dt, {minutes: 30});
 						WT.showContextMenu(e, me.getRef('cxmScheduler'), {start: start, end: end, allDay: allDay});
+					},
+					beforeeventmove: function(s, rec, ndt) {
+						me.updateSchedEventUI(rec, ndt, null, null);
+						return false;
+					},
+					beforeeventcopy: function(s, rec, ndt) {
+						me.copySchedEventUI(rec, ndt);
+						return false;
+					},
+					beforeeventresize: function(s, rec, data) {
+						me.updateSchedEventUI(rec, data.StartDate, data.EndDate, null);
+						return false;
 					}
 				}
 			}, {
@@ -702,7 +708,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			iconCls: 'wt-icon-delete',
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
-				if (rec) me.deleteEventUI(rec.get('id'), rec.get('title'), rec.get('isRecurring'));
+				if (rec) me.deleteSchedEventUI(rec);
 			}
 		});
 		me.addAct('restoreEvent', {
@@ -711,21 +717,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			iconCls: 'wt-icon-restore-xs',
 			handler: function(s,e) {
 				var rec = e.menuData.event;
-				if (rec) me.restoreEventUI(rec.get('id'));
+				if (rec) me.restoreSchedEventUI(rec);
 			}
 		});
 		me.addAct('copyEvent', {
 			tooltip: null,
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
-				if (rec) me.moveEventUI(true, rec.get('id'), rec.get('calendarId'), rec.get('_profileId'));
+				if (rec) me.moveSchedEventUI(true, rec);
 			}
 		});
 		me.addAct('moveEvent', {
 			tooltip: null,
 			handler: function(s,e) {
 				var rec = WTU.itselfOrFirst(e.menuData.event);
-				if (rec) me.moveEventUI(false, rec.get('id'), rec.get('calendarId'), rec.get('_profileId'));
+				if (rec) me.moveSchedEventUI(false, rec);
 			}
 		});
 		me.addAct('printEvent', {
@@ -1116,57 +1122,128 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	deleteEventUI: function(id, title, isRecurring) {
+	updateSchedEventUI: function(rec, newStartDate, newEndDate, newTitle) {
+		var me = this,
+				doFn = function(notify) {
+					me.updateEvent(rec.getId(), newStartDate, newEndDate, newTitle, null, notify, {
+						callback: function(success) {
+							if (success) me.reloadEvents();
+						}
+					});
+				};
+		
+		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+			me.confirmOnInvitationFor('update', function(bid) {
+				if (bid === 'yes') {
+					doFn(true);
+				} else if (bid === 'no') {
+					doFn(false);
+				}
+			});
+		} else {
+			doFn(null);
+		}
+	},
+	
+	deleteSchedEventUI: function(rec) {
 		var me = this;
 		
-		if(isRecurring) {
-			me.confirmForRecurrence(me.res('event.recurring.confirm.delete'), function(bid, value) {
-				if (bid === 'ok') {
-					me.deleteEvent(id, value, {
-						callback: function(succ) {
-							if(succ) me.reloadEvents();
-						}
-					});
-				}
+		if (rec.get('isRecurring')) {
+			me.confirmOnRecurringFor('delete', function(bid, value) {
+				if (bid === 'ok') me._deleteSchedEventUI(rec, value);
 			}, me);
 		} else {
-			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(title, 40)), function(bid) {
-				if(bid === 'yes') {
-					me.deleteEvent(id, 'this', {
-						callback: function(succ) {
-							if(succ) me.reloadEvents();
-						}
-					});
-				}
+			WT.confirm(me.res('event.confirm.delete', Ext.String.ellipsis(rec.get('title'), 40)), function(bid) {
+				if (bid === 'yes') me._deleteSchedEventUI(rec, null);
 			}, me);
 		}
 	},
 	
-	restoreEventUI: function(id) {
+	_deleteSchedEventUI: function(rec, target) {
+		var me = this,
+				doFn = function(notify) {
+					me.deleteEvent(rec.getId(), target, notify, {
+						callback: function(success) {
+							if (success) me.reloadEvents();
+						}
+					});
+				};
+		
+		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+			me.confirmOnInvitationFor('update', function(bid) {
+				if (bid === 'yes') {
+					doFn(true);
+				} else if (bid === 'no') {
+					doFn(false);
+				}
+			});
+		} else {
+			doFn(null);
+		}
+	},
+	
+	copySchedEventUI: function(rec, newStartDate) {
+		var me = this,
+				doFn = function(notify) {
+					me.copyEvent(rec.getId(), newStartDate, null, notify, {
+						callback: function(success) {
+							if (success) me.reloadEvents();
+						}
+					});
+				};
+		
+		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+			me.confirmOnInvitationFor('save', function(bid) {
+				if (bid === 'yes') {
+					doFn(true);
+				} else if (bid === 'no') {
+					doFn(false);
+				}
+			});
+		} else {
+			doFn(null);
+		}
+	},
+	
+	moveSchedEventUI: function(copy, rec) {
+		var me = this,
+				doFn = function(notify, tgtCalendarId) {
+					me.moveEvent(copy, rec.getId(), tgtCalendarId, notify, {
+						callback: function(success) {
+							if (success) me.reloadEvents();
+						}
+					});
+				},
+				vct = me.createCalendarChooser(copy, rec.get('_profileId'), rec.get('calendarId'));
+		
+		vct.getView().on('viewok', function(s) {
+			var calId = s.getVMData().calendarId;
+			if (copy && rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+				me.confirmOnInvitationFor('save', function(bid) {
+					if (bid === 'yes') {
+						doFn(true, calId);
+					} else if (bid === 'no') {
+						doFn(false, calId);
+					}
+				});
+			} else {
+				doFn(null, calId);
+			}
+		});
+		vct.show();
+	},
+	
+	restoreSchedEventUI: function(rec) {
 		var me = this;
 		WT.confirm(me.res('event.recurring.confirm.restore'), function(bid) {
-			if(bid === 'yes') {
-				me.restoreEvent(id, {
+			if (bid === 'yes') {
+				me.restoreEvent(rec.getId(), {
 					callback: function(success) {
-						if(success) me.reloadEvents();
+						if (success) me.reloadEvents();
 					}
 				});
 			}
 		}, me);
-	},
-	
-	moveEventUI: function(copy, id, calendarId, profileId) {
-		var me = this,
-				vct = me.createCalendarChooser(copy, profileId, calendarId);
-		
-		vct.getView().on('viewok', function(s) {
-			me.moveEvent(copy, id, s.getVMData().calendarId, {
-				callback: function(success) {
-					if(success) me.reloadEvents();
-				}
-			});
-		});
-		vct.show();
 	},
 	
 	editShare: function(id) {
@@ -1439,14 +1516,68 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	deleteEvent: function(ekey, target, opts) {
+	updateEvent: function(ekey, newStartDate, newEndDate, newTitle, target, notify, opts) {
+		opts = opts || {};
+		var me = this;
+		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
+			params: {
+				crud: 'update',
+				target: target,
+				notify: notify,
+				id: ekey,
+				newStart: Ext.isDate(newStartDate) ? Ext.Date.format(newStartDate, 'Y-m-d H:i:s') : null,
+				newEnd: Ext.isDate(newEndDate) ? Ext.Date.format(newEndDate, 'Y-m-d H:i:s') : null,
+				newTitle: newTitle
+			},
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope, [success, json]);
+			}
+		});
+	},
+	
+	deleteEvent: function(ekey, target, notify, opts) {
 		opts = opts || {};
 		var me = this;
 		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
 			params: {
 				crud: 'delete',
 				target: target,
+				notify: notify,
 				id: ekey
+			},
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope, [success, json]);
+			}
+		});
+	},
+	
+	copyEvent: function(ekey, newStartDate, target, notify, opts) {
+		opts = opts || {};
+		var me = this;
+		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
+			params: {
+				crud: 'copy',
+				target: target,
+				notify: notify,
+				id: ekey,
+				newStart: Ext.isDate(newStartDate) ? Ext.Date.format(newStartDate, 'Y-m-d H:i:s') : null
+			},
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope, [success, json]);
+			}
+		});
+	},
+	
+	moveEvent: function(copy, ekey, targetCalendarId, notify, opts) {
+		opts = opts || {};
+		var me = this;
+		WT.ajaxReq(me.ID, 'ManageEventsScheduler', {
+			params: {
+				crud: 'move',
+				copy: copy,
+				id: ekey,
+				targetCalendarId: targetCalendarId,
+				notify: notify
 			},
 			callback: function(success, json) {
 				Ext.callback(opts.callback, opts.scope, [success, json]);
@@ -1464,23 +1595,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			},
 			callback: function(success, json) {
 				Ext.callback(opts.callback, opts.scope, [success, json]);
-			}
-		});
-	},
-	
-	moveEvent: function(copy, ekey, targetCalendarId, opts) {
-		opts = opts || {};
-		var me = this;
-		
-		WT.ajaxReq(me.ID, 'ManageEvents', {
-			params: {
-				crud: 'move',
-				copy: copy,
-				id: ekey,
-				targetCalendarId: targetCalendarId
-			},
-			callback: function(success, json) {
-				Ext.callback(opts.callback, opts.scope || me, [success, json]);
 			}
 		});
 	},
@@ -1555,7 +1669,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		return (this.getMainComponent().getLayout().getActiveItem() === id);
 	},
 	
-	confirmForRecurrence: function(msg, cb, scope) {
+	confirmOnRecurringFor: function(type, cb, scope) {
+		this.confirmOnRecurring(this.res('event.recurring.confirm.'+type), cb, scope);
+	},
+	
+	confirmOnRecurring: function(msg, cb, scope) {
 		var me = this;
 		WT.confirm(msg, cb, scope, {
 			buttons: Ext.Msg.OKCANCEL,
@@ -1566,7 +1684,24 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				allText: me.res('confirm.recurrence.all')
 			},
 			config: {
-				value: 'this'
+				value: 'all'
+			}
+		});
+	},
+	
+	confirmOnInvitationFor: function(type, cb, scope) {
+		this.confirmOnInvitation(this.res('event.send.confirm.'+type), cb, scope);
+	},
+	
+	confirmOnInvitation: function(msg, cb, scope) {
+		var me = this;
+		WT.confirm(msg, cb, scope, {
+			buttons: Ext.Msg.YESNOCANCEL,
+			config: {
+				buttonText: {
+					yes: me.res('event.send.confirm.yes'),
+					no: me.res('event.send.confirm.no')
+				}
 			}
 		});
 	},

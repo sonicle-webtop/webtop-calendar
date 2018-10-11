@@ -33,6 +33,7 @@
  */
 Ext.define('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
 	extend: 'Ext.data.ArrayStore',
+	alias: 'store.wtcalattendeerespstatus',
 	
 	model: 'WTA.model.Simple',
 	data: [

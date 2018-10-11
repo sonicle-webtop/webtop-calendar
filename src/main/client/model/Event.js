@@ -86,6 +86,15 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		return this.get('_recurringInfo') === 'broken';
 	},
 	
+	isNotifyable: function() {
+		var ret = false;
+		this.attendees().each(function(rec) {
+			if (rec.get('notify') === true) ret = true;
+			return;
+		});
+		return ret;
+	},
+	
 	hasAttendees: function() {
 		var sto = this.attendees();
 		return !sto ? false : (sto.getCount() > 0);

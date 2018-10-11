@@ -98,6 +98,7 @@ public class EventAttendeeDAO extends BaseDAO {
 		return dsl
 			.update(EVENTS_ATTENDEES)
 			.set(EVENTS_ATTENDEES.RECIPIENT, item.getRecipient())
+			.set(EVENTS_ATTENDEES.RECIPIENT_ROLE, item.getRecipientRole())
 			.set(EVENTS_ATTENDEES.RECIPIENT_TYPE, item.getRecipientType())
 			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, item.getResponseStatus())
 			.set(EVENTS_ATTENDEES.NOTIFY, item.getNotify())

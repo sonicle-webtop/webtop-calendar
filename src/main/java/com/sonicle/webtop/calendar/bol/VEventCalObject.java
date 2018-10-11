@@ -38,7 +38,7 @@ package com.sonicle.webtop.calendar.bol;
  */
 public class VEventCalObject extends OEvent {
 	protected Boolean hasIcalendar;
-	protected Boolean hasAttendees;
+	protected Integer attendeesCount;
 
 	public Boolean getHasIcalendar() {
 		return hasIcalendar;
@@ -47,12 +47,16 @@ public class VEventCalObject extends OEvent {
 	public void setHasIcalendar(Boolean hasIcalendar) {
 		this.hasIcalendar = hasIcalendar;
 	}
-
-	public Boolean getHasAttendees() {
-		return hasAttendees;
+	
+	public Integer getAttendeesCount() {
+		return attendeesCount;
 	}
 
-	public void setHasAttendees(Boolean hasAttendees) {
-		this.hasAttendees = hasAttendees;
+	public void setAttendeesCount(Integer attendeesCount) {
+		this.attendeesCount = attendeesCount;
+	}
+
+	public boolean hasAttendees() {
+		return (attendeesCount != null) && (attendeesCount > 0);
 	}
 }

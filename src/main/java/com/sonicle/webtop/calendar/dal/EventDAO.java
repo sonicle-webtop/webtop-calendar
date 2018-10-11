@@ -514,14 +514,24 @@ public class EventDAO extends BaseDAO {
 				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
-		// New field: info about attendees
-		Field<Boolean> hasAttendees = DSL.field(DSL.exists(
-			selectOne()
+		// New field: attendees count
+		Field<Integer> attendeesCount = DSL.field(
+			selectCount()
 			.from(EVENTS_ATTENDEES)
 			.where(
 				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
 			)
-		)).as("has_attendees");
+		).as("attendees_count");
+		
+		// New field: notifyable attendees count
+		Field<Integer> notifyableAttendeesCount = DSL.field(
+			selectCount()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(EVENTS_ATTENDEES.NOTIFY.isTrue())
+			)
+		).as("notifyable_attendees_count");
 		
 		return dsl
 			.select(
@@ -531,7 +541,8 @@ public class EventDAO extends BaseDAO {
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,
-				hasAttendees
+				attendeesCount,
+				notifyableAttendeesCount
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
@@ -559,14 +570,24 @@ public class EventDAO extends BaseDAO {
 				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
-		// New field: info about attendees
-		Field<Boolean> hasAttendees = DSL.field(DSL.exists(
-			selectOne()
+		// New field: attendees count
+		Field<Integer> attendeesCount = DSL.field(
+			selectCount()
 			.from(EVENTS_ATTENDEES)
 			.where(
 				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
 			)
-		)).as("has_attendees");
+		).as("attendees_count");
+		
+		// New field: notifyable attendees count
+		Field<Integer> notifyableAttendeesCount = DSL.field(
+			selectCount()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(EVENTS_ATTENDEES.NOTIFY.isTrue())
+			)
+		).as("notifyable_attendees_count");
 		
 		return dsl
 			.select(
@@ -576,7 +597,8 @@ public class EventDAO extends BaseDAO {
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,
-				hasAttendees
+				attendeesCount,
+				notifyableAttendeesCount
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
@@ -718,14 +740,24 @@ public class EventDAO extends BaseDAO {
 				.and(eve1.REVISION_STATUS.notEqual(EnumUtils.toSerializedName(Event.RevisionStatus.DELETED)))
 			).asField("series_event_id");
 		
-		// New field: info about attendees
-		Field<Boolean> hasAttendees = field(exists(
-			selectOne()
+		// New field: attendees count
+		Field<Integer> attendeesCount = DSL.field(
+			selectCount()
 			.from(EVENTS_ATTENDEES)
 			.where(
 				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
 			)
-		)).as("has_attendees");
+		).as("attendees_count");
+		
+		// New field: notifyable attendees count
+		Field<Integer> notifyableAttendeesCount = DSL.field(
+			selectCount()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(EVENTS_ATTENDEES.NOTIFY.isTrue())
+			)
+		).as("notifyable_attendees_count");
 		
 		return dsl
 			.select(
@@ -735,7 +767,8 @@ public class EventDAO extends BaseDAO {
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,
-				hasAttendees
+				attendeesCount,
+				notifyableAttendeesCount
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
@@ -782,14 +815,24 @@ public class EventDAO extends BaseDAO {
 		// NB: recurring events cannot have a reference to a master series event
 		Field<Integer> seriesEventId = value(null, Integer.class).as("series_event_id");
 		
-		// New field: info about attendees
-		Field<Boolean> hasAttendees = field(exists(
-			selectOne()
+		// New field: attendees count
+		Field<Integer> attendeesCount = DSL.field(
+			selectCount()
 			.from(EVENTS_ATTENDEES)
 			.where(
 				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
 			)
-		)).as("has_attendees");
+		).as("attendees_count");
+		
+		// New field: notifyable attendees count
+		Field<Integer> notifyableAttendeesCount = DSL.field(
+			selectCount()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
+				.and(EVENTS_ATTENDEES.NOTIFY.isTrue())
+			)
+		).as("notifyable_attendees_count");
 		
 		return dsl
 			.select(
@@ -799,7 +842,8 @@ public class EventDAO extends BaseDAO {
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,
-				hasAttendees
+				attendeesCount,
+				notifyableAttendeesCount
 			)
 			.from(EVENTS)
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
@@ -931,14 +975,14 @@ public class EventDAO extends BaseDAO {
 	public Map<String, List<VEventCalObject>> viewCalObjectsByCalendarHrefs(Connection con, int calendarId, Collection<String> hrefs) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
-		// New field: info about attendees
-		Field<Boolean> hasAttendees = field(exists(
-			selectOne()
+		// New field: attendees count
+		Field<Integer> attendeesCount = DSL.field(
+			selectCount()
 			.from(EVENTS_ATTENDEES)
 			.where(
 				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
 			)
-		)).as("has_attendees");
+		).as("attendees_count");
 		
 		Condition inHrefsCndt = DSL.trueCondition();
 		if (hrefs != null) {
@@ -950,7 +994,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.fields()
 			)
 			.select(
-				hasAttendees,
+				attendeesCount,
 				DSL.nvl2(EVENTS_ICALENDARS.EVENT_ID, true, false).as("has_icalendar")
 			)
 			.from(EVENTS)

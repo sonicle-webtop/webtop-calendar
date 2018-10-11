@@ -65,7 +65,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 			isDefault: WTF.checkboxBind('record', 'isDefault'),
 			visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
 			showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
-			invitation: WTF.checkboxBind('record', 'invitation'),
+			//invitation: WTF.checkboxBind('record', 'invitation'),
 			notifyOnExtUpdate: WTF.checkboxBind('record', 'notifyOnExtUpdate'),
 			foIsRemote: WTF.foGetFn('record', 'provider', function(v) {
 				return Sonicle.webtop.calendar.view.Calendar.isRemote(v);
@@ -134,8 +134,14 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						}),
 						fieldLabel: me.mys.res('calendar.fld-sync.lbl'),
 						width: 110+140
-					}),
+					}), 
 					{
+						xtype: 'soformseparator',
+						bind: {
+							disabled: '{foIsRemote}'
+						},
+						title: me.mys.res('calendar.main.defaults.tit')
+					}, {
 						xtype: 'radiogroup',
 						bind: {
 							value: '{visibility}',
@@ -191,7 +197,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						emptyText: WT.res('word.none.male'),
 						fieldLabel: me.mys.res('calendar.fld-reminder.lbl'),
 						width: 110+140
-					}, {
+					}/*, {
 						xtype: 'checkbox',
 						bind: {
 							value: '{invitation}',
@@ -199,8 +205,11 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						},
 						hideEmptyLabel: false,
 						boxLabel: me.mys.res('calendar.fld-invitation.lbl')
-					}, {
-						xtype: 'soformseparator'
+					}*/, {
+						xtype: 'soformseparator',
+						bind: {
+							disabled: '{foIsRemote}'
+						}
 					}, {
 						xtype: 'checkbox',
 						bind: {

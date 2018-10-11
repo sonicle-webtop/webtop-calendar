@@ -50,6 +50,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.CalendarLkp',
 		'Sonicle.webtop.calendar.store.Reminder',
+		'Sonicle.webtop.calendar.store.AttendeeRcptRole',
 		'Sonicle.webtop.calendar.store.AttendeeRcptType',
 		'Sonicle.webtop.calendar.store.AttendeeRespStatus'
 	],
@@ -133,7 +134,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					tooltip: null,
 					iconCls: 'wt-icon-saveClose-xs',
 					handler: function() {
-						me.saveEvent();
+						me.saveEventUI();
 					}
 				}),
 				'-',
@@ -142,7 +143,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					tooltip: WT.res('act-delete.lbl'),
 					iconCls: 'wt-icon-delete',
 					handler: function() {
-						me.deleteEvent();
+						me.deleteEventUI();
 					}
 				}),
 				me.addAct('restore', {
@@ -150,7 +151,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					tooltip: WT.res('act-restore.lbl'),
 					iconCls: 'wt-icon-restore-xs',
 					handler: function() {
-						me.restoreEvent();
+						me.restoreEventUI();
 					},
 					disabled: true
 				}),
@@ -576,11 +577,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							key: 'store.attendeeRcptType',
 							keepcase: true
 						}),
-						editor: Ext.create(WTF.localCombo('id', 'desc', {
-							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRcptType', {
-								autoLoad: true
-							})
-						})),
+						editor: WTF.localCombo('id', 'desc', {
+							store: {
+								autoLoad: true,
+								type: 'wtcalattendeercpttype'
+							}
+						}),
 						header: me.mys.res('event.gp-attendees.recipientType.lbl'),
 						width: 110
 					}, {
@@ -590,11 +592,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							key: 'store.attendeeRcptRole',
 							keepcase: true
 						}),
-						editor: Ext.create(WTF.localCombo('id', 'desc', {
-							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRcptRole', {
-								autoLoad: true
-							})
-						})),
+						editor: WTF.localCombo('id', 'desc', {
+							store: {
+								autoLoad: true,
+								type: 'wtcalattendeercptrole'
+							}
+						}),
 						header: me.mys.res('event.gp-attendees.recipientRole.lbl'),
 						width: 110
 					}, {
@@ -604,40 +607,43 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							key: 'store.attendeeRespStatus',
 							keepcase: true
 						}),
-						editor: Ext.create(WTF.localCombo('id', 'desc', {
-							store: Ext.create('Sonicle.webtop.calendar.store.AttendeeRespStatus', {
-								autoLoad: true
-							})
-						})),
+						editor: WTF.localCombo('id', 'desc', {
+							store: {
+								autoLoad: true,
+								type: 'wtcalattendeerespstatus'
+							}
+						}),
 						header: me.mys.res('event.gp-attendees.responseStatus.lbl'),
 						width: 110
+					}, {
+						xtype: 'actioncolumn',
+						draggable: false,
+						hideable: false,
+						groupable: false,
+						align: 'center',
+						width: 50,
+						items: [{
+							iconCls: 'fa fa-trash',
+							tooltip: WT.res('act-remove.lbl'),
+							handler: function(g, ridx) {
+								var rec = g.getStore().getAt(ridx);
+								me.deleteAttendeeUI(rec);
+							}
+						}]
 					}],
-					plugins: [
-						Ext.create('Ext.grid.plugin.RowEditing', {
-							pluginId: 'rowediting',
-							clicksToMoveEditor: 2,
-							saveBtnText: WT.res('act-confirm.lbl'),
-							cancelBtnText: WT.res('act-cancel.lbl')
-						})
-					],
+					plugins: [{
+						id: 'cellediting',
+						ptype: 'cellediting',
+						clicksToEdit: 1
+					}],
 					tbar: [
 						me.addAct('addAttendee', {
 							text: WT.res('act-add.lbl'),
 							tooltip: null,
 							iconCls: 'wt-icon-add-xs',
 							handler: function() {
-								me.addAttendee();
+								me.addAttendeeUI();
 							}
-						}),
-						me.addAct('deleteAttendee', {
-							text: WT.res('act-delete.lbl'),
-							tooltip: null,
-							iconCls: 'wt-icon-delete',
-							handler: function() {
-								var sm = me.lref('tabinvitation.gpattendees').getSelectionModel();
-								me.deleteAttendee(sm.getSelection());
-							},
-							disabled: true
 						}),
 						'->',
 						{
@@ -648,12 +654,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							}
 						}
 					],
-					border: false,
-					listeners: {
-						selectionchange: function(s,recs) {
-							me.getAct('deleteAttendee').setDisabled(!recs.length);
-						}
-					}
+					border: false
 				}, {
 					xtype: 'gridpanel',
 					reference: 'gpplanning',
@@ -1041,77 +1042,97 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		}
 	},
 	
-	saveEvent: function() {
+	saveEventUI: function() {
 		var me = this,
 				mo = me.getModel();
 		
 		if (mo.isRecurring()) {
-			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.save'), function(bid, value) {
-				if (bid === 'ok') {
-					mo.setExtraParams({target: value});
-					me.saveView(true);
-				}
+			me.mys.confirmOnRecurringFor('save', function(bid, value) {
+				if (bid === 'ok') me._saveEventUI(mo, value);
 			}, me);
-			
 		} else {
-			mo.setExtraParams({target: 'this'});
-			me.saveView(true);
+			me._saveEventUI(mo, null);
 		}
 	},
 	
-	deleteEvent: function() {
+	_saveEventUI: function(mo, target) {
 		var me = this,
-				rec = me.getModel(),
-				ajaxFn;
+				doFn = function(notify) {
+					mo.setExtraParams({
+						target: target,
+						notify: notify === true
+					});
+					me.saveView(true);
+				};
 		
-		ajaxFn = function(target, id) {
-			me.wait();
-			WT.ajaxReq(me.mys.ID, 'ManageEventsScheduler', {
-				params: {
-					crud: 'delete',
-					target: target,
-					id: id
-				},
-				callback: function(success) {
-					me.unwait();
-					if(success) {
-						me.fireEvent('viewsave', me, true, rec);
-						me.closeView(false);
-					}
+		if (mo.isNotifyable()) {
+			me.mys.confirmOnInvitationFor(me.isMode('new') ? 'save' : 'update', function(bid) {
+				if (bid === 'yes') {
+					doFn(true);
+				} else if (bid === 'no') {
+					doFn(false);
 				}
 			});
-		};
+		} else {
+			doFn(null);
+		}
+	},
+	
+	deleteEventUI: function() {
+		var me = this,
+				mo = me.getModel();
 		
-		if(rec.isRecurring()) {
-			me.mys.confirmForRecurrence(me.mys.res('event.recurring.confirm.delete'), function(bid, value) {
-				if (bid === 'ok') {
-					ajaxFn(value, rec.get('id'));
-				}
+		if (mo.isRecurring()) {
+			me.mys.confirmOnRecurringFor('delete', function(bid, value) {
+				if (bid === 'ok') me._deleteEventUI(mo, value);
 			}, me);
 		} else {
-			WT.confirm(me.mys.res('event.confirm.delete', rec.get('title')), function(bid) {
-				if(bid === 'yes') {
-					ajaxFn('this', rec.get('id'));
-				}
+			WT.confirm(me.mys.res('event.confirm.delete', mo.get('title')), function(bid) {
+				if (bid === 'yes') me._deleteEventUI(mo, null);
 			}, me);
 		}
 	},
 	
-	restoreEvent: function() {
+	_deleteEventUI: function(mo, target) {
 		var me = this,
-				rec = me.getModel();
+				doFn = function(notify) {
+					me.wait();
+					me.mys.deleteEvent(mo.getId(), target, notify, {
+						callback: function(success) {
+							me.unwait();
+							if (success) {
+								me.fireEvent('viewsave', me, true, mo);
+								me.closeView(false);
+							}
+						}
+					});
+				};
+		
+		if (mo.isNotifyable()) {
+			me.mys.confirmOnInvitationFor('update', function(bid) {
+				if (bid === 'yes') {
+					doFn(true);
+				} else if (bid === 'no') {
+					doFn(false);
+				}
+			});
+		} else {
+			doFn(null);
+		}
+	},
+	
+	restoreEventUI: function() {
+		var me = this,
+				mo = me.getModel();
+		
 		WT.confirm(me.mys.res('event.recurring.confirm.restore'), function(bid) {
-			if(bid === 'yes') {
+			if (bid === 'yes') {
 				me.wait();
-				WT.ajaxReq(me.mys.ID, 'ManageEventsScheduler', {
-					params: {
-						crud: 'restore',
-						id: rec.get('id')
-					},
+				me.mys.restoreEvent(mo.getId(), {
 					callback: function(success) {
 						me.unwait();
-						if(success) {
-							me.fireEvent('viewsave', me, true, rec);
+						if (success) {
+							me.fireEvent('viewsave', me, true, mo);
 							me.closeView(false);
 						}
 					}
@@ -1120,36 +1141,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		}, me);
 	},
 	
-	addAttendee: function() {
+	addAttendeeUI: function() {
 		var me = this,
 				gp = me.lref('tabinvitation.gpattendees'),
 				sto = gp.getStore(),
-				re = gp.getPlugin('rowediting'),
-				cal = me.lref('fldcalendar').getSelection(),
-				rec;
+				ed = gp.getPlugin('cellediting');
 		
-		re.cancelEdit();
-		rec = sto.add(sto.createModel({
-			notify: (cal) ? cal.get('invitation') : false,
+		ed.cancelEdit();
+		sto.add(sto.createModel({
+			notify: true,
 			recipientType: 'IND',
 			recipientRole: 'REQ',
 			responseStatus: 'NA'
-		}))[0];
-		re.startEdit(rec, 1);
+		}));
+		ed.startEditByPosition({row: sto.getCount()-1, column: 1});
 	},
 	
-	deleteAttendee: function(rec) {
-		var me = this,
-				grid = me.lref('tabinvitation.gpattendees'),
-				sto = grid.getStore(),
-				rowEditing = grid.getPlugin('rowediting');
-		
-		WT.confirm(WT.res('confirm.delete'), function(bid) {
-			if(bid === 'yes') {
-				rowEditing.cancelEdit();
-				sto.remove(rec);
-			}
-		}, me);
+	deleteAttendeeUI: function(rec) {
+		this.lref('tabinvitation.gpattendees').getStore().remove(rec);
 	},
 	
 	isPlanningActive: function() {

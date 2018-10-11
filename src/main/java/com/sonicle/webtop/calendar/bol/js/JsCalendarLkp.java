@@ -32,11 +32,9 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.webtop.calendar.bol.model.CalendarFolderData;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -52,7 +50,6 @@ public class JsCalendarLkp {
 	public Boolean isDefault;
 	public Boolean busy;
 	public Integer reminder;
-	public Boolean invitation;
 	public Boolean _writable;
 	
 	public JsCalendarLkp(ShareFolderCalendar folder, CalendarPropSet folderProps) {
@@ -66,7 +63,6 @@ public class JsCalendarLkp {
 		isDefault = cal.getIsDefault();
 		busy = cal.getDefaultBusy();
 		reminder = cal.getDefaultReminder();
-		invitation = cal.getDefaultSendInvitation();
 		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		_writable = folder.getElementsPerms().implies("CREATE");
 	}

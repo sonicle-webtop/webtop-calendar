@@ -105,9 +105,9 @@ public class JsEvent {
 			Attendee jsa = new Attendee();
 			jsa.attendeeId = att.getAttendeeId();
 			jsa.recipient = att.getRecipient();
-			jsa.recipientType = att.getRecipientType();
-			jsa.recipientRole = att.getRecipientRole();
-			jsa.responseStatus = att.getResponseStatus();
+			jsa.recipientType = EnumUtils.toSerializedName(att.getRecipientType());
+			jsa.recipientRole = EnumUtils.toSerializedName(att.getRecipientRole());
+			jsa.responseStatus = EnumUtils.toSerializedName(att.getResponseStatus());
 			jsa.notify = att.getNotify();
 			attendees.add(jsa);
 		}
@@ -161,9 +161,9 @@ public class JsEvent {
 			EventAttendee attendee = new EventAttendee();
 			attendee.setAttendeeId(jsa.attendeeId);
 			attendee.setRecipient(jsa.recipient);
-			attendee.setRecipientType(jsa.recipientType);
-			attendee.setRecipientRole(jsa.recipientRole);
-			attendee.setResponseStatus(jsa.responseStatus);
+			attendee.setRecipientType(EnumUtils.forSerializedName(jsa.recipientType, EventAttendee.RecipientType.class));
+			attendee.setRecipientRole(EnumUtils.forSerializedName(jsa.recipientRole, EventAttendee.RecipientRole.class));
+			attendee.setResponseStatus(EnumUtils.forSerializedName(jsa.responseStatus, EventAttendee.ResponseStatus.class));
 			attendee.setNotify(jsa.notify);
 			event.getAttendees().add(attendee);
 		}

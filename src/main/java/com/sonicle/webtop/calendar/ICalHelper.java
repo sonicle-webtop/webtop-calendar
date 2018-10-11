@@ -71,6 +71,7 @@ import org.joda.time.DateTimeZone;
  */
 public class ICalHelper {
 	
+	/*
 	public static Calendar toCalendar(Method method, String prodId, Event event) throws WTException {
 		return toCalendar(method, prodId, Arrays.asList(event));
 	}
@@ -148,7 +149,7 @@ public class ICalHelper {
 					ve.getProperties().add(toAttendee(calMethod, attendee));
 				}
 			} catch(AddressException ex) {
-				/* Do nothing...*/
+				
 			}
 		}
 		
@@ -302,4 +303,5 @@ public class ICalHelper {
 			throw new WTException("Invalid method: only REQUEST or CANCEL are supported");
 		}
 	}
+	*/
 }

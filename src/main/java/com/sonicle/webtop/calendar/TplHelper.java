@@ -116,11 +116,11 @@ public class TplHelper {
 	
 	public static String buildResponseUpdateTitle(Locale locale, Event event, EventAttendee attendee) {
 		String pattern;
-		if (StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_ACCEPTED)) {
+		if (EventAttendee.ResponseStatus.ACCEPTED.equals(attendee.getResponseStatus())) {
 			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED);
-		} else if (StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_TENTATIVE)) {
+		} else if (EventAttendee.ResponseStatus.TENTATIVE.equals(attendee.getResponseStatus())) {
 			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_TENTATIVE);
-		} else if (StringUtils.equals(attendee.getResponseStatus(), EventAttendee.RESPONSE_STATUS_DECLINED)) {
+		} else if (EventAttendee.ResponseStatus.DECLINED.equals(attendee.getResponseStatus())) {
 			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_DECLINED);
 		} else {
 			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_OTHER);

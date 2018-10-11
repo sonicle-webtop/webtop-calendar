@@ -646,7 +646,7 @@ public class Service extends BaseService {
 			
 			List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
 			List<DateTime> dates = manager.listEventDates(visibleCategoryIds, fromDate, toDate, utz);
-			for(DateTime date : dates) {
+			for (DateTime date : dates) {
 				items.add(new JsSchedulerEventDate(ymdZoneFmt.print(date)));
 			}
 			
@@ -667,7 +667,7 @@ public class Service extends BaseService {
 			DateTimeZone utz = up.getTimeZone();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			if(crud.equals(Crud.READ)) {
+			if (crud.equals(Crud.READ)) {
 				String from = ServletUtils.getStringParameter(request, "startDate", true);
 				String to = ServletUtils.getStringParameter(request, "endDate", true);
 				
@@ -676,6 +676,7 @@ public class Service extends BaseService {
 				DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
 				List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
+				/*
 				List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(visibleCategoryIds, fromDate, toDate, utz);
 				for (FolderEventInstances foInstancesObj : foInstancesObjs) {
 					final ShareRootCalendar root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
@@ -688,6 +689,19 @@ public class Service extends BaseService {
 						items.add(new JsSchedulerEvent(root, fold, pset, sei, up.getId(), utz));
 					}
 				}
+				*/
+				
+				List<SchedEventInstance> instances = manager.listEventInstances(visibleCategoryIds, fromDate, toDate, utz);
+				for (SchedEventInstance instance : instances) {
+					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
+					if (root == null) continue;
+					final ShareFolderCalendar fold = folders.get(instance.getCalendarId());
+					if (fold == null) continue;
+					CalendarPropSet pset = folderProps.get(instance.getCalendarId());
+					
+					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz));
+				}
+				
 				
 				/* way1
 				List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
@@ -706,35 +720,9 @@ public class Service extends BaseService {
 				}
 				*/
 				
-				/* OLD
-				// Get events for each visible folder
-				List<SchedulerEventInstance> recInstances = null;
-				List<CalendarManager.CalendarEvents> foldEvents = null;
-				Integer[] checked = getCheckedFolders();
-				for(CalendarRoot root : getCheckedRoots()) {
-					foldEvents = manager.listSchedulerEvents(root, checked, fromDate, toDate);
-					
-					for(CalendarManager.CalendarEvents ce : foldEvents) {
-						CalendarFolder fold = folders.get(ce.calendar.getCalendarId());
-						if(fold == null) continue;
-						
-						for(SchedulerEventInstance evt : ce.events) {
-							if(evt.getRecurrenceId() == null) {
-								items.add(new JsSchedulerEvent(root, fold, evt, up.getId(), utz));
-							} else {
-								recInstances = manager.calculateRecurringInstances(evt, fromDate, toDate, utz);
-								for(SchedulerEventInstance recInstance : recInstances) {
-									items.add(new JsSchedulerEvent(root, fold, recInstance, up.getId(), utz));
-								}
-							}
-						}
-					}
-				}
-				*/
-				
 				new JsonResult("events", items).printTo(out);
 				
-			} else if(crud.equals(Crud.CREATE)) {
+			}/* else if (crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
@@ -744,27 +732,72 @@ public class Service extends BaseService {
 				
 				new JsonResult().printTo(out);
 				
-			} else if(crud.equals(Crud.UPDATE)) {
+			} else if (crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, JsSchedulerEvent.Update> pl = ServletUtils.getPayload(request, JsSchedulerEvent.Update.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
 				DateTime newStart = DateTimeUtils.parseYmdHmsWithZone(pl.data.startDate, etz);
 				DateTime newEnd = DateTimeUtils.parseYmdHmsWithZone(pl.data.endDate, etz);
-				manager.updateEventInstance(pl.data.id, newStart, newEnd, pl.data.title);
+				manager.updateEventInstance(pl.data.id, newStart, newEnd, pl.data.title, false);
 				
 				new JsonResult().printTo(out);
 				
-			} else if(crud.equals(Crud.DELETE)) {
-				String uid = ServletUtils.getStringParameter(request, "id", true);
+			}*/ else if (crud.equals(Crud.UPDATE)) {
+				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String newStartString = ServletUtils.getStringParameter(request, "newStart", null);
+				String newEndString = ServletUtils.getStringParameter(request, "newEnd", null);
+				String newTitle = ServletUtils.getStringParameter(request, "newTitle", null);
 				UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
+				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				
-				manager.deleteEventInstance(target, uid);
+				DateTime newStart = null, newEnd = null;
+				if ((newStartString != null) || (newEndString != null)) {
+					newStart = DateTimeUtils.parseYmdHmsWithZone(newStartString, utz);
+					newEnd = DateTimeUtils.parseYmdHmsWithZone(newEndString, utz);
+				}
+				
+				manager.updateEventInstance(target, new EventKey(eventKey), newStart, newEnd, newTitle, notify);
+				new JsonResult().printTo(out);
+				
+			} else if (crud.equals(Crud.DELETE)) {
+				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
+				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
+				
+				manager.deleteEventInstance(target, new EventKey(eventKey), notify);
+				new JsonResult().printTo(out);
+				
+			} else if (crud.equals(Crud.COPY)) {
+				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String newStartString = ServletUtils.getStringParameter(request, "newStart", null);
+				//UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
+				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
+				
+				DateTime newStart = null;
+				if (newStartString != null) {
+					newStart = DateTimeUtils.parseYmdHmsWithZone(newStartString, utz);
+				}
+				
+				manager.cloneEventInstance(new EventKey(eventKey), null, newStart, null, notify);
+				new JsonResult().printTo(out);
+				
+			} else if(crud.equals(Crud.MOVE)) {
+				boolean copy = ServletUtils.getBooleanParameter(request, "copy", false);
+				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				Integer calendarId = ServletUtils.getIntParameter(request, "targetCalendarId", true);
+				
+				if (copy) {
+					boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
+					manager.cloneEventInstance(new EventKey(eventKey), calendarId, null, null, notify);
+				} else {
+					manager.moveEventInstance(new EventKey(eventKey), calendarId);
+				}
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals("restore")) {
-				String uid = ServletUtils.getStringParameter(request, "id", true);
+				String eventKey = ServletUtils.getStringParameter(request, "id", true);
 				
-				manager.restoreEventInstance(uid);
+				manager.restoreEventInstance(new EventKey(eventKey));
 				new JsonResult().printTo(out);
 			}
 			
@@ -779,7 +812,7 @@ public class Service extends BaseService {
 		
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			if(crud.equals(Crud.READ)) {
+			if (crud.equals(Crud.READ)) {
 				String eventKey = ServletUtils.getStringParameter(request, "id", true);
 				
 				EventInstance evt = manager.getEventInstance(eventKey);
@@ -787,7 +820,8 @@ public class Service extends BaseService {
 				item = new JsEvent(evt, ownerId.toString());
 				new JsonResult(item).printTo(out);
 				
-			} else if(crud.equals(Crud.CREATE)) {
+			} else if (crud.equals(Crud.CREATE)) {
+				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
 				EventInstance event = JsEvent.buildEventInstance(pl.data);
@@ -803,12 +837,13 @@ public class Service extends BaseService {
 					att.setMediaType(upFile.getMediaType());
 					event.getAttachments().add(att);
 				}
-				manager.addEvent(event);
+				manager.addEvent(event, notify);
 				
 				new JsonResult().printTo(out);
 				
-			} else if(crud.equals(Crud.UPDATE)) {
+			} else if (crud.equals(Crud.UPDATE)) {
 				UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
+				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
 				EventInstance event = JsEvent.buildEventInstance(pl.data);
@@ -830,18 +865,18 @@ public class Service extends BaseService {
 						event.getAttachments().add(att);
 					}
 				}
-				manager.updateEventInstance(target, event);
+				manager.updateEventInstance(target, event, notify);
 				
 				new JsonResult().printTo(out);
 				
-			} else if(crud.equals(Crud.MOVE)) {
+			}/* else if(crud.equals(Crud.MOVE)) {
 				String id = ServletUtils.getStringParameter(request, "id", true);
 				Integer calendarId = ServletUtils.getIntParameter(request, "targetCalendarId", true);
 				boolean copy = ServletUtils.getBooleanParameter(request, "copy", false);
 				
 				manager.moveEventInstance(copy, id, calendarId);
 				new JsonResult().printTo(out);
-			}
+			}*/
 			
 		} catch(Exception ex) {
 			logger.error("Error in ManageEvents", ex);

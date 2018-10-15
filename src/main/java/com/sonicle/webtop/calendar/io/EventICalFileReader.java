@@ -32,9 +32,6 @@
  */
 package com.sonicle.webtop.calendar.io;
 
-import com.sonicle.webtop.calendar.util.ICalendarInput;
-import com.sonicle.webtop.core.io.BeanHandler;
-import com.sonicle.webtop.core.io.input.FileReaderException;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;

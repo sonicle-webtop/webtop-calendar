@@ -40,6 +40,7 @@ import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import java.util.ArrayList;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
 
 /**
@@ -67,6 +68,7 @@ public class JsEvent {
 	public String statMasterDataId;
 	public Integer causalId;
 	public String rrule;
+	public String rstart;
 	public ArrayList<Attendee> attendees;
 	public ArrayList<Attachment> attachments;
 	
@@ -97,8 +99,14 @@ public class JsEvent {
 		masterDataId = event.getMasterDataId();
 		statMasterDataId = event.getStatMasterDataId();
 		causalId = event.getCausalId();
-		
 		rrule = event.getRecurrenceRule();
+		LocalDate rrs = null;
+		if (event.getRecurrenceStartDate() != null) {
+			rrs = event.getRecurrenceStartDate();
+		} else {
+			rrs = event.getStartDate().withZone(eventTz).toLocalDate();
+		}
+		rstart = DateTimeUtils.print(DateTimeUtils.createYmdFormatter(), rrs);
 		
 		attendees = new ArrayList<>();
 		for (EventAttendee att : event.getAttendees()) {
@@ -154,8 +162,7 @@ public class JsEvent {
 		event.setMasterDataId(js.masterDataId);
 		event.setStatMasterDataId(js.statMasterDataId);
 		event.setCausalId(js.causalId);
-		
-		event.setRecurrenceRule(js.rrule);
+		event.setRecurrence(js.rrule, DateTimeUtils.parseLocalDate(DateTimeUtils.createYmdFormatter(eventTz), js.rstart));
 		
 		for (JsEvent.Attendee jsa : js.attendees) {
 			EventAttendee attendee = new EventAttendee();

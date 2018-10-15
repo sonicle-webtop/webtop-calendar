@@ -1020,16 +1020,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	manageHiddenCalendarsUI: function(node) {
 		var me = this,
-				vct = me.createHiddenCalendars(node.getId());
+				vw = me.createHiddenCalendars(node.getId());
 		
-		vct.getView().on('viewcallback', function(s, success, json) {
+		vw.on('viewcallback', function(s, success, json) {
 			if (success) {
 				Ext.iterate(json.data, function(pid) {
 					me.loadRootNode(pid);
 				});
 			}
 		});
-		vct.show();
+		vw.showView();
 	},
 	
 	hideCalendarUI: function(node) {
@@ -1214,9 +1214,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					});
 				},
-				vct = me.createCalendarChooser(copy, rec.get('_profileId'), rec.get('calendarId'));
+				vw = me.createCalendarChooser(copy, rec.get('_profileId'), rec.get('calendarId'));
 		
-		vct.getView().on('viewok', function(s) {
+		vw.on('viewok', function(s) {
 			var calId = s.getVMData().calendarId;
 			if (copy && rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
 				me.confirmOnInvitationFor('save', function(bid) {
@@ -1230,7 +1230,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				doFn(null, calId);
 			}
 		});
-		vct.show();
+		vw.showView();
 	},
 	
 	restoreSchedEventUI: function(rec) {
@@ -1248,10 +1248,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	editShare: function(id) {
 		var me = this,
-				vct = WT.createView(me.ID, 'view.Sharing');
+				vw = WT.createView(me.ID, 'view.Sharing', {swapReturn: true});
 		
-		vct.show(false, function() {
-			vct.getView().begin('edit', {
+		vw.showView(function() {
+			vw.begin('edit', {
 				data: {
 					id: id
 				}
@@ -1262,13 +1262,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addCalendar: function(domainId, userId, opts) {
 		opts = opts || {};
 		var me = this,
-				vct = WT.createView(me.ID, 'view.Calendar');
+				vw = WT.createView(me.ID, 'view.Calendar', {swapReturn: true});
 		
-		vct.getView().on('viewsave', function(s, success, model) {
+		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
 		});
-		vct.show(false, function() {
-			vct.getView().begin('new', {
+		vw.showView(function() {
+			vw.begin('new', {
 				data: {
 					domainId: domainId,
 					userId: userId,
@@ -1281,7 +1281,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	setupRemoteCalendar: function(profileId, opts) {
 		opts = opts || {};
 		var me = this,
-			vct = WT.createView(me.ID, 'view.CalendarRemoteWiz', {
+			vw = WT.createView(me.ID, 'view.CalendarRemoteWiz', {
+				swapReturn: true,
 				viewCfg: {
 					data: {
 						profileId: profileId
@@ -1289,22 +1290,22 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			});
 		
-		vct.getView().on('viewclose', function(s) {
+		vw.on('viewclose', function(s) {
 			Ext.callback(opts.callback, opts.scope || me, [true, s.getVMData()]);
 		});
-		vct.show();
+		vw.showView();
 	},
 	
 	viewCalendarLinks: function(calendarId, opts) {
 		opts = opts || {};
 		var me = this,
-				vct = WT.createView(me.ID, 'view.CalendarLinks');
+				vw = WT.createView(me.ID, 'view.CalendarLinks', {swapReturn: true});
 		
-		vct.getView().on('viewclose', function(s, success, model) {
+		vw.on('viewclose', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
 		});
-		vct.show(false, function() {
-			vct.getView().begin('view', {
+		vw.showView(function() {
+			vw.begin('view', {
 				data: {
 					calendarId: calendarId
 				}
@@ -1315,13 +1316,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	editCalendar: function(calendarId, opts) {
 		opts = opts || {};
 		var me = this,
-				vct = WT.createView(me.ID, 'view.Calendar');
+				vw = WT.createView(me.ID, 'view.Calendar', {swapReturn: true});
 		
-		vct.getView().on('viewsave', function(s, success, model) {
+		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
 		});
-		vct.show(false, function() {
-			vct.getView().begin('edit', {
+		vw.showView(function() {
+			vw.begin('edit', {
 				data: {
 					calendarId: calendarId
 				}
@@ -1427,6 +1428,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		obj.startDate = Ext.isDefined(evt.startDate) ? evt.startDate : new Date();
 		obj.endDate = Ext.isDefined(evt.endDate) ? evt.endDate : new Date();
+		obj.rstart = Ext.isDefined(evt.recStartDate) ? evt.recStartDate : evt.startDate;
 		obj.timezone = Ext.isDefined(evt.timezone) ? evt.timezone : WT.getVar('timezone');
 		if (Ext.isDefined(evt.allDay)) obj.allDay = evt.allDay;
 		if (Ext.isDefined(evt.title)) obj.title = evt.title;
@@ -1443,17 +1445,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		opts = opts || {};
 		var me = this,
 				data = me.prepareEventNewData(evt),
-				vct = WT.createView(me.ID, 'view.Event', {
+				vw = WT.createView(me.ID, 'view.Event', {
+					swapReturn: true,
 					viewCfg: {
 						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
 					}
 				});	
 		
-		vct.getView().on('viewsave', function(s, success, model) {
+		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
 		});
-		vct.show(false, function() {
-			vct.getView().begin('new', {
+		vw.showView(function() {
+			vw.begin('new', {
 				data: data,
 				dirty: opts.dirty
 			});
@@ -1468,17 +1471,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEvent: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay, opts) {
 		opts = opts || {};
 		var me = this,
-				vct = WT.createView(me.ID, 'view.Event', {
+				vw = WT.createView(me.ID, 'view.Event', {
+					swapReturn: true,
 					viewCfg: {
 						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
 					}
 				});
 		
-		vct.getView().on('viewsave', function(s, success, model) {
+		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
 		});
-		vct.show(false, function() {
-			vct.getView().begin('new', {
+		vw.showView(function() {
+			vw.begin('new', {
 				data: {
 					calendarId: calendarId,
 					isPrivate: isPrivate,
@@ -1488,6 +1492,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					endDate: end,
 					timezone: WT.getVar('timezone'),
 					allDay: allDay,
+					rstart: start,
 					_profileId: ownerId
 				}
 			});
@@ -1497,18 +1502,19 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	openEvent: function(edit, ekey, opts) {
 		opts = opts || {};
 		var me = this,
-				vct = WT.createView(me.ID, 'view.Event', {
+				vw = WT.createView(me.ID, 'view.Event', {
+					swapReturn: true,
 					viewCfg: {
 						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
 					}
 				}),
 				mode = edit ? 'edit' : 'view';
 		
-		vct.getView().on('viewsave', function(s, success, model) {
+		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
 		});
-		vct.show(false, function() {
-			vct.getView().begin(mode, {
+		vw.showView(function() {
+			vw.begin(mode, {
 				data: {
 					id: ekey
 				}
@@ -1602,16 +1608,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	importEvents: function(calendarId, opts) {
 		opts = opts || {};
 		var me = this,
-				vwc = WT.createView(me.ID, 'view.ImportEvents', {
+				vw = WT.createView(me.ID, 'view.ImportEvents', {
+					swapReturn: true,
 					viewCfg: {
 						calendarId: calendarId
 					}
 				});
 		
-		vwc.getView().on('dosuccess', function() {
+		vw.on('dosuccess', function() {
 			Ext.callback(opts.callback, opts.scope || me, [true]);
 		});
-		vwc.show();
+		vw.showView();
 	},
 	
 	/*
@@ -1633,8 +1640,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	erpExport: function() {
 		var me = this,
-				vw = WT.createView(me.ID, 'view.ErpExport');
-		vw.show(false);
+				vw = WT.createView(me.ID, 'view.ErpExport', {swapReturn: true});
+		vw.showView();
 	},
 	
 	printEventsDetail: function(keys) {
@@ -1684,8 +1691,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				allText: me.res('confirm.recurrence.all')
 			},
 			config: {
-				value: 'all'
+				value: 'this'
 			}
+		});
+	},
+	
+	confirmOnSeries: function(cb, scope) {
+		var me = this;
+		WT.confirm(me.res('event.recurring.confirm.series'), cb, scope, {
+			buttons: Ext.Msg.YESNO
 		});
 	},
 	
@@ -1712,6 +1726,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	createHiddenCalendars: function(rootNodeId) {
 		var me = this;
 		return WT.createView(me.ID, 'view.HiddenCalendars', {
+			swapReturn: true,
 			viewCfg: {
 				action: 'ManageHiddenCalendars',
 				extraParams: {
@@ -1728,6 +1743,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	createCalendarChooser: function(copy, ownerId, calendarId) {
 		var me = this;
 		return WT.createView(me.ID, 'view.CalendarChooser', {
+			swapReturn: true,
 			viewCfg: {
 				dockableConfig: {
 					title: me.res(copy ? 'act-copyEvent.lbl' : 'act-moveEvent.lbl')

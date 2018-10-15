@@ -40,10 +40,11 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		'Sonicle.form.Separator',
 		'Sonicle.form.Spacer',
 		'Sonicle.form.field.Palette',
+		'Sonicle.webtop.calendar.model.Calendar',
 		'Sonicle.webtop.calendar.store.Provider',
 		'Sonicle.webtop.calendar.store.Reminder',
 		'Sonicle.webtop.calendar.store.Sync',
-		'Sonicle.webtop.contacts.store.RemoteSyncFreq'
+		'Sonicle.webtop.calendar.store.RemoteSyncFreq'
 	],
 	
 	dockableConfig: {

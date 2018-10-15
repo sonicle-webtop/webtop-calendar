@@ -356,18 +356,6 @@ public class ManagerUtils {
 		return atts;
 	}
 	
-	static ORecurrence createORecurrence(Recur recur, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone eventTimeZone) {
-		return fillORecurrence(new ORecurrence(), recur, eventStartDate, eventEndDate, eventTimeZone);
-	}
-	
-	static ORecurrence fillORecurrence(ORecurrence tgt, Recur recur, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone eventTz) {
-		if (tgt != null) {
-			tgt.setStartDate(eventStartDate);
-			tgt.set(recur, eventStartDate, eventEndDate, eventTz);
-		}
-		return tgt;
-	}
-	
 	static <T extends SchedEvent> T fillSchedEvent(T tgt, VVEvent src) {
 		if ((tgt != null) && (src != null)) {
 			tgt.setEventId(src.getEventId());

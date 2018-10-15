@@ -58,7 +58,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	dockableConfig: {
 		title: '{event.tit}',
 		iconCls: 'wtcal-icon-event-xs',
-		width: 650
+		width: 700
 		//height: see below...
 	},
 	confirm: 'yn',
@@ -113,6 +113,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				},
 				set: function(val) {
 					this.get('record').setEndTime(val);
+				}
+			},
+			recStartDate: {
+				bind: {bindTo: '{record.rstart}'},
+				get: function(val) {
+					return (val) ? Ext.Date.clone(val): null;
+				},
+				set: function(val) {
+					this.get('record').setDatePart('rstart', val);
 				}
 			},
 			allDay: WTF.checkboxBind('record', 'allDay'),
@@ -791,17 +800,25 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			title: me.mys.res('event.recurrence.tit'),
 			modelValidation: true,
 			defaults: {
-				labelWidth: 110
+				labelWidth: 80
 			},
 			items: [{
+				xtype: 'datefield',
+				bind: {
+					value: '{recStartDate}'
+				},
+				startDay: WT.getStartDay(),
+				format: WT.getShortDateFmt(),
+				width: 110 + 80,
+				fieldLabel: WT.res('sorrfield.starts')
+			}, {
 				xtype: 'sorrfield',
 				bind: {
 					value: '{record.rrule}',
-					startDate: '{startDate}'
+					startDate: '{recStartDate}'
 				},
 				startDay: WT.getStartDay(),
 				dateFormat: WT.getShortDateFmt(),
-				repeatsText: WT.res('sorrfield.repeats'),
 				endsText: WT.res('sorrfield.ends'),
 				frequencyTexts: {
 					'none': WT.res('sorrfield.freq.none'),
@@ -842,7 +859,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					rawpasteinvalid: function() {
 						WT.warn(me.mys.res('event.error.rrpaste'));
 					}
-				}
+				},
+				fieldLabel: WT.res('sorrfield.repeats')
 			}]
 		};
 		
@@ -1047,9 +1065,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				mo = me.getModel();
 		
 		if (mo.isRecurring()) {
-			me.mys.confirmOnRecurringFor('save', function(bid, value) {
-				if (bid === 'ok') me._saveEventUI(mo, value);
-			}, me);
+			if (mo.isModified('rrule') || mo.isModified('rstart')) {
+				me.mys.confirmOnSeries(function(bid) {
+					if (bid === 'yes') me._saveEventUI(mo, 'all');
+				}, me);
+			} else {
+				me.mys.confirmOnRecurringFor('save', function(bid, value) {
+					if (bid === 'ok') me._saveEventUI(mo, value);
+				}, me);
+			}
 		} else {
 			me._saveEventUI(mo, null);
 		}

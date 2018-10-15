@@ -1227,7 +1227,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			Event evt = ManagerUtils.createEvent(insert.event);
-			evt.setRecurrenceRule((insert.recurrence != null) ? insert.recurrence.getRule() : null);
+			if (insert.recurrence != null) {
+				evt.setRecurrence(insert.recurrence.getRule(), insert.recurrence.getLocalStartDate(evt.getDateTimeZone()));
+			} else {
+				evt.setRecurrence(null, null);
+			}
 			evt.setAttendees(ManagerUtils.createEventAttendeeList(insert.attendees));
 			evt.setAttachments(ManagerUtils.createEventAttachmentList(insert.attachments));
 			return evt;
@@ -2635,7 +2639,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
 			
 			if (fromDate == null) fromDate = orec.getStartDate();
-			if (toDate == null) toDate = orec.getStartDate().plusYears(5);
+			if (toDate == null) toDate = orec.getStartDate().plusYears(1);
 			
 			//TODO: ritornare direttamente l'hashmap da jooq
 			// Builds a hashset of broken dates for increasing performances
@@ -2657,7 +2661,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// start on MO but first recurrence begin on WE), ical4j lib includes 
 				// those dates in calculated recurrence set, as stated in RFC 
 				// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
-				LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(eventStartDate, rr.getRecur(), userTimezone).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
+				LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(orec.getStartDate(), rr.getRecur(), userTimezone).toLocalDate();
+				//LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(eventStartDate, rr.getRecur(), userTimezone).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
 				LocalDate rrEnd = orec.getUntilDate().toLocalDate();
 
 				// Iterates returned recurring periods and builds cloned events...
@@ -2885,7 +2890,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (vobj.getRecurrenceId() != null) {
 			ORecurrence orec = recDao.select(con, vobj.getRecurrenceId());
 			if (orec == null) throw new WTException("Unable to get recurrence [{}]", vobj.getRecurrenceId());
-			event.setRecurrenceRule(orec.getRule());
+			event.setRecurrence(orec.getRule(), orec.getLocalStartDate(event.getDateTimeZone()));
 		}
 		if (vobj.hasAttendees()) {
 			List<OEventAttendee> oatts = attDao.selectByEvent(con, event.getEventId());
@@ -2943,7 +2948,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (oevt.getRecurrenceId() != null) {
 			ORecurrence orec = recDao.select(con, oevt.getRecurrenceId());
 			if (orec == null) throw new WTException("Unable to get recurrence [{}]", oevt.getRecurrenceId());
-			evt.setRecurrenceRule(orec.getRule());
+			evt.setRecurrence(orec.getRule(), orec.getLocalStartDate(evt.getDateTimeZone()));
 		}
 		
 		List<OEventAttendee> oattes = atteDao.selectByEvent(con, eventId);
@@ -3000,7 +3005,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			int eventDays = CalendarUtils.calculateLengthInDays(oevt.getStartDate(), oevt.getEndDate());
 			ei.setStartDate(ei.getStartDate().withDate(date));
 			ei.setEndDate(ei.getEndDate().withDate(ei.getStartDate().plusDays(eventDays).toLocalDate()));
-			ei.setRecurrenceRule(orec.getRule());
+			ei.setRecurrence(orec.getRule(), orec.getLocalStartDate(ei.getDateTimeZone()));
 			
 			ei.setKey(EventKey.buildKey(eventId, eventId, date));
 			ei.setRecurInfo(Event.RecurInfo.RECURRING);
@@ -3061,8 +3066,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// 1 - Resize original recurrence (sets until date at the day before date)
 				ORecurrence orec = recDao.select(con, einfo.getRecurrenceId());
 				if (orec == null) throw new WTException("Unable to get master event's recurrence [{}]", einfo.getRecurrenceId());
-
-				int oldDaysBetween = Days.daysBetween(event.getStartDate().toLocalDate(), event.getEndDate().toLocalDate()).getDays();
+				
+				int oldDaysBetween = CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate());
 				Recur oldRecur = orec.getRecur(); // Dump old recur!
 
 				// NB: keep UTC here, until date needs to be at midnight in UTC time
@@ -3072,10 +3077,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 				// 2 - Updates revision of original event
 				evtDao.updateRevision(con, einfo.getEventId(), BaseDAO.createRevisionTimestamp());
-
-				// 3 - Insert new event recalculating start/end from instance date preserving days duration
-				event.setStartDate(event.getStartDate().withDate(eventKey.instanceDate));
-				event.setEndDate(event.getEndDate().withDate(eventKey.instanceDate.plusDays(oldDaysBetween)));
+				
+				// 3 - Insert new event recalculating start/end from rec. start preserving days duration
+				event.setStartDate(event.getStartDate().withDate(event.getRecurrenceStartDate()));
+				event.setEndDate(event.getEndDate().withDate(event.getRecurrenceStartDate().plusDays(oldDaysBetween)));
 
 				if (ICal4jUtils.recurHasCount(oldRecur)) {
 					DateTime oldRealUntil = ICal4jUtils.calculateRecurEnd(oldRecur, oevtOrig.getStartDate(), oevtOrig.getEndDate(), oevtOrig.getDateTimezone());
@@ -3083,7 +3088,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					DateTime recUntil = oldRealUntil.toLocalDate().plusDays(1).toDateTimeAtStartOfDay(DateTimeZone.UTC);
 					ICal4jUtils.setRecurUntilDate(oldRecur, recUntil);
 				}
-				event.setRecurrenceRule(oldRecur.toString());
+				event.setRecurrence(oldRecur.toString(), eventKey.instanceDate);
 				EventInsertResult insert = doEventInsert(con, event, null, true, false, false);
 
 				DbUtils.commitQuietly(con);
@@ -3099,7 +3104,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// to instance and not to the master event.
 				event.setStartDate(event.getStartDate().withDate(oevtOrig.getStartDate().toLocalDate()));
 				event.setEndDate(event.getEndDate().withDate(oevtOrig.getEndDate().toLocalDate()));
-
+				
 				// 1 - Updates event with new data
 				doEventUpdate(con, oevtOrig, event, DoOption.UPDATE, true, true);
 
@@ -3335,11 +3340,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		ORecurrence orec = null;
 		if (processRecurrence && event.hasRecurrence()) {
 			Recur recur = ICal4jUtils.parseRRule(event.getRecurrenceRule());
-			if (recur != null) {
-				orec = ManagerUtils.createORecurrence(recur, event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
-				orec.setRecurrenceId(recDao.getSequence(con).intValue());
-				recDao.insert(con, orec);
-			}
+			orec = new ORecurrence();
+			orec.set(recur, event.getRecurrenceStartDate(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
+			orec.setRecurrenceId(recDao.getSequence(con).intValue());
+			recDao.insert(con, orec);
 		}
 		
 		oevt.setRecurrenceId((orec != null) ? orec.getRecurrenceId() : null);
@@ -3396,13 +3400,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			ORecurrence orec = recDao.select(con, originalEvent.getRecurrenceId());
 			if (event.hasRecurrence() && (orec != null)) { // New event has recurrence and the old too
 				Recur recur = ICal4jUtils.parseRRule(event.getRecurrenceRule());
-				orec.set(recur, event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
+				orec.set(recur, event.getRecurrenceStartDate(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
 				recDao.update(con, orec);
 				//TODO: What about broken entries?
 				
 			} else if (event.hasRecurrence() && (orec == null)) { // New event has recurrence but the old doesn't
 				Recur recur = ICal4jUtils.parseRRule(event.getRecurrenceRule());
-				orec = ManagerUtils.createORecurrence(recur, event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
+				orec = new ORecurrence();
+				orec.set(recur, null, event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
 				orec.setRecurrenceId(recDao.getSequence(con).intValue());
 				recDao.insert(con, orec);
 				originalEvent.setRecurrenceId(orec.getRecurrenceId());

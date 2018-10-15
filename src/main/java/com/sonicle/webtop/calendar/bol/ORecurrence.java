@@ -44,16 +44,13 @@ import net.fortuna.ical4j.model.property.RRule;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 
 /**
  *
  * @author malbinola
  */
 public class ORecurrence extends Recurrences {
-	
-	public ORecurrence() {
-		super();
-	}
 	
 	public void set(DateTime untilDate) {
 		Recur recur = getRecur();
@@ -62,14 +59,14 @@ public class ORecurrence extends Recurrences {
 		setUntilDate(untilDate);
 	}
 	
-	public void set(Recur recur, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone eventTz) {
-		//setStartDate(ICal4jUtils.calculateRecurrenceStart(eventStartDate, recur, eventTz));
+	public void set(Recur recur, LocalDate recurStartDate, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone eventTimezone) {
+		setStartDate((recurStartDate != null) ? recurStartDate.toDateTimeAtStartOfDay(eventTimezone) : eventStartDate);
 		if (recur.getCount() > 0) {
-			setUntilDate(ICal4jUtils.calculateRecurEnd(recur, eventStartDate, eventEndDate, eventTz));
+			setUntilDate(ICal4jUtils.calculateRecurEnd(recur, eventStartDate, eventEndDate, eventTimezone));
 		} else if (recur.getUntil() != null) {
-			setUntilDate(ICal4jUtils.fromICal4jDate(recur.getUntil(), eventTz));
+			setUntilDate(ICal4jUtils.fromICal4jDate(recur.getUntil(), eventTimezone));
 		} else {
-			setUntilDate(ICal4jUtils.ifiniteDate(eventTz));
+			setUntilDate(ICal4jUtils.ifiniteDate(eventTimezone));
 		}
 		setRule(recur.toString());
 	}
@@ -78,10 +75,27 @@ public class ORecurrence extends Recurrences {
 		return ICal4jUtils.parseRRule(getRule());
 	}
 	
-	@Deprecated
-	public void __fillFrom(EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {
-		ORecurrence.this.__fillFrom(false, rec, eventStartDate, eventEndDate, eventTimeZone);
+	public LocalDate getLocalStartDate(DateTimeZone eventTimezone) {
+		return getStartDate().withZone(eventTimezone).toLocalDate();
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	@Deprecated
 	public void __fillFrom(boolean setRule, EventRecurrence rec, DateTime eventStartDate, DateTime eventEndDate, String eventTimeZone) {

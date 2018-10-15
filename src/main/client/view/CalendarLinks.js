@@ -32,6 +32,9 @@
  */
 Ext.define('Sonicle.webtop.calendar.view.CalendarLinks', {
 	extend: 'WTA.sdk.ModelView',
+	requires: [
+		'Sonicle.webtop.calendar.model.CalendarLinks'
+	],
 	
 	dockableConfig: {
 		title: '{calendarLinks.tit}',

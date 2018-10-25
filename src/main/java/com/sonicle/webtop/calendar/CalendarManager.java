@@ -398,6 +398,24 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
+	public boolean existCalendar(int calendarId) throws WTException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			checkRightsOnCalendarFolder(calendarId, "READ");
+			
+			con = WT.getConnection(SERVICE_ID);
+			return calDao.existsById(con, calendarId);
+			
+		} catch(SQLException | DAOException ex) {
+			throw wrapException(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
 	public Calendar getCalendar(int calendarId) throws WTException {
 		Connection con = null;
 		
@@ -912,7 +930,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			List<Integer> okCalendarIds = calendarIds.stream()
-					.filter(categoryId -> quietlyCheckRightsOnCalendarFolder(categoryId, "READ"))
+					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
 					.collect(Collectors.toList());
 			
 			con = WT.getConnection(SERVICE_ID);

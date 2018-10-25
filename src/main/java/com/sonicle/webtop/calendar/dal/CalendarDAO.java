@@ -64,7 +64,18 @@ public class CalendarDAO extends BaseDAO {
 		return nextID;
 	}
 	
-	public boolean existByIdProfile(Connection con, int calendarId, String domainId, String userId) throws DAOException {
+	public boolean existsById(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.selectCount()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
+			.fetchOne(0, Integer.class) == 1;
+	}
+	
+	public boolean existsByIdProfile(Connection con, int calendarId, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.selectCount()

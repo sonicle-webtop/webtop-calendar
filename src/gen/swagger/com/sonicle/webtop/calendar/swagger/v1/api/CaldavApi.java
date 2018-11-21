@@ -19,8 +19,8 @@ import javax.validation.Valid;
 
 @Path("/caldav")
 @Api(description = "the caldav API")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2018-10-04T14:05:25.220+02:00")
-public class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2018-11-21T12:38:18.813+01:00")
+public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
     @Path("/calendars/{calendarUid}/objects")

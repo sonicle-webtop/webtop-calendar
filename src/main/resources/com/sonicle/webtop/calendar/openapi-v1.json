@@ -380,7 +380,7 @@
     }
   },
   "definitions": {
-    "Error": {
+    "ApiError": {
       "type": "object",
       "required": [
         "code"
@@ -394,14 +394,10 @@
         "description": {
           "type": "string",
           "example": "Bad query parameter [$size]: Invalid integer value [abc]"
-        },
-        "reason": {
-          "type": "string",
-          "example": "Bad Request"
         }
       },
       "description": "This general detailed error structure is used throughout this API.",
-      "example": "{\n  \"code\": 400,\n  \"description\": \"Bad query parameter [$size]: Invalid integer value [abc]\",\n  \"reasonPhrase\": \"Bad Request\"\n}"
+      "example": "{\n  \"code\": 400,\n  \"description\": \"Bad query parameter [$size]: Invalid integer value [abc]\"\n}"
     },
     "Calendar": {
       "type": "object",

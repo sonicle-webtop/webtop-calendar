@@ -43,6 +43,7 @@ import com.sonicle.webtop.calendar.model.EventCalObjectChanged;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.swagger.v1.api.CaldavApi;
+import com.sonicle.webtop.calendar.swagger.v1.model.ApiError;
 import com.sonicle.webtop.calendar.swagger.v1.model.CalObject;
 import com.sonicle.webtop.calendar.swagger.v1.model.CalObjectChanged;
 import com.sonicle.webtop.calendar.swagger.v1.model.CalObjectNew;
@@ -488,5 +489,12 @@ public class CalDav extends CaldavApi {
 	
 	private CalendarManager getManager(UserProfileId targetProfileId) {
 		return (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
+	}
+	
+	@Override
+	protected Object createErrorEntity(Response.Status status, String message) {
+		return new ApiError()
+				.code(status.getStatusCode())
+				.description(message);
 	}
 }

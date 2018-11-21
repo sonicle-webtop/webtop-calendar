@@ -313,7 +313,6 @@ public class ManagerUtils {
 	}
 	
 	static boolean validateForInsert(EventAttendee src) {
-		if (StringUtils.isBlank(src.getAttendeeId())) return false;
 		if (StringUtils.isBlank(src.getRecipient())) return false;
 		if (src.getRecipientType() == null) return false;
 		if (src.getRecipientRole() == null) return false;

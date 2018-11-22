@@ -1152,6 +1152,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			Event event = doEventGet(con, eventId, forZPushFix ? false : true, forZPushFix);
+			if (event == null) return null;
 			checkRightsOnCalendarFolder(event.getCalendarId(), "READ");
 			
 			return event;

@@ -403,10 +403,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarFolder(calendarId, "READ");
-			
 			con = WT.getConnection(SERVICE_ID);
-			return calDao.existsById(con, calendarId);
+			boolean ret = calDao.existsById(con, calendarId);
+			if (ret) checkRightsOnCalendarFolder(calendarId, "READ");
+			return ret;
 			
 		} catch(SQLException | DAOException ex) {
 			throw wrapException(ex);

@@ -16,7 +16,7 @@ package com.sonicle.webtop.calendar.jooq.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class EventsIcalendars extends org.jooq.impl.TableImpl<com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord> {
 
-	private static final long serialVersionUID = 2095166789;
+	private static final long serialVersionUID = -199543293;
 
 	/**
 	 * The reference instance of <code>calendar.events_icalendars</code>
@@ -77,6 +77,14 @@ public class EventsIcalendars extends org.jooq.impl.TableImpl<com.sonicle.webtop
 	@Override
 	public java.util.List<org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord>> getKeys() {
 		return java.util.Arrays.<org.jooq.UniqueKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord>>asList(com.sonicle.webtop.calendar.jooq.Keys.EVENTS_ICALENDARS_PKEY);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public java.util.List<org.jooq.ForeignKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord, ?>> getReferences() {
+		return java.util.Arrays.<org.jooq.ForeignKey<com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord, ?>>asList(com.sonicle.webtop.calendar.jooq.Keys.EVENTS_ICALENDARS__EVENTS_ICALENDARS_EVENT_ID_FKEY);
 	}
 
 	/**

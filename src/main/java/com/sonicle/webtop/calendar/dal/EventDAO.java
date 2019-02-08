@@ -36,8 +36,8 @@ import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventInfo;
-import com.sonicle.webtop.calendar.bol.VEventCalObject;
-import com.sonicle.webtop.calendar.bol.VEventCalObjectChanged;
+import com.sonicle.webtop.calendar.bol.VEventObject;
+import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
 import com.sonicle.webtop.calendar.bol.VExpEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
@@ -968,11 +968,7 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VExpEvent.class);
 	}
 	
-	public Map<String, List<VEventCalObject>> viewCalObjectsByCalendar(Connection con, int calendarId) throws DAOException {
-		return viewCalObjectsByCalendarHrefs(con, calendarId, null);
-	}
-	
-	public Map<String, List<VEventCalObject>> viewCalObjectsByCalendarHrefs(Connection con, int calendarId, Collection<String> hrefs) throws DAOException {
+	public VEventObject viewCalObjectById(Connection con, int calendarId, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		// New field: attendees count
@@ -983,11 +979,6 @@ public class EventDAO extends BaseDAO {
 				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
 			)
 		).as("attendees_count");
-		
-		Condition inHrefsCndt = DSL.trueCondition();
-		if (hrefs != null) {
-			inHrefsCndt = EVENTS.HREF.in(hrefs);
-		}
 		
 		return dsl
 			.select(
@@ -1003,20 +994,113 @@ public class EventDAO extends BaseDAO {
 				EVENTS.EVENT_ID.equal(EVENTS_ICALENDARS.EVENT_ID)
 			)
 			.where(
-				EVENTS.CALENDAR_ID.equal(calendarId)
+				EVENTS.EVENT_ID.equal(eventId)
+				.and(EVENTS.CALENDAR_ID.equal(calendarId))
 				.and(
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
-				.and(inHrefsCndt)
 			)
-			.orderBy(
-				EVENTS.EVENT_ID.asc()
-			)
-			.fetchGroups(EVENTS.HREF, VEventCalObject.class);
+			.fetchOneInto(VEventObject.class);
 	}
 	
-	public List<VEventCalObjectChanged> viewChangedByCalendar(Connection con, int calendarId, int limit) throws DAOException {
+	public Map<String, List<VEventObject>> viewCalObjectsByCalendar(Connection con, int calendarId) throws DAOException {
+		return viewCalObjectsByCalendarHrefsSince(con, calendarId, null, null);
+	}
+	
+	public Map<String, List<VEventObject>> viewCalObjectsByCalendarHrefs(Connection con, int calendarId, Collection<String> hrefs) throws DAOException {
+		return viewCalObjectsByCalendarHrefsSince(con, calendarId, hrefs, null);
+	}
+	
+	public Map<String, List<VEventObject>> viewCalObjectsByCalendarSince(Connection con, int calendarId, DateTime since) throws DAOException {
+		return viewCalObjectsByCalendarHrefsSince(con, calendarId, null, since);
+	}
+	
+	public Map<String, List<VEventObject>> viewCalObjectsByCalendarHrefsSince(Connection con, int calendarId, Collection<String> hrefs, DateTime since) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		
+		// New field: attendees count
+		Field<Integer> attendeesCount = DSL.field(
+			selectCount()
+			.from(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID)
+			)
+		).as("attendees_count");
+		// New field: has icalendar
+		Field<Boolean> hasICalendar = DSL.nvl2(EVENTS_ICALENDARS.EVENT_ID, true, false).as("has_icalendar");
+	
+		Condition inHrefsCndt = DSL.trueCondition();
+		if (hrefs != null) {
+			inHrefsCndt = EVENTS.HREF.in(hrefs);
+		}
+		
+		Condition rangeCndt = null;
+		if (since != null) {
+			rangeCndt = EVENTS.END_DATE.greaterOrEqual(since)
+				.or(RECURRENCES.RECURRENCE_ID.isNotNull()
+					.and(RECURRENCES.UNTIL_DATE.greaterOrEqual(since).or(RECURRENCES.UNTIL_DATE.isNull()))	
+				);
+		}
+		
+		if (rangeCndt == null) {
+			return dsl
+				.select(
+					EVENTS.fields()
+				)
+				.select(
+					attendeesCount,
+					hasICalendar
+				)
+				.from(EVENTS)
+				.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+				.leftOuterJoin(EVENTS_ICALENDARS).on(
+					EVENTS.EVENT_ID.equal(EVENTS_ICALENDARS.EVENT_ID)
+				)
+				.where(
+					EVENTS.CALENDAR_ID.equal(calendarId)
+					.and(
+						EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+						.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+					)
+					.and(inHrefsCndt)
+				)
+				.orderBy(
+					EVENTS.EVENT_ID.asc()
+				)
+				.fetchGroups(EVENTS.HREF, VEventObject.class);
+		} else {
+			return dsl
+				.select(
+					EVENTS.fields()
+				)
+				.select(
+					attendeesCount,
+					hasICalendar
+				)
+				.from(EVENTS)
+				.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+				.leftOuterJoin(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID))
+				.leftOuterJoin(EVENTS_ICALENDARS).on(
+					EVENTS.EVENT_ID.equal(EVENTS_ICALENDARS.EVENT_ID)
+				)
+				.where(
+					EVENTS.CALENDAR_ID.equal(calendarId)
+					.and(
+						EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+						.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+					)
+					.and(inHrefsCndt)
+					.and(rangeCndt)
+				)
+				.orderBy(
+					EVENTS.EVENT_ID.asc()
+				)
+				.fetchGroups(EVENTS.HREF, VEventObject.class);
+		}
+	}
+	
+	public List<VEventObjectChanged> viewChangedLiveCalObjectsByCalendar(Connection con, int calendarId, int limit) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		return dsl
@@ -1039,10 +1123,10 @@ public class EventDAO extends BaseDAO {
 				EVENTS.EVENT_ID.asc()
 			)
 			.limit(limit)
-			.fetchInto(VEventCalObjectChanged.class);
+			.fetchInto(VEventObjectChanged.class);
 	}
 	
-	public List<VEventCalObjectChanged> viewChangedByCalendarSince(Connection con, int calendarId, DateTime since, int limit) throws DAOException {
+	public List<VEventObjectChanged> viewChangedCalObjectsByCalendarSince(Connection con, int calendarId, DateTime since, int limit) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		return dsl
@@ -1062,7 +1146,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.CREATION_TIMESTAMP.asc()
 			)
 			.limit(limit)
-			.fetchInto(VEventCalObjectChanged.class);
+			.fetchInto(VEventObjectChanged.class);
 	}
 	
 	public Map<String, VEventHrefSync> viewHrefSyncDataByCalendar(Connection con, int calendarId) throws DAOException {

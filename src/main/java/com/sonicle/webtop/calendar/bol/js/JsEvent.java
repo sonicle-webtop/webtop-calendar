@@ -162,7 +162,7 @@ public class JsEvent {
 		event.setMasterDataId(js.masterDataId);
 		event.setStatMasterDataId(js.statMasterDataId);
 		event.setCausalId(js.causalId);
-		event.setRecurrence(js.rrule, DateTimeUtils.parseLocalDate(DateTimeUtils.createYmdFormatter(eventTz), js.rstart));
+		event.setRecurrence(js.rrule, DateTimeUtils.parseLocalDate(DateTimeUtils.createYmdFormatter(eventTz), js.rstart), null);
 		
 		for (JsEvent.Attendee jsa : js.attendees) {
 			EventAttendee attendee = new EventAttendee();

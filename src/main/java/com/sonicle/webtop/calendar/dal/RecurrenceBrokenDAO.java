@@ -40,6 +40,7 @@ import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
 import org.joda.time.LocalDate;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -69,6 +70,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 			.fetchOneInto(ORecurrenceBroken.class);
 	}
 	
+	/*
 	public List<ORecurrenceBroken> selectByEventRecurrence(Connection con, Integer eventId, Integer recurrenceId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
@@ -79,6 +81,19 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 				.and(RECURRENCES_BROKEN.RECURRENCE_ID.equal(recurrenceId))
 			)
 			.fetchInto(ORecurrenceBroken.class);
+	}
+	*/
+	
+	public Map<LocalDate, ORecurrenceBroken> selectByEventRecurrence(Connection con, Integer eventId, Integer recurrenceId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select()
+			.from(RECURRENCES_BROKEN)
+			.where(
+				RECURRENCES_BROKEN.EVENT_ID.equal(eventId)
+				.and(RECURRENCES_BROKEN.RECURRENCE_ID.equal(recurrenceId))
+			)
+			.fetchMap(RECURRENCES_BROKEN.EVENT_DATE, ORecurrenceBroken.class);
 	}
 	
 	public int insert(Connection con, ORecurrenceBroken item) throws DAOException {

@@ -41,13 +41,14 @@ import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttachment;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
+import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
-import com.sonicle.webtop.calendar.model.EventCalObject;
+import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.SchedEvent;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.UserProfile;
@@ -205,11 +206,23 @@ public class ManagerUtils {
 		return fill;
 	}
 	
-	static EventCalObject fillEventCalObject(EventCalObject tgt, Event src) {
+	static EventObject fillEventCalObject(EventObject tgt, Event src) {
 		if ((tgt != null) && (src != null)) {
 			tgt.setEventId(src.getEventId());
 			tgt.setCalendarId(src.getCalendarId());
 			tgt.setRevisionStatus(src.getRevisionStatus());
+			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
+			tgt.setPublicUid(src.getPublicUid());
+			tgt.setHref(src.getHref());
+		}
+		return tgt;
+	}
+	
+	static <T extends EventObject> T fillEventCalObject(T tgt, VEventObject src) {
+		if ((tgt != null) && (src != null)) {
+			tgt.setEventId(src.getEventId());
+			tgt.setCalendarId(src.getCalendarId());
+			tgt.setRevisionStatus(EnumUtils.forSerializedName(src.getRevisionStatus(), Event.RevisionStatus.class));
 			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
 			tgt.setPublicUid(src.getPublicUid());
 			tgt.setHref(src.getHref());

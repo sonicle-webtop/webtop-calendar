@@ -37,9 +37,12 @@ import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarServiceSettings;
+import com.sonicle.webtop.calendar.EventObjectOutputType;
 import com.sonicle.webtop.calendar.ManagerUtils;
-import com.sonicle.webtop.calendar.model.EventCalObject;
-import com.sonicle.webtop.calendar.model.EventCalObjectChanged;
+import com.sonicle.webtop.calendar.NotFoundException;
+import com.sonicle.webtop.calendar.model.EventObject;
+import com.sonicle.webtop.calendar.model.EventObjectChanged;
+import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.swagger.v1.api.CaldavApi;
@@ -59,7 +62,6 @@ import com.sonicle.webtop.core.model.SharePermsFolder;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.sdk.WTNotFoundException;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -206,7 +208,7 @@ public class CalDav extends CaldavApi {
 			manager.updateCalendar(cal);
 			return respOk();
 			
-		} catch(WTNotFoundException ex) {
+		} catch(NotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
 			logger.error("[{}] updateCalendar({}, ...)", RunContext.getRunProfileId(), calendarUid, ex);
@@ -232,7 +234,7 @@ public class CalDav extends CaldavApi {
 				return respErrorNotAllowed();
 			}
 			
-		} catch(WTNotFoundException ex) {
+		} catch(NotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
 			logger.error("[{}] deleteCalendar({})", RunContext.getRunProfileId(), calendarUid, ex);
@@ -256,19 +258,20 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			if ((hrefs == null) || hrefs.isEmpty()) {
-				List<EventCalObject> calObjs = manager.listEventCalObjects(calendarId);
-				for (EventCalObject calObj : calObjs) {
-					items.add(createCalObjectWithData(calObj));
+				List<EventObject> calObjs = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR);
+				for (EventObject calObj : calObjs) {
+					items.add(createCalObjectWithData((EventObjectWithICalendar)calObj));
 				}
 				return respOk(items);
 				
 			} else {
-				List<EventCalObject> calObjs = manager.getEventCalObjects(calendarId, hrefs);
-				for (EventCalObject calObj : calObjs) {
-					items.add(createCalObjectWithData(calObj));
+				List<EventObjectWithICalendar> calObjs = manager.getEventObjectsWithICalendar(calendarId, hrefs);
+				for (EventObject calObj : calObjs) {
+					items.add(createCalObjectWithData((EventObjectWithICalendar)calObj));
 				}
 				return respOk(items);
 			}
+			
 		} catch(WTException ex) {
 			logger.error("[{}] getCalObjects({})", RunContext.getRunProfileId(), calendarUid, ex);
 			return respError(ex);
@@ -297,7 +300,7 @@ public class CalDav extends CaldavApi {
 				if (since == null) return respErrorBadRequest();
 			}
 			
-			CollectionChangeSet<EventCalObjectChanged> changes = manager.listEventCalObjectsChanges(calendarId, since, limit);
+			CollectionChangeSet<EventObjectChanged> changes = manager.listEventObjectsChanges(calendarId, since, limit);
 			return respOk(createCalObjectsChanges(revisions.get(calendarId), changes));
 			
 		} catch(WTException ex) {
@@ -320,7 +323,7 @@ public class CalDav extends CaldavApi {
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			EventCalObject calObj = manager.getEventCalObject(calendarId, href);
+			EventObjectWithICalendar calObj = manager.getEventObjectWithICalendar(calendarId, href);
 			if (calObj != null) {
 				return respOk(createCalObjectWithData(calObj));
 			} else {
@@ -346,7 +349,7 @@ public class CalDav extends CaldavApi {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			// Manager's call is already ro protected for remoteProviders
 			net.fortuna.ical4j.model.Calendar iCalendar = parseICalendar(body.getIcalendar());
-			manager.addEventCalObject(calendarId, body.getHref(), iCalendar);
+			manager.addEventObject(calendarId, body.getHref(), iCalendar);
 			return respOk();
 			
 		} catch(WTException ex) {
@@ -368,10 +371,10 @@ public class CalDav extends CaldavApi {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			// Manager's call is already ro protected for remoteProviders
 			net.fortuna.ical4j.model.Calendar iCalendar = parseICalendar(body);
-			manager.updateEventCalObject(calendarId, href, iCalendar);
+			manager.updateEventObject(calendarId, href, iCalendar);
 			return respOkNoContent();
 			
-		} catch(WTNotFoundException ex) {
+		} catch(NotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
 			logger.error("[{}] updateCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href, ex);
@@ -389,10 +392,10 @@ public class CalDav extends CaldavApi {
 		
 		try {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
-			manager.deleteEventCalObject(calendarId, href);
+			manager.deleteEventObject(calendarId, href);
 			return respOkNoContent();
 			
-		} catch(WTNotFoundException ex) {
+		} catch(NotFoundException ex) {
 			return respErrorNotFound();
 		} catch(WTException ex) {
 			logger.error("[{}] deleteCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href, ex);
@@ -422,7 +425,7 @@ public class CalDav extends CaldavApi {
 				.ownerUsername(ownerUsername);
 	}
 	
-	private CalObject createCalObject(EventCalObject calObject) {
+	private CalObject createCalObject(EventObjectWithICalendar calObject) {
 		return new CalObject()
 				.id(calObject.getEventId())
 				.uid(calObject.getPublicUid())
@@ -432,31 +435,31 @@ public class CalDav extends CaldavApi {
 				.size(calObject.getSize());
 	}
 	
-	private CalObject createCalObjectWithData(EventCalObject calObject) {
+	private CalObject createCalObjectWithData(EventObjectWithICalendar calObject) {
 		return createCalObject(calObject)
 				.icalendar(calObject.getIcalendar());
 	}
 	
-	private CalObjectChanged createCalObjectChanged(EventCalObjectChanged calObject) {
+	private CalObjectChanged createCalObjectChanged(EventObjectChanged calObject) {
 		return new CalObjectChanged()
 				.id(calObject.getEventId())
 				.href(calObject.getHref())
 				.etag(buildEtag(calObject.getRevisionTimestamp()));
 	}
 	
-	private CalObjectsChanges createCalObjectsChanges(DateTime lastRevisionTimestamp, LangUtils.CollectionChangeSet<EventCalObjectChanged> changes) {
+	private CalObjectsChanges createCalObjectsChanges(DateTime lastRevisionTimestamp, LangUtils.CollectionChangeSet<EventObjectChanged> changes) {
 		ArrayList<CalObjectChanged> inserted = new ArrayList<>();
-		for (EventCalObjectChanged calObj : changes.inserted) {
+		for (EventObjectChanged calObj : changes.inserted) {
 			inserted.add(createCalObjectChanged(calObj));
 		}
 		
 		ArrayList<CalObjectChanged> updated = new ArrayList<>();
-		for (EventCalObjectChanged calObj : changes.updated) {
+		for (EventObjectChanged calObj : changes.updated) {
 			updated.add(createCalObjectChanged(calObj));
 		}
 		
 		ArrayList<CalObjectChanged> deleted = new ArrayList<>();
-		for (EventCalObjectChanged calObj : changes.deleted) {
+		for (EventObjectChanged calObj : changes.deleted) {
 			deleted.add(createCalObjectChanged(calObj));
 		}
 		

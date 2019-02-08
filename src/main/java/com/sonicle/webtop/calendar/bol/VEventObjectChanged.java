@@ -32,31 +32,56 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import org.joda.time.DateTime;
+
 /**
  *
  * @author malbinola
  */
-public class VEventCalObject extends OEvent {
-	protected Boolean hasIcalendar;
-	protected Integer attendeesCount;
+public class VEventObjectChanged {
+	protected Integer eventId;
+	protected String revisionStatus;
+	protected DateTime revisionTimestamp;
+	protected DateTime creationTimestamp;
+	protected String href;
 
-	public Boolean getHasIcalendar() {
-		return hasIcalendar;
+	public Integer getEventId() {
+		return eventId;
 	}
 
-	public void setHasIcalendar(Boolean hasIcalendar) {
-		this.hasIcalendar = hasIcalendar;
+	public void setEventId(Integer eventId) {
+		this.eventId = eventId;
+	}
+
+	public String getRevisionStatus() {
+		return revisionStatus;
+	}
+
+	public void setRevisionStatus(String revisionStatus) {
+		this.revisionStatus = revisionStatus;
+	}
+
+	public DateTime getRevisionTimestamp() {
+		return revisionTimestamp;
+	}
+
+	public void setRevisionTimestamp(DateTime revisionTimestamp) {
+		this.revisionTimestamp = revisionTimestamp;
 	}
 	
-	public Integer getAttendeesCount() {
-		return attendeesCount;
+	public DateTime getCreationTimestamp() {
+		return creationTimestamp;
 	}
 
-	public void setAttendeesCount(Integer attendeesCount) {
-		this.attendeesCount = attendeesCount;
+	public void setCreationTimestamp(DateTime creationTimestamp) {
+		this.creationTimestamp = creationTimestamp;
 	}
 
-	public boolean hasAttendees() {
-		return (attendeesCount != null) && (attendeesCount > 0);
+	public String getHref() {
+		return href;
+	}
+
+	public void setHref(String href) {
+		this.href = href;
 	}
 }

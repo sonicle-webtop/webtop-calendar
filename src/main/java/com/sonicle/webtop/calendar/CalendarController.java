@@ -40,17 +40,18 @@ import com.sonicle.webtop.core.sdk.BaseReminder;
 import com.sonicle.webtop.core.sdk.ServiceVersion;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesProfiles;
-import com.sonicle.webtop.core.sdk.interfaces.IControllerHandlesReminders;
 import java.util.List;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
+import com.sonicle.webtop.core.app.sdk.interfaces.IControllerRemindersHooks;
+import com.sonicle.webtop.core.app.sdk.interfaces.IControllerServiceHooks;
+import com.sonicle.webtop.core.app.sdk.interfaces.IControllerUserEvents;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarController extends BaseController implements IControllerHandlesProfiles, IControllerHandlesReminders {
+public class CalendarController extends BaseController implements IControllerServiceHooks, IControllerUserEvents, IControllerRemindersHooks {
 	public static final Logger logger = WT.getLogger(CalendarController.class);
 	
 	public CalendarController() {
@@ -58,27 +59,28 @@ public class CalendarController extends BaseController implements IControllerHan
 	}
 	
 	@Override
-	public void addProfile(UserProfileId profileId) throws WTException {
+	public void initProfile(ServiceVersion current, UserProfileId profileId) throws WTException {
 		CalendarManager manager = new CalendarManager(true, profileId);
 		
 		// Adds built-in calendar
 		try {
 			Calendar cal = manager.addBuiltInCalendar();
-			if (cal != null) setCategoryCheckedState(profileId, cal.getCalendarId(), true);
+			if (cal != null) setCalendarCheckedState(profileId, cal.getCalendarId(), true);
 		} catch(WTException ex) {
 			throw ex;
 		}
 	}
 	
 	@Override
-	public void removeProfile(UserProfileId profileId, boolean deep) throws WTException {
-		CalendarManager manager = new CalendarManager(false, profileId);
-		manager.eraseData(deep);
-	}
+	public void upgradeProfile(ServiceVersion current, UserProfileId profileId, ServiceVersion profileLastSeen) throws WTException {}
 	
 	@Override
-	public void upgradeProfile(UserProfileId profileId, ServiceVersion current, ServiceVersion lastSeen) throws WTException {
-		
+	public void onUserAdded(UserProfileId profileId) throws WTException {}
+
+	@Override
+	public void onUserRemoved(UserProfileId profileId) throws WTException {
+		CalendarManager manager = new CalendarManager(false, profileId);
+		manager.eraseData(true);
 	}
 
 	@Override
@@ -87,7 +89,7 @@ public class CalendarController extends BaseController implements IControllerHan
 		return manager.getRemindersToBeNotified(now);
 	}
 	
-	private void setCategoryCheckedState(UserProfileId profileId, int calendarId, boolean checked) {
+	private void setCalendarCheckedState(UserProfileId profileId, int calendarId, boolean checked) {
 		CalendarUserSettings tus = new CalendarUserSettings(SERVICE_ID, profileId);
 		CalendarUserSettings.CheckedFolders cf = tus.getCheckedCalendarFolders();
 		if (checked) {

@@ -630,7 +630,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						hideable: false,
 						groupable: false,
 						align: 'center',
-						width: 50,
 						items: [{
 							iconCls: 'fa fa-trash',
 							tooltip: WT.res('act-remove.lbl'),
@@ -638,7 +637,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								var rec = g.getStore().getAt(ridx);
 								me.deleteAttendeeUI(rec);
 							}
-						}]
+						}],
+						width: 50
 					}],
 					plugins: [{
 						id: 'cellediting',

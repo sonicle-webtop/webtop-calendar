@@ -106,16 +106,16 @@ public class CalendarSettings {
 	/**
 	 * [user]
 	 * [string[]]
-	 * List of checked (or visible) folder root nodes.
+	 * List of deactivated folder root nodes.
 	 */
-	public static final String CHECKED_CALENDAR_ROOTS = "calendar.roots.checked";
+	public static final String INACTIVE_CALENDAR_ROOTS = "calendar.roots.inactive";
 	
 	/**
 	 * [user]
 	 * [int[]]
-	 * List of checked (or visible) calendars.
+	 * List of deactivated folders (groups).
 	 */
-	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
+	public static final String INACTIVE_CALENDAR_FOLDERS = "calendar.folders.inactive";
 	
 	/**
 	 * [user]

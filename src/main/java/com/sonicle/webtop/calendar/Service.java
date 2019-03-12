@@ -51,8 +51,8 @@ import com.sonicle.commons.web.json.extjs.FieldMeta;
 import com.sonicle.commons.web.json.extjs.GridColumnMeta;
 import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
-import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedFolders;
-import com.sonicle.webtop.calendar.CalendarUserSettings.CheckedRoots;
+import com.sonicle.webtop.calendar.CalendarUserSettings.InactiveFolders;
+import com.sonicle.webtop.calendar.CalendarUserSettings.InactiveRoots;
 import com.sonicle.webtop.calendar.bol.js.JsCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarLinks;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
@@ -129,6 +129,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -160,8 +161,8 @@ public class Service extends BaseService {
 	private final HashMap<String, ArrayList<ShareFolderCalendar>> foldersByRoot = new HashMap<>();
 	private final HashMap<Integer, ShareRootCalendar> rootByFolder = new HashMap<>();
 	private final AsyncActionCollection<Integer, SyncRemoteCalendarAA> syncRemoteCalendarAAs = new AsyncActionCollection<>();
-	private CheckedRoots checkedRoots = null;
-	private CheckedFolders checkedFolders = null;
+	private InactiveRoots inactiveRoots = null;
+	private InactiveFolders inactiveFolders = null;
 	private ErpExportWizard erpWizard = null;
 
 	@Override
@@ -178,10 +179,10 @@ public class Service extends BaseService {
 		synchronized(syncRemoteCalendarAAs) {
 			syncRemoteCalendarAAs.clear();
 		}
-		checkedFolders.clear();
-		checkedFolders = null;
-		checkedRoots.clear();
-		checkedRoots = null;
+		inactiveFolders.clear();
+		inactiveFolders = null;
+		inactiveRoots.clear();
+		inactiveRoots = null;
 		rootByFolder.clear();
 		foldersByRoot.clear();
 		folderProps.clear();
@@ -222,18 +223,19 @@ public class Service extends BaseService {
 	}
 	
 	private void initFolders() throws Exception {
-		UserProfileId pid = getEnv().getProfile().getId();
 		synchronized(roots) {
 			updateRootFoldersCache();
 			updateFoldersCache();
-
-			checkedRoots = us.getCheckedCalendarRoots();
-			// If empty, adds MyNode checked by default!
-			if(checkedRoots.isEmpty()) {
-				checkedRoots.add(MyShareRootCalendar.SHARE_ID);
-				us.setCheckedCalendarRoots(checkedRoots);
+			inactiveRoots = us.getInactiveCalendarRoots();
+			inactiveFolders = us.getInactiveCalendarFolders();
+			
+			// Clean-up orphans
+			if (inactiveRoots.removeIf(shareId -> !roots.containsKey(shareId))) {
+				us.setInactiveCalendarRoots(inactiveRoots);
 			}
-			checkedFolders = us.getCheckedCalendarFolders();
+			if (inactiveFolders.removeIf(categoryId -> !folders.containsKey(categoryId))) {
+				us.setInactiveCalendarFolders(inactiveFolders);
+			}
 		}
 	}
 	
@@ -241,9 +243,8 @@ public class Service extends BaseService {
 		UserProfileId pid = getEnv().getProfile().getId();
 		synchronized(roots) {
 			roots.clear();
-			MyShareRootCalendar myRoot = new MyShareRootCalendar(pid);
-			roots.put(myRoot.getShareId(), myRoot);
-			for(ShareRootCalendar root : manager.listIncomingCalendarRoots()) {
+			roots.put(MyShareRootCalendar.SHARE_ID, new MyShareRootCalendar(pid));
+			for (ShareRootCalendar root : manager.listIncomingCalendarRoots()) {
 				roots.put(root.getShareId(), root);
 			}
 		}
@@ -254,17 +255,17 @@ public class Service extends BaseService {
 			foldersByRoot.clear();
 			folders.clear();
 			rootByFolder.clear();
-			for(ShareRootCalendar root : roots.values()) {
+			for (ShareRootCalendar root : roots.values()) {
 				foldersByRoot.put(root.getShareId(), new ArrayList<ShareFolderCalendar>());
-				if(root instanceof MyShareRootCalendar) {
-					for(Calendar cal : manager.listCalendars().values()) {
+				if (root instanceof MyShareRootCalendar) {
+					for (Calendar cal : manager.listCalendars().values()) {
 						final MyShareFolderCalendar fold = new MyShareFolderCalendar(root.getShareId(), cal);
 						foldersByRoot.get(root.getShareId()).add(fold);
 						folders.put(cal.getCalendarId(), fold);
 						rootByFolder.put(cal.getCalendarId(), root);
 					}
 				} else {
-					for(ShareFolderCalendar fold : manager.listIncomingCalendarFolders(root.getShareId()).values()) {
+					for (ShareFolderCalendar fold : manager.listIncomingCalendarFolders(root.getShareId()).values()) {
 						final int calId = fold.getCalendar().getCalendarId();
 						foldersByRoot.get(root.getShareId()).add(fold);
 						folders.put(calId, fold);
@@ -281,31 +282,30 @@ public class Service extends BaseService {
 				
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			if(crud.equals(Crud.READ)) {
+			if (crud.equals(Crud.READ)) {
 				String node = ServletUtils.getStringParameter(request, "node", true);
 				
-				if(node.equals("root")) { // Node: root -> list roots
-					for(ShareRootCalendar root : roots.values()) {
+				if (node.equals("root")) { // Node: root -> list roots
+					for (ShareRootCalendar root : roots.values()) {
 						children.add(createRootNode(root));
 					}
 				} else { // Node: folder -> list folders (calendars)
+					boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", false);
 					ShareRootCalendar root = roots.get(node);
 					
-					if(root instanceof MyShareRootCalendar) {
-						for(Calendar cal : manager.listCalendars().values()) {
+					if (root instanceof MyShareRootCalendar) {
+						for (Calendar cal : manager.listCalendars().values()) {
 							MyShareFolderCalendar folder = new MyShareFolderCalendar(node, cal);
+							if (writableOnly && !folder.getElementsPerms().implies("CREATE")) continue;
+							
 							children.add(createFolderNode(folder, null, root.getPerms()));
 						}
 					} else {
-						/*
-						HashMap<Integer, CalendarFolder> folds = manager.listIncomingCalendarFolders(root.getShareId());
-						for(CalendarFolder fold : folds.values()) {
-							children.add(createFolderNode(fold, root.getPerms()));
-						}
-						*/
-						if(foldersByRoot.containsKey(root.getShareId())) {
-							for(ShareFolderCalendar fold : foldersByRoot.get(root.getShareId())) {
-								final ExtTreeNode etn = createFolderNode(fold, folderProps.get(fold.getCalendar().getCalendarId()), root.getPerms());
+						if (foldersByRoot.containsKey(root.getShareId())) {
+							for (ShareFolderCalendar folder : foldersByRoot.get(root.getShareId())) {
+								if (writableOnly && !folder.getElementsPerms().implies("CREATE")) continue;
+								
+								final ExtTreeNode etn = createFolderNode(folder, folderProps.get(folder.getCalendar().getCalendarId()), root.getPerms());
 								if (etn != null) children.add(etn);
 							}
 						}
@@ -313,25 +313,25 @@ public class Service extends BaseService {
 				}
 				new JsonResult("children", children).printTo(out);
 				
-			} else if(crud.equals(Crud.UPDATE)) {
+			} else if (crud.equals(Crud.UPDATE)) {
 				PayloadAsList<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
-				for(JsFolderNode node : pl.data) {
-					if(node._type.equals(JsFolderNode.TYPE_ROOT)) {
-						toggleCheckedRoot(node.id, node._visible);
+				for (JsFolderNode node : pl.data) {
+					if (node._type.equals(JsFolderNode.TYPE_ROOT)) {
+						toggleActiveRoot(node.id, node._active);
 						
-					} else if(node._type.equals(JsFolderNode.TYPE_FOLDER)) {
+					} else if (node._type.equals(JsFolderNode.TYPE_FOLDER)) {
 						CompositeId cid = new CompositeId().parse(node.id);
-						toggleCheckedFolder(Integer.valueOf(cid.getToken(1)), node._visible);
+						toggleActiveFolder(Integer.valueOf(cid.getToken(1)), node._active);
 					}
 				}
 				new JsonResult().printTo(out);
 				
-			} else if(crud.equals(Crud.DELETE)) {
+			} else if (crud.equals(Crud.DELETE)) {
 				PayloadAsList<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
 				
-				for(JsFolderNode node : pl.data) {
-					if(node._type.equals(JsFolderNode.TYPE_FOLDER)) {
+				for (JsFolderNode node : pl.data) {
+					if (node._type.equals(JsFolderNode.TYPE_FOLDER)) {
 						CompositeId cid = new CompositeId().parse(node.id);
 						manager.deleteCalendar(Integer.valueOf(cid.getToken(1)));
 					}
@@ -341,27 +341,6 @@ public class Service extends BaseService {
 			
 		} catch(Exception ex) {
 			logger.error("Error in ManageCalendarsTree", ex);
-		}
-	}
-	
-	public void processUpdateCheckedFolders(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		try {
-			String rootId = ServletUtils.getStringParameter(request, "rootId", true);
-			Boolean checked = ServletUtils.getBooleanParameter(request, "checked", true);
-			
-			synchronized(roots) {
-				ArrayList<Integer> catIds = new ArrayList<>();
-				for(ShareFolderCalendar fold : foldersByRoot.get(rootId)) {
-					catIds.add(fold.getCalendar().getCalendarId());
-				}
-				toggleCheckedFolders(catIds.toArray(new Integer[catIds.size()]), checked);
-			}
-			
-			new JsonResult().printTo(out);
-			
-		} catch(Exception ex) {
-			logger.error("Error in UpdateCheckedFolders", ex);
-			new JsonResult(ex).printTo(out);
 		}
 	}
 	
@@ -452,7 +431,6 @@ public class Service extends BaseService {
 				
 				item = manager.addCalendar(JsCalendar.createCalendar(pl.data));
 				updateFoldersCache();
-				toggleCheckedFolder(item.getCalendarId(), true);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
@@ -467,7 +445,7 @@ public class Service extends BaseService {
 				
 				manager.deleteCalendar(pl.data.calendarId);
 				updateFoldersCache();
-				toggleCheckedFolder(pl.data.calendarId, false);
+				toggleActiveFolder(pl.data.calendarId, true); // forgets it by simply activating it
 				new JsonResult().printTo(out);
 				
 			} else if (crud.equals("readLinks")) {
@@ -541,7 +519,6 @@ public class Service extends BaseService {
 				Calendar cal = manager.addCalendar(setup.toCalendar());
 				wts.clearProperty(SERVICE_ID, PROPERTY_PREFIX+tag);
 				updateFoldersCache();
-				toggleCheckedFolder(cal.getCalendarId(), true);
 				runSyncRemoteCalendar(cal.getCalendarId(), cal.getName(), true); // Starts a full-sync
 				
 				new JsonResult().printTo(out);
@@ -602,7 +579,7 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processSetCalendarPropColor(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	public void processSetCalendarColor(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		try {
 			Integer id = ServletUtils.getIntParameter(request, "id", true);
 			String color = ServletUtils.getStringParameter(request, "color", null);
@@ -616,7 +593,7 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processSetCalendarPropSync(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	public void processSetCalendarSync(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		try {
 			Integer id = ServletUtils.getIntParameter(request, "id", true);
 			String sync = ServletUtils.getStringParameter(request, "sync", null);
@@ -644,8 +621,8 @@ public class Service extends BaseService {
 			DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
 			DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
-			List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
-			List<DateTime> dates = manager.listEventDates(visibleCategoryIds, fromDate, toDate, utz);
+			List<Integer> activeCalIds = getActiveFolderIds();
+			List<DateTime> dates = manager.listEventDates(activeCalIds, fromDate, toDate, utz);
 			for (DateTime date : dates) {
 				items.add(new JsSchedulerEventDate(ymdZoneFmt.print(date)));
 			}
@@ -675,23 +652,8 @@ public class Service extends BaseService {
 				DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
 				DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
-				List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
-				/*
-				List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(visibleCategoryIds, fromDate, toDate, utz);
-				for (FolderEventInstances foInstancesObj : foInstancesObjs) {
-					final ShareRootCalendar root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
-					if (root == null) continue;
-					final ShareFolderCalendar fold = folders.get(foInstancesObj.folder.getCalendarId());
-					if (fold == null) continue;
-					CalendarPropSet pset = folderProps.get(foInstancesObj.folder.getCalendarId());
-					
-					for (SchedEventInstance sei : foInstancesObj.instances) {
-						items.add(new JsSchedulerEvent(root, fold, pset, sei, up.getId(), utz));
-					}
-				}
-				*/
-				
-				List<SchedEventInstance> instances = manager.listEventInstances(visibleCategoryIds, fromDate, toDate, utz);
+				List<Integer> activeCalIds = getActiveFolderIds();
+				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, fromDate, toDate, utz);
 				for (SchedEventInstance instance : instances) {
 					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
 					if (root == null) continue;
@@ -931,8 +893,8 @@ public class Service extends BaseService {
 			if(crud.equals(Crud.READ)) {
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
-				final List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
-				final List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(visibleCategoryIds, "%"+query+"%", utz);
+				final List<Integer> activeCalIds = getActiveFolderIds();
+				final List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(activeCalIds, "%"+query+"%", utz);
 				for (FolderEventInstances foInstancesObj : foInstancesObjs) {
 					final ShareRootCalendar root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
 					if (root == null) continue;
@@ -1196,8 +1158,8 @@ public class Service extends BaseService {
 				throw new WTException("View not supported [{0}]", view);
 			}
 			
-			List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
-			List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(visibleCategoryIds, fromDate, toDate, up.getTimeZone());
+			List<Integer> activeCalIds = getActiveFolderIds();
+			List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(activeCalIds, fromDate, toDate, up.getTimeZone());
 			rpt.setDataSource(manager, fromDate, toDate, up.getTimeZone(), foInstancesObjs);
 			
 			baos = new ByteArrayOutputStream();
@@ -1353,72 +1315,56 @@ public class Service extends BaseService {
 		return sb.toString();
 	}
 	
-	private ArrayList<Integer> getVisibleFolderIds(boolean cleanupOrphans) {
+	private ArrayList<Integer> getActiveFolderIds() {
 		ArrayList<Integer> ids = new ArrayList<>();
-		ArrayList<Integer> orphans = new ArrayList<>();
-		
-		Integer[] checked = getCheckedFolders();
-		for (ShareRootCalendar root : getCheckedRoots()) {
-			for (Integer folderId : checked) {
-				final ShareRootCalendar folderRoot = rootByFolder.get(folderId);
-				if (folderRoot == null) {
-					if (cleanupOrphans) orphans.add(folderId);
-					continue;
-				}
-				
-				if (root.getShareId().equals(folderRoot.getShareId())) {
-					ids.add(folderId);
+		synchronized(roots) {
+			for (ShareRootCalendar root : getActiveRoots()) {
+				for (ShareFolderCalendar folder : foldersByRoot.get(root.getShareId())) {
+					if (inactiveFolders.contains(folder.getCalendar().getCalendarId())) continue;
+					ids.add(folder.getCalendar().getCalendarId());
 				}
 			}
 		}
-		if (cleanupOrphans) toggleCheckedFolders(orphans.toArray(new Integer[orphans.size()]), false);
 		return ids;
 	}
 	
-	private List<ShareRootCalendar> getCheckedRoots() {
-		ArrayList<ShareRootCalendar> checked = new ArrayList<>();
-		for(ShareRootCalendar root : roots.values()) {
-			if(!checkedRoots.contains(root.getShareId())) continue; // Skip folder if not visible
-			checked.add(root);
-		}
-		return checked;
+	private List<ShareRootCalendar> getActiveRoots() {
+		return roots.values().stream()
+				.filter(root -> !inactiveRoots.contains(root.getShareId()))
+				.collect(Collectors.toList());
 	}
 	
-	private Integer[] getCheckedFolders() {
-		return checkedFolders.toArray(new Integer[checkedFolders.size()]);
+	private void toggleActiveRoot(String shareId, boolean active) {
+		toggleActiveRoots(new String[]{shareId}, active);
 	}
 	
-	private void toggleCheckedRoot(String shareId, boolean checked) {
-		toggleCheckedRoots(new String[]{shareId}, checked);
-	}
-	
-	private void toggleCheckedRoots(String[] shareIds, boolean checked) {
+	private void toggleActiveRoots(String[] shareIds, boolean active) {
 		synchronized(roots) {
-			for(String shareId : shareIds) {
-				if(checked) {
-					checkedRoots.add(shareId);
+			for (String shareId : shareIds) {
+				if (active) {
+					inactiveRoots.remove(shareId);
 				} else {
-					checkedRoots.remove(shareId);
+					inactiveRoots.add(shareId);
 				}
 			}	
-			us.setCheckedCalendarRoots(checkedRoots);
+			us.setInactiveCalendarRoots(inactiveRoots);
 		}
 	}
 	
-	private void toggleCheckedFolder(Integer folderId, boolean checked) {
-		toggleCheckedFolders(new Integer[]{folderId}, checked);
+	private void toggleActiveFolder(Integer folderId, boolean active) {
+		toggleActiveFolders(new Integer[]{folderId}, active);
 	}
 	
-	private void toggleCheckedFolders(Integer[] folderIds, boolean checked) {
+	private void toggleActiveFolders(Integer[] folderIds, boolean active) {
 		synchronized(roots) {
-			for(int folderId : folderIds) {
-				if(checked) {
-					checkedFolders.add(folderId);
+			for (int folderId : folderIds) {
+				if (active) {
+					inactiveFolders.remove(folderId);
 				} else {
-					checkedFolders.remove(folderId);
+					inactiveFolders.add(folderId);
 				}
 			}
-			us.setCheckedCalendarFolders(checkedFolders);
+			us.setInactiveCalendarFolders(inactiveFolders);
 		}
 	}
 	
@@ -1440,59 +1386,58 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private void updateCalendarFolderColor(int calendarId, String color) {
+	private void updateCalendarFolderColor(int calendarId, String color) throws WTException {
 		synchronized(roots) {
-			try {
+			if (folders.get(calendarId) instanceof MyShareFolderCalendar) {
+				Calendar cal = manager.getCalendar(calendarId);
+				cal.setColor(color);
+				manager.updateCalendar(cal);
+				updateFoldersCache();
+			} else {
 				CalendarPropSet pset = manager.getCalendarCustomProps(calendarId);
 				pset.setColor(color);
 				manager.updateCalendarCustomProps(calendarId, pset);
-				
-				// Update internal cache
-				ShareFolderCalendar folder = folders.get(calendarId);
-				if (!(folder instanceof MyShareFolderCalendar)) {
-					folderProps.put(calendarId, pset);
-				}
-			} catch(WTException ex) {
-				logger.error("Error saving custom calendar props", ex);
+				folderProps.put(calendarId, pset);
 			}
 		}
 	}
 	
-	private void updateCalendarFolderSync(int calendarId, Calendar.Sync sync) {
+	private void updateCalendarFolderSync(int calendarId, Calendar.Sync sync) throws WTException {
 		synchronized(roots) {
-			try {
+			if (folders.get(calendarId) instanceof MyShareFolderCalendar) {
+				Calendar cat = manager.getCalendar(calendarId);
+				cat.setSync(sync);
+				manager.updateCalendar(cat);
+				updateFoldersCache();
+			} else {
 				CalendarPropSet pset = manager.getCalendarCustomProps(calendarId);
 				pset.setSync(sync);
 				manager.updateCalendarCustomProps(calendarId, pset);
-				
-				// Update internal cache
-				ShareFolderCalendar folder = folders.get(calendarId);
-				if (!(folder instanceof MyShareFolderCalendar)) {
-					folderProps.put(calendarId, pset);
-				}
-			} catch(WTException ex) {
-				logger.error("Error saving custom calendar props", ex);
+				folderProps.put(calendarId, pset);
 			}
 		}
 	}
 	
 	private ExtTreeNode createRootNode(ShareRootCalendar root) {
-		if(root instanceof MyShareRootCalendar) {
-			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.CALENDARS_MY), false, "wtcal-icon-root-my-xs").setExpanded(true);
+		if (root instanceof MyShareRootCalendar) {
+			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.CALENDARS_MY), false, "wtcal-icon-root-my-xs")
+					.setExpanded(true);
 		} else {
-			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), root.getDescription(), false, "wtcal-icon-root-incoming-xs");
+			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), root.getDescription(), false, "wtcal-icon-root-incoming-xs")
+					.setExpanded(true);
 		}
 	}
 	
 	private ExtTreeNode createRootNode(String id, String pid, String rights, String text, boolean leaf, String iconClass) {
-		boolean visible = checkedRoots.contains(id);
+		boolean active = !inactiveRoots.contains(id);
 		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
 		node.put("_type", JsFolderNode.TYPE_ROOT);
 		node.put("_pid", pid);
 		node.put("_rrights", rights);
-		node.put("_visible", visible);
+		node.put("_active", active);
 		node.setIconClass(iconClass);
-		node.setChecked(visible);
+		node.setChecked(active);
+		node.put("expandable", false);
 		return node;
 	}
 	
@@ -1501,7 +1446,7 @@ public class Service extends BaseService {
 		String id = new CompositeId().setTokens(folder.getShareId(), cal.getCalendarId()).toString();
 		String color = cal.getColor();
 		Calendar.Sync sync = Calendar.Sync.OFF;
-		boolean visible = checkedFolders.contains(cal.getCalendarId());
+		boolean active = !inactiveFolders.contains(cal.getCalendarId());
 		
 		if (folderProps != null) { // Props are not null only for incoming folders
 			if (folderProps.getHiddenOrDefault(false)) return null;
@@ -1523,20 +1468,11 @@ public class Service extends BaseService {
 		node.put("_color", Calendar.getHexColor(color));
 		node.put("_sync", EnumUtils.toSerializedName(sync));
 		node.put("_default", cal.getIsDefault());
-		node.put("_visible", visible);
+		node.put("_active", active);
 		node.put("_isPrivate", cal.getIsPrivate());
 		node.put("_defBusy", cal.getDefaultBusy());
 		node.put("_defReminder", cal.getDefaultReminder());
-		
-		List<String> classes = new ArrayList<>();
-		if (cal.getIsDefault()) classes.add("wt-tree-node-bold");
-		if (!folder.getElementsPerms().implies("CREATE") 
-				&& !folder.getElementsPerms().implies("UPDATE")
-				&& !folder.getElementsPerms().implies("DELETE")) classes.add("wt-tree-node-grey");
-		node.setCls(StringUtils.join(classes, " "));
-		
-		node.setIconClass("wt-palette-" + Calendar.getHexColor(color));
-		node.setChecked(visible);
+		node.setChecked(active);
 		return node;
 	}
 	

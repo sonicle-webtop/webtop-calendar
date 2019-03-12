@@ -32,7 +32,6 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseController;
@@ -64,8 +63,7 @@ public class CalendarController extends BaseController implements IControllerSer
 		
 		// Adds built-in calendar
 		try {
-			Calendar cal = manager.addBuiltInCalendar();
-			if (cal != null) setCalendarCheckedState(profileId, cal.getCalendarId(), true);
+			manager.addBuiltInCalendar();
 		} catch(WTException ex) {
 			throw ex;
 		}
@@ -87,16 +85,5 @@ public class CalendarController extends BaseController implements IControllerSer
 	public List<BaseReminder> returnReminders(DateTime now) {
 		CalendarManager manager = new CalendarManager(true, RunContext.getRunProfileId());
 		return manager.getRemindersToBeNotified(now);
-	}
-	
-	private void setCalendarCheckedState(UserProfileId profileId, int calendarId, boolean checked) {
-		CalendarUserSettings tus = new CalendarUserSettings(SERVICE_ID, profileId);
-		CalendarUserSettings.CheckedFolders cf = tus.getCheckedCalendarFolders();
-		if (checked) {
-			cf.add(calendarId);
-		} else {
-			cf.remove(calendarId);
-		}
-		tus.setCheckedCalendarFolders(cf);
 	}
 }

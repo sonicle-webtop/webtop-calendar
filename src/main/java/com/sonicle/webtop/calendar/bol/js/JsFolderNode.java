@@ -45,7 +45,7 @@ public class JsFolderNode {
 	public String id;
 	public String _type;
 	public String _pid;
-	public Boolean _visible;
+	public Boolean _active;
 	
 	public JsFolderNode() {}
 	

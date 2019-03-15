@@ -117,7 +117,7 @@ public class JsSchedulerEvent {
 		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		location = (keepDataPrivate) ? "" : event.getLocation();
 		isPrivate = event.getIsPrivate();
-		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
+		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = keepDataPrivate || calendar.isProviderRemote();
 		hideData = keepDataPrivate;

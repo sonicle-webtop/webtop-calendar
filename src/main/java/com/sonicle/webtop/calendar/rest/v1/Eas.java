@@ -339,7 +339,7 @@ public class Eas extends EasApi {
 				.location(event.getLocation())
 				.prvt(event.getIsPrivate())
 				.busy(event.getBusy())
-				.reminder(event.getReminder())
+				.reminder(Event.Reminder.getMinutes(event.getReminder()))
 				.recRule(event.hasRecurrence() ? event.getRecurrenceRule() : null)
 				.recStart(event.hasRecurrence() ? DateTimeUtils.print(ISO_DATE_FMT, event.getRecurrenceStartDate()) : null)
 				.exDates(exDates)
@@ -366,7 +366,7 @@ public class Eas extends EasApi {
 		tgt.setLocation(src.getLocation());
 		tgt.setIsPrivate(src.isPrvt());
 		tgt.setBusy(src.isBusy());
-		tgt.setReminder(src.getReminder());
+		tgt.setReminder(Event.Reminder.valueOf(src.getReminder()));
 		
 		if (!StringUtils.isBlank(src.getRecRule())) {
 			LocalDate startDate = tgt.getStartDate().withZone(tgt.getDateTimeZone()).toLocalDate();

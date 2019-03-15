@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.webtop.calendar.model.BaseEvent;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
@@ -94,7 +95,7 @@ public class JsEvent {
 		location = event.getLocation();
 		isPrivate = event.getIsPrivate();
 		busy = event.getBusy();
-		reminder = event.getReminder();
+		reminder = EventInstance.Reminder.getMinutes(event.getReminder());
 		activityId = event.getActivityId();
 		masterDataId = event.getMasterDataId();
 		statMasterDataId = event.getStatMasterDataId();
@@ -157,7 +158,7 @@ public class JsEvent {
 		event.setLocation(js.location);
 		event.setIsPrivate(js.isPrivate);
 		event.setBusy(js.busy);
-		event.setReminder(js.reminder);
+		event.setReminder(EventInstance.Reminder.valueOf(js.reminder));
 		event.setActivityId(js.activityId);
 		event.setMasterDataId(js.masterDataId);
 		event.setStatMasterDataId(js.statMasterDataId);

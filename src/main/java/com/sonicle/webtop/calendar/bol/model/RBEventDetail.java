@@ -106,7 +106,7 @@ public class RBEventDetail {
 		
 		this.isPrivate = event.getIsPrivate();
 		this.isBusy = event.getBusy();
-		this.reminder = event.getReminder();
+		this.reminder = EventInstance.Reminder.getMinutes(event.getReminder());
 		this.activityId = event.getActivityId();
 		this.activityDescription = lookupActivityDescription(coreMgr, this.activityId);
 		this.masterDataId = event.getMasterDataId();

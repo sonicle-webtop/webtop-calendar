@@ -1441,7 +1441,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				parsedEvent.setEventId(original.getEventId());
 				parsedEvent.setCalendarId(original.getCalendarId());
 				parsedEvent.setReadOnly(original.getReadOnly());
-				parsedEvent.setReminder(original.getReminder());
+				parsedEvent.setReminder(Event.Reminder.valueOf(original.getReminder()));
 				parsedEvent.setEtag(original.getEtag());
 				parsedEvent.setActivityId(original.getActivityId());
 				parsedEvent.setMasterDataId(original.getMasterDataId());

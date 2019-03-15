@@ -47,12 +47,12 @@ import com.sonicle.commons.web.ServletUtils.StringArray;
 import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.MapItem;
+import com.sonicle.commons.web.json.bean.IntegerSet;
+import com.sonicle.commons.web.json.bean.StringSet;
 import com.sonicle.commons.web.json.extjs.FieldMeta;
 import com.sonicle.commons.web.json.extjs.GridColumnMeta;
 import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
-import com.sonicle.webtop.calendar.CalendarUserSettings.InactiveFolders;
-import com.sonicle.webtop.calendar.CalendarUserSettings.InactiveRoots;
 import com.sonicle.webtop.calendar.bol.js.JsCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarLinks;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
@@ -161,8 +161,8 @@ public class Service extends BaseService {
 	private final HashMap<String, ArrayList<ShareFolderCalendar>> foldersByRoot = new HashMap<>();
 	private final HashMap<Integer, ShareRootCalendar> rootByFolder = new HashMap<>();
 	private final AsyncActionCollection<Integer, SyncRemoteCalendarAA> syncRemoteCalendarAAs = new AsyncActionCollection<>();
-	private InactiveRoots inactiveRoots = null;
-	private InactiveFolders inactiveFolders = null;
+	private StringSet inactiveRoots = null;
+	private IntegerSet inactiveFolders = null;
 	private ErpExportWizard erpWizard = null;
 
 	@Override
@@ -226,15 +226,40 @@ public class Service extends BaseService {
 		synchronized(roots) {
 			updateRootFoldersCache();
 			updateFoldersCache();
-			inactiveRoots = us.getInactiveCalendarRoots();
-			inactiveFolders = us.getInactiveCalendarFolders();
 			
-			// Clean-up orphans
-			if (inactiveRoots.removeIf(shareId -> !roots.containsKey(shareId))) {
+			// HANDLE TRANSITION: cleanup code when process is completed!
+			StringSet checkedRoots = us.getCheckedCalendarRoots();
+			if (checkedRoots != null) { // Migration code... (remove after migration)
+				List<String> toInactive = roots.keySet().stream()
+						.filter(shareId -> !checkedRoots.contains(shareId))
+						.collect(Collectors.toList());
+				inactiveRoots = new StringSet(toInactive);
 				us.setInactiveCalendarRoots(inactiveRoots);
+				us.clearCheckedCalendarRoots();
+				
+			} else { // New code... (keep after migrarion)
+				inactiveRoots = us.getInactiveCalendarRoots();
+				// Clean-up orphans
+				if (inactiveRoots.removeIf(shareId -> !roots.containsKey(shareId))) {
+					us.setInactiveCalendarRoots(inactiveRoots);
+				}
 			}
-			if (inactiveFolders.removeIf(categoryId -> !folders.containsKey(categoryId))) {
+			
+			IntegerSet checkedFolders = us.getCheckedCalendarFolders();
+			if (checkedFolders != null) { // Migration code... (remove after migration)
+				List<Integer> toInactive = folders.keySet().stream()
+						.filter(calendarId -> !checkedFolders.contains(calendarId))
+						.collect(Collectors.toList());
+				inactiveFolders = new IntegerSet(toInactive);
 				us.setInactiveCalendarFolders(inactiveFolders);
+				us.clearCheckedCalendarFolders();
+				
+			} else { // New code... (keep after migrarion)
+				inactiveFolders = us.getInactiveCalendarFolders();
+				// Clean-up orphans
+				if (inactiveFolders.removeIf(calendarId -> !folders.containsKey(calendarId))) {
+					us.setInactiveCalendarFolders(inactiveFolders);
+				}
 			}
 		}
 	}

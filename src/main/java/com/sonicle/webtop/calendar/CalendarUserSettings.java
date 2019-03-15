@@ -32,11 +32,11 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.commons.web.json.bean.IntegerSet;
+import com.sonicle.commons.web.json.bean.StringSet;
 import static com.sonicle.webtop.calendar.CalendarSettings.*;
 import com.sonicle.webtop.core.sdk.BaseUserSettings;
 import com.sonicle.webtop.core.sdk.UserProfileId;
-import java.util.HashSet;
 import org.joda.time.LocalTime;
 
 /**
@@ -91,47 +91,53 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setString(EVENT_REMINDER_DELIVERY, value);
 	}
 	
-	public InactiveRoots getInactiveCalendarRoots() {
-		return getObject(INACTIVE_CALENDAR_ROOTS, new InactiveRoots(), InactiveRoots.class);
+	public StringSet getInactiveCalendarRoots() {
+		return getObject(INACTIVE_CALENDAR_ROOTS, new StringSet(), StringSet.class);
 	}
 	
-	public boolean setInactiveCalendarRoots(InactiveRoots value) {
-		return setObject(INACTIVE_CALENDAR_ROOTS, value, InactiveRoots.class);
+	public boolean setInactiveCalendarRoots(StringSet value) {
+		return setObject(INACTIVE_CALENDAR_ROOTS, value, StringSet.class);
 	}
 	
-	public InactiveFolders getInactiveCalendarFolders() {
-		return getObject(INACTIVE_CALENDAR_FOLDERS, new InactiveFolders(), InactiveFolders.class);
+	public IntegerSet getInactiveCalendarFolders() {
+		return getObject(INACTIVE_CALENDAR_FOLDERS, new IntegerSet(), IntegerSet.class);
 	}
 	
-	public boolean setInactiveCalendarFolders(InactiveFolders value) {
-		return setObject(INACTIVE_CALENDAR_FOLDERS, value, InactiveFolders.class);
+	public boolean setInactiveCalendarFolders(IntegerSet value) {
+		return setObject(INACTIVE_CALENDAR_FOLDERS, value, IntegerSet.class);
 	}
 	
-	public static class InactiveRoots extends HashSet<String> {
-		public InactiveRoots() {
-			super();
-		}
-		
-		public static InactiveRoots fromJson(String value) {
-			return JsonResult.gson.fromJson(value, InactiveRoots.class);
-		}
-		
-		public static String toJson(InactiveRoots value) {
-			return JsonResult.gson.toJson(value, InactiveRoots.class);
-		}
+	/**
+	 * @deprecated Remove when transition (CheckedCalendarRoots -> InactiveCalendarRoots) is completed
+	 * @return
+	 */
+	@Deprecated
+	public StringSet getCheckedCalendarRoots() {
+		return getObject(CHECKED_CALENDAR_ROOTS, null, StringSet.class);
 	}
 	
-	public static class InactiveFolders extends HashSet<Integer> {
-		public InactiveFolders() {
-			super();
-		}
-		
-		public static InactiveFolders fromJson(String value) {
-			return JsonResult.gson.fromJson(value, InactiveFolders.class);
-		}
-		
-		public static String toJson(InactiveFolders value) {
-			return JsonResult.gson.toJson(value, InactiveFolders.class);
-		}
+	/**
+	 * @deprecated Remove when transition (CheckedCalendarRoots -> InactiveCalendarRoots) is completed
+	 */
+	@Deprecated
+	public void clearCheckedCalendarRoots() {
+		clear(CHECKED_CALENDAR_ROOTS);
+	}
+	
+	/**
+	 * @deprecated Remove when transition (CheckedCalendarFolders -> InactiveCalendarFolders) is completed
+	 * @return
+	 */
+	@Deprecated
+	public IntegerSet getCheckedCalendarFolders() {
+		return getObject(CHECKED_CALENDAR_FOLDERS, null, IntegerSet.class);
+	}
+	
+	/**
+	 * @deprecated Remove when transition (CheckedCalendarFolders -> InactiveCalendarFolders) is completed
+	 */
+	@Deprecated
+	public void clearCheckedCalendarFolders() {
+		clear(CHECKED_CALENDAR_FOLDERS);
 	}
 }

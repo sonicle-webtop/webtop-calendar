@@ -1798,6 +1798,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			int calendarId = (newCalendarId != null) ? newCalendarId : ei.getCalendarId();
 			
 			ei.setCalendarId(calendarId);
+			ei.setPublicUid(null); // Reset value in order to make inner function generate new one!
+			ei.setHref(null); // Reset value in order to make inner function generate new one!
 			if ((newStart != null) && (newEnd != null)) {
 				ei.setStartDate(newStart);
 				ei.setEndDate(newEnd);
@@ -3656,6 +3658,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
 			
 			event.setCalendarId(targetCalendarId);
+			event.setPublicUid(null); // Reset value in order to make inner function generate new one!
+			event.setHref(null); // Reset value in order to make inner function generate new one!
 			OEventICalendar oica = icaDao.selectById(con, event.getEventId());
 			String rawICalendar = (oica != null) ? oica.getRawData() : null;
 			//TODO: maybe add support to attachments copy

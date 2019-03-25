@@ -118,10 +118,10 @@ public class Eas extends EasApi {
 				for (ShareFolderCalendar folder : folders.values()) {
 					Calendar cal = folder.getCalendar();
 					if (cal.isProviderRemote()) continue;
-					CalendarPropSet catProps = props.get(cal.getCalendarId());
-					if (Calendar.Sync.OFF.equals(catProps.getSyncOrDefault(Calendar.Sync.OFF))) continue;
+					CalendarPropSet calProps = props.get(cal.getCalendarId());
+					if (Calendar.Sync.OFF.equals(calProps.getSyncOrDefault(Calendar.Sync.OFF))) continue;
 					
-					items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), folder.getPerms(), folder.getRealElementsPerms(cal.getSync())));
+					items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), folder.getPerms(), folder.getRealElementsPerms(calProps.getSync())));
 				}
 			}
 			

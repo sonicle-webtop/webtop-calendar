@@ -703,8 +703,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 		me.addAct('addEvent', {
 			tooltip: null,
-			handler: function() {
-				var node = WTA.util.FoldersTree.getTargetFolder(me.trFolders()),
+			handler: function(s, e) {
+				var node = (e && e.menuData) ? e.menuData.node : WTA.util.FoldersTree.getTargetFolder(me.trFolders()),
 						day = me.multical().getValue();
 				if (node) me.addEventOnUI(node.get('_pid'), node.get('_calId'), node.get('_isPrivate'), node.get('_defBusy'), node.get('_defReminder'), day);
 			}

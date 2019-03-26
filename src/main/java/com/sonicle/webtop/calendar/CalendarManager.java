@@ -891,7 +891,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (exDates.contains(ei.addsExOnMaster)) continue;
 			
 			exDates.add(ei.addsExOnMaster);
-			eiExs.add(ei);
+			if (!ei.isSourceEventCancelled()) eiExs.add(ei);
 		}
 		
 		// Adds new collected exceptions and then updates master event

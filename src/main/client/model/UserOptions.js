@@ -34,7 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
 	extend: 'WTA.sdk.model.UserOptions',
 	
-	proxy: WT.optionsProxy('com.sonicle.webtop.calendar'),
+	proxy: WTF.optionsProxy('com.sonicle.webtop.calendar'),
 	fields: [
 		WTF.field('view', 'string', false),
 		WTF.field('workdayStart', 'date', false, {dateFormat: 'H:i'}),

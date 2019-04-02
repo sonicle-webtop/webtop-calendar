@@ -309,10 +309,11 @@ public class Service extends BaseService {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if (crud.equals(Crud.READ)) {
 				String node = ServletUtils.getStringParameter(request, "node", true);
+				boolean chooser = ServletUtils.getBooleanParameter(request, "chooser", false);
 				
 				if (node.equals("root")) { // Node: root -> list roots
 					for (ShareRootCalendar root : roots.values()) {
-						children.add(createRootNode(root));
+						children.add(createRootNode(chooser, root));
 					}
 				} else { // Node: folder -> list folders (calendars)
 					boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", false);
@@ -323,14 +324,14 @@ public class Service extends BaseService {
 							MyShareFolderCalendar folder = new MyShareFolderCalendar(node, cal);
 							if (writableOnly && !folder.getElementsPerms().implies("CREATE")) continue;
 							
-							children.add(createFolderNode(folder, null, root.getPerms()));
+							children.add(createFolderNode(chooser, folder, null, root.getPerms()));
 						}
 					} else {
 						if (foldersByRoot.containsKey(root.getShareId())) {
 							for (ShareFolderCalendar folder : foldersByRoot.get(root.getShareId())) {
 								if (writableOnly && !folder.getElementsPerms().implies("CREATE")) continue;
 								
-								final ExtTreeNode etn = createFolderNode(folder, folderProps.get(folder.getCalendar().getCalendarId()), root.getPerms());
+								final ExtTreeNode etn = createFolderNode(chooser, folder, folderProps.get(folder.getCalendar().getCalendarId()), root.getPerms());
 								if (etn != null) children.add(etn);
 							}
 						}
@@ -1443,17 +1444,17 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private ExtTreeNode createRootNode(ShareRootCalendar root) {
+	private ExtTreeNode createRootNode(boolean chooser, ShareRootCalendar root) {
 		if (root instanceof MyShareRootCalendar) {
-			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.CALENDARS_MY), false, "wtcal-icon-root-my-xs")
+			return createRootNode(chooser, root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.CALENDARS_MY), false, "wtcal-icon-root-my-xs")
 					.setExpanded(true);
 		} else {
-			return createRootNode(root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), root.getDescription(), false, "wtcal-icon-root-incoming-xs")
+			return createRootNode(chooser, root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), root.getDescription(), false, "wtcal-icon-root-incoming-xs")
 					.setExpanded(true);
 		}
 	}
 	
-	private ExtTreeNode createRootNode(String id, String pid, String rights, String text, boolean leaf, String iconClass) {
+	private ExtTreeNode createRootNode(boolean chooser, String id, String pid, String rights, String text, boolean leaf, String iconClass) {
 		boolean active = !inactiveRoots.contains(id);
 		ExtTreeNode node = new ExtTreeNode(id, text, leaf);
 		node.put("_type", JsFolderNode.TYPE_ROOT);
@@ -1461,12 +1462,12 @@ public class Service extends BaseService {
 		node.put("_rrights", rights);
 		node.put("_active", active);
 		node.setIconClass(iconClass);
-		node.setChecked(active);
+		if (!chooser) node.setChecked(active);
 		node.put("expandable", false);
 		return node;
 	}
 	
-	private ExtTreeNode createFolderNode(ShareFolderCalendar folder, CalendarPropSet folderProps, SharePermsRoot rootPerms) {
+	private ExtTreeNode createFolderNode(boolean chooser, ShareFolderCalendar folder, CalendarPropSet folderProps, SharePermsRoot rootPerms) {
 		Calendar cal = folder.getCalendar();
 		String id = new CompositeId().setTokens(folder.getShareId(), cal.getCalendarId()).toString();
 		String color = cal.getColor();
@@ -1497,7 +1498,7 @@ public class Service extends BaseService {
 		node.put("_isPrivate", cal.getIsPrivate());
 		node.put("_defBusy", cal.getDefaultBusy());
 		node.put("_defReminder", cal.getDefaultReminder());
-		node.setChecked(active);
+		if (!chooser) node.setChecked(active);
 		return node;
 	}
 	

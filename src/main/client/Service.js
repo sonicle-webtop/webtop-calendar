@@ -1231,20 +1231,19 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					});
 				},
-				vw = me.createCalendarChooser(copy, rec.get('_profileId'), rec.get('calendarId'));
+				vw = me.createCalendarChooser(copy);
 		
-		vw.on('viewok', function(s) {
-			var calId = s.getVMData().calendarId;
+		vw.on('viewok', function(s, calendarId) {
 			if (copy && rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
 				me.confirmOnInvitationFor('save', function(bid) {
 					if (bid === 'yes') {
-						doFn(true, calId);
+						doFn(true, calendarId);
 					} else if (bid === 'no') {
-						doFn(false, calId);
+						doFn(false, calendarId);
 					}
 				});
 			} else {
-				doFn(null, calId);
+				doFn(null, calendarId);
 			}
 		});
 		vw.showView();
@@ -1756,7 +1755,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	/**
 	 * @private
 	 */
-	createCalendarChooser: function(copy, ownerId, calendarId) {
+	createCalendarChooser: function(copy) {
 		var me = this;
 		return WT.createView(me.ID, 'view.CalendarChooser', {
 			swapReturn: true,
@@ -1764,10 +1763,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				dockableConfig: {
 					title: me.res(copy ? 'act-copyEvent.lbl' : 'act-moveEvent.lbl')
 				},
-				data: {
-					ownerId: ownerId,
-					calendarId: calendarId
-				}
+				writableOnly: true
 			}
 		});
 	},

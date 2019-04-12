@@ -32,7 +32,6 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import com.sonicle.webtop.calendar.IEvent;
 import org.joda.time.DateTime;
@@ -55,12 +54,6 @@ public class OEvent extends Events implements IEvent {
 			final DateTime dt = getEndDate();
 			setEndDate(getStartDate());
 			setStartDate(dt);
-		}
-		
-		// If event is all day, take max time as possible
-		if (getAllDay()) {
-			setStartDate(getStartDate().withTimeAtStartOfDay());
-			setEndDate(DateTimeUtils.withTimeAtEndOfDay(getEndDate()));
 		}
 	}
 }

@@ -137,6 +137,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormatter;
@@ -639,7 +640,7 @@ public class Service extends BaseService {
 		try {
 			UserProfile up = getEnv().getProfile();
 			DateTimeZone utz = up.getTimeZone();
-			DateTimeFormatter ymdZoneFmt = DateTimeUtils.createYmdFormatter(utz);
+			//DateTimeFormatter ymdZoneFmt = DateTimeUtils.createYmdFormatter(utz);
 			
 			// Defines boundaries
 			String start = ServletUtils.getStringParameter(request, "startDate", true);
@@ -648,10 +649,16 @@ public class Service extends BaseService {
 			DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
 			List<Integer> activeCalIds = getActiveFolderIds();
+			List<LocalDate> dates = manager.listEventDates(activeCalIds, fromDate, toDate, utz);
+			for (LocalDate date : dates) {
+				items.add(new JsSchedulerEventDate(date.toString("yyyy-MM-dd")));
+			}
+			/*
 			List<DateTime> dates = manager.listEventDates(activeCalIds, fromDate, toDate, utz);
 			for (DateTime date : dates) {
 				items.add(new JsSchedulerEventDate(ymdZoneFmt.print(date)));
 			}
+			*/
 			
 			new JsonResult("dates", items).printTo(out);
 			

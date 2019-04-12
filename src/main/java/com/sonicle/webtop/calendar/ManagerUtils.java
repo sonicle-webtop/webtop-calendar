@@ -436,19 +436,4 @@ public class ManagerUtils {
 		}
 		return tgt;
 	}
-	
-	/**
-	 * Fills passed dates hashmap within ones coming from specified event.
-	 * If event starts on 21 Apr and ends on 25 Apr, 21->25 dates will be added to the set.
-	 * @param dates
-	 * @param event 
-	 */
-	static void pushDatesBetweenStartEnd(HashSet<DateTime> dates, DateTime startDate, DateTime endDate) {
-		int days = CalendarUtils.calculateLengthInDays(startDate, endDate) +1;
-		DateTime date = startDate.withTimeAtStartOfDay();
-		for(int count = 1; count <= days; count++) {
-			dates.add(date);
-			date = date.plusDays(1);
-		}
-	}
 }

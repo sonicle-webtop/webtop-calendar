@@ -97,9 +97,16 @@ public class JsSchedulerEvent {
 		originalEventId = event.getEventId();
 		calendarId = event.getCalendarId();
 		
+		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.getInternalEventBoundary(event.getAllDay(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
+		isAllDay = eventBoundary.allDay;
+		startDate = ymdhmsZoneFmt.print(eventBoundary.start);
+		endDate = ymdhmsZoneFmt.print(eventBoundary.end);
+		timezone = event.getTimezone();
+		
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
 		// Formatter will be instantiated specifying desired timezone.
+		/*
 		if (event.getAllDay()) {
 			startDate = ymdhmsZoneFmt.print(event.getStartDate());
 			int days = CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate());
@@ -111,6 +118,7 @@ public class JsSchedulerEvent {
 		}
 		timezone = event.getTimezone();
 		isAllDay = event.getAllDay();
+		*/
 		
 		title = (keepDataPrivate) ? "***" : event.getTitle();
 		color = calendar.getColor();

@@ -669,7 +669,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public List<DateTime> listEventDates(Collection<Integer> calendarIds, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
+	public List<LocalDate> listEventDates(Collection<Integer> calendarIds, DateTime fromDate, DateTime toDate, DateTimeZone refTimezone) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -680,18 +680,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
 					.collect(Collectors.toList());
 			
-			HashSet<DateTime> dates = new HashSet<>();
+			HashSet<LocalDate> dates = new HashSet<>();
 			for (VVEvent vevt : evtDao.viewByCalendarFromToPattern(con, okCalendarIds, fromDate, toDate, null)) {
-				ManagerUtils.pushDatesBetweenStartEnd(dates, vevt.getStartDate(), vevt.getEndDate());
+				dates.addAll(CalendarUtils.getDatesSpan(vevt.getAllDay(), vevt.getStartDate(), vevt.getEndDate(), DateTimeZone.forID(vevt.getTimezone())));
 			}
 			for (VVEvent vevt : evtDao.viewRecurringByCalendarFromToPattern(con, okCalendarIds, fromDate, toDate, null)) {
-				final List<SchedEventInstance> instances = calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), fromDate, toDate, userTimezone, 200);
+				final List<SchedEventInstance> instances = calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), fromDate, toDate, refTimezone, 200);
 				for (SchedEventInstance instance : instances) {
-					ManagerUtils.pushDatesBetweenStartEnd(dates, instance.getStartDate(), instance.getEndDate());
+					dates.addAll(CalendarUtils.getDatesSpan(instance.getAllDay(), instance.getStartDate(), instance.getEndDate(), instance.getDateTimeZone()));
 				}
 			}
 			return new ArrayList<>(dates);
-			
+		
 		} catch (SQLException | DAOException ex) {
 			throw wrapException(ex);
 		} finally {
@@ -1299,6 +1299,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
+		event.ensureCoherence();
+		
 		try {
 			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
 			con = WT.getConnection(SERVICE_ID, false);
@@ -1364,6 +1366,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
+		event.ensureCoherence();
+		
 		try {
 			checkRightsOnCalendarElements(event.getCalendarId(), "UPDATE");
 			con = WT.getConnection(SERVICE_ID, false);
@@ -1384,6 +1388,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public void updateEvent(Event event, boolean notifyAttendees) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
+		
+		event.ensureCoherence();
 		
 		try {
 			checkRightsOnCalendarElements(event.getCalendarId(), "UPDATE");
@@ -1436,7 +1442,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 				OEvent original = edao.selectById(con, evt.getEventId());
 
-				// Set into parsed all fields tha can't be changed by the iCal
+				// Set into parsed all fields that can't be changed by the iCal
 				// update otherwise data can be lost inside doEventUpdate
 				parsedEvent.setEventId(original.getEventId());
 				parsedEvent.setCalendarId(original.getCalendarId());
@@ -1612,6 +1618,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
+		event.ensureCoherence();
+		
 		try {
 			con = WT.getConnection(SERVICE_ID, false);
 			
@@ -1665,6 +1673,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				ei.setTitle(newTitle);
 			}
 			
+			ei.ensureCoherence();
 			doEventInstanceUpdateAndCommit(con, target, key, ei, notifyAttendees);
 			
 		} catch(SQLException | DAOException | IOException | WTException ex) {

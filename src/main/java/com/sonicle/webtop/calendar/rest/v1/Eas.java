@@ -36,6 +36,7 @@ import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
+import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.EventObjectOutputType;
 import com.sonicle.webtop.calendar.NotFoundException;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -326,11 +327,12 @@ public class Eas extends EasApi {
 			saas.add(createSyncEventDataAttendee(attendee));
 		}
 		
+		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.getEventBoundary(event);
 		return new SyncEvent()
 				.id(evtobj.getEventId())
 				.etag(buildEtag(evtobj.getRevisionTimestamp()))
-				.start(DateTimeUtils.print(ISO_DATETIME_FMT, event.getStartDate()))
-				.end(DateTimeUtils.print(ISO_DATETIME_FMT, event.getEndDate()))
+				.start(DateTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.start))
+				.end(DateTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.end))
 				.tz(event.getTimezone())
 				.allDay(event.getAllDay())
 				.organizer(event.getOrganizer())

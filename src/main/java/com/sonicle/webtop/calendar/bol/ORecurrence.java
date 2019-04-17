@@ -60,9 +60,10 @@ public class ORecurrence extends Recurrences {
 	}
 	
 	public void set(Recur recur, LocalDate recurStartDate, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone eventTimezone) {
-		setStartDate((recurStartDate != null) ? recurStartDate.toDateTimeAtStartOfDay(eventTimezone) : eventStartDate);
+		DateTime newStart = (recurStartDate != null) ? recurStartDate.toDateTimeAtStartOfDay(eventTimezone) : eventStartDate;
+		setStartDate(newStart);
 		if (recur.getCount() > 0) {
-			setUntilDate(ICal4jUtils.calculateRecurEnd(recur, eventStartDate, eventEndDate, eventTimezone));
+			setUntilDate(ICal4jUtils.calculateRecurEnd(recur, newStart, eventTimezone));
 		} else if (recur.getUntil() != null) {
 			setUntilDate(ICal4jUtils.fromICal4jDate(recur.getUntil(), eventTimezone));
 		} else {

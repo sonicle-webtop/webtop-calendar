@@ -484,7 +484,10 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.select(
 				EVENTS.EVENT_ID,
-				EVENTS.RECURRENCE_ID
+				EVENTS.RECURRENCE_ID,
+				EVENTS.START_DATE,
+				EVENTS.TIMEZONE,
+				EVENTS.ALL_DAY
 			)
 			.select(
 				seriesEventId

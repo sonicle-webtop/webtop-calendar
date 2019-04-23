@@ -187,6 +187,7 @@ import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -195,6 +196,7 @@ import javax.mail.Session;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMultipart;
 import net.fortuna.ical4j.data.ParserException;
+import net.fortuna.ical4j.model.DateList;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.Recur;
 import net.fortuna.ical4j.model.component.VEvent;
@@ -2708,7 +2710,55 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return obrecs.keySet();
 	}
 	
-	private <T> List<T> calculateRecurringInstances(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
+	private <T> List<T> calculateRecurringInstances(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime rangeFrom, DateTime rangeTo, DateTimeZone userTimezone, int limit) throws WTException {
+		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
+		ArrayList<T> instances = new ArrayList<>();
+		
+		int eventId = instanceMapper.getEventId();
+		DateTime eventStart = instanceMapper.getEventStartDate();
+		DateTime eventEnd = instanceMapper.getEventEndDate();
+		DateTimeZone eventTimezone = instanceMapper.getEventTimezone();
+		LocalTime eventStartTime = eventStart.withZone(eventTimezone).toLocalTime();
+		LocalTime eventEndTime = eventEnd.withZone(eventTimezone).toLocalTime();
+		
+		try {
+			// Retrieves reccurence and broken dates (if any)
+			ORecurrence orec = recDao.selectByEvent(con, eventId);
+			if (orec == null) {
+				logger.warn("Unable to retrieve recurrence for event [{}]", eventId);
+
+			} else {
+				if (rangeFrom == null) rangeFrom = orec.getStartDate();
+				if (rangeTo == null) rangeTo = orec.getStartDate().plusYears(1);
+
+				Recur recur = orec.getRecur();
+				if (recur == null) throw new WTException("Unable to parse rrule [{}]", orec.getRule());
+				
+				Map<LocalDate, ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
+				DateList dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), eventTimezone, rangeFrom, rangeTo, limit);
+				Iterator it = dates.iterator();
+				while (it.hasNext()) {
+					net.fortuna.ical4j.model.Date dt = (net.fortuna.ical4j.model.Date)it.next();
+					LocalDate recurringDate = ICal4jUtils.toJodaLocalDate(dt, eventTimezone);
+					if (obrecs.containsKey(recurringDate)) continue; // Skip broken date...
+
+					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
+					DateTime end = recurringDate.toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					String key = EventKey.buildKey(eventId, eventId, recurringDate);
+
+					instances.add(instanceMapper.createInstance(key, start, end));
+				}
+			}
+			
+		} catch(DAOException ex) {
+			throw wrapException(ex);
+		}
+		
+		return instances;
+	}
+	
+	private <T> List<T> calculateRecurringInstances_OLD(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
 		ArrayList<T> instances = new ArrayList<>();
@@ -2747,10 +2797,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// Calculate event length in order to generate events like original one
 				int eventDays = CalendarUtils.calculateLengthInDays(eventStartDate, eventEndDate);
 				RRule rr = new RRule(orec.getRule());
-
+				
 				// Calcutate recurrence set for required dates range
 				PeriodList periods = ICal4jUtils.calculateRecurrenceSet(eventStartDate, eventEndDate, orec.getStartDate(), rr, fromDate, toDate, userTimezone);
-
+				
 				// Recurrence start is useful to skip undesired dates at beginning.
 				// If event does not starts at recurrence real beginning (eg. event
 				// start on MO but first recurrence begin on WE), ical4j lib includes 
@@ -3207,24 +3257,22 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				int oldDaysBetween = CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate());
 				Recur oldRecur = orec.getRecur(); // Dump old recur!
-
-				// NB: keep UTC here, until date needs to be at midnight in UTC time
-				DateTime newUntil = eventKey.instanceDate.toDateTimeAtStartOfDay(DateTimeZone.UTC);
-				orec.set(newUntil);
+				
+				LocalTime untilTime = einfo.getAllDay() ? DateTimeUtils.TIME_AT_STARTOFDAY : einfo.getStartDate().withZone(einfo.getDateTimeZone()).toLocalTime();
+				orec.updateUntilDate(eventKey.instanceDate.minusDays(1), untilTime, einfo.getDateTimeZone());
 				recDao.update(con, orec);
 
 				// 2 - Updates revision of original event
 				evtDao.updateRevision(con, einfo.getEventId(), BaseDAO.createRevisionTimestamp());
 				
 				// 3 - Insert new event recalculating start/end from rec. start preserving days duration
-				event.setStartDate(event.getStartDate().withDate(event.getRecurrenceStartDate()));
-				event.setEndDate(event.getEndDate().withDate(event.getRecurrenceStartDate().plusDays(oldDaysBetween)));
-
+				event.setStartDate(event.getStartDate().withDate(eventKey.instanceDate));
+				event.setEndDate(event.getEndDate().withDate(eventKey.instanceDate.plusDays(oldDaysBetween)));
+				
+				// We cannot keep original count, it would be wrong... so convert it to an until date!
 				if (ICal4jUtils.recurHasCount(oldRecur)) {
-					DateTime oldRealUntil = ICal4jUtils.calculateRecurEnd(oldRecur, oevtOrig.getStartDate(), oevtOrig.getEndDate(), oevtOrig.getDateTimezone());
-					// NB: keep UTC here, until date needs to be at midnight in UTC time
-					DateTime recUntil = oldRealUntil.toLocalDate().plusDays(1).toDateTimeAtStartOfDay(DateTimeZone.UTC);
-					ICal4jUtils.setRecurUntilDate(oldRecur, recUntil);
+					DateTime oldUntilReal = ICal4jUtils.calculateRecurrenceEnd(oldRecur, oevtOrig.getStartDate(), oevtOrig.getDateTimezone());
+					ICal4jUtils.setRecurUntilDate(oldRecur, oldUntilReal);
 				}
 				event.setRecurrence(oldRecur.toString(), eventKey.instanceDate, null);
 				EventInsertResult insert = doEventInsert(con, event, null, true, false, false, false);
@@ -3322,9 +3370,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				ORecurrence orec = recDao.select(con, einfo.getRecurrenceId());
 				if (orec == null) throw new WTException("Unable to get master event's recurrence [{}]", einfo.getRecurrenceId());
 				
-				// NB: keep UTC here, until date needs to be at midnight in UTC time
-				DateTime newUntil = eventKey.instanceDate.toDateTimeAtStartOfDay(DateTimeZone.UTC);
-				orec.set(newUntil);
+				//orec.updateUntilDate(eventKey.instanceDate, einfo.getDateTimeZone());
+				LocalTime untilTime = einfo.getAllDay() ? DateTimeUtils.TIME_AT_STARTOFDAY : einfo.getStartDate().withZone(einfo.getDateTimeZone()).toLocalTime();
+				orec.updateUntilDate(eventKey.instanceDate, untilTime, einfo.getDateTimeZone());
 				recDao.update(con, orec);
 				
 				// 2 - Updates revision of this event
@@ -3336,7 +3384,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				eventDump = getEvent(einfo.getEventId());
 				
 			} else if (UpdateEventTarget.ALL_SERIES.equals(target)) { // Changes are valid for all the instances (whole recurrence)
-				eventDump = getEventInstance(eventKey); // Save for later use!
+				eventDump = getEvent(einfo.getEventId()); // Save for later use!
 
 				// 1 - logically delete this event
 				doEventDelete(con, einfo.getEventId(), true);
@@ -4206,6 +4254,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		@Override
+		public DateTimeZone getEventTimezone() {
+			return event.getDateTimezone();
+		}
+		
+		@Override
 		public SchedEventInstance createInstance(String key, DateTime startDate, DateTime endDate) {
 			SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), event);
 			item.setKey(key);
@@ -4235,6 +4288,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		@Override
 		public DateTime getEventEndDate() {
 			return event.getEndDate();
+		}
+		
+		@Override
+		public DateTimeZone getEventTimezone() {
+			return event.getDateTimeZone();
 		}
 		
 		@Override
@@ -4293,6 +4351,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		@Override
+		public DateTimeZone getEventTimezone() {
+			return event.getDateTimeZone();
+		}
+		
+		@Override
 		public Event createInstance(String key, DateTime startDate, DateTime endDate) {
 			Event clone = cloner.deepClone(event);
 			clone.setStartDate(startDate);
@@ -4326,6 +4389,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		@Override
+		public DateTimeZone getEventTimezone() {
+			return event.getDateTimezone();
+		}
+		
+		@Override
 		public VVEventInstance createInstance(String key, DateTime startDate, DateTime endDate) {
 			VVEvent clone = cloner.deepClone(event);
 			clone.setStartDate(startDate);
@@ -4338,6 +4406,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		public int getEventId();
 		public DateTime getEventStartDate();
 		public DateTime getEventEndDate();
+		public DateTimeZone getEventTimezone();
 		public T createInstance(String key, DateTime startDate, DateTime endDate);
 	}
 	

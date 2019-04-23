@@ -38,7 +38,10 @@ import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
+import com.sonicle.webtop.core.util.ICal4jUtils;
 import java.util.ArrayList;
+import net.fortuna.ical4j.model.Recur;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
@@ -100,6 +103,16 @@ public class JsEvent {
 		statMasterDataId = event.getStatMasterDataId();
 		causalId = event.getCausalId();
 		rrule = event.getRecurrenceRule();
+		
+		/*
+		Recur recur = ICal4jUtils.parseRRule(rrule);
+		if (ICal4jUtils.recurHasUntilDate(recur)) {
+			DateTime newUntil = ICal4jUtils.fromICal4jDateUTC(recur.getUntil()).withZoneRetainFields(eventTz);
+			ICal4jUtils.setRecurUntilDate(recur, newUntil);
+			rrule = recur.toString();
+		}
+		*/
+		
 		LocalDate rrs = null;
 		if (event.getRecurrenceStartDate() != null) {
 			rrs = event.getRecurrenceStartDate();
@@ -162,6 +175,14 @@ public class JsEvent {
 		event.setMasterDataId(js.masterDataId);
 		event.setStatMasterDataId(js.statMasterDataId);
 		event.setCausalId(js.causalId);
+		
+		// Fix recur until-date timezone: due to we do not have tz-db in client
+		// we cannot move until-date into the right zone directly in browser, 
+		// so we need to change it here if necessary.
+		Recur recur = ICal4jUtils.parseRRule(js.rrule);
+		if (ICal4jUtils.adjustRecurUntilDate(recur, event.getStartDate().withZone(eventTz).toLocalTime(), eventTz)) {
+			js.rrule = recur.toString();
+		}
 		event.setRecurrence(js.rrule, DateTimeUtils.parseLocalDate(DateTimeUtils.createYmdFormatter(eventTz), js.rstart), null);
 		
 		for (JsEvent.Attendee jsa : js.attendees) {

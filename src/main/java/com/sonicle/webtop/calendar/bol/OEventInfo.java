@@ -32,6 +32,9 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+
 /**
  *
  * @author malbinola
@@ -40,6 +43,9 @@ public class OEventInfo {
 	protected Integer eventId;
 	protected Integer linkedEventId;
 	protected Integer recurrenceId;
+	protected DateTime startDate;
+	protected String timezone;
+	protected Boolean allDay;
 	
 	public OEventInfo() {}
 	
@@ -72,7 +78,30 @@ public class OEventInfo {
 	public void setRecurrenceId(Integer recurrenceId) {
 		this.recurrenceId = recurrenceId;
 	}
+	
+	public DateTime getStartDate() {
+		return startDate;
+	}
 
+	public void setStartDate(DateTime startDate) {
+		this.startDate = startDate;
+	}
+	
+	public String getTimezone() {
+		return timezone;
+	}
+
+	public void setTimezone(String timezone) {
+		this.timezone = timezone;
+	}
+	
+	public Boolean getAllDay() {
+		return allDay;
+	}
+
+	public void setAllDay(Boolean allDay) {
+		this.allDay = allDay;
+	}
 
 	public boolean isBroken() {
 		return getLinkedEventId() != null;
@@ -80,5 +109,9 @@ public class OEventInfo {
 	
 	public boolean isRecurring() {
 		return getRecurrenceId() != null;
+	}
+	
+	public DateTimeZone getDateTimeZone() {
+		return DateTimeZone.forID(getTimezone());
 	}
 }

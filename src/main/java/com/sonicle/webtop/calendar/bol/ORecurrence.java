@@ -45,6 +45,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 
 /**
  *
@@ -52,24 +53,26 @@ import org.joda.time.LocalDate;
  */
 public class ORecurrence extends Recurrences {
 	
-	public void set(DateTime untilDate) {
-		Recur recur = getRecur();
-		ICal4jUtils.setRecurUntilDate(recur, untilDate);
-		setRule(recur.toString());
-		setUntilDate(untilDate);
-	}
-	
 	public void set(Recur recur, LocalDate recurStartDate, DateTime eventStartDate, DateTime eventEndDate, DateTimeZone eventTimezone) {
 		DateTime newStart = (recurStartDate != null) ? recurStartDate.toDateTimeAtStartOfDay(eventTimezone) : eventStartDate;
 		setStartDate(newStart);
-		if (recur.getCount() > 0) {
-			setUntilDate(ICal4jUtils.calculateRecurEnd(recur, newStart, eventTimezone));
-		} else if (recur.getUntil() != null) {
-			setUntilDate(ICal4jUtils.fromICal4jDate(recur.getUntil(), eventTimezone));
+		if (ICal4jUtils.recurHasCount(recur)) {
+			DateTime untilDate = ICal4jUtils.calculateRecurrenceEnd(recur, newStart, eventTimezone);
+			setUntilDate(untilDate.withTimeAtStartOfDay().plusDays(1));
+		} else if (ICal4jUtils.recurHasUntilDate(recur)) {
+			DateTime untilDate = ICal4jUtils.toJodaDateTime(recur.getUntil(), DateTimeZone.UTC).withZone(eventTimezone);
+			setUntilDate(untilDate.withTimeAtStartOfDay().plusDays(1));
 		} else {
 			setUntilDate(ICal4jUtils.ifiniteDate(eventTimezone));
 		}
 		setRule(recur.toString());
+	}
+	
+	public void updateUntilDate(LocalDate localDate, LocalTime localTime, DateTimeZone timezone) {
+		Recur recur = getRecur();
+		ICal4jUtils.setRecurUntilDate(recur, localDate.toDateTime(localTime, timezone));
+		setRule(recur.toString());
+		setUntilDate(localDate.toDateTimeAtStartOfDay(timezone).plusDays(1));
 	}
 	
 	public Recur getRecur() {

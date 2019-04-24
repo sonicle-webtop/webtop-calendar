@@ -77,7 +77,7 @@ public class CalendarController extends BaseController implements IControllerSer
 
 	@Override
 	public void onUserRemoved(UserProfileId profileId) throws WTException {
-		CalendarManager manager = new CalendarManager(false, profileId);
+		CalendarManager manager = new CalendarManager(true, profileId);
 		manager.eraseData(true);
 	}
 

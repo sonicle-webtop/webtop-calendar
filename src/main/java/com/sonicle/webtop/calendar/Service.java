@@ -37,6 +37,7 @@ import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.time.DateTimeRange;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.DispositionType;
@@ -650,7 +651,7 @@ public class Service extends BaseService {
 			DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
 			DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
 			
-			List<Integer> activeCalIds = getActiveFolderIds();
+			Set<Integer> activeCalIds = getActiveFolderIds();
 			List<LocalDate> dates = manager.listEventDates(activeCalIds, fromDate, toDate, utz);
 			for (LocalDate date : dates) {
 				items.add(new JsSchedulerEventDate(date.toString("yyyy-MM-dd")));
@@ -687,8 +688,8 @@ public class Service extends BaseService {
 				DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
 				DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
-				List<Integer> activeCalIds = getActiveFolderIds();
-				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, fromDate, toDate, utz);
+				Set<Integer> activeCalIds = getActiveFolderIds();
+				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, new DateTimeRange(fromDate, toDate), utz, false);
 				for (SchedEventInstance instance : instances) {
 					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
 					if (root == null) continue;
@@ -698,24 +699,6 @@ public class Service extends BaseService {
 					
 					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz));
 				}
-				
-				
-				/* way1
-				List<Integer> visibleCategoryIds = getVisibleFolderIds(true);
-				List<FolderEvents> foEventsObjs = manager.listFolderEvents(visibleCategoryIds, fromDate, toDate);
-				for (FolderEvents foEventsObj : foEventsObjs) {
-					final CalendarRoot root = rootByFolder.get(foEventsObj.folder.getCalendarId());
-					if (root == null) continue;
-					final CalendarFolder fold = folders.get(foEventsObj.folder.getCalendarId());
-					if (fold == null) continue;
-					
-					for (SchedEvent se : foEventsObj.events) {
-						for (SchedEventInstance sei : manager.toInstances(se, fromDate, toDate, utz)) {
-							items.add(new JsSchedulerEvent(root, fold, sei, up.getId(), utz));
-						}
-					}
-				}
-				*/
 				
 				new JsonResult("events", items).printTo(out);
 				
@@ -925,11 +908,11 @@ public class Service extends BaseService {
 			DateTimeZone utz = up.getTimeZone();
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
-			if(crud.equals(Crud.READ)) {
+			if (crud.equals(Crud.READ)) {
 				QueryObj queryObj = ServletUtils.getObjectParameter(request, "query", new QueryObj(), QueryObj.class);
 				
-				List<Integer> activeCalIds = getActiveFolderIds();
-				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, EventQuery.toCondition(queryObj, utz), utz);
+				Set<Integer> activeCalIds = getActiveFolderIds();
+				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, buildSearchRange(DateTimeUtils.now(), utz), EventQuery.toCondition(queryObj, utz), utz, true);
 				for (SchedEventInstance instance : instances) {
 					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
 					if (root == null) continue;
@@ -939,43 +922,6 @@ public class Service extends BaseService {
 					
 					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz));
 				}
-				
-				/*
-				String query = ServletUtils.getStringParameter(request, "query", true);
-				
-				final List<Integer> activeCalIds = getActiveFolderIds();
-				final List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(activeCalIds, "%"+query+"%", utz);
-				for (FolderEventInstances foInstancesObj : foInstancesObjs) {
-					final ShareRootCalendar root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
-					if (root == null) continue;
-					final ShareFolderCalendar fold = folders.get(foInstancesObj.folder.getCalendarId());
-					if (fold == null) continue;
-					CalendarPropSet pset = folderProps.get(foInstancesObj.folder.getCalendarId());
-					
-					for (SchedEventInstance sei : foInstancesObj.instances) {
-						items.add(new JsSchedulerEvent(root, fold, pset, sei, up.getId(), utz));
-					}
-				}
-				*/
-				
-				/*
-				List<CalendarManager.CalendarEvents> calEvts = null;
-				Integer[] checked = getCheckedFolders();
-				for(CalendarRoot root : getCheckedRoots()) {
-					calEvts = manager.searchSchedulerEvents(root.getOwnerProfileId(), checked, "%"+query+"%");
-					// Iterates over calendar->events
-					for(CalendarManager.CalendarEvents ce : calEvts) {
-						CalendarFolder fold = folders.get(ce.calendar.getCalendarId());
-                        if (fold == null) continue;
-						
-						for(SchedulerEventInstance evt : ce.events) {
-							if(evt.getRecurrenceId() == null) {
-								items.add(new JsSchedulerEvent(root, fold, evt, up.getId(), utz));
-							}
-						}
-					}
-				}
-				*/
 				
 				new JsonResult("events", items).printTo(out);
 			}
@@ -1209,9 +1155,13 @@ public class Service extends BaseService {
 				throw new WTException("View not supported [{0}]", view);
 			}
 			
-			List<Integer> activeCalIds = getActiveFolderIds();
-			List<FolderEventInstances> foInstancesObjs = manager.listFolderEventInstances(activeCalIds, fromDate, toDate, up.getTimeZone());
-			rpt.setDataSource(manager, fromDate, toDate, up.getTimeZone(), foInstancesObjs);
+			Set<Integer> activeCalIds = getActiveFolderIds();
+			Map<Integer, Calendar> calendars = folders.entrySet().stream()
+					.filter(map -> activeCalIds.contains(map.getKey()))
+					.collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue().getCalendar()));
+			
+			List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, new DateTimeRange(fromDate, toDate), up.getTimeZone(), true);
+			rpt.setDataSource(manager, fromDate, toDate, up.getTimeZone(), calendars, instances);
 			
 			baos = new ByteArrayOutputStream();
 			WT.generateReportToStream(rpt, AbstractReport.OutputType.PDF, baos);
@@ -1264,6 +1214,12 @@ public class Service extends BaseService {
 		}
 	}
 	
+	private DateTimeRange buildSearchRange(DateTime now, DateTimeZone timezone) {
+		return new DateTimeRange(
+			now.withZone(timezone).minusMonths(6).withTimeAtStartOfDay(),
+			now.withZone(timezone).plusMonths(6).withTimeAtStartOfDay());
+	}
+	
 	public void processPortletEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		ArrayList<JsPletEvents> items = new ArrayList<>();
 		UserProfile up = getEnv().getProfile();
@@ -1275,7 +1231,7 @@ public class Service extends BaseService {
 			if (query == null) {
 				final ShareRootCalendar root = roots.get(MyShareRootCalendar.SHARE_ID);
 				final List<Integer> ids = manager.listCalendarIds();
-				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, DateTimeUtils.now().withSecondOfMinute(0))) {
+				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, DateTimeUtils.now(), utz)) {
 					final ShareFolderCalendar folder = folders.get(instance.getCalendarId());
 					if (folder == null) continue;
 					
@@ -1284,15 +1240,15 @@ public class Service extends BaseService {
 			} else {
 				final Set<Integer> ids = folders.keySet();
 				final String pattern = LangUtils.patternizeWords(query);
-				for (FolderEventInstances foInstancesObj : manager.listFolderEventInstances(ids, pattern, utz)) {
-					final ShareRootCalendar root = rootByFolder.get(foInstancesObj.folder.getCalendarId());
+				List<SchedEventInstance> instances = manager.listEventInstances(ids, buildSearchRange(DateTimeUtils.now(), utz), EventQuery.toCondition(pattern), utz, true);
+				for (SchedEventInstance instance : instances) {
+					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
 					if (root == null) continue;
-					final ShareFolderCalendar fold = folders.get(foInstancesObj.folder.getCalendarId());
+					final ShareFolderCalendar fold = folders.get(instance.getCalendarId());
 					if (fold == null) continue;
+					//CalendarPropSet pset = folderProps.get(instance.getCalendarId());
 					
-					for (SchedEventInstance sei : foInstancesObj.instances) {
-						items.add(new JsPletEvents(root, fold, sei, utz));
-					}
+					items.add(new JsPletEvents(root, fold, instance, utz));
 				}
 			}
 			new JsonResult(items).printTo(out);
@@ -1366,8 +1322,8 @@ public class Service extends BaseService {
 		return sb.toString();
 	}
 	
-	private ArrayList<Integer> getActiveFolderIds() {
-		ArrayList<Integer> ids = new ArrayList<>();
+	private LinkedHashSet<Integer> getActiveFolderIds() {
+		LinkedHashSet<Integer> ids = new LinkedHashSet<>();
 		synchronized(roots) {
 			for (ShareRootCalendar root : getActiveRoots()) {
 				for (ShareFolderCalendar folder : foldersByRoot.get(root.getShareId())) {

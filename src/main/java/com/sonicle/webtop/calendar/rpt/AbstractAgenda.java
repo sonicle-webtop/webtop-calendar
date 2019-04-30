@@ -36,18 +36,14 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
 import com.sonicle.webtop.core.sdk.WTException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -72,29 +68,13 @@ public abstract class AbstractAgenda extends AbstractReport {
 	}
 	*/
 	
-	public void setDataSource(CalendarManager manager, DateTime fromDate, DateTime toDate, DateTimeZone utz, List<FolderEventInstances> folderEvents) throws WTException {
+	public void setDataSource(CalendarManager manager, DateTime fromDate, DateTime toDate, DateTimeZone utz, Map<Integer, Calendar> calendars, Collection<SchedEventInstance> instances) throws WTException {
 		int days = -1;
-		if(DateTimeUtils.isEndOfDay(toDate, true)) {
+		if (DateTimeUtils.isEndOfDay(toDate, true)) {
 			days = Days.daysBetween(fromDate, toDate).getDays()+1;
 		} else if(DateTimeUtils.isMidnight(toDate)) {
 			days = Days.daysBetween(fromDate, toDate).getDays();
 		}
-		
-		// Expands all events
-		HashMap<Integer, Calendar> calendars = new HashMap<>();
-		ArrayList<SchedEventInstance> events = new ArrayList<>();
-		for(FolderEventInstances fei : folderEvents) {
-			calendars.put(fei.folder.getCalendarId(), fei.folder);
-			events.addAll(fei.instances);
-		}
-		
-		// Sorts events by their startDate
-		Collections.sort(events, new Comparator<SchedEventInstance>() {
-			@Override
-			public int compare(final SchedEventInstance se1, final SchedEventInstance se2) {
-				return se1.getStartDate().compareTo(se2.getStartDate());
-			}
-		});
 		
 		DateTime dayDateFrom = null;
 		ArrayList<Date> dayDates = new ArrayList<>();
@@ -110,7 +90,7 @@ public abstract class AbstractAgenda extends AbstractReport {
 		}
 		
 		// Arranges events by day...
-		for(SchedEventInstance sei : events) {
+		for(SchedEventInstance sei : instances) {
 			for(int i=0; i<days; i++) {
 				dayDateFrom = fromDate.plusDays(i);
 				if(isInDay(utz, dayDateFrom, sei.getStartDate(), sei.getEndDate())) {

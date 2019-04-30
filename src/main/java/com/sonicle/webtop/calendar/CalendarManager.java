@@ -46,6 +46,8 @@ import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.time.DateRange;
+import com.sonicle.commons.time.DateTimeRange;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.CompositeId;
@@ -674,7 +676,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public List<LocalDate> listEventDates(Collection<Integer> calendarIds, DateTime fromDate, DateTime toDate, DateTimeZone refTimezone) throws WTException {
+	public List<LocalDate> listEventDates(Collection<Integer> calendarIds, DateTime from, DateTime to, DateTimeZone refTimezone) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -686,11 +688,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					.collect(Collectors.toList());
 			
 			HashSet<LocalDate> dates = new HashSet<>();
-			for (VVEvent vevt : evtDao.viewByCalendarFromToPattern(con, okCalendarIds, fromDate, toDate, null)) {
+			for (VVEvent vevt : evtDao.viewByCalendarRangeCondition(con, okCalendarIds, from, to, null)) {
 				dates.addAll(CalendarUtils.getDatesSpan(vevt.getAllDay(), vevt.getStartDate(), vevt.getEndDate(), DateTimeZone.forID(vevt.getTimezone())));
 			}
-			for (VVEvent vevt : evtDao.viewRecurringByCalendarFromToPattern(con, okCalendarIds, fromDate, toDate, null)) {
-				final List<SchedEventInstance> instances = calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), fromDate, toDate, refTimezone, 200);
+			int noOfRecurringInst = Days.daysBetween(from, to).getDays() + 2;
+			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, null)) {
+				final List<SchedEventInstance> instances = calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), from, to, refTimezone, noOfRecurringInst);
 				for (SchedEventInstance instance : instances) {
 					dates.addAll(CalendarUtils.getDatesSpan(instance.getAllDay(), instance.getStartDate(), instance.getEndDate(), instance.getDateTimeZone()));
 				}
@@ -956,112 +959,69 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarFolderIds, DateTime startDate) throws WTException {
-		return listUpcomingEventInstances(calendarFolderIds, startDate, 3, null);
+	@Override
+	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarIds, DateTime now, DateTimeZone targetTimezone) throws WTException {
+		return listUpcomingEventInstances(calendarIds, now, null, targetTimezone);
 	}
 	
-	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarFolderIds, DateTime startDate, String pattern) throws WTException {
-		return listUpcomingEventInstances(calendarFolderIds, startDate, 3, pattern);
+	@Override
+	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarIds, DateTime now, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone) throws WTException {
+		return listUpcomingEventInstances(calendarIds, now, 3, conditionPredicate, targetTimezone);
 	}
 	
-	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarFolderIds, DateTime startDate, int days, String pattern) throws WTException {
-		EventDAO eveDao = EventDAO.getInstance();
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			
-			List<Integer> okCalendarIds = calendarFolderIds.stream()
-					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
-					.collect(Collectors.toList());
-			
-			if (days > 15) days = 15;
-			final DateTime toDate = startDate.withTimeAtStartOfDay().plusDays(days);
-			
-			ArrayList<SchedEventInstance> events = new ArrayList<>();
-			for (VVEvent ve : eveDao.viewByCalendarFromToPattern(con, okCalendarIds, startDate, toDate, pattern)) {
-				SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), ve);
-				item.setKey(EventKey.buildKey(ve.getEventId(), ve.getSeriesEventId()));
-				events.add(item);
-			}
-			for (VVEvent ve : eveDao.viewRecurringByCalendarFromToPattern(con, okCalendarIds, startDate, toDate, pattern)) {
-				events.addAll(calculateRecurringInstances(con, new SchedEventInstanceMapper(ve), startDate, toDate, DateTimeZone.UTC, 200));
-			}
-			
-			// Sorts events by their startDate
-			Collections.sort(events, new Comparator<SchedEventInstance>() {
-				@Override
-				public int compare(final SchedEventInstance se1, final SchedEventInstance se2) {
-					return se1.getStartDate().compareTo(se2.getStartDate());
-				}
-			});
-			
-			return events;
-			
-		} catch(SQLException | DAOException ex) {
-			throw wrapException(ex);
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
+	@Override
+	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarIds, DateTime now, int days, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone) throws WTException {
+		if (days > 15) days = 15;
+		DateTimeRange range = new DateTimeRange(
+				now.withSecondOfMinute(0).withMillisOfSecond(0).withZone(targetTimezone), 
+				now.withTimeAtStartOfDay().plusDays(days));
+		return listEventInstances(calendarIds, range, conditionPredicate, targetTimezone, true);
 	}
 	
-	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
-		return listEventInstances(calendarIds, fromDate, toDate, null, userTimezone);
+	@Override
+	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, DateRange range, DateTimeZone targetTimezone, boolean sort) throws WTException {
+		return listEventInstances(calendarIds, range, null, targetTimezone, sort);
 	}
 	
-	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, DateTime fromDate, DateTime toDate, String pattern, DateTimeZone userTimezone) throws WTException {
-		EventDAO evtDao = EventDAO.getInstance();
-		Connection con = null;
-		
-		try {
-			List<Integer> okCalendarIds = calendarIds.stream()
-					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
-					.collect(Collectors.toList());
-			
-			con = WT.getConnection(SERVICE_ID);
-			
-			ArrayList<SchedEventInstance> instances = new ArrayList<>();
-			for (VVEvent vevt : evtDao.viewByCalendarFromToPattern(con, okCalendarIds, fromDate, toDate, pattern)) {
-				SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), vevt);
-				item.setKey(EventKey.buildKey(vevt.getEventId(), vevt.getSeriesEventId()));
-				instances.add(item);
-			}
-			int noOfRecurringInst = Days.daysBetween(fromDate, toDate).getDays()+2;
-			for (VVEvent vevt : evtDao.viewRecurringByCalendarFromToPattern(con, okCalendarIds, fromDate, toDate, pattern)) {
-				instances.addAll(calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), fromDate, toDate, userTimezone, noOfRecurringInst));
-			}
-			return instances;
-			
-		} catch (SQLException | DAOException ex) {
-			throw wrapException(ex);
-		} finally {
-			DbUtils.closeQuietly(con);
-		}	
+	@Override
+	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, DateRange range, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone, boolean sort) throws WTException {
+		DateTimeRange newRange = (range == null) ? null : new DateTimeRange(
+				range.from.toDateTimeAtStartOfDay(targetTimezone), 
+				range.to.plusDays(1).toDateTimeAtStartOfDay(targetTimezone));
+		return listEventInstances(calendarIds, newRange, conditionPredicate, targetTimezone, sort);
 	}
 	
-	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, LocalDate rangeFrom, LocalDate rangeTo, DateTimeZone targetTimezone) throws WTException {
-		return listEventInstances(calendarIds, rangeFrom, rangeTo, null, targetTimezone);
-	}
-	
+	@Override
 	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone) throws WTException {
-		return listEventInstances(calendarIds, null, null, conditionPredicate, targetTimezone);
+		return listEventInstances(calendarIds, (DateTimeRange)null, conditionPredicate, targetTimezone, true);
 	}
 	
-	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, LocalDate rangeFrom, LocalDate rangeTo, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone) throws WTException {
+	@Override
+	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, DateTimeRange range, DateTimeZone targetTimezone, boolean sort) throws WTException {
+		return listEventInstances(calendarIds, range, null, targetTimezone, sort);
+	}
+	
+	@Override
+	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, DateTimeRange range, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone, boolean sort) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			EventPredicateVisitor epv = new EventPredicateVisitor(true, EventPredicateVisitor.Target.NORMAL);
-			org.jooq.Condition norCondition = BaseDAO.createCondition(conditionPredicate, epv);
-			org.jooq.Condition recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(true, EventPredicateVisitor.Target.RECURRING));
 			List<Integer> okCalendarIds = calendarIds.stream()
 					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
 					.collect(Collectors.toList());
 			
-			boolean hasRange = (rangeFrom != null) && (rangeTo != null);
-			DateTime from = hasRange ? rangeFrom.toDateTimeAtStartOfDay(targetTimezone) : null;
-			DateTime to = hasRange ? rangeTo.toDateTimeAtStartOfDay(targetTimezone) : null;
+			EventPredicateVisitor epv = new EventPredicateVisitor(true, EventPredicateVisitor.Target.NORMAL);
+			org.jooq.Condition norCondition = null;
+			org.jooq.Condition recCondition = null;
+			if (conditionPredicate != null) {
+				norCondition = BaseDAO.createCondition(conditionPredicate, epv);
+				recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(true, EventPredicateVisitor.Target.RECURRING));
+			}
+			
+			boolean hasRange = (range != null);
+			DateTime from = hasRange ? range.from : null;
+			DateTime to = hasRange ? range.to : null;
 			DateTime instFrom = epv.hasFromRange() ? epv.getFromRange() : from;
 			DateTime instTo = epv.hasToRange() ? epv.getToRange() : to;
 			
@@ -1072,56 +1032,22 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				item.setKey(EventKey.buildKey(vevt.getEventId(), vevt.getSeriesEventId()));
 				instances.add(item);
 			}
-			
 			int noOfRecurringInst = hasRange ? Days.daysBetween(from, to).getDays() + 2 : 368;
 			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, recCondition)) {
 				instances.addAll(calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), instFrom, instTo, targetTimezone, noOfRecurringInst));
 			}
-			return instances;
 			
-		} catch (SQLException | DAOException ex) {
-			throw wrapException(ex);
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	@Deprecated
-	public List<FolderEventInstances> listFolderEventInstances(Collection<Integer> calendarFolderIds, String pattern, DateTimeZone userTimezone) throws WTException {
-		return listFolderEventInstances(calendarFolderIds, null, null, pattern, userTimezone);
-	}
-	
-	@Deprecated
-	public List<FolderEventInstances> listFolderEventInstances(Collection<Integer> calendarFolderIds, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
-		return listFolderEventInstances(calendarFolderIds, fromDate, toDate, null, userTimezone);
-	}
-	
-	@Deprecated
-	public List<FolderEventInstances> listFolderEventInstances(Collection<Integer> calendarFolderIds, DateTime fromDate, DateTime toDate, String pattern, DateTimeZone userTimezone) throws WTException {
-		CalendarDAO calDao = CalendarDAO.getInstance();
-		EventDAO eveDao = EventDAO.getInstance();
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			
-			ArrayList<FolderEventInstances> foInstances = new ArrayList<>();
-			List<OCalendar> ocals = calDao.selectByDomainIn(con, getTargetProfileId().getDomainId(), calendarFolderIds);
-			for (OCalendar ocal : ocals) {
-				if (!quietlyCheckRightsOnCalendarFolder(ocal.getCalendarId(), "READ")) continue;
-				
-				final ArrayList<SchedEventInstance> instances = new ArrayList<>();
-				for (VVEvent vevt : eveDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern)) {
-					SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), vevt);
-					item.setKey(EventKey.buildKey(vevt.getEventId(), vevt.getSeriesEventId()));
-					instances.add(item);
-				}
-				for (VVEvent vevt : eveDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, pattern)) {
-					instances.addAll(calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), fromDate, toDate, userTimezone, 200));
-				}
-				foInstances.add(new FolderEventInstances(ManagerUtils.createCalendar(ocal), instances));
+			//TODO: transform to an ordered insert
+			if (sort) {
+				Collections.sort(instances, new Comparator<SchedEventInstance>() {
+					@Override
+					public int compare(final SchedEventInstance se1, final SchedEventInstance se2) {
+						return se1.getStartDate().compareTo(se2.getStartDate());
+					}
+				});
 			}
-			return foInstances;
+			
+			return instances;
 			
 		} catch (SQLException | DAOException ex) {
 			throw wrapException(ex);
@@ -1935,10 +1861,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// Lists desired calendars by profile
 			final List<VVEventInstance> veis = new ArrayList<>();
 			for (OCalendar ocal : calDao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
-				for (VVEvent ve : evtDao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+				for (VVEvent ve : evtDao.viewByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
 					veis.add(new VVEventInstance(ve));
 				}
-				for (VVEvent ve : evtDao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+				for (VVEvent ve : evtDao.viewRecurringByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
 					veis.add(new VVEventInstance(ve));
 				}
 			}
@@ -2112,7 +2038,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (user == null) throw new WTException("User [{0}] not found", pid.toString());
 				final UserProfile.Data udata = WT.getUserData(pid);
 				
-				for (VVEvent ve : edao.viewByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+				for (VVEvent ve : edao.viewByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
 					final VVEventInstance vei = new VVEventInstance(ve);
 					try {
 						map = new HashMap<>();
@@ -2126,7 +2052,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", ve.getEventId(), ex.getMessage()));
 					}
 				}
-				for(VVEvent ve : edao.viewRecurringByCalendarFromToPattern(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+				for(VVEvent ve : edao.viewRecurringByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
 					final List<VVEventInstance> instances = calculateRecurringInstances(con, new VVEventInstanceMapper(ve), fromDate, toDate, udata.getTimeZone());
 					
 					try {

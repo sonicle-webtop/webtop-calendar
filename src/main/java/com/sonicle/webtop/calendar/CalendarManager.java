@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.github.rutledgepaulv.qbuilders.conditions.Condition;
 import com.sonicle.webtop.core.app.util.EmailNotification;
 import com.sonicle.webtop.calendar.model.GetEventScope;
 import com.rits.cloning.Cloner;
@@ -86,6 +87,7 @@ import com.sonicle.webtop.calendar.dal.EventAttachmentDAO;
 import com.sonicle.webtop.calendar.dal.EventAttendeeDAO;
 import com.sonicle.webtop.calendar.dal.EventDAO;
 import com.sonicle.webtop.calendar.dal.EventICalendarDAO;
+import com.sonicle.webtop.calendar.dal.EventPredicateVisitor;
 import com.sonicle.webtop.calendar.dal.RecurrenceBrokenDAO;
 import com.sonicle.webtop.calendar.dal.RecurrenceDAO;
 import com.sonicle.webtop.calendar.io.EventInput;
@@ -170,6 +172,7 @@ import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
+import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOIntegrityViolationException;
 import com.sonicle.webtop.core.model.MasterData;
@@ -1036,14 +1039,64 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}	
 	}
 	
+	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, LocalDate rangeFrom, LocalDate rangeTo, DateTimeZone targetTimezone) throws WTException {
+		return listEventInstances(calendarIds, rangeFrom, rangeTo, null, targetTimezone);
+	}
+	
+	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone) throws WTException {
+		return listEventInstances(calendarIds, null, null, conditionPredicate, targetTimezone);
+	}
+	
+	public List<SchedEventInstance> listEventInstances(Collection<Integer> calendarIds, LocalDate rangeFrom, LocalDate rangeTo, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			EventPredicateVisitor epv = new EventPredicateVisitor(true, EventPredicateVisitor.Target.NORMAL);
+			org.jooq.Condition norCondition = BaseDAO.createCondition(conditionPredicate, epv);
+			org.jooq.Condition recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(true, EventPredicateVisitor.Target.RECURRING));
+			List<Integer> okCalendarIds = calendarIds.stream()
+					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
+					.collect(Collectors.toList());
+			
+			boolean hasRange = (rangeFrom != null) && (rangeTo != null);
+			DateTime from = hasRange ? rangeFrom.toDateTimeAtStartOfDay(targetTimezone) : null;
+			DateTime to = hasRange ? rangeTo.toDateTimeAtStartOfDay(targetTimezone) : null;
+			DateTime instFrom = epv.hasFromRange() ? epv.getFromRange() : from;
+			DateTime instTo = epv.hasToRange() ? epv.getToRange() : to;
+			
+			con = WT.getConnection(SERVICE_ID);
+			ArrayList<SchedEventInstance> instances = new ArrayList<>();
+			for (VVEvent vevt : evtDao.viewByCalendarRangeCondition(con, okCalendarIds, from, to, norCondition)) {
+				SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), vevt);
+				item.setKey(EventKey.buildKey(vevt.getEventId(), vevt.getSeriesEventId()));
+				instances.add(item);
+			}
+			
+			int noOfRecurringInst = hasRange ? Days.daysBetween(from, to).getDays() + 2 : 368;
+			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, recCondition)) {
+				instances.addAll(calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), instFrom, instTo, targetTimezone, noOfRecurringInst));
+			}
+			return instances;
+			
+		} catch (SQLException | DAOException ex) {
+			throw wrapException(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Deprecated
 	public List<FolderEventInstances> listFolderEventInstances(Collection<Integer> calendarFolderIds, String pattern, DateTimeZone userTimezone) throws WTException {
 		return listFolderEventInstances(calendarFolderIds, null, null, pattern, userTimezone);
 	}
 	
+	@Deprecated
 	public List<FolderEventInstances> listFolderEventInstances(Collection<Integer> calendarFolderIds, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
 		return listFolderEventInstances(calendarFolderIds, fromDate, toDate, null, userTimezone);
 	}
 	
+	@Deprecated
 	public List<FolderEventInstances> listFolderEventInstances(Collection<Integer> calendarFolderIds, DateTime fromDate, DateTime toDate, String pattern, DateTimeZone userTimezone) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		EventDAO eveDao = EventDAO.getInstance();

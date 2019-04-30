@@ -40,6 +40,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.grid.column.Icon',
 		'Sonicle.grid.column.Color',
 		'Sonicle.tree.Column',
+		'WTA.ux.field.Search',
 		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
@@ -118,25 +119,53 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('printScheduler'),
 				'->',
 				{
-					xtype: 'textfield',
-					tooltip: me.res('textfield.tip'),
-					plugins: ['sofieldtooltip'],
-					triggers: {
-						search: {
-							cls: Ext.baseCSSPrefix + 'form-search-trigger',
-							handler: function(s) {
-								me.queryEvents(s.getValue());
-							}
-						}
-					},
+					xtype: 'wtsearchfield',
+					reference: 'fldsearch',
+					fields: [{
+						name: 'title',
+						type: 'string',
+						label: me.res('fld-search.field.title.lbl')
+					}, {
+						name: 'location',
+						type: 'string',
+						label: me.res('fld-search.field.location.lbl')
+					}, {
+						name: 'description',
+						type: 'string',
+						label: me.res('fld-search.field.description.lbl')
+					}, {
+						name: 'any',
+						type: 'string',
+						textSink: true,
+						label: me.res('fld-search.field.any.lbl')
+					}, {
+						name: 'after',
+						type: 'date',
+						labelAlign: 'left',
+						label: me.res('fld-search.field.after.lbl')
+					}, {
+						name: 'before',
+						type: 'date',
+						labelAlign: 'left',
+						label: me.res('fld-search.field.before.lbl')
+					}, {
+						name: 'busy',
+						type: 'boolean',
+						boolKeyword: 'is',
+						label: me.res('fld-search.field.busy.lbl')
+					}, {
+						name: 'private',
+						type: 'boolean',
+						boolKeyword: 'is',
+						label: me.res('fld-search.field.private.lbl')
+					}],
+					tooltip: me.res('fld-search.tip'),
+					emptyText: me.res('fld-search.emp'),
 					listeners: {
-						specialkey: function(s, e) {
-							if(e.getKey() === e.ENTER) {
-								me.queryEvents(s.getValue());
-							}
+						query: function(s, value, qObj) {
+							me.queryEvents(qObj);
 						}
-					},
-					width: 200
+					}
 				},
 				'->'
 			]
@@ -1665,16 +1694,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		Sonicle.URLMgr.openFile(url, {filename: 'events-detail', newWindow: true});
 	},
 	
-	queryEvents: function(txt) {
+	queryEvents: function(query) {
 		var me = this,
-				gp = me.gpResults();
-		if (!Ext.isEmpty(txt)) {
-			gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), txt));
-			me._activateMain(gp);
-			WTU.loadWithExtraParams(gp.getStore(), {
-				query: txt
-			});
-		}
+			gp = me.gpResults(),
+			isString = Ext.isString(query),
+			value = isString ? query : query.value,
+			obj = {
+				allText: isString ? query : query.anyText,
+				conditions: isString ? [] : query.conditionArray
+			};
+		
+		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), value));
+		me._activateMain(gp);
+		WTU.loadWithExtraParams(gp.getStore(), {
+			query: Ext.JSON.encode(obj)
+		});
 	},
 	
 	/*

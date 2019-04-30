@@ -48,6 +48,7 @@ import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.bean.IntegerSet;
+import com.sonicle.commons.web.json.bean.QueryObj;
 import com.sonicle.commons.web.json.bean.StringSet;
 import com.sonicle.commons.web.json.extjs.FieldMeta;
 import com.sonicle.commons.web.json.extjs.GridColumnMeta;
@@ -77,6 +78,7 @@ import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
+import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
@@ -924,6 +926,21 @@ public class Service extends BaseService {
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if(crud.equals(Crud.READ)) {
+				QueryObj queryObj = ServletUtils.getObjectParameter(request, "query", new QueryObj(), QueryObj.class);
+				
+				List<Integer> activeCalIds = getActiveFolderIds();
+				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, EventQuery.toCondition(queryObj, utz), utz);
+				for (SchedEventInstance instance : instances) {
+					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
+					if (root == null) continue;
+					final ShareFolderCalendar fold = folders.get(instance.getCalendarId());
+					if (fold == null) continue;
+					CalendarPropSet pset = folderProps.get(instance.getCalendarId());
+					
+					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz));
+				}
+				
+				/*
 				String query = ServletUtils.getStringParameter(request, "query", true);
 				
 				final List<Integer> activeCalIds = getActiveFolderIds();
@@ -939,6 +956,7 @@ public class Service extends BaseService {
 						items.add(new JsSchedulerEvent(root, fold, pset, sei, up.getId(), utz));
 					}
 				}
+				*/
 				
 				/*
 				List<CalendarManager.CalendarEvents> calEvts = null;

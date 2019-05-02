@@ -713,6 +713,33 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VVEvent.class);
 	}
 	
+	public boolean existByCalendarTypeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		Condition rangeCndt = DSL.trueCondition();
+		if ((rangeFrom != null) && (rangeTo != null)) {
+			rangeCndt = EVENTS.START_DATE.between(rangeFrom, rangeTo) // Events that start in current range
+				.or(EVENTS.END_DATE.between(rangeFrom, rangeTo)) // Events that end in current range
+				.or(EVENTS.START_DATE.lessThan(rangeFrom).and(EVENTS.END_DATE.greaterThan(rangeTo))); // Events that start before and end after
+		}
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
+		
+		return dsl.fetchExists(
+			dsl.selectOne()
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.CALENDAR_ID.in(calendarIds)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+				.and(EVENTS.RECURRENCE_ID.isNull())
+				.and(rangeCndt)
+				.and(filterCndt)
+			)
+		);
+	}
+	
 	public List<VVEvent> viewByCalendarRangeCondition(Connection con, int calendarId, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
 		return viewByCalendarRangeCondition(con, Arrays.asList(calendarId), rangeFrom, rangeTo, condition);
 	}
@@ -726,6 +753,7 @@ public class EventDAO extends BaseDAO {
 				.or(EVENTS.END_DATE.between(rangeFrom, rangeTo)) // Events that end in current range
 				.or(EVENTS.START_DATE.lessThan(rangeFrom).and(EVENTS.END_DATE.greaterThan(rangeTo))); // Events that start before and end after
 		}
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
@@ -777,12 +805,8 @@ public class EventDAO extends BaseDAO {
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
-				.and(
-					rangeCndt
-				)
-				.and(
-					(condition != null) ? condition : DSL.trueCondition()
-				)
+				.and(rangeCndt)
+				.and(filterCndt)
 			)
 			.orderBy(
 				EVENTS.START_DATE
@@ -803,6 +827,7 @@ public class EventDAO extends BaseDAO {
 					.or(RECURRENCES.UNTIL_DATE.between(rangeFrom, rangeTo)) // Recurrences that end in current range
 					.or(RECURRENCES.START_DATE.lessThan(rangeFrom).and(RECURRENCES.UNTIL_DATE.greaterThan(rangeTo))); // Recurrences that start before and end after
 		}
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		// New field: targets the eventId of the original series event
 		// NB: recurring events cannot have a reference to a master series event
@@ -848,12 +873,8 @@ public class EventDAO extends BaseDAO {
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNotNull())
-				.and(
-					rangeCndt
-				)
-				.and(
-					(condition != null) ? condition : DSL.trueCondition()
-				)
+				.and(rangeCndt)
+				.and(filterCndt)
 			)
 			.orderBy(
 				EVENTS.START_DATE

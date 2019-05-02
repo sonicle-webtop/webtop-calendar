@@ -960,6 +960,47 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
+	public boolean existEventInstance(Collection<Integer> calendarIds, Condition<EventQuery> conditionPredicate, DateTimeZone targetTimezone) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			List<Integer> okCalendarIds = calendarIds.stream()
+					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
+					.collect(Collectors.toList());
+			
+			EventPredicateVisitor epv = new EventPredicateVisitor(true, EventPredicateVisitor.Target.NORMAL);
+			org.jooq.Condition norCondition = null;
+			org.jooq.Condition recCondition = null;
+			if (conditionPredicate != null) {
+				norCondition = BaseDAO.createCondition(conditionPredicate, epv);
+				recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(true, EventPredicateVisitor.Target.RECURRING));
+			}
+			
+			DateTime from = null;
+			DateTime to = null;
+			DateTime instFrom = epv.hasFromRange() ? epv.getFromRange() : from;
+			DateTime instTo = epv.hasToRange() ? epv.getToRange() : to;
+			int noOfRecurringInst = 368;
+			
+			con = WT.getConnection(SERVICE_ID);
+			if (evtDao.existByCalendarTypeCondition(con, okCalendarIds, from, to, norCondition)) {
+				return true;
+			}
+			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, recCondition)) {
+				List<SchedEventInstance> instances = calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), instFrom, instTo, targetTimezone, noOfRecurringInst);
+				if (!instances.isEmpty()) return true;
+			}
+			return false;
+			
+		} catch (SQLException | DAOException ex) {
+			throw wrapException(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
 	public List<SchedEventInstance> listUpcomingEventInstances(Collection<Integer> calendarIds, DateTime now, DateTimeZone targetTimezone) throws WTException {
 		return listUpcomingEventInstances(calendarIds, now, null, targetTimezone);
 	}
@@ -1024,6 +1065,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DateTime to = hasRange ? range.to : null;
 			DateTime instFrom = epv.hasFromRange() ? epv.getFromRange() : from;
 			DateTime instTo = epv.hasToRange() ? epv.getToRange() : to;
+			int noOfRecurringInst = hasRange ? Days.daysBetween(from, to).getDays() + 2 : 368;
 			
 			con = WT.getConnection(SERVICE_ID);
 			ArrayList<SchedEventInstance> instances = new ArrayList<>();
@@ -1032,7 +1074,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				item.setKey(EventKey.buildKey(vevt.getEventId(), vevt.getSeriesEventId()));
 				instances.add(item);
 			}
-			int noOfRecurringInst = hasRange ? Days.daysBetween(from, to).getDays() + 2 : 368;
 			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, recCondition)) {
 				instances.addAll(calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt), instFrom, instTo, targetTimezone, noOfRecurringInst));
 			}

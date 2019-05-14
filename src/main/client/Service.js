@@ -133,12 +133,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						name: 'description',
 						type: 'string',
 						label: me.res('fld-search.field.description.lbl')
-					}, {
+					}/*, {
 						name: 'any',
 						type: 'string',
 						textSink: true,
 						label: me.res('fld-search.field.any.lbl')
-					}, {
+					}*/, {
 						name: 'after',
 						type: 'date',
 						labelAlign: 'left',

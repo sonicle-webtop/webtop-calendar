@@ -1,3 +1,11 @@
+$	5.7.0
+	%	Version 5.7.0
+	*	<h1>New calendars layout</h1>
+		<p>New colored checkboxes presented in a new expanded view.</p>
+		<img src="5.7.0_newtree.png"/>
+	*	<h1>New search field</h1>
+		<p>You can now perform wide and aggregates queries on your events/appointments.</p>
+		<img src="5.7.0_newsearch.png"/>
 $	5.3.0
 	%	Version 5.3.0
 	*	<h1>Notification on external changes</h1>

@@ -1,3 +1,11 @@
+$	5.7.0
+	%	Versione 5.7.0
+	*	<h1>Nuovo layout dei calendari</h1>
+		<p>Nuove checkbox colorate presentate in una visualizzazione più intuitiva.</p>
+		<img src="5.7.0_newtree.png"/>
+	*	<h1>Nuovo campo di ricerca</h1>
+		<p>Puoi ora eseguire ricerche generiche ed aggregate sui tuoi eventi/appuntamenti.</p>
+		<img src="5.7.0_newsearch.png"/>
 $	5.3.0
 	%	Versione 5.3.0
 	*	<h1>Notifica gli aggiornamenti esterni</h1>

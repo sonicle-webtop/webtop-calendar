@@ -984,13 +984,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	getPlanningSelectionDates: function(sel) {
 		var min, max, fmt = 'Y-m-d H:i';
 		Ext.iterate(sel.selectedColumns, function(col) {
-			if (!min) min = col.dataIndex;
-			if (!max) max = col.dataIndex;
+			if (min === undefined) min = col.dataIndex;
+			if (max === undefined) max = col.dataIndex;
 			if (col.dataIndex < min) min = col.dataIndex;
 			if (col.dataIndex > max) max = col.dataIndex;
 		});
 		if (min && max) {
-			return [Ext.Date.parseDate(min, fmt), Ext.Date.parseDate(max, fmt)];
+			return [Ext.Date.parseDate(min, fmt), Ext.Date.add(Ext.Date.parseDate(max, fmt), Ext.Date.MINUTE, 60)];
 		} else {
 			return null;
 		}

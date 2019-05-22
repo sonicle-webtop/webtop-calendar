@@ -1023,7 +1023,7 @@ public class Service extends BaseService {
 			DateTimeFormatter tFmt = DateTimeUtils.createFormatter(cus.getShortTimeFormat());
 			DateTimeFormatter dFmt = DateTimeUtils.createFormatter(cus.getShortDateFormat());
 			
-			ArrayList<String> hours = manager.generateTimeSpans(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), us.getWorkdayStart(), us.getWorkdayEnd(), profileTz);
+			ArrayList<String> spans = manager.generateTimeSpans(60, eventStartDt.toLocalDate(), eventEndDt.toLocalDate(), us.getWorkdayStart(), us.getWorkdayEnd(), profileTz);
 			
 			// Generates fields and columnsInfo dynamically
 			ArrayList<FieldMeta> fields = new ArrayList<>();
@@ -1032,12 +1032,12 @@ public class Service extends BaseService {
 			GridColumnMeta col = null;
 			fields.add(new FieldMeta("recipient"));
 			colsInfo.add(new GridColumnMeta("recipient"));
-			for(String hourKey : hours) {
-				LocalDateTime ldt = ymdhmFmt.parseLocalDateTime(hourKey);
-				fields.add(new FieldMeta(hourKey));
-				col = new GridColumnMeta(hourKey, tFmt.print(ldt));
+			for(String spanKey : spans) {
+				LocalDateTime ldt = ymdhmFmt.parseLocalDateTime(spanKey);
+				fields.add(new FieldMeta(spanKey));
+				col = new GridColumnMeta(spanKey, tFmt.print(ldt));
 				col.put("date", dFmt.print(ldt));
-				col.put("overlaps", DateTimeUtils.between(ldt, eventStartDt.toLocalDateTime(), eventEndDt.toLocalDateTime()));
+				col.put("overlaps", (ldt.compareTo(eventStartDt.toLocalDateTime()) >= 0) && (ldt.compareTo(eventEndDt.toLocalDateTime()) < 0));
 				colsInfo.add(col);
 			}
 			
@@ -1054,12 +1054,12 @@ public class Service extends BaseService {
 				if (user != null) {
 					profileId = new UserProfileId(user.getDomainId(), user.getUserId());
 					busyHours = manager.calculateAvailabilitySpans(60, profileId, eventStartDt.withTime(fromTime), eventEndDt.withTime(toTime), eventTz, true);
-					for(String hourKey : hours) {
+					for (String hourKey : spans) {
 						item.put(hourKey, busyHours.contains(hourKey) ? "busy" : "free");
 					}
 				} else {
-					for(String hourKey : hours) {
-						item.put(hourKey, "unknown");
+					for (String spanKey : spans) {
+						item.put(spanKey, "unknown");
 					}
 				}
 				items.add(item);
@@ -1279,7 +1279,7 @@ public class Service extends BaseService {
 		try {
 			InternetAddress ia = InternetAddressUtils.toInternetAddress(recipient);
 			if (ia == null) return null;
-			List<UserProfileId> pids = core.listUserIdsByEmail(recipient);
+			List<UserProfileId> pids = core.listUserIdsByEmail(ia.getAddress());
 			if (pids.isEmpty()) return null;
 			UserProfileId pid = pids.get(0);
 			

@@ -97,7 +97,7 @@ public class JsSchedulerEvent {
 		originalEventId = event.getEventId();
 		calendarId = event.getCalendarId();
 		
-		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.getInternalEventBoundary(event.getAllDay(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
+		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForPreview(event.getAllDay(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
 		isAllDay = eventBoundary.allDay;
 		startDate = ymdhmsZoneFmt.print(eventBoundary.start);
 		endDate = ymdhmsZoneFmt.print(eventBoundary.end);

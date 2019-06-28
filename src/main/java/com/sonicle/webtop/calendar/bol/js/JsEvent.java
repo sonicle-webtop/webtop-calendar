@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
@@ -87,10 +88,11 @@ public class JsEvent {
 		eventId = event.getEventId();
 		calendarId = event.getCalendarId();
 		
-		startDate = ymdhmsZoneFmt.print(event.getStartDate());
-		endDate = ymdhmsZoneFmt.print(event.getEndDate());
-		timezone = event.getTimezone();
-		allDay = event.getAllDay();
+		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForRead(event.getAllDay(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
+		startDate = ymdhmsZoneFmt.print(eventBoundary.start);
+		endDate = ymdhmsZoneFmt.print(eventBoundary.end);
+		timezone = eventBoundary.timezone.getID();
+		allDay = eventBoundary.allDay;
 		
 		title = event.getTitle();
 		description = event.getDescription();
@@ -158,12 +160,20 @@ public class JsEvent {
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
 		DateTimeZone eventTz = DateTimeZone.forID(js.timezone);
+		DateTime eventStart = DateTimeUtils.parseYmdHmsWithZone(js.startDate, eventTz);
+		DateTime eventEnd = DateTimeUtils.parseYmdHmsWithZone(js.endDate, eventTz);
+		
+		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForWrite(js.allDay, eventStart, eventEnd, eventTz);
+		event.setDatesAndTimes(eventBoundary.allDay, eventBoundary.timezone.getID(), eventBoundary.start, eventBoundary.end);
+		
+		/*
 		event.setDatesAndTimes(
 				js.allDay,
 				js.timezone,
 				DateTimeUtils.parseYmdHmsWithZone(js.startDate, eventTz),
 				DateTimeUtils.parseYmdHmsWithZone(js.endDate, eventTz)
 		);
+		*/
 		
 		event.setTitle(js.title);
 		event.setDescription(js.description);

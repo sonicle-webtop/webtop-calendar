@@ -57,7 +57,7 @@ public class ORecurrence extends Recurrences {
 		DateTime newStart = (recurStartDate != null) ? recurStartDate.toDateTimeAtStartOfDay(eventTimezone) : eventStartDate;
 		setStartDate(newStart);
 		if (ICal4jUtils.recurHasCount(recur)) {
-			DateTime untilDate = ICal4jUtils.calculateRecurrenceEnd(recur, newStart, eventTimezone);
+			DateTime untilDate = ICal4jUtils.calculateRecurrenceEnd(recur, newStart, eventStartDate, eventEndDate, eventTimezone);
 			setUntilDate(untilDate.withTimeAtStartOfDay().plusDays(1));
 		} else if (ICal4jUtils.recurHasUntilDate(recur)) {
 			DateTime untilDate = ICal4jUtils.toJodaDateTime(recur.getUntil(), DateTimeZone.UTC).withZone(eventTimezone);

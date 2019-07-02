@@ -2756,7 +2756,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (recur == null) throw new WTException("Unable to parse rrule [{}]", orec.getRule());
 				
 				Map<LocalDate, ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
-				DateList dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), eventTimezone, rangeFrom, rangeTo, limit);
+				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
+				for (LocalDate recurringDate : dates) {
+					if (obrecs.containsKey(recurringDate)) continue; // Skip broken date...
+
+					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
+					DateTime end = recurringDate.toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					String key = EventKey.buildKey(eventId, eventId, recurringDate);
+
+					instances.add(instanceMapper.createInstance(key, start, end));
+				}
+				
+				/*
+				DateList dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
 				Iterator it = dates.iterator();
 				while (it.hasNext()) {
 					net.fortuna.ical4j.model.Date dt = (net.fortuna.ical4j.model.Date)it.next();
@@ -2769,6 +2781,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 					instances.add(instanceMapper.createInstance(key, start, end));
 				}
+				*/
 			}
 			
 		} catch(DAOException ex) {
@@ -3291,7 +3304,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				// We cannot keep original count, it would be wrong... so convert it to an until date!
 				if (ICal4jUtils.recurHasCount(oldRecur)) {
-					DateTime oldUntilReal = ICal4jUtils.calculateRecurrenceEnd(oldRecur, oevtOrig.getStartDate(), oevtOrig.getDateTimezone());
+					DateTime oldUntilReal = ICal4jUtils.calculateRecurrenceEnd(oldRecur, oevtOrig.getStartDate(), oevtOrig.getStartDate(), oevtOrig.getEndDate(), oevtOrig.getDateTimezone());
 					ICal4jUtils.setRecurUntilDate(oldRecur, oldUntilReal);
 				}
 				event.setRecurrence(oldRecur.toString(), eventKey.instanceDate, null);

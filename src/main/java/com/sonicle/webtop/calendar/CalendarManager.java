@@ -2401,7 +2401,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					FileInputStream is = null;
 					try {
 						is = new FileInputStream(tempFile);
-						ICalendarUtils.relaxParsingAndCompatibility();
 						ical = ICalendarUtils.parse(is);
 						//TODO: add support to FILENAME property (Google https://github.com/ical4j/ical4j/issues/69)
 					} catch(IOException | ParserException ex) {

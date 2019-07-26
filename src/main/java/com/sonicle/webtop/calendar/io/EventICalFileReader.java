@@ -70,7 +70,6 @@ public class EventICalFileReader implements EventFileReader {
 	public ArrayList<EventInput> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException, WTException {
 		Calendar cal = null;
 		try {
-			ICalendarUtils.relaxParsingAndCompatibility();
 			cal = ICalendarUtils.parse(is);
 		} catch(ParserException ex) {
 			throw new UnsupportedOperationException(ex);

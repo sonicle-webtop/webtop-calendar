@@ -107,7 +107,7 @@ public class CalDav extends CaldavApi {
 			List<ShareRootCalendar> shareRoots = manager.listIncomingCalendarRoots();
 			for (ShareRootCalendar shareRoot : shareRoots) {
 				Map<Integer, ShareFolderCalendar> folders = manager.listIncomingCalendarFolders(shareRoot.getShareId());
-				revisions = manager.getCalendarsLastRevision(cats.keySet());
+				revisions = manager.getCalendarsLastRevision(folders.keySet());
 				//Map<Integer, CategoryPropSet> props = manager.getCategoryCustomProps(folders.keySet());
 				for (ShareFolderCalendar folder : folders.values()) {
 					com.sonicle.webtop.calendar.model.Calendar cal = folder.getCalendar();

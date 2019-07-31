@@ -85,12 +85,14 @@ public class JsSchedulerEvent {
 		Calendar calendar = folder.getCalendar();
 		
 		// Determine if keep event data private
+		/*
 		boolean keepDataPrivate = false;
 		if (event.getIsPrivate()) {
 			if (!calendar.getProfileId().equals(profileId)) {
 				keepDataPrivate = true;
 			}
 		}
+		*/
 		
 		id = event.getKey();
 		eventId = event.getEventId();
@@ -103,32 +105,14 @@ public class JsSchedulerEvent {
 		endDate = ymdhmsZoneFmt.print(eventBoundary.end);
 		timezone = event.getTimezone();
 		
-		// Source field is already in UTC, we need only to display it
-		// in the timezone choosen by user in his settings.
-		// Formatter will be instantiated specifying desired timezone.
-		/*
-		if (event.getAllDay()) {
-			startDate = ymdhmsZoneFmt.print(event.getStartDate());
-			int days = CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate());
-			DateTime newEnd = event.getStartDate().plusDays(days).withTimeAtStartOfDay();
-			endDate = ymdhmsZoneFmt.print(newEnd);
-		} else {
-			startDate = ymdhmsZoneFmt.print(event.getStartDate());
-			endDate = ymdhmsZoneFmt.print(event.getEndDate());
-		}
-		timezone = event.getTimezone();
-		isAllDay = event.getAllDay();
-		*/
-		
-		title = (keepDataPrivate) ? "***" : event.getTitle();
+		title = event.getTitle();
 		color = calendar.getColor();
 		if (folderProps != null) color = folderProps.getColorOrDefault(color);
-		location = (keepDataPrivate) ? "" : event.getLocation();
+		location = event.getLocation();
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = keepDataPrivate || calendar.isProviderRemote();
-		hideData = keepDataPrivate;
+		isReadOnly = calendar.isProviderRemote() || event.isCensorized(); // Maybe it's better to call this isLocked (no actions will be avail in client scheduler component)
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.hasAttendees();
 		isNtf = event.hasNotifyableAttendees();
@@ -138,7 +122,7 @@ public class JsSchedulerEvent {
 		
 		folderName = calendar.getName();
 		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
-		_rights = folder.getElementsPerms().toString();
+		_rights = event.isCensorized() ? "" : ("m" + folder.getElementsPerms().toString());
 		_profileId = calendar.getProfileId().toString();
 	}
 	

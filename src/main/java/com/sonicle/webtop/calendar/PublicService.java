@@ -105,12 +105,18 @@ public class PublicService extends BasePublicService {
 							String resp = ServletUtils.getStringParameter(request, "resp", true);
 							
 							EventAttendee.ResponseStatus responseStatus = toResponseStatus(resp);
-							if (responseStatus == null) throw new WTException("Invalid resp [{0}]", resp);
+							if (responseStatus == null) throw new WTException("Invalid resp [{}]", resp);
 							
-							event = adminCalMgr.updateEventFromSite(eventUrlPath.getPublicUid(), aid, responseStatus);
+							Integer eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
+							if (eventId != null) {
+								event = adminCalMgr.updateEvent(eventId, aid, responseStatus);
+							}
 							
 						} else {
-							event = adminCalMgr.getEventFromSite(eventUrlPath.getPublicUid());
+							Integer eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
+							if (eventId != null) {
+								event = adminCalMgr.getEvent(eventId);
+							}
 						}
 					}
 					
@@ -120,6 +126,7 @@ public class PublicService extends BasePublicService {
 						
 					} else {
 						Calendar calendar = adminCalMgr.getCalendar(event.getCalendarId());
+						if (event.getIsPrivate()) event.censorize();
 						writeEventPage(request, response, wts, "Event", calendar, event);
 					}
 

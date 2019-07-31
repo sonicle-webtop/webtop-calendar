@@ -41,11 +41,13 @@ import org.joda.time.DateTimeZone;
  */
 public class OEventInfo {
 	protected Integer eventId;
+	protected Integer calendarId;
 	protected Integer linkedEventId;
 	protected Integer recurrenceId;
 	protected DateTime startDate;
 	protected String timezone;
 	protected Boolean allDay;
+	protected Boolean isPrivate;
 	
 	public OEventInfo() {}
 	
@@ -61,6 +63,14 @@ public class OEventInfo {
 	
 	public void setEventId(Integer eventId) {
 		this.eventId = eventId;
+	}
+	
+	public Integer getCalendarId() {
+		return calendarId;
+	}
+	
+	public void setCalendarId(Integer calendarId) {
+		this.calendarId = calendarId;
 	}
 	
 	public Integer getLinkedEventId() {
@@ -101,6 +111,14 @@ public class OEventInfo {
 
 	public void setAllDay(Boolean allDay) {
 		this.allDay = allDay;
+	}
+	
+	public Boolean getIsPrivate() {
+		return isPrivate;
+	}
+
+	public void setIsPrivate(Boolean isPrivate) {
+		this.isPrivate = isPrivate;
 	}
 
 	public boolean isBroken() {

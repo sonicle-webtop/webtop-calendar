@@ -96,8 +96,13 @@ public class ManagerUtils {
 		return ICalendarUtils.buildUid(DigestUtils.md5Hex(id), internetName);
 	}
 	
-	public static String buildHref(String publicUid) {
-		return publicUid + ".ics";
+	public static String buildHref(int eventId, String internetName) {
+		String id = Base58.encode(StringUtils.leftPad(String.valueOf(eventId), 10, "0").getBytes());
+		return buildHref(ICalendarUtils.buildUid(id, internetName));
+	}
+	
+	public static String buildHref(String uniqueId) {
+		return uniqueId + ".ics";
 	}
 	
 	/*

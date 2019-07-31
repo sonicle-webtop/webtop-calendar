@@ -334,9 +334,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					},
 					eventdblclick: function(s, rec) {
-						if (rec && !me.self.schedEventHideData(rec)) {
+						if (rec) {
 							var er = WTA.util.FoldersTree.toRightsObj(rec.get('_rights'));
-							me.openEventUI(er.UPDATE, rec.get('id'));
+							if (er.MANAGE) me.openEventUI(er.UPDATE, rec.get('id'));
 						}
 					},
 					daydblclick: function(s, dt, allDay) {
@@ -428,10 +428,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}],
 				listeners: {
 					rowdblclick: function(s, rec) {
-						if (!me.self.schedEventHideData(rec)) {
-							var er = WTA.util.FoldersTree.toRightsObj(rec.get('_rights'));
-							me.openEventUI(er.UPDATE, rec.get('id'));
-						}
+						var er = WTA.util.FoldersTree.toRightsObj(rec.get('_rights'));
+						if (er.MANAGE) me.openEventUI(er.UPDATE, rec.get('id'));
 					}
 				}
 			}]
@@ -946,13 +944,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var rec = s.menuData.event,
-							hd = me.self.schedEventHideData(rec),
 							er = WTA.util.FoldersTree.toRightsObj(rec.get('_rights')),
 							brk = (rec.get('isBroken') === true);
-					me.getAct('openEvent').setDisabled(hd);
-					me.getAct('moveEvent').setDisabled(hd || !er.DELETE);
-					me.getAct('deleteEvent').setDisabled(hd || !er.DELETE);
-					me.getAct('restoreEvent').setDisabled(hd || !brk || !er.UPDATE);
+					me.getAct('openEvent').setDisabled(!er.MANAGE);
+					me.getAct('moveEvent').setDisabled(!er.DELETE);
+					me.getAct('deleteEvent').setDisabled(!er.DELETE);
+					me.getAct('restoreEvent').setDisabled(!brk || !er.UPDATE);
 				}
 			}
 		}));
@@ -1807,10 +1804,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 
 		noTagRemoteSync: function(calendarId) {
 			return this.NOTAG_REMOTESYNC + calendarId;
-		},
-		
-		schedEventHideData: function(rec) {
-			return rec.get('hideData') === true;
 		}
 	}
 });

@@ -146,6 +146,10 @@ public class EventDAO extends BaseDAO {
 						.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 					)
 			)
+			.orderBy(
+				EVENTS.CREATION_TIMESTAMP.asc(),
+				EVENTS.EVENT_ID.asc()
+			)
 			.fetchInto(Integer.class);
 	}
 	
@@ -161,6 +165,10 @@ public class EventDAO extends BaseDAO {
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
+			)
+			.orderBy(
+				EVENTS.CREATION_TIMESTAMP.asc(),
+				EVENTS.EVENT_ID.asc()
 			)
 			.fetchInto(Integer.class);
 	}
@@ -484,10 +492,12 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.select(
 				EVENTS.EVENT_ID,
+				EVENTS.CALENDAR_ID,
 				EVENTS.RECURRENCE_ID,
 				EVENTS.START_DATE,
 				EVENTS.TIMEZONE,
-				EVENTS.ALL_DAY
+				EVENTS.ALL_DAY,
+				EVENTS.IS_PRIVATE
 			)
 			.select(
 				seriesEventId

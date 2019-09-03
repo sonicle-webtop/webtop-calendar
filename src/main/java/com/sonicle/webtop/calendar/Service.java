@@ -912,7 +912,7 @@ public class Service extends BaseService {
 				QueryObj queryObj = ServletUtils.getObjectParameter(request, "query", new QueryObj(), QueryObj.class);
 				
 				Set<Integer> activeCalIds = getActiveFolderIds();
-				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, buildSearchRange(DateTimeUtils.now(), utz), EventQuery.toCondition(queryObj, utz), utz, true);
+				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, EventQuery.toCondition(queryObj, utz), utz);
 				for (SchedEventInstance instance : instances) {
 					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
 					if (root == null) continue;

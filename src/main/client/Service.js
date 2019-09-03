@@ -163,7 +163,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					emptyText: me.res('fld-search.emp'),
 					listeners: {
 						query: function(s, value, qObj) {
-							me.queryEvents(qObj);
+							if (Ext.isEmpty(value)) {
+								me._activateMain(me.scheduler());
+								//TODO: it would be nice clearing-up the grid but the following generates an error in extjs code
+								//me.gpResults().removeAll(true);
+							} else {
+								me.queryEvents(qObj);
+							}
 						}
 					}
 				},
@@ -422,7 +428,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				tools: [{
 					type: 'close',
 					callback: function() {
-						me.getMainComponent().setActiveItem(me.scheduler());
 						me._activateMain(me.scheduler());
 					}
 				}],

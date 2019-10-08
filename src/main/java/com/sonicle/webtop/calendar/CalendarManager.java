@@ -2813,6 +2813,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		DateTime eventStart = instanceMapper.getEventStartDate();
 		DateTime eventEnd = instanceMapper.getEventEndDate();
 		DateTimeZone eventTimezone = instanceMapper.getEventTimezone();
+		int eventDays = CalendarUtils.calculateLengthInDays(eventStart, eventEnd);
 		LocalTime eventStartTime = eventStart.withZone(eventTimezone).toLocalTime();
 		LocalTime eventEndTime = eventEnd.withZone(eventTimezone).toLocalTime();
 		
@@ -2835,7 +2836,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					if (obrecs.containsKey(recurringDate)) continue; // Skip broken date...
 
 					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
-					DateTime end = recurringDate.toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					DateTime end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
 
 					instances.add(instanceMapper.createInstance(key, start, end));
@@ -2850,7 +2851,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					if (obrecs.containsKey(recurringDate)) continue; // Skip broken date...
 
 					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
-					DateTime end = recurringDate.toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					DateTime end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
 
 					instances.add(instanceMapper.createInstance(key, start, end));

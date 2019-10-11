@@ -118,9 +118,9 @@ public class CalDav extends CaldavApi {
 			
 			return respOk(items);
 			
-		} catch(WTException ex) {
-			logger.error("[{}] getCalendars()", currentProfileId, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] getCalendars()", currentProfileId, t);
+			return respError(t);
 		}
 	}
 
@@ -151,9 +151,9 @@ public class CalDav extends CaldavApi {
 				return respOk(createCalendar(currentProfileId, cal, revisions.get(cal.getCalendarId()), null, null));
 			}
 			
-		} catch(WTException ex) {
-			logger.error("[{}] getCalendar({})", currentProfileId, calendarUid, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] getCalendar({})", currentProfileId, calendarUid, t);
+			return respError(t);
 		}
 	}
 
@@ -175,9 +175,9 @@ public class CalDav extends CaldavApi {
 			// Calendars are always added in currentProfile so we do not handle perms here (passing null = full rights)
 			return respOkCreated(createCalendar(currentProfileId, cal, null, null, null));
 			
-		} catch(WTException ex) {
-			logger.error("[{}] addCalendar(...)", currentProfileId, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] addCalendar(...)", currentProfileId, t);
+			return respError(t);
 		}
 	}
 
@@ -210,9 +210,9 @@ public class CalDav extends CaldavApi {
 			
 		} catch(NotFoundException ex) {
 			return respErrorNotFound();
-		} catch(WTException ex) {
-			logger.error("[{}] updateCalendar({}, ...)", RunContext.getRunProfileId(), calendarUid, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] updateCalendar({}, ...)", RunContext.getRunProfileId(), calendarUid, t);
+			return respError(t);
 		}
 	}
 
@@ -236,9 +236,9 @@ public class CalDav extends CaldavApi {
 			
 		} catch(NotFoundException ex) {
 			return respErrorNotFound();
-		} catch(WTException ex) {
-			logger.error("[{}] deleteCalendar({})", RunContext.getRunProfileId(), calendarUid, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] deleteCalendar({})", RunContext.getRunProfileId(), calendarUid, t);
+			return respError(t);
 		}
 	}
 	
@@ -272,9 +272,9 @@ public class CalDav extends CaldavApi {
 				return respOk(items);
 			}
 			
-		} catch(WTException ex) {
-			logger.error("[{}] getCalObjects({})", RunContext.getRunProfileId(), calendarUid, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] getCalObjects({})", RunContext.getRunProfileId(), calendarUid, t);
+			return respError(t);
 		}
 	}
 
@@ -303,9 +303,9 @@ public class CalDav extends CaldavApi {
 			CollectionChangeSet<EventObjectChanged> changes = manager.listEventObjectsChanges(calendarId, since, limit);
 			return respOk(createCalObjectsChanges(revisions.get(calendarId), changes));
 			
-		} catch(WTException ex) {
-			logger.error("[{}] getCalObjectsChanges({}, {}, {})", RunContext.getRunProfileId(), calendarUid, syncToken, limit, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] getCalObjectsChanges({}, {}, {})", RunContext.getRunProfileId(), calendarUid, syncToken, limit, t);
+			return respError(t);
 		}
 	}
 
@@ -330,9 +330,9 @@ public class CalDav extends CaldavApi {
 				return respErrorNotFound();
 			}
 			
-		} catch(WTException ex) {
-			logger.error("[{}] getCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] getCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href, t);
+			return respError(t);
 		}
 	}
 
@@ -352,9 +352,9 @@ public class CalDav extends CaldavApi {
 			manager.addEventObject(calendarId, body.getHref(), iCalendar);
 			return respOk();
 			
-		} catch(WTException ex) {
-			logger.error("[{}] addCalObject({}, ...)", RunContext.getRunProfileId(), calendarUid, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] addCalObject({}, ...)", RunContext.getRunProfileId(), calendarUid, t);
+			return respError(t);
 		}
 	}
 
@@ -376,9 +376,9 @@ public class CalDav extends CaldavApi {
 			
 		} catch(NotFoundException ex) {
 			return respErrorNotFound();
-		} catch(WTException ex) {
-			logger.error("[{}] updateCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] updateCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href, t);
+			return respError(t);
 		}
 	}
 
@@ -397,9 +397,9 @@ public class CalDav extends CaldavApi {
 			
 		} catch(NotFoundException ex) {
 			return respErrorNotFound();
-		} catch(WTException ex) {
-			logger.error("[{}] deleteCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href, ex);
-			return respError(ex);
+		} catch(Throwable t) {
+			logger.error("[{}] deleteCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href, t);
+			return respError(t);
 		}
 	}
 	

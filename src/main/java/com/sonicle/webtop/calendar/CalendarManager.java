@@ -2334,7 +2334,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	public void syncRemoteCalendar(int calendarId, boolean full) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
-		final ICalendarInput icalInput = new ICalendarInput(udata.getTimeZone());
+		final ICalendarInput icalInput = new ICalendarInput(udata.getTimeZone())
+				.withIgnoreReminder(true);
 		final String PENDING_KEY = String.valueOf(calendarId);
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;

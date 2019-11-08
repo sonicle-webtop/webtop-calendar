@@ -1230,7 +1230,7 @@ public class Service extends BaseService {
 			
 			if (query == null) {
 				final ShareRootCalendar root = roots.get(MyShareRootCalendar.SHARE_ID);
-				final List<Integer> ids = manager.listCalendarIds();
+				final Set<Integer> ids = manager.listCalendarIds();
 				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, DateTimeUtils.now(), utz)) {
 					final ShareFolderCalendar folder = folders.get(instance.getCalendarId());
 					if (folder == null) continue;

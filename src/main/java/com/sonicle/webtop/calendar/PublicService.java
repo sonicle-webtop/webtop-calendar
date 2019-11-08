@@ -40,6 +40,7 @@ import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.CoreUserSettings;
+import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.WebTopSession;
 import com.sonicle.webtop.core.bol.js.JsWTSPublic;
@@ -81,7 +82,7 @@ public class PublicService extends BasePublicService {
 	}
 	
 	private CalendarManager getAdminManager(String domainId) {
-		return (CalendarManager)WT.getServiceManager(SERVICE_ID, true, new UserProfileId(domainId, "admin"));
+		return (CalendarManager)WT.getServiceManager(SERVICE_ID, true, RunContext.getSysAdminProfileId());
 	}
 	
 	@Override

@@ -213,6 +213,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.shiro.subject.Subject;
 import org.joda.time.Duration;
 
 /**
@@ -323,21 +324,21 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public List<Integer> listCalendarIds() throws WTException {
-		return new ArrayList<>(listCalendars().keySet());
+	public Set<Integer> listCalendarIds() throws WTException {
+		return listCalendars().keySet();
 	}
 	
 	@Override
-	public List<Integer> listIncomingCalendarIds() throws WTException {
+	public Set<Integer> listIncomingCalendarIds() throws WTException {
 		return shareCache.getFolderIds();
 	}
 	
 	@Override
 	public Map<Integer, Calendar> listCalendars() throws WTException {
-		return listCalendars(getTargetProfileId());
+		return listCalendars(getTargetProfileId(), true);
 	}
 	
-	private Map<Integer, Calendar> listCalendars(UserProfileId pid) throws WTException {
+	private Map<Integer, Calendar> listCalendars(UserProfileId pid, boolean checkRights) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		LinkedHashMap<Integer, Calendar> items = new LinkedHashMap<>();
 		Connection con = null;
@@ -345,7 +346,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			for (OCalendar ocal : calDao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
-				//checkRightsOnCalendarFolder(ocal.getCalendarId(), "READ");
+				if (checkRights && !quietlyCheckRightsOnCalendarFolder(ocal.getCalendarId(), "READ")) continue;
 				items.put(ocal.getCalendarId(), ManagerUtils.createCalendar(ocal));
 			}
 			return items;
@@ -412,10 +413,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
+			
 			con = WT.getConnection(SERVICE_ID);
-			boolean ret = calDao.existsById(con, calendarId);
-			if (ret) checkRightsOnCalendarFolder(calendarId, "READ");
-			return ret;
+			return calDao.existsById(con, calendarId);
 			
 		} catch(SQLException | DAOException ex) {
 			throw wrapException(ex);
@@ -429,7 +430,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarFolder(calendarId, "READ");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
 			
 			con = WT.getConnection(SERVICE_ID);
 			return doCalendarGet(con, calendarId);
@@ -452,7 +453,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			OCalendar ocal = calDao.selectBuiltInByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if (ocal == null) return null;
 			
-			checkRightsOnCalendarFolder(ocal.getCalendarId(), "READ");
+			checkRightsOnCalendarFolder(ocal.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
 			
 			return ManagerUtils.createCalendar(ocal);
 			
@@ -464,7 +465,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public Map<String, String> getCalendarLinks(int calendarId) throws WTException {
-		checkRightsOnCalendarFolder(calendarId, "READ");
+		checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
 		
 		UserProfile.Data ud = WT.getUserData(getTargetProfileId());
 		String davServerBaseUrl = WT.getDavServerBaseUrl(getTargetProfileId().getDomainId());
@@ -539,7 +540,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			int calendarId = calendar.getCalendarId();
-			checkRightsOnCalendarFolder(calendarId, "UPDATE");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "UPDATE");
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			boolean updated = doCalendarUpdate(con, calendar);
@@ -563,7 +564,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarFolder(calendarId, "DELETE");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "DELETE");
 			
 			// Retrieve sharing status (for later)
 			String sharingId = buildSharingId(calendarId);
@@ -720,7 +721,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendarFolder(calendarId, "READ");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
 			
 			ArrayList<EventObject> items = new ArrayList<>();
 			Map<String, List<VEventObject>> vobjMap = null;
@@ -755,7 +756,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendarFolder(calendarId, "READ");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
 			
 			ArrayList<EventObjectChanged> inserted = new ArrayList<>();
 			ArrayList<EventObjectChanged> updated = new ArrayList<>();
@@ -806,7 +807,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendarFolder(calendarId, "READ");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
 			
 			ArrayList<EventObjectWithICalendar> items = new ArrayList<>();
 			Map<String, List<VEventObject>> map = evtDao.viewCalObjectsByCalendarHrefs(con, calendarId, hrefs);
@@ -838,7 +839,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendarFolder(calendarId, "READ");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
 			
 			VEventObject vevt = evtDao.viewCalObjectById(con, calendarId, eventId);
 			return (vevt == null) ? null : doEventObjectPrepare(con, vevt, outputType);
@@ -1286,7 +1287,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			Event event = doEventGet(con, eventId, forZPushFix ? false : true, forZPushFix);
 			if (event == null) return null;
-			checkRightsOnCalendarFolder(event.getCalendarId(), "READ");
+			checkRightsOnCalendarFolder(event.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
 			
 			boolean keepPrivate = treatAsPrivate(RunContext.getRunProfileId(), event.getIsPrivate(), event.getCalendarId());
 			if (keepPrivate) event.censorize();
@@ -1331,7 +1332,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			Integer calId = evtDao.selectCalendarId(con, eventId);
 			if (calId == null) return null;
-			checkRightsOnCalendarFolder(calId, "READ");
+			checkRightsOnCalendarFolder(calId, CheckRightsTarget.FOLDER, "READ");
 			
 			OEventAttachment oatt = attDao.selectByIdEvent(con, attachmentId, eventId);
 			if (oatt == null) return null;
@@ -1364,7 +1365,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		event.ensureCoherence();
 		
 		try {
-			checkRightsOnCalendarElements(event.getCalendarId(), "CREATE");
+			checkRightsOnCalendarFolder(event.getCalendarId(), CheckRightsTarget.ELEMENTS, "CREATE");
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			String provider = calDao.selectProviderById(con, event.getCalendarId());
@@ -1432,7 +1433,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		event.ensureCoherence();
 		
 		try {
-			checkRightsOnCalendarElements(event.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarFolder(event.getCalendarId(), CheckRightsTarget.ELEMENTS, "UPDATE");
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			String provider = calDao.selectProviderById(con, event.getCalendarId());
@@ -1462,7 +1463,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		event.ensureCoherence();
 		
 		try {
-			checkRightsOnCalendarElements(event.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarFolder(event.getCalendarId(), CheckRightsTarget.ELEMENTS, "UPDATE");
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			String provider = calDao.selectProviderById(con, event.getCalendarId());
@@ -1514,7 +1515,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Event parsedEvent = parsed.get(0).event;
 				parsedEvent.setCalendarId(evt.getCalendarId());
 
-				checkRightsOnCalendarElements(evt.getCalendarId(), "UPDATE");
+				checkRightsOnCalendarFolder(evt.getCalendarId(), CheckRightsTarget.ELEMENTS, "UPDATE");
 
 				OEvent original = edao.selectById(con, evt.getEventId());
 
@@ -1609,7 +1610,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			Integer calendarId = evtDao.selectCalendarId(con, eventId);
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", eventId);
-			checkRightsOnCalendarElements(calendarId, "DELETE");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
 			
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
@@ -1708,7 +1709,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = evtDao.selectCalendarId(con, event.getEventId());
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", event.getEventId());
 			
-			checkRightsOnCalendarElements(calendarId, "UPDATE");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE");
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
 			
@@ -1742,7 +1743,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			OEventInfo einfo = evtDao.selectOEventInfoById(con, key.eventId);
 			if (einfo == null) throw new WTException("Unable to retrieve event-info [{}]", key.eventId);
 			
-			checkRightsOnCalendarElements(einfo.getCalendarId(), "UPDATE");
+			checkRightsOnCalendarFolder(einfo.getCalendarId(), CheckRightsTarget.ELEMENTS, "UPDATE");
 			String provider = calDao.selectProviderById(con, einfo.getCalendarId());
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", einfo.getCalendarId());
 			
@@ -1846,7 +1847,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = evtDao.selectCalendarId(con, key.eventId);
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", key.eventId);
 			
-			checkRightsOnCalendarElements(calendarId, "DELETE");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
 			
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
@@ -1873,7 +1874,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = evtDao.selectCalendarId(con, key.eventId);
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", key.eventId);
 			
-			checkRightsOnCalendarElements(calendarId, "UPDATE");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE");
 			
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
@@ -1897,7 +1898,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			
 			ei = doEventInstanceGet(con, key.eventId, key.instanceDate, true);
-			checkRightsOnCalendarFolder(ei.getCalendarId(), "READ");
+			checkRightsOnCalendarFolder(ei.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
 			int calendarId = (newCalendarId != null) ? newCalendarId : ei.getCalendarId();
 			
 			boolean keepPrivate = treatAsPrivate(RunContext.getRunProfileId(), ei.getIsPrivate(), ei.getCalendarId());
@@ -1938,10 +1939,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			ei = doEventInstanceGet(con, key.eventId, key.instanceDate, true);
-			checkRightsOnCalendarFolder(ei.getCalendarId(), "READ");
+			checkRightsOnCalendarFolder(ei.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
 			
 			if (targetCalendarId != ei.getCalendarId()) {
-				checkRightsOnCalendarElements(ei.getCalendarId(), "DELETE");
+				checkRightsOnCalendarFolder(ei.getCalendarId(), CheckRightsTarget.ELEMENTS, "DELETE");
 				String provider = calDao.selectProviderById(con, targetCalendarId);
 				if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", targetCalendarId);
 				
@@ -2057,8 +2058,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarElements(calendarId, "CREATE");
-			if(mode.equals("copy")) checkRightsOnCalendarElements(calendarId, "DELETE");
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.ELEMENTS, "CREATE");
+			if (mode.equals("copy")) checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
 			
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started at {0}", new DateTime()));
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Reading source file..."));
@@ -4261,12 +4262,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CoreManager core = WT.getCoreManager(targetPid);
 		if (core.isShareRootPermitted(shareId, action)) return;
 		
-		throw new AuthException("Action not allowed on root share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
+		UserProfileId runPid = RunContext.getRunProfileId();
+		throw new AuthException("Action '{}' not allowed for '{}' on root share '{}' [{}, {}]", action, runPid, shareId, GROUPNAME_CALENDAR, targetPid.toString());
 	}
 	
 	private boolean quietlyCheckRightsOnCalendarFolder(int calendarId, String action) {
 		try {
-			checkRightsOnCalendarFolder(calendarId, action);
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, action);
 			return true;
 		} catch(AuthException ex1) {
 			return false;
@@ -4276,56 +4278,69 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
-		UserProfileId targetPid = getTargetProfileId();
-		
-		if(RunContext.isWebTopAdmin()) return;
-		
-		// Skip rights check if running user is resource's owner
-		UserProfileId owner = ownerCache.get(calendarId);
-		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
-		if (owner.equals(targetPid)) return;
-		
-		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(targetPid);
-		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
-		if (wildcardShareId != null) {
-			if (core.isShareFolderPermitted(wildcardShareId, action)) return;
-		}
-		
-		// Checks rights on calendar instance
-		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
-		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if (core.isShareFolderPermitted(shareId, action)) return;
-		
-		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
+	private enum CheckRightsTarget {
+		FOLDER, ELEMENTS
 	}
 	
-	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
+	private void checkRightsOnCalendarFolder(int calendarId, CheckRightsTarget target, String action) throws WTException {
 		UserProfileId targetPid = getTargetProfileId();
-		
-		if(RunContext.isWebTopAdmin()) return;
-		
-		// Skip rights check if running user is resource's owner
+		Subject subject = RunContext.getSubject();
+		UserProfileId runPid = RunContext.getRunProfileId(subject);
 		UserProfileId owner = ownerCache.get(calendarId);
 		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
-		if (owner.equals(targetPid)) return;
 		
-		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(targetPid);
-		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
-		if (wildcardShareId != null) {
-			if (core.isShareElementsPermitted(wildcardShareId, action)) return;
-			//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
+		if (RunContext.isWebTopAdmin(subject)) {
+			// Skip checks for running wtAdmin and sysAdmin target
+			if (targetPid.equals(RunContext.getSysAdminProfileId())) return;
+			
+			// Skip checks if target is the resource owner
+			if (owner.equals(targetPid)) return;
+			
+			// Skip checks if resource is a valid incoming folder
+			if (shareCache.getFolderIds().contains(calendarId)) return;
+			
+			String exMsg = null;
+			if (CheckRightsTarget.FOLDER.equals(target)) {
+				exMsg = "Action '{}' not allowed for '{}' on folder '{}' [{}, {}]";
+			} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
+				exMsg = "Action '{}' not allowed for '{}' on elements of folder '{}' [{}, {}]";
+			}
+			throw new AuthException(exMsg, action, runPid, calendarId, GROUPNAME_CALENDAR, targetPid.toString());
+			
+		} else {
+			// Skip checks if target is the resource owner and it's the running profile
+			if (owner.equals(targetPid) && targetPid.equals(runPid)) return;
+			
+			// Checks rights on the wildcard instance (if present)
+			CoreManager core = WT.getCoreManager(targetPid);
+			String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
+			if (wildcardShareId != null) {
+				if (CheckRightsTarget.FOLDER.equals(target)) {
+					if (core.isShareFolderPermitted(wildcardShareId, action)) return;
+				} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
+					if (core.isShareElementsPermitted(wildcardShareId, action)) return;
+					//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
+				}
+			}
+			
+			// Checks rights on calendar instance
+			String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
+			if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
+			if (CheckRightsTarget.FOLDER.equals(target)) {
+				if (core.isShareFolderPermitted(shareId, action)) return;
+			} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
+				if (core.isShareElementsPermitted(shareId, action)) return;
+				//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
+			}
+			
+			String exMsg = null;
+			if (CheckRightsTarget.FOLDER.equals(target)) {
+				exMsg = "Action '{}' not allowed for '{}' on folder '{}' [{}, {}, {}]";
+			} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
+				exMsg = "Action '{}' not allowed for '{}' on elements of folder '{}' [{}, {}, {}]";
+			}
+			throw new AuthException(exMsg, action, runPid, calendarId, shareId, GROUPNAME_CALENDAR, targetPid.toString());
 		}
-		
-		// Checks rights on calendar instance
-		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
-		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if (core.isShareElementsPermitted(shareId, action)) return;
-		//if (core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
-		
-		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
 	}
 	
 	private ReminderInApp createEventReminderAlertWeb(VExpEventInstance instance) {
@@ -4612,7 +4627,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						if (folder.hasWildcard()) {
 							final UserProfileId ownerPid = coreMgr.userUidToProfileId(folder.getUserUid());
 							ownerToWildcardShareFolder.put(ownerPid, folder.getShareId().toString());
-							for (Calendar calendar : listCalendars(ownerPid).values()) {
+							for (Calendar calendar : listCalendars(ownerPid, false).values()) {
 								folderTo.add(calendar.getCalendarId());
 								rootShareToFolderShare.put(root.getShareId(), calendar.getCalendarId());
 								folderToWildcardShareFolder.put(calendar.getCalendarId(), folder.getShareId().toString());

@@ -41,6 +41,7 @@ import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;

@@ -37,17 +37,26 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarLkp', {
 	idProperty: 'calendarId',
 	fields: [
 		WTF.field('calendarId', 'int', false),
-		WTF.field('domainId', 'string', false),
-		WTF.field('userId', 'string', false),
-		WTF.field('name', 'string', false),
-		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
-		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
-		WTF.field('busy', 'boolean', false, {defaultValue: false}),
-		WTF.field('reminder', 'int', true),
+		// For backward compatibility
+		WTF.calcField('domainId', 'string', ['_profileId'], function(v, rec) {
+			return Sonicle.String.substrAfterLast(rec.get('_profileId'), '@');
+		}),
+		// For backward compatibility
+		WTF.calcField('userId', 'string', ['_profileId'], function(v, rec) {
+			return Sonicle.String.substrBeforeLast(rec.get('_profileId'), '@');
+		}),
+		WTF.roField('name', 'string'),
 		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
-		WTF.field('_writable', 'boolean', false),
-		WTF.calcField('_profileId', 'string', ['domainId', 'userId'], function(v, rec) {
-			return rec.get('userId') + '@' + rec.get('domainId');
-		})
+		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
+		WTF.field('evtPrivate', 'boolean', false, {defaultValue: false}),
+		WTF.field('evtBusy', 'boolean', false, {defaultValue: false}),
+		WTF.roField('evtReminder', 'int', true),
+		WTF.roField('_profileId', 'string'),
+		WTF.roField('_profileDescription', 'string'),
+		WTF.calcField('_label', 'string', ['name', '_profileDescription'], function(v, rec) {
+			return Ext.String.format('[{0}] {1}', rec.get('_profileDescription'), rec.get('name'));
+		}),
+		WTF.roField('_writable', 'boolean'),
+		WTF.roField('_order', 'int')
 	]
 });

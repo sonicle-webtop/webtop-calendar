@@ -408,7 +408,7 @@ public class Service extends BaseService {
 				for (ShareRootCalendar root : roots.values()) {
 					if (foldersByRoot.containsKey(root.getShareId())) {
 						for (ShareFolderCalendar fold : foldersByRoot.get(root.getShareId())) {
-							items.add(new JsCalendarLkp(fold, folderProps.get(fold.getCalendar().getCalendarId())));
+							items.add(new JsCalendarLkp(root, fold, folderProps.get(fold.getCalendar().getCalendarId()), items.size()));
 						}
 					}
 				}

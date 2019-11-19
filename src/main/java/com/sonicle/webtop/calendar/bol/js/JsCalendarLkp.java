@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
+import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 
 /**
  *
@@ -42,28 +43,32 @@ import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
  */
 public class JsCalendarLkp {
 	public Integer calendarId;
-	public String domainId;
-	public String userId;
 	public String name;
 	public String color;
-	public Boolean isPrivate;
 	public Boolean isDefault;
-	public Boolean busy;
-	public Integer reminder;
+	public Boolean evtPrivate;
+	public Boolean evtBusy;
+	public Integer evtReminder;
+	public String _profileId;
+	public String _profileDescription;
 	public Boolean _writable;
+	public Integer _order;
 	
-	public JsCalendarLkp(ShareFolderCalendar folder, CalendarPropSet folderProps) {
-		final Calendar cal = folder.getCalendar();
+	public JsCalendarLkp(Calendar cal) {
 		calendarId = cal.getCalendarId();
-		domainId = cal.getDomainId();
-		userId = cal.getUserId();
 		name = cal.getName();
 		color = cal.getColor();
-		isPrivate = cal.getIsPrivate();
 		isDefault = cal.getIsDefault();
-		busy = cal.getDefaultBusy();
-		reminder = cal.getDefaultReminder();
-		if (folderProps != null) color = folderProps.getColorOrDefault(color);
+		evtPrivate = cal.getIsPrivate();
+		evtBusy = cal.getDefaultBusy();
+		evtReminder = cal.getDefaultReminder();
+		_profileId = cal.getProfileId().toString();
+	}
+	
+	public JsCalendarLkp(ShareRootCalendar root, ShareFolderCalendar folder, CalendarPropSet folderProps, int order) {
+		this(folder.getCalendar().applyPropSet(folderProps));
+		_profileDescription = root.getDescription();
 		_writable = folder.getElementsPerms().implies("CREATE");
+		_order = order;
 	}
 }

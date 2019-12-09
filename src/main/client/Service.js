@@ -121,6 +121,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				{
 					xtype: 'wtsearchfield',
 					reference: 'fldsearch',
+					highlightKeywords: ['title', 'location'],
 					fields: [{
 						name: 'title',
 						type: 'string',
@@ -385,7 +386,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						extraParams: {
 							query: null
 						}
-					})
+					}),
+					listeners: {
+						load: function() {
+							var el = me.gpResults().getEl(),
+							searchComponent = me.getToolbar().lookupReference('fldsearch');
+							searchComponent.highlight(el, '.x-grid-item-container');
+						}
+					}
 				},
 				columns: [{
 					xtype: 'soiconcolumn',

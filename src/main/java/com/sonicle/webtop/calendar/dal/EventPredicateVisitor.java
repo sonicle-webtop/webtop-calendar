@@ -54,11 +54,6 @@ public class EventPredicateVisitor extends BaseJOOQVisitor {
 		super();
 		this.target = target;
 	}
-	
-	public EventPredicateVisitor(boolean ignoreCase, Target target) {
-		super(ignoreCase);
-		this.target = target;
-	}
 
 	public boolean hasFromRange() {
 		return fromRange != null;

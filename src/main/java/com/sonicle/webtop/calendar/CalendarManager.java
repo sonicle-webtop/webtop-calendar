@@ -970,12 +970,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
 					.collect(Collectors.toList());
 			
-			EventPredicateVisitor epv = new EventPredicateVisitor(true, EventPredicateVisitor.Target.NORMAL);
+			EventPredicateVisitor epv = new EventPredicateVisitor(EventPredicateVisitor.Target.NORMAL)
+					.withIgnoreCase(true)
+					.withForceStringLikeComparison(true);
 			org.jooq.Condition norCondition = null;
 			org.jooq.Condition recCondition = null;
 			if (conditionPredicate != null) {
 				norCondition = BaseDAO.createCondition(conditionPredicate, epv);
-				recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(true, EventPredicateVisitor.Target.RECURRING));
+				recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(EventPredicateVisitor.Target.RECURRING)
+						.withIgnoreCase(true)
+						.withForceStringLikeComparison(true)
+				);
 			}
 			
 			DateTime from = null;
@@ -1054,12 +1059,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					.filter(calendarId -> quietlyCheckRightsOnCalendarFolder(calendarId, "READ"))
 					.collect(Collectors.toList());
 			
-			EventPredicateVisitor epv = new EventPredicateVisitor(true, EventPredicateVisitor.Target.NORMAL);
+			EventPredicateVisitor epv = new EventPredicateVisitor(EventPredicateVisitor.Target.NORMAL)
+					.withIgnoreCase(true)
+					.withForceStringLikeComparison(true);
 			org.jooq.Condition norCondition = null;
 			org.jooq.Condition recCondition = null;
 			if (conditionPredicate != null) {
 				norCondition = BaseDAO.createCondition(conditionPredicate, epv);
-				recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(true, EventPredicateVisitor.Target.RECURRING));
+				recCondition = BaseDAO.createCondition(conditionPredicate, new EventPredicateVisitor(EventPredicateVisitor.Target.RECURRING)
+						.withIgnoreCase(true)
+						.withForceStringLikeComparison(true)
+				);
 			}
 			
 			boolean hasRange = (range != null);

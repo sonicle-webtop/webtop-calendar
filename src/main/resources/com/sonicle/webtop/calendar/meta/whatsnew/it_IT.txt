@@ -1,3 +1,8 @@
+$	5.8.0
+	%	Versione 5.8.0
+	*	<h1>Nuova casella di selezione per il calendario destinazione</h1>
+		<p>E' ora possible selezionare il calendario destinazione di un evento tramite una unica casella di selezione.</p>
+		<img src="5.8.0_calendarchooser.png"/>
 $	5.7.0
 	%	Versione 5.7.0
 	*	<h1>Nuovo layout dei calendari</h1>

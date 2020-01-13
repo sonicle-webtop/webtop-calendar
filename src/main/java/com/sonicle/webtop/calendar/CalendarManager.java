@@ -855,9 +855,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public void addEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		
+		boolean notifyAttendees = false;
 		ICalendarInput in = new ICalendarInput(udata.getTimeZone())
-				.withDefaultAttendeeNotify(true);
-				
+				.withDefaultAttendeeNotify(notifyAttendees);
+		
 		ArrayList<EventInput> eis = in.fromICalendarFile(iCalendar, null);
 		if (eis.isEmpty()) throw new WTException("iCalendar object does not contain any events");
 		if (eis.size() > 1) throw new WTException("iCalendar object should contain one event");
@@ -875,7 +876,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 		}
 		
-		addEvent(ei.event, rawData, true);
+		// Invitation messages should be sent only in two cases:
+		// 1) Organizer addr. matches current-user's personal address
+		// 2) Organizer addr. matches current-user's profile address
+		String orgAddress = ei.event.getOrganizerAddress();
+		if (StringUtils.equals(orgAddress, udata.getPersonalEmailAddress()) || StringUtils.equals(orgAddress, udata.getProfileEmailAddress())) {
+			notifyAttendees = true;
+			ei.event.getAttendees().stream().forEach(att -> att.setNotify(true));
+		}
+		addEvent(ei.event, rawData, notifyAttendees);
 	}
 	
 	@Override

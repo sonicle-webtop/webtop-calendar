@@ -32,7 +32,7 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.CalendarLinks', {
 	extend: 'WTA.ux.data.BaseModel',
-	proxy: WTF.proxy('com.sonicle.webtop.calendar', 'ManageCalendars', null, {
+	proxy: WTF.proxy('com.sonicle.webtop.calendar', 'ManageCalendar', null, {
 		extraParams: {crud: 'readLinks'}
 	}),
 	

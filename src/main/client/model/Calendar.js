@@ -33,7 +33,7 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 	extend: 'WTA.ux.data.BaseModel',
-	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendars'),
+	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageCalendar'),
 	
 	identifier: 'negative',
 	idProperty: 'calendarId',

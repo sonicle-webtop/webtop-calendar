@@ -35,11 +35,13 @@ package com.sonicle.webtop.calendar.dal;
 import com.github.rutledgepaulv.qbuilders.nodes.ComparisonNode;
 import com.github.rutledgepaulv.qbuilders.operators.ComparisonOperator;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import com.sonicle.webtop.core.app.sdk.BaseJOOQVisitor;
 import java.util.Collection;
 import org.joda.time.DateTime;
 import org.jooq.Condition;
+import static org.jooq.impl.DSL.*;
 
 /**
  *
@@ -109,6 +111,16 @@ public class EventPredicateVisitor extends BaseJOOQVisitor {
 				
 			case "private":
 				return defaultCondition(EVENTS.IS_PRIVATE, operator, values);
+			
+			case "tag":
+				return exists(
+					selectOne()
+					.from(EVENTS_TAGS)
+					.where(
+						EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+						.and(EVENTS_TAGS.TAG_ID.equal(singleAsString(values)))
+					)
+				);
 				
 			case "any":
 				return EVENTS.TITLE.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values)))

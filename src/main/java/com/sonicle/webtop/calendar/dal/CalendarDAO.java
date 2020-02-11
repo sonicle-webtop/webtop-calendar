@@ -45,6 +45,7 @@ import com.sonicle.webtop.core.sdk.UserProfileId;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
@@ -115,6 +116,20 @@ public class CalendarDAO extends BaseDAO {
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)
 			.fetchOneInto(String.class);
+	}
+	
+	public Set<Integer> selectIdsByProfile(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				CALENDARS.CALENDAR_ID
+			)
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+			)
+			.fetchSet(CALENDARS.CALENDAR_ID);
 	}
 	
 	public OCalendar selectById(Connection con, int calendarId) throws DAOException {

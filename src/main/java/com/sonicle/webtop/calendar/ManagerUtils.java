@@ -390,6 +390,7 @@ public class ManagerUtils {
 			tgt.setIsPrivate(src.getIsPrivate());
 			tgt.setBusy(src.getBusy());
 			tgt.setReminder(Event.Reminder.valueOf(src.getReminder()));
+			tgt.setTags(src.getTags());
 			tgt.setCalendarDomainId(src.getCalendarDomainId());
 			tgt.setCalendarUserId(src.getCalendarUserId());
 			tgt.setSeriesEventId(src.getSeriesEventId());

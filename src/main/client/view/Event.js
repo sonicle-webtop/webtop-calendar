@@ -34,9 +34,11 @@
 Ext.define('Sonicle.webtop.calendar.view.Event', {
 	extend: 'WTA.sdk.ModelView',
 	requires: [
-		'Sonicle.form.field.Palette',
+		'Sonicle.String',
 		'Sonicle.form.RadioGroup',
-		'Sonicle.form.field.ColorComboBox',
+		'Sonicle.form.field.Palette',
+		'Sonicle.form.field.ComboBox',
+		'Sonicle.form.field.TagDisplay',
 		'Sonicle.form.field.rr.Recurrence',
 		'Sonicle.plugin.FileDrop',
 		'WTA.ux.data.EmptyModel',
@@ -53,6 +55,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.webtop.calendar.store.AttendeeRcptRole',
 		'Sonicle.webtop.calendar.store.AttendeeRcptType',
 		'Sonicle.webtop.calendar.store.AttendeeRespStatus'
+	],
+	uses: [
+		'Sonicle.webtop.core.view.Tags'
 	],
 	
 	dockableConfig: {
@@ -128,7 +133,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			isPrivate: WTF.checkboxBind('record', 'isPrivate'),
 			busy: WTF.checkboxBind('record', 'busy'),
 			foHasRecurrence: WTF.foIsEmpty('record', 'rrule'),
-			foIsRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring')
+			foIsRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring'),
+			foHasTags: WTF.foIsEmpty('record', 'tags', true)
 		});
 	},
 	
@@ -137,96 +143,126 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				vm = me.getViewModel();
 		
 		Ext.apply(me, {
-			tbar: [
-				me.addAct('saveClose', {
-					text: WT.res('act-saveClose.lbl'),
-					tooltip: null,
-					iconCls: 'wt-icon-saveClose-xs',
-					handler: function() {
-						me.saveEventUI();
-					}
-				}),
-				'-',
-				me.addAct('delete', {
-					text: null,
-					tooltip: WT.res('act-delete.lbl'),
-					iconCls: 'wt-icon-delete',
-					handler: function() {
-						me.deleteEventUI();
-					}
-				}),
-				me.addAct('restore', {
-					text: null,
-					tooltip: WT.res('act-restore.lbl'),
-					iconCls: 'wt-icon-restore-xs',
-					handler: function() {
-						me.restoreEventUI();
-					},
-					disabled: true
-				}),
-				'-',
-				me.addAct('print', {
-					text: null,
-					tooltip: WT.res('act-print.lbl'),
-					iconCls: 'wt-icon-print',
-					handler: function() {
-						//TODO: aggiungere l'azione 'salva' permettendo così la stampa senza chiudere la form
-						me.printEvent(me.getModel().getId());
-					}
-				}),
-				'->',
-				WTF.lookupCombo('calendarId', '_label', {
-					xtype: 'socombo',
-					reference: 'fldcalendar',
-					bind: '{record.calendarId}',
-					listConfig: {
-						displayField: 'name',
-						groupCls: 'wt-theme-text-greyed'
-					},
-					autoLoadOnValue: true,
-					store: {
-						model: me.mys.preNs('model.CalendarLkp'),
-						proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders'),
-						grouper: {
-							property: '_profileId',
-							sortProperty: '_order'
-						},
-						filters: [{
-							filterFn: function(rec) {
-								var mo = me.getModel();
-								if (mo && me.isMode(me.MODE_NEW)) {
-									return rec.get('_writable');
-								} else if (mo && me.isMode(me.MODE_VIEW)) {
-									if (rec.getId() === mo.get('calendarId')) return true;
-								} else if (mo && me.isMode(me.MODE_EDIT)) {
-									if (rec.getId() === mo.get('calendarId')) return true;
-									if (rec.get('_profileId') === mo.get('_profileId') && rec.get('_writable')) return true;
-								}
-								return false;
+			dockedItems: [
+				{
+					xtype: 'toolbar',
+					dock: 'top',
+					items: [
+						me.addAct('saveClose', {
+							text: WT.res('act-saveClose.lbl'),
+							tooltip: null,
+							iconCls: 'wt-icon-saveClose-xs',
+							handler: function() {
+								me.saveEventUI();
 							}
-						}],
-						listeners: {
-							load: function(s, recs, succ) {
-								if (succ && (s.loadCount === 1) && me.isMode(me.MODE_NEW)) {
-									var rec = s.getById(me.lref('fldcalendar').getValue());
-									if (rec) me.setCalendarDefaults(rec);
+						}),
+						'-',
+						me.addAct('delete', {
+							text: null,
+							tooltip: WT.res('act-delete.lbl'),
+							iconCls: 'wt-icon-delete',
+							handler: function() {
+								me.deleteEventUI();
+							}
+						}),
+						me.addAct('restore', {
+							text: null,
+							tooltip: WT.res('act-restore.lbl'),
+							iconCls: 'wt-icon-restore-xs',
+							handler: function() {
+								me.restoreEventUI();
+							},
+							disabled: true
+						}),
+						'-',
+						me.addAct('print', {
+							text: null,
+							tooltip: WT.res('act-print.lbl'),
+							iconCls: 'wt-icon-print',
+							handler: function() {
+								//TODO: aggiungere l'azione 'salva' permettendo così la stampa senza chiudere la form
+								me.printEvent(me.getModel().getId());
+							}
+						}),
+						me.addAct('tags', {
+							text: null,
+							tooltip: me.mys.res('act-manageTags.lbl'),
+							iconCls: 'wt-icon-tag',
+							handler: function() {
+								me.manageTagsUI(Sonicle.String.split(me.getModel().get('tags'), '|'));
+							}
+						}),
+						'->',
+						WTF.lookupCombo('calendarId', '_label', {
+							xtype: 'socombo',
+							reference: 'fldcalendar',
+							bind: '{record.calendarId}',
+							listConfig: {
+								displayField: 'name',
+								groupCls: 'wt-theme-text-greyed'
+							},
+							autoLoadOnValue: true,
+							store: {
+								model: me.mys.preNs('model.CalendarLkp'),
+								proxy: WTF.proxy(me.mys.ID, 'LookupCalendarFolders', 'folders'),
+								grouper: {
+									property: '_profileId',
+									sortProperty: '_order'
+								},
+								filters: [{
+									filterFn: function(rec) {
+										var mo = me.getModel();
+										if (mo && me.isMode(me.MODE_NEW)) {
+											return rec.get('_writable');
+										} else if (mo && me.isMode(me.MODE_VIEW)) {
+											if (rec.getId() === mo.get('calendarId')) return true;
+										} else if (mo && me.isMode(me.MODE_EDIT)) {
+											if (rec.getId() === mo.get('calendarId')) return true;
+											if (rec.get('_profileId') === mo.get('_profileId') && rec.get('_writable')) return true;
+										}
+										return false;
+									}
+								}],
+								listeners: {
+									load: function(s, recs, succ) {
+										if (succ && (s.loadCount === 1) && me.isMode(me.MODE_NEW)) {
+											var rec = s.getById(me.lref('fldcalendar').getValue());
+											if (rec) me.setCalendarDefaults(rec);
+										}
+									}
+								}
+							},
+							groupField: '_profileDescription',
+							colorField: 'color',
+							fieldLabel: me.mys.res('event.fld-calendar.lbl'),
+							labelAlign: 'right',
+							width: 400,
+							listeners: {
+								select: function(s, rec) {
+									me.setCalendarDefaults(rec);
+									me.refreshActivities();
+									me.refreshCausals();
 								}
 							}
-						}
+						})
+					]
+				}, {
+					xtype: 'sotagdisplayfield',
+					dock : 'top',
+					bind: {
+						value: '{record.tags}',
+						hidden: '{!foHasTags}'
 					},
-					groupField: '_profileDescription',
+					delimiter: '|',
+					valueField: 'id',
+					displayField: 'name',
 					colorField: 'color',
-					fieldLabel: me.mys.res('event.fld-calendar.lbl'),
-					labelAlign: 'right',
-					width: 400,
-					listeners: {
-						select: function(s, rec) {
-							me.setCalendarDefaults(rec);
-							me.refreshActivities();
-							me.refreshCausals();
-						}
-					}
-				})
+					store: WT.getTagsStore(),
+					dummyIcon: 'loading',
+					hidden: true,
+					hideLabel: true,
+					margin: '0 0 5 0'
+				}
 			]
 		});
 		me.callParent(arguments);
@@ -985,6 +1021,22 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		this.refreshCausals();
 	},
 	
+	manageTagsUI: function(selTagIds) {
+		var me = this,
+				vw = WT.createView(WT.ID, 'view.Tags', {
+					swapReturn: true,
+					viewCfg: {
+						data: {
+							selection: selTagIds
+						}
+					}
+				});
+		vw.on('viewok', function(s, data) {
+			me.getModel().set('tags', Sonicle.String.join('|', data.selection));
+		});
+		vw.showView();
+	},
+	
 	openAttachmentUI: function(rec, download) {
 		var me = this,
 				name = rec.get('name'),
@@ -1171,22 +1223,25 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			// It avoids type conversion problems server-side!
 			//if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
 
-			if(me.isMode(me.MODE_NEW)) {
+			if (me.isMode(me.MODE_NEW)) {
 				me.getAct('saveClose').setDisabled(false);
 				me.getAct('delete').setDisabled(true);
-				me.getAct('restore').setDisabled(true);		
+				me.getAct('restore').setDisabled(true);
+				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(false);
-			} else if(me.isMode(me.MODE_VIEW)) {
+			} else if (me.isMode(me.MODE_VIEW)) {
 				me.getAct('saveClose').setDisabled(true);
 				me.getAct('delete').setDisabled(true);
 				me.getAct('restore').setDisabled(true);
+				me.getAct('tags').setDisabled(true);
 				me.lref('fldcalendar').setReadOnly(true);
 				me.lref('tabrecurrence').setDisabled(false);
-			} else if(me.isMode(me.MODE_EDIT)) {
+			} else if (me.isMode(me.MODE_EDIT)) {
 				me.getAct('saveClose').setDisabled(false);
 				me.getAct('delete').setDisabled(false);
 				me.getAct('restore').setDisabled(!mo.isBroken());
+				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(mo.isBroken());
 			}

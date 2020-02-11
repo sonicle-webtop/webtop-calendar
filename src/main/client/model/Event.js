@@ -69,6 +69,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('causalId', 'int', true),
 		WTF.field('rrule', 'string', true),
 		WTF.field('rstart', 'date', true, {dateFormat: 'Y-m-d'}),
+		WTF.field('tags', 'string', true),
 		
 		// Read-only fields
 		WTF.roField('_profileId', 'string'),

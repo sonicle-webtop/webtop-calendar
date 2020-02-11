@@ -83,6 +83,7 @@ import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.model.FolderEventInstances;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.calendar.model.UpdateTagsOperation;
 import com.sonicle.webtop.calendar.msg.RemoteSyncResult;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
@@ -445,7 +446,7 @@ public class Service extends BaseService {
 		}
 	}
 	
-	public void processManageCalendars(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+	public void processManageCalendar(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		Calendar item = null;
 		
 		try {
@@ -495,11 +496,19 @@ public class Service extends BaseService {
 				runSyncRemoteCalendar(id, item.getName(), full);
 				
 				new JsonResult().printTo(out);
+				
+			} else if (crud.equals("updateTag")) {
+				int id = ServletUtils.getIntParameter(request, "id", true);
+				UpdateTagsOperation op = ServletUtils.getEnumParameter(request, "op", true, UpdateTagsOperation.class);
+				ServletUtils.StringArray tags = ServletUtils.getObjectParameter(request, "tags", ServletUtils.StringArray.class, true);
+				
+				manager.updateEventTags(op, id, new HashSet<>(tags));
+				new JsonResult().printTo(out);
 			}
 			
 		} catch(Throwable t) {
-			logger.error("Error in ManageCalendars", t);
-			new JsonResult(false, "Error").printTo(out);
+			logger.error("Error in ManageCalendar", t);
+			new JsonResult(t).printTo(out);
 		}
 	}
 	
@@ -845,7 +854,7 @@ public class Service extends BaseService {
 						event.getAttachments().add(att);
 					}
 				}
-				manager.updateEventInstance(target, event, notify);
+				manager.updateEventInstance(target, event, true, true, notify);
 				
 				new JsonResult().printTo(out);
 				
@@ -911,6 +920,19 @@ public class Service extends BaseService {
 			if (crud.equals(Crud.READ)) {
 				QueryObj queryObj = ServletUtils.getObjectParameter(request, "query", new QueryObj(), QueryObj.class);
 				
+				if (queryObj.hasCondition("tag")) {
+					CoreManager coreMgr = WT.getCoreManager();
+					Map<String, List<String>> tags = coreMgr.listTagIdsByName();
+					
+					for (QueryObj.Condition condition : queryObj.conditions) {
+						if ("tag".equals(condition.keyword)) {
+							if (tags.containsKey(condition.value)) {
+								condition.value = tags.get(condition.value).get(0);
+							}
+						}
+					}
+				}
+				
 				Set<Integer> activeCalIds = getActiveFolderIds();
 				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, EventQuery.toCondition(queryObj, utz), utz);
 				for (SchedEventInstance instance : instances) {
@@ -924,11 +946,24 @@ public class Service extends BaseService {
 				}
 				
 				new JsonResult("events", items).printTo(out);
+				
+			} else if (crud.equals("updateTag")) {
+				StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
+				UpdateTagsOperation op = ServletUtils.getEnumParameter(request, "op", true, UpdateTagsOperation.class);
+				StringArray tags = ServletUtils.getObjectParameter(request, "tags", StringArray.class, true);
+				
+				LinkedHashSet<Integer> ids = new LinkedHashSet<>();
+				for (String key : keys) {
+					ids.add(new EventKey(key).eventId);
+				}
+				manager.updateEventTags(op, ids, new HashSet<>(tags));
+				
+				new JsonResult().printTo(out);
 			}
 		
-		} catch(Exception ex) {
-			logger.error("Error in ManageGridEvents", ex);
-			new JsonResult(false, "Error").printTo(out);
+		} catch(Throwable t) {
+			logger.error("Error in ManageGridEvents", t);
+			new JsonResult(t).printTo(out);
 			
 		}
 	}

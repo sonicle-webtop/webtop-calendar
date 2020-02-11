@@ -39,6 +39,7 @@ import com.sonicle.webtop.core.sdk.UserProfileId;
  * @author malbinola
  */
 public class VVEvent extends OEvent {
+	protected String tags;
 	protected String calendarDomainId;
 	protected String calendarUserId;
 	protected Integer seriesEventId;
@@ -47,6 +48,14 @@ public class VVEvent extends OEvent {
 	
 	public VVEvent() {
 		super();
+	}
+	
+	public String getTags() {
+		return tags;
+	}
+
+	public void setTags(String tags) {
+		this.tags = tags;
 	}
 	
 	public String getCalendarDomainId() {

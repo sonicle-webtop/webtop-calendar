@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.model.EventAttachment;
@@ -41,6 +42,7 @@ import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import net.fortuna.ical4j.model.Recur;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -74,6 +76,7 @@ public class JsEvent {
 	public String rrule;
 	public String rstart;
 	public ArrayList<Attendee> attendees;
+	public String tags;
 	public ArrayList<Attachment> attachments;
 	
 	// Read-only fields
@@ -134,6 +137,8 @@ public class JsEvent {
 			jsa.notify = att.getNotify();
 			attendees.add(jsa);
 		}
+		
+		tags = new CompositeId(event.getTags()).toString();
 		
 		attachments = new ArrayList<>();
 		for (EventAttachment att : event.getAttachments()) {
@@ -205,6 +210,8 @@ public class JsEvent {
 			attendee.setNotify(jsa.notify);
 			event.getAttendees().add(attendee);
 		}
+		
+		event.setTags(new LinkedHashSet<>(new CompositeId().parse(js.tags).getTokens()));
 		
 		// Attachment needs to be treated outside this class in order to have complete access to their streams
 		

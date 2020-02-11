@@ -45,6 +45,7 @@ import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ICALENDARS;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
 import com.sonicle.webtop.calendar.jooq.tables.Events;
@@ -93,6 +94,20 @@ public class EventDAO extends BaseDAO {
 				EVENTS.EVENT_ID.equal(eventId)
 			)
 			.fetchOne(0, Integer.class);
+	}
+	
+	public Map<Integer, Integer> selectCalendarsByIds(Connection con, Collection<Integer> eventIds) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.CALENDAR_ID
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.EVENT_ID.in(eventIds)
+			)
+			.fetchMap(EVENTS.EVENT_ID, EVENTS.CALENDAR_ID);
 	}
 	
 	public Integer selectRecurrenceId(Connection con, int eventId) throws DAOException {
@@ -516,6 +531,14 @@ public class EventDAO extends BaseDAO {
 	public VVEvent viewById(Connection con, int eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
+		// New field: tags list
+		Field<String> tags = DSL
+			.select(DSL.groupConcat(EVENTS_TAGS.TAG_ID, "|"))
+			.from(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+			).asField("tags");
+		
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
@@ -551,6 +574,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.fields()
 			)
 			.select(
+				tags,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,
@@ -572,6 +596,14 @@ public class EventDAO extends BaseDAO {
 	public VVEvent viewByPublicUid(Connection con, String publicUid) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
+		// New field: tags list
+		Field<String> tags = DSL
+			.select(DSL.groupConcat(EVENTS_TAGS.TAG_ID, "|"))
+			.from(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+			).asField("tags");
+		
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
@@ -607,6 +639,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.fields()
 			)
 			.select(
+				tags,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,
@@ -651,6 +684,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.REVISION_TIMESTAMP
 			)
 			.select(
+				// Ignore tags list field, it's not necessary for getting dates (see this method name)
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId
@@ -696,6 +730,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.REVISION_TIMESTAMP
 			)
 			.select(
+				// Ignore tags list field, it's not necessary for getting dates (see this method name)
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId
@@ -765,6 +800,14 @@ public class EventDAO extends BaseDAO {
 		}
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
+		// New field: tags list
+		Field<String> tags = DSL
+			.select(DSL.groupConcat(EVENTS_TAGS.TAG_ID, "|"))
+			.from(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+			).asField("tags");
+		
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
@@ -800,6 +843,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.fields()
 			)
 			.select(
+				tags,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,
@@ -839,6 +883,14 @@ public class EventDAO extends BaseDAO {
 		}
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
+		// New field: tags list
+		Field<String> tags = DSL
+			.select(DSL.groupConcat(EVENTS_TAGS.TAG_ID, "|"))
+			.from(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+			).asField("tags");
+		
 		// New field: targets the eventId of the original series event
 		// NB: recurring events cannot have a reference to a master series event
 		Field<Integer> seriesEventId = value(null, Integer.class).as("series_event_id");
@@ -867,6 +919,7 @@ public class EventDAO extends BaseDAO {
 				EVENTS.fields()
 			)
 			.select(
+				tags,
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
 				CALENDARS.USER_ID.as("calendar_user_id"),
 				seriesEventId,

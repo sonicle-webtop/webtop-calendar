@@ -39,6 +39,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.calendar.data.EventModel',
 		'Sonicle.grid.column.Icon',
 		'Sonicle.grid.column.Color',
+		'Sonicle.grid.column.Tag',
+		'Sonicle.menu.TagItem',
 		'Sonicle.tree.Column',
 		'WTA.ux.field.Search',
 		'Sonicle.webtop.calendar.model.FolderNode',
@@ -48,6 +50,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	],
 	uses: [
 		'WTA.util.FoldersTree',
+		'WTA.ux.SelectTagsBox',
 		'Sonicle.webtop.calendar.ux.RecurringConfirmBox',
 		'Sonicle.webtop.calendar.view.Sharing',
 		'Sonicle.webtop.calendar.view.Calendar',
@@ -74,7 +77,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	init: function() {
-		var me = this;
+		var me = this,
+				tagsStore = WT.getTagsStore();
 		//TODO: trovare una collocazione a questa chiamata
 		Sonicle.upload.Uploader.registerMimeType('text/calendar', ['ical','ics','icalendar']);
 		
@@ -122,45 +126,58 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					xtype: 'wtsearchfield',
 					reference: 'fldsearch',
 					highlightKeywords: ['title', 'location'],
-					fields: [{
-						name: 'title',
-						type: 'string',
-						label: me.res('fld-search.field.title.lbl')
-					}, {
-						name: 'location',
-						type: 'string',
-						label: me.res('fld-search.field.location.lbl')
-					}, {
-						name: 'description',
-						type: 'string',
-						label: me.res('fld-search.field.description.lbl')
-					}/*, {
-						name: 'any',
-						type: 'string',
-						textSink: true,
-						label: me.res('fld-search.field.any.lbl')
-					}*/, {
-						name: 'after',
-						type: 'date',
-						labelAlign: 'left',
-						label: me.res('fld-search.field.after.lbl')
-					}, {
-						name: 'before',
-						type: 'date',
-						labelAlign: 'left',
-						label: me.res('fld-search.field.before.lbl')
-					}, {
-						name: 'busy',
-						type: 'boolean',
-						boolKeyword: 'is',
-						label: me.res('fld-search.field.busy.lbl')
-					}, {
-						name: 'private',
-						type: 'boolean',
-						boolKeyword: 'is',
-						label: me.res('fld-search.field.private.lbl')
-					}],
+					fields: [
+						{
+							name: 'title',
+							type: 'string',
+							label: me.res('fld-search.field.title.lbl')
+						}, {
+							name: 'location',
+							type: 'string',
+							label: me.res('fld-search.field.location.lbl')
+						}, {
+							name: 'description',
+							type: 'string',
+							label: me.res('fld-search.field.description.lbl')
+						}/*, {
+							name: 'any',
+							type: 'string',
+							textSink: true,
+							label: me.res('fld-search.field.any.lbl')
+						}*/, {
+							name: 'after',
+							type: 'date',
+							labelAlign: 'left',
+							label: me.res('fld-search.field.after.lbl')
+						}, {
+							name: 'before',
+							type: 'date',
+							labelAlign: 'left',
+							label: me.res('fld-search.field.before.lbl')
+						}, {
+							name: 'busy',
+							type: 'boolean',
+							boolKeyword: 'is',
+							label: me.res('fld-search.field.busy.lbl')
+						}, {
+							name: 'private',
+							type: 'boolean',
+							boolKeyword: 'is',
+							label: me.res('fld-search.field.private.lbl')
+						}, {
+							name: 'tag',
+							type: 'tag[]',
+							label: me.res('fld-search.field.tags.lbl'),
+							customConfig: {
+								valueField: 'id',
+								displayField: 'name',
+								colorField: 'color',
+								store: WT.getTagsStore() // This is filterable, let's do a separate copy!
+							}
+						}
+					],
 					tooltip: me.res('fld-search.tip'),
+					searchTooltip: me.res('fld-search.tip'),
 					emptyText: me.res('fld-search.emp'),
 					listeners: {
 						query: function(s, value, qObj) {
@@ -286,6 +303,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			items: [{
 				xtype: 'calendarpanel',
 				reference: 'scheduler',
+				tagsStore: tagsStore,
 				activeView: me.getVar('view'),
 				startDay: WT.getStartDay(),
 				use24HourTime: WT.getUse24HourTime(),
@@ -395,44 +413,52 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					}
 				},
-				columns: [{
-					xtype: 'soiconcolumn',
-					getIconCls: function(v,rec) {
-						var ico = 'single-event';
-						if (rec.get('isBroken')) ico = 'broken-event';
-						if (rec.get('isRecurring')) ico = 'recurring-event';
-						return WTF.cssIconCls(me.XID, ico, 'xs');
-					},
-					iconSize: WTU.imgSizeToPx('xs'),
-					width: 40
-				}, {
-					xtype: 'socolorcolumn',
-					dataIndex: 'folderName',
-					colorField: 'color',
-					displayField: 'folderName',
-					header: me.res('event.fld-calendar.lbl'),
-					width: 150
-				}, {
-					dataIndex: 'startDate',
-					xtype: 'datecolumn',
-					format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
-					header: me.res('event.fld-startDate.lbl'),
-					width: 150
-				}, {
-					dataIndex: 'endDate',
-					xtype: 'datecolumn',
-					format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
-					header: me.res('event.fld-endDate.lbl'),
-					width: 150
-				}, {
-					dataIndex: 'title',
-					header: me.res('event.fld-title.lbl'),
-					flex: 1
-				}, {
-					dataIndex: 'location',
-					header: me.res('event.fld-location.lbl'),
-					flex: 1
-				}],
+				columns: [
+					{
+						xtype: 'soiconcolumn',
+						getIconCls: function(v,rec) {
+							var ico = 'single-event';
+							if (rec.get('isBroken')) ico = 'broken-event';
+							if (rec.get('isRecurring')) ico = 'recurring-event';
+							return WTF.cssIconCls(me.XID, ico, 'xs');
+						},
+						iconSize: WTU.imgSizeToPx('xs'),
+						width: 40
+					}, {
+						xtype: 'socolorcolumn',
+						dataIndex: 'folderName',
+						colorField: 'color',
+						displayField: 'folderName',
+						header: me.res('event.fld-calendar.lbl'),
+						width: 150
+					}, {
+						dataIndex: 'startDate',
+						xtype: 'datecolumn',
+						format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
+						header: me.res('event.fld-startDate.lbl'),
+						width: 150
+					}, {
+						dataIndex: 'endDate',
+						xtype: 'datecolumn',
+						format: WT.getShortDateFmt() + ' ' + WT.getShortTimeFmt(),
+						header: me.res('event.fld-endDate.lbl'),
+						width: 150
+					}, {
+						xtype: 'sotagcolumn',
+						dataIndex: 'tags',
+						header: me.res('gpevents.tags.lbl'),
+						tagsStore: tagsStore,
+						width: 90
+					}, {
+						dataIndex: 'title',
+						header: me.res('event.fld-title.lbl'),
+						flex: 1
+					}, {
+						dataIndex: 'location',
+						header: me.res('event.fld-location.lbl'),
+						flex: 1
+					}
+				],
 				tools: [{
 					type: 'close',
 					callback: function() {
@@ -631,6 +657,57 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			handler: function(s, e) {
 				var node = e.menuData.node;
 				if (node) me.importEventsUI(node.get('_calId'));
+			}
+		});
+		me.addAct('applyTags', {
+			tooltip: null,
+			handler: function(s, e) {
+				var node = e.menuData.node;
+				if (node) me.applyCalendarTagsUI(node);
+			}
+		});
+		me.addAct('tags', {
+			text: me.res('mni-tags.lbl'),
+			tooltip: null,
+			menu: {
+				xtype: 'sostoremenu',
+				useItemIdPrefix: true,
+				store: WT.getTagsStore(),
+				textField: 'name',
+				tagField: 'id',
+				bottomStaticItems: [
+					'-',
+					me.addAct('manageTags', {
+						tooltip: null,
+						handler: function(s, e) {
+							var rec = WTU.itselfOrFirst(e.menuData.event);
+							if (rec) me.manageEventItemsTagsUI([rec]);
+						}
+					})
+				],
+				itemCfgCreator: function(rec) {
+					return {
+						xclass: 'Sonicle.menu.TagItem',
+						color: rec.get('color'),
+						hideOnClick: true
+					};
+				},
+				listeners: {
+					beforeshow: function(s) {
+						s.setCheckedItems(me.toMutualTags([s.parentMenu.menuData.event]) || []);
+					},
+					click: function(s, itm, e) {
+						if (itm.tag) {
+							var rec = WTU.itselfOrFirst(e.menuData.event),
+								ids = WTU.collectIds([rec]);
+							me.updateEventItemsTags(ids, !itm.checked ? 'unset' : 'set', [itm.tag], {
+								callback: function(success) {
+									if (success) me.reloadEvents();
+								}
+							});
+						}
+					}
+				}
 			}
 		});
 		me.addAct('calendarColor', {
@@ -898,6 +975,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				},
 				me.getAct('syncRemoteCalendar'),
 				'-',
+				me.getAct('applyTags'),
+				'-',
 				me.getAct('addEvent'),
 				me.getAct('importEvents')
 				//TODO: azioni altri servizi?
@@ -918,6 +997,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					me.getAct('hideCalendar').setDisabled(mine);
 					me.getAct('restoreCalendarColor').setDisabled(mine);
 					me.getAct('syncRemoteCalendar').setDisabled(!Sonicle.webtop.calendar.view.Calendar.isRemote(rec.get('_provider')));
+					me.getAct('applyTags').setDisabled(!er.UPDATE);
 					
 					var picker = s.down('menu#calendarColor').down('colorpicker');
 					picker.menuData = s.menuData; // Picker's handler doesn't carry the event, injects menuData inside the picket itself
@@ -949,6 +1029,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}
 				},
 				me.getAct('printEvent'),
+				'-',
+				me.getAct('tags'),
 				'-',
 				me.getAct('deleteEvent'),
 				me.getAct('restoreEvent')
@@ -1125,6 +1207,24 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
+	applyCalendarTagsUI: function(node) {
+		var me = this, op;
+		WT.confirmSelectTags(function(bid, value) {
+			if (bid === 'yes' || bid === 'no') {
+				op = (bid === 'yes') ? 'set' : ((bid === 'no') ? 'unset' : ''); 
+				WT.confirm(me.res('calendar.confirm.tags.' + op, Ext.String.ellipsis(node.get('text'), 40)), function(bid2) {
+					if (bid2 === 'yes') {
+						me.updateCalendarTags(node.get('_calId'), op, value, {
+							callback: function(success) {
+								if (success) me.reloadEvents();
+							}
+						});
+					}
+				}, this);
+			}
+		}, me);
+	},
+	
 	/*
 	updateCheckedFoldersUI: function(node, checked) {
 		var me = this;
@@ -1149,6 +1249,30 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if(success) me.reloadEvents();
 			}
 		});
+	},
+	
+	manageEventItemsTagsUI: function(recs) {
+		var me = this,
+				ids = WTU.collectIds(recs),
+				tags = me.toMutualTags(recs),
+				vw = WT.createView(WT.ID, 'view.Tags', {
+					swapReturn: true,
+					viewCfg: {
+						data: {
+							selection: tags
+						}
+					}
+				});
+		vw.on('viewok', function(s, data) {
+			if (Sonicle.String.difference(tags, data.selection).length > 0) {
+				me.updateEventItemsTags(ids, 'reset', data.selection, {
+					callback: function(success) {
+						if (success) me.reloadEvents();
+					}
+				});
+			}	
+		});
+		vw.showView();
 	},
 	
 	addEventUI: function(ownerId, calendarId, isPrivate, busy, reminder, start, end, allDay) {
@@ -1388,7 +1512,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	syncRemoteCalendar: function(calendarId, full, opts) {
 		opts = opts || {};
 		var me = this;
-		WT.ajaxReq(me.ID, 'ManageCalendars', {
+		WT.ajaxReq(me.ID, 'ManageCalendar', {
 			params: {
 				crud: 'sync',
 				id: calendarId,
@@ -1429,16 +1553,32 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	updateCalendarSync: function(categoryId, sync, opts) {
+	updateCalendarSync: function(calendarId, sync, opts) {
 		opts = opts || {};
 		var me = this;
 		WT.ajaxReq(me.ID, 'SetCalendarSync', {
 			params: {
-				id: categoryId,
+				id: calendarId,
 				sync: sync
 			},
 			callback: function(success, json) {
 				Ext.callback(opts.callback, opts.scope || me, [success, json]);
+			}
+		});
+	},
+	
+	updateCalendarTags: function(calendarId, op, tagIds, opts) {
+		opts = opts || {};
+		var me = this;
+		WT.ajaxReq(me.ID, 'ManageCalendar', {
+			params: {
+				crud: 'updateTag',
+				id: calendarId,
+				op: op,
+				tags: WTU.arrayAsParam(tagIds)
+			},
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope, [success, json]);
 			}
 		});
 	},
@@ -1735,81 +1875,107 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		return (this.getMainComponent().getLayout().getActiveItem() === id);
 	},
 	
-	confirmOnRecurringFor: function(type, cb, scope) {
-		this.confirmOnRecurring(this.res('event.recurring.confirm.'+type), cb, scope);
-	},
-	
-	confirmOnRecurring: function(msg, cb, scope) {
+	updateEventItemsTags: function(eventKeys, op, tagIds, opts) {
+		opts = opts || {};
 		var me = this;
-		WT.confirm(msg, cb, scope, {
-			buttons: Ext.Msg.OKCANCEL,
-			instClass: 'Sonicle.webtop.calendar.ux.RecurringConfirmBox',
-			instConfig: {
-				thisText: me.res('confirm.recurrence.this'),
-				sinceText: me.res('confirm.recurrence.since'),
-				allText: me.res('confirm.recurrence.all')
+		WT.ajaxReq(me.ID, 'ManageGridEvents', {
+			params: {
+				crud: 'updateTag',
+				keys: WTU.arrayAsParam(eventKeys),
+				op: op,
+				tags: WTU.arrayAsParam(tagIds)
 			},
-			config: {
-				value: 'this'
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope, [success, json]);
 			}
 		});
 	},
 	
-	confirmOnSeries: function(cb, scope) {
-		var me = this;
-		WT.confirm(me.res('event.recurring.confirm.series'), cb, scope, {
-			buttons: Ext.Msg.YESNO
-		});
-	},
-	
-	confirmOnInvitationFor: function(type, cb, scope) {
-		this.confirmOnInvitation(this.res('event.send.confirm.'+type), cb, scope);
-	},
-	
-	confirmOnInvitation: function(msg, cb, scope) {
-		var me = this;
-		WT.confirm(msg, cb, scope, {
-			buttons: Ext.Msg.YESNOCANCEL,
-			config: {
-				buttonText: {
-					yes: me.res('event.send.confirm.yes'),
-					no: me.res('event.send.confirm.no')
-				}
-			}
-		});
-	},
-	
-	/**
-	 * @private
-	 */
-	createHiddenCalendars: function(rootNodeId) {
-		var me = this;
-		return WT.createView(me.ID, 'view.HiddenCalendars', {
-			swapReturn: true,
-			viewCfg: {
-				action: 'ManageHiddenCalendars',
-				extraParams: {
-					crud: 'list',
-					rootId: rootNodeId
-				}
-			}
-		});
-	},
-	
-	/**
-	 * @private
-	 */
-	createCalendarChooser: function(copy) {
-		var me = this;
-		return WT.createView(me.ID, 'view.CalendarChooser', {
-			swapReturn: true,
-			viewCfg: {
-				dockableConfig: {
-					title: me.res(copy ? 'act-copyEvent.lbl' : 'act-moveEvent.lbl')
+	privates: {
+		confirmOnRecurringFor: function(type, cb, scope) {
+			this.confirmOnRecurring(this.res('event.recurring.confirm.'+type), cb, scope);
+		},
+
+		confirmOnRecurring: function(msg, cb, scope) {
+			var me = this;
+			WT.confirm(msg, cb, scope, {
+				buttons: Ext.Msg.OKCANCEL,
+				instClass: 'Sonicle.webtop.calendar.ux.RecurringConfirmBox',
+				instConfig: {
+					thisText: me.res('confirm.recurrence.this'),
+					sinceText: me.res('confirm.recurrence.since'),
+					allText: me.res('confirm.recurrence.all')
 				},
-				writableOnly: true
-			}
-		});
+				config: {
+					value: 'this'
+				}
+			});
+		},
+
+		confirmOnSeries: function(cb, scope) {
+			var me = this;
+			WT.confirm(me.res('event.recurring.confirm.series'), cb, scope, {
+				buttons: Ext.Msg.YESNO
+			});
+		},
+
+		confirmOnInvitationFor: function(type, cb, scope) {
+			this.confirmOnInvitation(this.res('event.send.confirm.'+type), cb, scope);
+		},
+
+		confirmOnInvitation: function(msg, cb, scope) {
+			var me = this;
+			WT.confirm(msg, cb, scope, {
+				buttons: Ext.Msg.YESNOCANCEL,
+				config: {
+					buttonText: {
+						yes: me.res('event.send.confirm.yes'),
+						no: me.res('event.send.confirm.no')
+					}
+				}
+			});
+		},
+		
+		createHiddenCalendars: function(rootNodeId) {
+			var me = this;
+			return WT.createView(me.ID, 'view.HiddenCalendars', {
+				swapReturn: true,
+				viewCfg: {
+					action: 'ManageHiddenCalendars',
+					extraParams: {
+						crud: 'list',
+						rootId: rootNodeId
+					}
+				}
+			});
+		},
+		
+		createCalendarChooser: function(copy) {
+			var me = this;
+			return WT.createView(me.ID, 'view.CalendarChooser', {
+				swapReturn: true,
+				viewCfg: {
+					dockableConfig: {
+						title: me.res(copy ? 'act-copyEvent.lbl' : 'act-moveEvent.lbl')
+					},
+					writableOnly: true
+				}
+			});
+		},
+		
+		toMutualTags: function(recs) {
+			var arr, ids;
+			Ext.iterate(recs, function(rec) {
+				ids = Sonicle.String.split(rec.get('tags'), '|');
+				if (!arr) {
+					arr = ids;
+				} else {
+					arr = Ext.Array.intersect(arr, ids);
+				}
+				if (arr.length === 0) return false;
+			});
+			return arr;
+		}
 	},
 	
 	statics: {

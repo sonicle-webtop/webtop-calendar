@@ -73,6 +73,7 @@ public class JsSchedulerEvent {
 	public Boolean isRecurring;
 	public Boolean isBroken;
 	public Boolean hasCmts;
+	public String tags;
 	public String folderName;
 	public String _owner;
 	public String _rights;
@@ -119,6 +120,7 @@ public class JsSchedulerEvent {
 		isRecurring = event.isEventRecurring();
 		isBroken = event.isEventBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());
+		tags = event.getTags();
 		
 		folderName = calendar.getName();
 		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();

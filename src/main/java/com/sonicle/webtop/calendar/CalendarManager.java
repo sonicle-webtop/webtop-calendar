@@ -51,6 +51,7 @@ import com.sonicle.commons.time.DateTimeRange;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.CompositeId;
+import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.dav.CalDav;
 import com.sonicle.dav.CalDavFactory;
 import com.sonicle.dav.DavSyncStatus;
@@ -177,6 +178,7 @@ import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
 import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.model.UpdateTagsOperation;
+import com.sonicle.webtop.core.app.sdk.AuditReferenceDataEntry;
 import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOIntegrityViolationException;
@@ -516,8 +518,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID, false);
 			calendar.setBuiltIn(false);
 			calendar = doCalendarInsert(con, calendar);
+			
 			DbUtils.commitQuietly(con);
-			writeLog("CALENDAR_INSERT", String.valueOf(calendar.getCalendarId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.CALENDAR, AuditAction.CREATE, calendar.getCalendarId(), null);
+			}
 			
 			return calendar;
 			
@@ -550,8 +555,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cal.setDescription("");
 			cal.setIsDefault(true);
 			cal = doCalendarInsert(con, cal);
+			
 			DbUtils.commitQuietly(con);
-			writeLog("CALENDAR_INSERT",  String.valueOf(cal.getCalendarId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.CALENDAR, AuditAction.CREATE, cal.getCalendarId(), null);
+			}
 			
 			return cal;
 			
@@ -576,7 +584,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (!ret) throw new WTNotFoundException("Calendar not found [{}]", calendarId);
 			
 			DbUtils.commitQuietly(con);
-			writeLog("CALENDAR_UPDATE", String.valueOf(calendarId));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.CALENDAR, AuditAction.UPDATE, calendarId, null);
+			}
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -615,10 +625,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			DbUtils.commitQuietly(con);
-			
-			final String ref = String.valueOf(calendarId);
-			writeLog("CALENDAR_DELETE", ref);
-			writeLog("EVENT_DELETE",  "*@"+ref);
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, calendarId, null);
+				writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, "*", calendarId);
+			}
 			
 		} catch(SQLException | DAOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -1414,23 +1424,26 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			checkRightsOnCalendar(event.getCalendarId(), CheckRightsTarget.ELEMENTS, "CREATE");
-			Set<String> validTags = coreMgr.listTagIds();
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			String provider = calDao.selectProviderById(con, event.getCalendarId());
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", event.getCalendarId());
 			
-			EventInsertResult insert = doEventInsert(con, event, iCalendarRawData, true, true, true, true, true, ProcessReminder.YES, validTags);
+			Set<String> validTags = coreMgr.listTagIds();
+			EventInsertResult result = doEventInsert(con, event, iCalendarRawData, true, true, true, true, true, ProcessReminder.YES, validTags);
+			
 			DbUtils.commitQuietly(con);
-			writeLog("EVENT_INSERT", String.valueOf(insert.oevent.getEventId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, result.oevent.getEventId(), null);
+			}
 			
 			storeAsSuggestion(coreMgr, SUGGESTION_EVENT_TITLE, event.getTitle());
 			storeAsSuggestion(coreMgr, SUGGESTION_EVENT_LOCATION, event.getLocation());
 			
-			Event eventDump = getEvent(insert.oevent.getEventId());
+			Event eventDump = getEvent(result.oevent.getEventId());
 			
 			// Notify last modification
-			List<RecipientTuple> nmRcpts = getModificationRecipients(insert.oevent.getCalendarId(), Crud.CREATE);
+			List<RecipientTuple> nmRcpts = getModificationRecipients(result.oevent.getCalendarId(), Crud.CREATE);
 			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), Crud.CREATE);
 			
 			// Notify attendees
@@ -1441,14 +1454,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			//TODO: IS THIS STILL NECESSARY????????????????????????????????????????????????????????????
 			
-			Event evt = ManagerUtils.createEvent(insert.oevent);
-			if (insert.orecurrence != null) {
-				evt.setRecurrence(insert.orecurrence.getRule(), insert.orecurrence.getLocalStartDate(evt.getDateTimeZone()), null);
+			Event evt = ManagerUtils.createEvent(result.oevent);
+			if (result.orecurrence != null) {
+				evt.setRecurrence(result.orecurrence.getRule(), result.orecurrence.getLocalStartDate(evt.getDateTimeZone()), null);
 			} else {
 				evt.setRecurrence(null, null, null);
 			}
-			evt.setAttendees(ManagerUtils.createEventAttendeeList(insert.oattendees));
-			evt.setAttachments(ManagerUtils.createEventAttachmentList(insert.oattachments));
+			evt.setAttendees(ManagerUtils.createEventAttendeeList(result.oattendees));
+			evt.setAttachments(ManagerUtils.createEventAttachmentList(result.oattachments));
 			
 			
 			return evt;
@@ -1552,8 +1565,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				parsedEvent.setCausalId(original.getCausalId());
 
 				doEventUpdate(con, original, parsedEvent, false, false, true, false, false, null);
+				
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_UPDATE", String.valueOf(original.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, original.getEventId(), null);
+				}
 				
 			} else if (ical.getMethod().equals(Method.REPLY)) {
 				// Attendee -> Organizer
@@ -1573,7 +1589,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				//Event evt = getEvent(uid);
 				// Previous impl. forced (forceOriginal == true)
 				Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
-				if (evt == null) throw new WTException("Event not found [{0}]", uid);
+				if (evt == null) throw new WTException("Event not found [{}]", uid);
 				
 				// Extract response info...
 				PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
@@ -1602,14 +1618,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// Gets the event...
 				//Event evt = getEventForICalUpdate(uid);
 				Event evt = doEventGet(con, GetEventScope.PERSONAL_AND_INCOMING, uid);
-				if (evt == null) throw new WTException("Event not found [{0}]", uid);
+				if (evt == null) throw new WTException("Event not found [{}]", uid);
 				
 				doEventDelete(con, evt.getEventId(), true);
+				
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_DELETE", String.valueOf(evt.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, evt.getEventId(), null);
+				}
 				
 			} else {
-				throw new WTException("Unsupported Calendar's method [{0}]", ical.getMethod().toString());
+				throw new WTException("Unsupported Calendar's method [{}]", ical.getMethod().toString());
 			}
 			
 		} catch(SQLException | DAOException | IOException | WTException ex) {
@@ -1948,7 +1967,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public void moveEvent(boolean clone, Collection<Integer> eventIds, int targetCalendarId, boolean notifyAttendees) throws WTException {
+	public void moveEvent(boolean copy, Collection<Integer> eventIds, int targetCalendarId, boolean notifyAttendees) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
@@ -1964,14 +1983,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Set<Integer> deleteOkCache = new HashSet<>();
 			Map<Integer, Integer> map = mapCalendarByEvent(eventIds);
 			Map<Integer, String> operations = new LinkedHashMap<>();
+			ArrayList<AuditReferenceDataEntry> copied = new ArrayList<>();
+			ArrayList<AuditReferenceDataEntry> moved = new ArrayList<>();
 			for (Integer eventId : eventIds) {
 				if (eventId == null) continue;
 				if (!map.containsKey(eventId)) throw new WTNotFoundException("Event not found [{}]", eventId);
 				int calendarId = map.get(eventId);
 				checkRightsOnCalendar(readOkCache, calendarId, CheckRightsTarget.FOLDER, "READ");
 				
-				if (clone || (targetCalendarId != calendarId)) {
-					if (clone) {
+				if (copy || (targetCalendarId != calendarId)) {
+					if (copy) {
 						Event origEvent = doEventGet(con, eventId, false, true);
 						if (origEvent == null) throw new WTNotFoundException("Event not found [{}]", eventId);
 						
@@ -1979,20 +2000,29 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						if (keepPrivate) origEvent.censorize();
 						EventInsertResult result = doEventCopy(con, origEvent, targetCalendarId);
 						
+						copied.add(new AuditEventCopy(result.oevent.getEventId(), origEvent.getEventId()));
 						operations.put(result.oevent.getEventId(), Crud.CREATE);
 						
 					} else {
 						checkRightsOnCalendar(deleteOkCache, calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
 						boolean ret = doEventMove(con, eventId, targetCalendarId);
+						if (!ret) throw new WTNotFoundException("Event not found [{}]", eventId);
 						
-						if (ret) operations.put(eventId, Crud.CREATE);
+						moved.add(new AuditEventMove(eventId, calendarId));
+						operations.put(eventId, Crud.CREATE);
 						// There is no need to notify attendees, the event is simply moved from a calendar to another!
 					}	
 				}
 			}
 			DbUtils.commitQuietly(con);
-			
-			afterEventOperation(operations, notifyAttendees ? clone : false, null);
+			afterEventOperation(operations, notifyAttendees ? copy : false, null);
+			if (isAuditEnabled()) {
+				if (copy) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, copied);
+				} else {
+					writeAuditLog(AuditContext.EVENT, AuditAction.MOVE, moved);
+				}
+			}
 			
 		} catch(SQLException | DAOException | IOException | WTException ex) {
 			DbUtils.rollbackQuietly(con);
@@ -2085,7 +2115,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public void updateEventTags(UpdateTagsOperation operation, int calendarId, Set<String> tagIds) throws WTException {
+	public void updateEventCalendarTags(UpdateTagsOperation operation, int calendarId, Set<String> tagIds) throws WTException {
 		CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
 		EventTagDAO etagDao = EventTagDAO.getInstance();
 		Connection con = null;
@@ -2104,12 +2134,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				for (String tagId : okTagIds) {
 					etagDao.insertByCalendar(con, calendarId, tagId);
 				}
-				DbUtils.commitQuietly(con);
 				
 			} else if (UpdateTagsOperation.UNSET.equals(operation)) {
 				con = WT.getConnection(SERVICE_ID, false);
 				etagDao.deleteByCalendarTags(con, calendarId, tagIds);
-				DbUtils.commitQuietly(con);
+			}
+			
+			DbUtils.commitQuietly(con);
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, "*", calendarId);
 			}
 			
 		} catch(SQLException | DAOException | WTException ex) {
@@ -2142,12 +2175,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				for (String tagId : okTagIds) {
 					etagDao.insertByCalendarsEvents(con, okCalendarIds, eventIds, tagId);
 				}
-				DbUtils.commitQuietly(con);
 				
 			} else if (UpdateTagsOperation.UNSET.equals(operation)) {
 				con = WT.getConnection(SERVICE_ID, false);
 				etagDao.deleteByCalendarsEventsTags(con, okCalendarIds, eventIds, tagIds);
-				DbUtils.commitQuietly(con);
+			}
+			
+			DbUtils.commitQuietly(con);
+			if (isAuditEnabled()) {
+				ArrayList<AuditReferenceDataEntry> updated = new ArrayList<>();
+				Iterator it = eventIds.iterator();
+				while (it.hasNext()) updated.add(new AuditEventObj((Integer)it.next()));
+				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, updated);
 			}
 			
 		} catch(SQLException | DAOException | WTException ex) {
@@ -3482,7 +3521,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		doEventUpdate(con, oevtOrig, event, true, true, true, processAttachments, processTags, validTags);
 
 		DbUtils.commitQuietly(con);
-		writeLog("EVENT_UPDATE", String.valueOf(event.getEventId()));
+		if (isAuditEnabled()) {
+			writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, event.getEventId(), null);
+		}
 
 		Event eventDump = getEvent(event.getEventId());
 		if (eventDump == null) throw new WTException("Missing eventDump");
@@ -3572,8 +3613,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				evtDao.updateRevision(con, oevtOrig.getEventId(), BaseDAO.createRevisionTimestamp());
 
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
-				writeLog("EVENT_INSERT", String.valueOf(insert.oevent.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, oevtOrig.getEventId(), null);
+					writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
+				}
 
 				//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
 				//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, insert.event.getLocation());
@@ -3608,8 +3651,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				EventInsertResult insert = doEventInsert(con, event, null, true, false, false, false, processTags, ProcessReminder.YES, validTags);
 
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_UPDATE", String.valueOf(originalEventInfo.getEventId()));
-				writeLog("EVENT_INSERT", String.valueOf(insert.oevent.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
+					writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
+				}
 				
 				// TODO: eventually add support to clone attendees in the newly inserted event and so sending invitation emails
 				
@@ -3625,7 +3670,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, validTags);
 
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_UPDATE", String.valueOf(originalEventInfo.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
+				}
 
 				eventDump = getEvent(originalEventInfo.getEventId());
 			}
@@ -3635,7 +3682,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			doEventUpdate(con, oevtOrig, event, false, false, true, processAttachments, processTags, validTags);
 			
 			DbUtils.commitQuietly(con);
-			writeLog("EVENT_UPDATE", String.valueOf(originalEventInfo.getEventId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
+			}
 			
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
@@ -3647,7 +3696,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, validTags);
 			
 			DbUtils.commitQuietly(con);
-			writeLog("EVENT_UPDATE", String.valueOf(oevtOrig.getEventId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, oevtOrig.getEventId(), null);
+			}
 			
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
@@ -3691,7 +3742,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				evtDao.updateRevision(con, einfo.getEventId(), BaseDAO.createRevisionTimestamp());
 				
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_UPDATE", String.valueOf(einfo.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getEventId(), null);
+				}
 				
 				eventDump = getEvent(einfo.getEventId());
 				
@@ -3709,7 +3762,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				evtDao.updateRevision(con, einfo.getEventId(), BaseDAO.createRevisionTimestamp());
 				
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_UPDATE", String.valueOf(einfo.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getEventId(), null);
+				}
 				
 				eventDump = getEvent(einfo.getEventId());
 				
@@ -3720,7 +3775,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				doEventDelete(con, einfo.getEventId(), true);
 
 				DbUtils.commitQuietly(con);
-				writeLog("EVENT_DELETE", String.valueOf(einfo.getEventId()));
+				if (isAuditEnabled()) {
+					writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+				}
 			}
 			
 		} else if (einfo.isBroken()) {
@@ -3733,8 +3790,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			evtDao.updateRevision(con, einfo.getLinkedEventId(), BaseDAO.createRevisionTimestamp());
 			
 			DbUtils.commitQuietly(con);
-			writeLog("EVENT_DELETE", String.valueOf(einfo.getEventId()));
-			writeLog("EVENT_UPDATE", String.valueOf(einfo.getLinkedEventId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getLinkedEventId(), null);
+			}
 			
 		} else {
 			eventDump = getEventInstance(eventKey, false, false); // Save for later use!
@@ -3743,7 +3802,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			doEventDelete(con, einfo.getEventId(), true);
 			
 			DbUtils.commitQuietly(con);
-			writeLog("EVENT_DELETE", String.valueOf(einfo.getEventId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+			}
 		}
 		
 		if (eventDump == null) throw new WTException("Missing eventDump");
@@ -3786,8 +3847,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			evtDao.updateRevision(con, einfo.getLinkedEventId(), BaseDAO.createRevisionTimestamp());
 			
 			DbUtils.commitQuietly(con);
-			writeLog("EVENT_DELETE", String.valueOf(einfo.getEventId()));
-			writeLog("EVENT_UPDATE", String.valueOf(einfo.getLinkedEventId()));
+			if (isAuditEnabled()) {
+				writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getLinkedEventId(), null);
+			}
 			
 			// TODO: eventually add support to notify attendees of the linked event of date restoration
 			
@@ -4637,6 +4700,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		coreMgr.addServiceStoreEntry(SERVICE_ID, context, value.toUpperCase(), value);
 	}
 	
+	
 	private enum DoOption {
 		SKIP, UPDATE
 	}
@@ -4906,6 +4970,80 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			} catch(WTException ex) {
 				throw new WTRuntimeException(ex.getMessage());
 			}
+		}
+	}
+	
+	private enum AuditContext {
+		CALENDAR, EVENT
+	}
+	
+	private enum AuditAction {
+		CREATE, UPDATE, DELETE, MOVE
+	}
+	
+	private void writeAuditLog(AuditContext context, AuditAction action, Object reference, Object data) {
+		writeAuditLog(EnumUtils.getName(context), EnumUtils.getName(action), (reference != null) ? String.valueOf(reference) : null, (data != null) ? String.valueOf(data) : null);
+	}
+	
+	private void writeAuditLog(AuditContext context, AuditAction action, Collection<AuditReferenceDataEntry> entries) {
+		writeAuditLog(EnumUtils.getName(context), EnumUtils.getName(action), entries);
+	}
+	
+	private class AuditEventObj implements AuditReferenceDataEntry {
+		public final int eventId;
+		
+		public AuditEventObj(int eventId) {
+			this.eventId = eventId;
+		}
+
+		@Override
+		public String getReference() {
+			return String.valueOf(eventId);
+		}
+
+		@Override
+		public String getData() {
+			return null;
+		}
+	}
+	
+	private class AuditEventMove implements AuditReferenceDataEntry {
+		public final int eventId;
+		public final int origCalendarId;
+		
+		public AuditEventMove(int eventId, int origCalendarId) {
+			this.eventId = eventId;
+			this.origCalendarId = origCalendarId;
+		}
+
+		@Override
+		public String getReference() {
+			return String.valueOf(eventId);
+		}
+
+		@Override
+		public String getData() {
+			return String.valueOf(origCalendarId);
+		}
+	}
+	
+	private class AuditEventCopy implements AuditReferenceDataEntry {
+		public final int eventId;
+		public final int origEventId;
+		
+		public AuditEventCopy(int eventId, int origEventId) {
+			this.eventId = eventId;
+			this.origEventId = origEventId;
+		}
+
+		@Override
+		public String getReference() {
+			return String.valueOf(eventId);
+		}
+
+		@Override
+		public String getData() {
+			return String.valueOf(origEventId);
 		}
 	}
 	

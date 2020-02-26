@@ -1738,6 +1738,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
+	public void updateEventInstance(UpdateEventTarget target, EventInstance event, boolean processAttachments, boolean notifyAttendees) throws WTException {
+		updateEventInstance(target, event, processAttachments, notifyAttendees, false, false);
+	}
+	
+	@Override
 	public void updateEventInstance(UpdateEventTarget target, EventInstance event, boolean processAttachments, boolean processTags, boolean processCustomValues, boolean notifyAttendees) throws WTException {
 		CoreManager coreMgr = getCoreManager();
 		CalendarDAO calDao = CalendarDAO.getInstance();

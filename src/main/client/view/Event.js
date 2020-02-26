@@ -46,6 +46,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'WTA.ux.field.RecipientSuggestCombo',
 		'WTA.ux.field.SuggestCombo',
 		'WTA.ux.grid.Attachments',
+		'WTA.ux.panel.CustomFields',
 		'WTA.model.ActivityLkp',
 		'WTA.model.CausalLkp',
 		'WTA.store.Timezone',
@@ -134,6 +135,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			busy: WTF.checkboxBind('record', 'busy'),
 			foHasRecurrence: WTF.foIsEmpty('record', 'rrule'),
 			foIsRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring'),
+			foTags: WTF.foTwoWay('record', 'tags', function(v) {
+					return Sonicle.String.split(v, '|');
+				}, function(v) {
+					return Sonicle.String.join('|', v);
+			}),
 			foHasTags: WTF.foIsEmpty('record', 'tags', true)
 		});
 	},
@@ -250,10 +256,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'sotagdisplayfield',
 					dock : 'top',
 					bind: {
-						value: '{record.tags}',
+						value: '{foTags}',
 						hidden: '{!foHasTags}'
 					},
-					delimiter: '|',
 					valueField: 'id',
 					displayField: 'name',
 					colorField: 'color',
@@ -946,7 +951,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						size: file.size,
 						_uplId: uploadId
 					}));
-					me.lref('tpnlinner').getLayout().setActiveItem(s);
+					me.lref('tpnlmain').getLayout().setActiveItem(s);
 				}
 			}
 		};
@@ -962,14 +967,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				main,
 				{
 					xtype: 'wttabpanel',
-					reference: 'tpnlinner',
+					reference: 'tpnlmain',
 					activeTab: 0,
 					deferredRender: false,
 					items: [
 						appo,
 						attends,
 						recur,
-						attachs
+						attachs,
+						{
+							xtype: 'wtcustomfieldspanel',
+							reference: 'tabcfields',
+							title: me.mys.res('event.cfields.tit'),
+							bind: {
+								store: '{record.cvalues}',
+								fieldsDefs: '{record._cfdefs}'
+							},
+							defaultLabelWidth: 120
+						}
 					],
 					flex: 1
 				}
@@ -978,10 +993,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		me.on('viewload', me.onViewLoad);
 		me.on('viewclose', me.onViewClose);
+		me.on('beforemodelsave', me.onBeforeModelSave, me);
 		vm.bind('{record.startDate}', me.onDatesChanged, me);
 		vm.bind('{record.endDate}', me.onDatesChanged, me);
 		vm.bind('{record.timezone}', me.onDatesChanged, me);
 		vm.bind('{record.masterDataId}', me.onMasterDataChanged, me);
+		vm.bind('{foTags}', me.onTagsChanged, me);
 	},
 	
 	refreshActivities: function() {
@@ -1216,6 +1233,17 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	privates: {
+		setCalendarDefaults: function(cal) {
+			var mo = this.getModel();
+			if (mo) {
+				mo.set({
+					isPrivate: cal.get('evtPrivate'),
+					busy: cal.get('evtBusy'),
+					reminder: cal.get('evtReminder')
+				});
+			}
+		},
+		
 		onViewLoad: function(s, success) {
 			var me = this,
 					mo = me.getModel();
@@ -1258,15 +1286,47 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			s.mys.cleanupUploadedFiles(WT.uiid(s.getId()));
 		},
 		
-		setCalendarDefaults: function(cal) {
-			var mo = this.getModel();
-			if (mo) {
-				mo.set({
-					isPrivate: cal.get('evtPrivate'),
-					busy: cal.get('evtBusy'),
-					reminder: cal.get('evtReminder')
+		onBeforeModelSave: function(s) {
+			var cp = this.lref('tabcfields');
+			if (!cp.isValid()) {
+				this.lref('tpnlmain').getLayout().setActiveItem(cp);
+				return false;
+			}
+		},
+		
+		onTagsChanged: function(nv, ov) {
+			var me = this, mo, cftab;
+			if (ov && Sonicle.String.difference(nv, ov).length > 0) { // Make sure that there are really differences!
+				mo = me.getModel();
+				cftab = me.lref('tabcfields');
+				cftab.wait();
+				me.getCustomFieldsDefsData(nv, {
+					callback: function(success, json) {
+						if (success) {
+							Ext.iterate(json.data.cvalues, function(cval) {
+								if (!mo.cvalues().getById(cval.id)) {
+									mo.cvalues().add(cval);
+								}
+							});
+							mo.set('_cfdefs', json.data.cfdefs);
+						}
+						cftab.unwait();
+					}
 				});
 			}
+		},
+		
+		getCustomFieldsDefsData: function(tags, opts) {
+			opts = opts || {};
+			var me = this;
+			WT.ajaxReq(me.mys.ID, 'GetCustomFieldsDefsData', {
+				params: {
+					tags: WTU.arrayAsParam(tags)
+				},
+				callback: function(success, json) {
+					Ext.callback(opts.callback, opts.scope || me, [success, json]);
+				}
+			});
 		}
 	}
 });

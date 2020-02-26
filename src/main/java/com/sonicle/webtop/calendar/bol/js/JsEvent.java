@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
@@ -40,9 +41,17 @@ import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
+import com.sonicle.webtop.core.bol.js.JsCustomFieldDefs;
+import com.sonicle.webtop.core.bol.js.JsCustomFieldValue;
+import com.sonicle.webtop.core.model.CustomField;
+import com.sonicle.webtop.core.model.CustomFieldValue;
+import com.sonicle.webtop.core.model.CustomPanel;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import net.fortuna.ical4j.model.Recur;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -78,12 +87,12 @@ public class JsEvent {
 	public ArrayList<Attendee> attendees;
 	public String tags;
 	public ArrayList<Attachment> attachments;
+	public ArrayList<JsCustomFieldValue> cvalues;
+	public String _recurringInfo; // Read-only
+	public String _profileId; // Read-only
+	public String _cfdefs; // Read-only
 	
-	// Read-only fields
-	public String _recurringInfo;
-	public String _profileId;
-	
-	public JsEvent(EventInstance event, String ownerPid) {
+	public JsEvent(UserProfileId ownerPid, EventInstance event, Collection<CustomPanel> customPanels, Map<String, CustomField> customFields, String profileLanguageTag, DateTimeZone profileTz) {
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(eventTz);
 		
@@ -150,11 +159,86 @@ public class JsEvent {
 			attachments.add(jsa);
 		}
 		
+		cvalues = new ArrayList<>();
+		ArrayList<JsCustomFieldDefs.Panel> panels = new ArrayList<>();
+		for (CustomPanel panel : customPanels) {
+			panels.add(new JsCustomFieldDefs.Panel(panel, profileLanguageTag));
+		}
+		ArrayList<JsCustomFieldDefs.Field> fields = new ArrayList<>();
+		for (CustomField field : customFields.values()) {
+			CustomFieldValue cvalue = null;
+			if (event.hasCustomValues()) {
+				cvalue = event.getCustomValues().get(field.getFieldId());
+			}
+			cvalues.add(cvalue != null ? new JsCustomFieldValue(field.getType(), cvalue, profileTz) : new JsCustomFieldValue(field.getType(), field.getFieldId()));
+			fields.add(new JsCustomFieldDefs.Field(field, profileLanguageTag));
+		}
+		
 		// Read-only fields
 		_recurringInfo = EnumUtils.toSerializedName(event.getRecurInfo());
-		_profileId = ownerPid;
+		_profileId = ownerPid.toString();
+		_cfdefs = LangUtils.serialize(new JsCustomFieldDefs(panels, fields), JsCustomFieldDefs.class);
 	}
 	
+	public EventInstance toEventInstance(DateTimeZone profileTz) {
+		EventInstance event = new EventInstance();
+		event.setKey(id);
+		event.setEventId(eventId);
+		event.setCalendarId(calendarId);
+		
+		// Incoming fields are in a precise timezone, so we need to instantiate
+		// the formatter specifying the right timezone to use.
+		// Then DateTime objects are automatically translated to UTC
+		DateTimeZone eventTz = DateTimeZone.forID(timezone);
+		DateTime eventStart = DateTimeUtils.parseYmdHmsWithZone(startDate, eventTz);
+		DateTime eventEnd = DateTimeUtils.parseYmdHmsWithZone(endDate, eventTz);
+		
+		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForWrite(allDay, eventStart, eventEnd, eventTz);
+		event.setDatesAndTimes(eventBoundary.allDay, eventBoundary.timezone.getID(), eventBoundary.start, eventBoundary.end);
+		event.setTitle(title);
+		event.setDescription(description);
+		event.setLocation(location);
+		event.setIsPrivate(isPrivate);
+		event.setBusy(busy);
+		event.setReminder(EventInstance.Reminder.valueOf(reminder));
+		event.setActivityId(activityId);
+		event.setMasterDataId(masterDataId);
+		event.setStatMasterDataId(statMasterDataId);
+		event.setCausalId(causalId);
+		
+		// Fix recur until-date timezone: due to we do not have tz-db in client
+		// we cannot move until-date into the right zone directly in browser, 
+		// so we need to change it here if necessary.
+		Recur recur = ICal4jUtils.parseRRule(rrule);
+		if (ICal4jUtils.adjustRecurUntilDate(recur, event.getStartDate().withZone(eventTz).toLocalTime(), eventTz)) {
+			rrule = recur.toString();
+		}
+		event.setRecurrence(rrule, DateTimeUtils.parseLocalDate(DateTimeUtils.createYmdFormatter(eventTz), rstart), null);
+		
+		for (JsEvent.Attendee jsa : attendees) {
+			EventAttendee attendee = new EventAttendee();
+			attendee.setAttendeeId(jsa.attendeeId);
+			attendee.setRecipient(jsa.recipient);
+			attendee.setRecipientType(EnumUtils.forSerializedName(jsa.recipientType, EventAttendee.RecipientType.class));
+			attendee.setRecipientRole(EnumUtils.forSerializedName(jsa.recipientRole, EventAttendee.RecipientRole.class));
+			attendee.setResponseStatus(EnumUtils.forSerializedName(jsa.responseStatus, EventAttendee.ResponseStatus.class));
+			attendee.setNotify(jsa.notify);
+			event.getAttendees().add(attendee);
+		}
+		
+		event.setTags(new LinkedHashSet<>(new CompositeId().parse(tags).getTokens()));
+		
+		ArrayList<CustomFieldValue> customValues = new ArrayList<>();
+		for (JsCustomFieldValue jscfv : cvalues) {
+			customValues.add(jscfv.toCustomFieldValue(profileTz));
+		}
+		event.setCustomValues(customValues);
+		// Attachment needs to be treated outside this class in order to have complete access to their streams
+		return event;
+	}
+	
+	
+	/*
 	public static EventInstance buildEventInstance(JsEvent js) {
 		EventInstance event = new EventInstance();
 		event.setKey(js.id);
@@ -171,14 +255,12 @@ public class JsEvent {
 		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForWrite(js.allDay, eventStart, eventEnd, eventTz);
 		event.setDatesAndTimes(eventBoundary.allDay, eventBoundary.timezone.getID(), eventBoundary.start, eventBoundary.end);
 		
-		/*
-		event.setDatesAndTimes(
-				js.allDay,
-				js.timezone,
-				DateTimeUtils.parseYmdHmsWithZone(js.startDate, eventTz),
-				DateTimeUtils.parseYmdHmsWithZone(js.endDate, eventTz)
-		);
-		*/
+		//event.setDatesAndTimes(
+		//		js.allDay,
+		//		js.timezone,
+		//		DateTimeUtils.parseYmdHmsWithZone(js.startDate, eventTz),
+		//		DateTimeUtils.parseYmdHmsWithZone(js.endDate, eventTz)
+		//);
 		
 		event.setTitle(js.title);
 		event.setDescription(js.description);
@@ -217,6 +299,7 @@ public class JsEvent {
 		
 		return event;
 	}
+	*/
 	
 	/*
 	private static void adjustTimes(Event event, LocalTime workdayStart, LocalTime workdayEnd) {

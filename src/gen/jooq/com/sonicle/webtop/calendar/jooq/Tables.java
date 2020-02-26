@@ -47,6 +47,11 @@ public class Tables {
 	public static final com.sonicle.webtop.calendar.jooq.tables.EventsAttendees EVENTS_ATTENDEES = com.sonicle.webtop.calendar.jooq.tables.EventsAttendees.EVENTS_ATTENDEES;
 
 	/**
+	 * The table calendar.events_custom_values
+	 */
+	public static final com.sonicle.webtop.calendar.jooq.tables.EventsCustomValues EVENTS_CUSTOM_VALUES = com.sonicle.webtop.calendar.jooq.tables.EventsCustomValues.EVENTS_CUSTOM_VALUES;
+
+	/**
 	 * The table calendar.events_icalendars
 	 */
 	public static final com.sonicle.webtop.calendar.jooq.tables.EventsIcalendars EVENTS_ICALENDARS = com.sonicle.webtop.calendar.jooq.tables.EventsIcalendars.EVENTS_ICALENDARS;

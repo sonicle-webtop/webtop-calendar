@@ -227,7 +227,7 @@ public class Eas extends EasApi {
 			if (event == null) return respErrorNotFound();
 			
 			mergeEvent(event, body.getData());
-			manager.updateEvent(event, false, false, true);
+			manager.updateEvent(event, false, false, false, true);
 			
 			ArrayList<EventObject> evtobjs = new ArrayList<>();
 			EventObject evtobj = manager.getEventObject(folderId, id, EventObjectOutputType.STAT);

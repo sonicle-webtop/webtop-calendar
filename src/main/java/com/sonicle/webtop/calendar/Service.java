@@ -97,6 +97,7 @@ import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.WebTopSession;
 import com.sonicle.webtop.core.app.WebTopSession.UploadedFile;
 import com.sonicle.webtop.core.bol.OUser;
+import com.sonicle.webtop.core.bol.js.JsCustomFieldDefsData;
 import com.sonicle.webtop.core.bol.js.JsSimple;
 import com.sonicle.webtop.core.bol.js.JsWizardData;
 import com.sonicle.webtop.core.bol.model.Sharing;
@@ -104,6 +105,8 @@ import com.sonicle.webtop.core.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
+import com.sonicle.webtop.core.model.CustomField;
+import com.sonicle.webtop.core.model.CustomPanel;
 import com.sonicle.webtop.core.sdk.AsyncActionCollection;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BaseServiceAsyncAction;
@@ -797,6 +800,8 @@ public class Service extends BaseService {
 	}
 	
 	public void processManageEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		CoreManager coreMgr = WT.getCoreManager();
+		UserProfile up = getEnv().getProfile();
 		JsEvent item = null;
 		
 		try {
@@ -806,14 +811,24 @@ public class Service extends BaseService {
 				
 				EventInstance evt = manager.getEventInstance(eventKey);
 				UserProfileId ownerId = manager.getCalendarOwner(evt.getCalendarId());
-				item = new JsEvent(evt, ownerId.toString());
+				
+				Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, evt.getTags());
+				Map<String, CustomField> cfields = new HashMap<>();
+				for (CustomPanel cpanel : cpanels.values()) {
+					for (String fieldId : cpanel.getFields()) {
+						CustomField cfield = coreMgr.getCustomField(SERVICE_ID, fieldId);
+						if (cfield != null) cfields.put(fieldId, cfield);
+					}
+				}
+				
+				item = new JsEvent(ownerId, evt, cpanels.values(), cfields, up.getLanguageTag(), up.getTimeZone());
 				new JsonResult(item).printTo(out);
 				
 			} else if (crud.equals(Crud.CREATE)) {
 				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				EventInstance event = JsEvent.buildEventInstance(pl.data);
+				EventInstance event = pl.data.toEventInstance(up.getTimeZone());
 				CoreManager core = WT.getCoreManager();
 				event.setOrganizer(core.getUserData().getFullEmailAddress());
 				
@@ -835,7 +850,7 @@ public class Service extends BaseService {
 				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				EventInstance event = JsEvent.buildEventInstance(pl.data);
+				EventInstance event = pl.data.toEventInstance(up.getTimeZone());
 				
 				for (JsEvent.Attachment jsa : pl.data.attachments) {
 					if (!StringUtils.isBlank(jsa._uplId)) {
@@ -854,7 +869,7 @@ public class Service extends BaseService {
 						event.getAttachments().add(att);
 					}
 				}
-				manager.updateEventInstance(target, event, true, true, notify);
+				manager.updateEventInstance(target, event, true, true, true, notify);
 				
 				new JsonResult().printTo(out);
 				
@@ -867,9 +882,9 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 			}*/
 			
-		} catch(Exception ex) {
-			logger.error("Error in ManageEvents", ex);
-			new JsonResult(false, "Error").printTo(out);	
+		} catch(Throwable t) {
+			logger.error("Error in ManageEvents", t);
+			new JsonResult(t).printTo(out);	
 		}
 	}
 	
@@ -903,9 +918,32 @@ public class Service extends BaseService {
 				}
 			}
 			
-		} catch(Exception ex) {
-			logger.error("Error in DownloadEventAttachment", ex);
-			ServletUtils.writeErrorHandlingJs(response, ex.getMessage());
+		} catch(Throwable t) {
+			logger.error("Error in DownloadEventAttachment", t);
+			ServletUtils.writeErrorHandlingJs(response, t.getMessage());
+		}
+	}
+	
+	public void processGetCustomFieldsDefsData(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		CoreManager coreMgr = WT.getCoreManager();
+		UserProfile up = getEnv().getProfile();
+		
+		try {
+			ServletUtils.StringArray tags = ServletUtils.getObjectParameter(request, "tags", ServletUtils.StringArray.class, true);
+			
+			Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, tags);
+			Map<String, CustomField> cfields = new HashMap<>();
+			for (CustomPanel cpanel : cpanels.values()) {
+				for (String fieldId : cpanel.getFields()) {
+					CustomField cfield = coreMgr.getCustomField(SERVICE_ID, fieldId);
+					if (cfield != null) cfields.put(fieldId, cfield);
+				}
+			}
+			new JsonResult(new JsCustomFieldDefsData(cpanels.values(), cfields, up.getLanguageTag(), up.getTimeZone())).printTo(out);
+			
+		} catch(Throwable t) {
+			logger.error("Error in GetCustomFieldsDefsData", t);
+			ServletUtils.writeErrorHandlingJs(response, t.getMessage());
 		}
 	}
 	

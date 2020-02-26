@@ -40,6 +40,7 @@ import com.sonicle.webtop.calendar.bol.OCalendarPropSet;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttachment;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
+import com.sonicle.webtop.calendar.bol.OEventCustomValue;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VVEvent;
@@ -51,6 +52,7 @@ import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.SchedEvent;
 import com.sonicle.webtop.core.app.WT;
+import com.sonicle.webtop.core.model.CustomFieldValue;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -58,7 +60,9 @@ import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.IdentifierUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.mail.internet.InternetAddress;
 import net.fortuna.ical4j.model.Recur;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -426,12 +430,12 @@ public class ManagerUtils {
 		return tgt;
 	}
 	
-	static OEventAttachment createOTaskAttachment(EventAttachment src) {
+	static OEventAttachment createOEventAttachment(EventAttachment src) {
 		if (src == null) return null;
-		return fillOContactAttachment(new OEventAttachment(), src);
+		return fillOEventAttachment(new OEventAttachment(), src);
 	}
 	
-	static <T extends OEventAttachment> T fillOContactAttachment(T tgt, EventAttachment src) {
+	static <T extends OEventAttachment> T fillOEventAttachment(T tgt, EventAttachment src) {
 		if ((tgt != null) && (src != null)) {
 			tgt.setEventAttachmentId(src.getAttachmentId());
 			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
@@ -439,6 +443,48 @@ public class ManagerUtils {
 			tgt.setFilename(src.getFilename());
 			tgt.setSize(src.getSize());
 			tgt.setMediaType(src.getMediaType());
+		}
+		return tgt;
+	}
+	
+	static Map<String, CustomFieldValue> createCustomValuesMap(List<OEventCustomValue> items) {
+		LinkedHashMap<String, CustomFieldValue> map = new LinkedHashMap<>(items.size());
+		for (OEventCustomValue item : items) {
+			map.put(item.getCustomFieldId(), createCustomValue(item));
+		}
+		return map;
+	}
+	
+	static CustomFieldValue createCustomValue(OEventCustomValue src) {
+		if (src == null) return null;
+		return fillCustomFieldValue(new CustomFieldValue(), src);
+	}
+	
+	static <T extends CustomFieldValue> T fillCustomFieldValue(T tgt, OEventCustomValue src) {
+		if ((tgt != null) && (src != null)) {
+			tgt.setFieldId(src.getCustomFieldId());
+			tgt.setStringValue(src.getStringValue());
+			tgt.setNumberValue(src.getNumberValue());
+			tgt.setBooleanValue(src.getBooleanValue());
+			tgt.setDateValue(src.getDateValue());
+			//tgt.setTextValue(src.getTextValue());
+		}
+		return tgt;
+	}
+	
+	static OEventCustomValue createOEventCustomValue(CustomFieldValue src) {
+		if (src == null) return null;
+		return fillOEventCustomValue(new OEventCustomValue(), src);
+	}
+	
+	static <T extends OEventCustomValue> T fillOEventCustomValue(T tgt, CustomFieldValue src) {
+		if ((tgt != null) && (src != null)) {
+			tgt.setCustomFieldId(src.getFieldId());
+			tgt.setStringValue(src.getStringValue());
+			tgt.setNumberValue(src.getNumberValue());
+			tgt.setBooleanValue(src.getBooleanValue());
+			tgt.setDateValue(src.getDateValue());
+			//tgt.setTextValue(src.getTextValue());
 		}
 		return tgt;
 	}

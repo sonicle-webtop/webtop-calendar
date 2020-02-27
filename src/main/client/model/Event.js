@@ -34,6 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WTA.ux.data.BaseModel',
 	requires: [
+		'Sonicle.webtop.core.ux.data.CustomFieldValueModel',
 		'Sonicle.webtop.calendar.model.EventAttendee',
 		'Sonicle.webtop.calendar.model.EventAttachment',
 		'Sonicle.data.writer.Json'
@@ -73,11 +74,13 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		
 		// Read-only fields
 		WTF.roField('_profileId', 'string'),
-		WTF.roField('_recurringInfo', 'string', {defaultValue: 'none'})
+		WTF.roField('_recurringInfo', 'string', {defaultValue: 'none'}),
+		WTF.field('_cfdefs', 'string', true)
 	],
 	hasMany: [
 		WTF.hasMany('attendees', 'Sonicle.webtop.calendar.model.EventAttendee'),
-		WTF.hasMany('attachments', 'Sonicle.webtop.calendar.model.EventAttachment')
+		WTF.hasMany('attachments', 'Sonicle.webtop.calendar.model.EventAttachment'),
+		WTF.hasMany('cvalues', 'Sonicle.webtop.core.ux.data.CustomFieldValueModel')
 	],
 	
 	isRecurring: function() {

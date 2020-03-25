@@ -78,10 +78,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	init: function() {
 		var me = this,
-				tagsStore = WT.getTagsStore();
+				tagsStore = WT.getTagsStore(),
+				scfields = WTA.ux.field.Search.customFieldDefs2Fields(me.getVar('cfieldsSearchable'));
+		
 		//TODO: trovare una collocazione a questa chiamata
 		Sonicle.upload.Uploader.registerMimeType('text/calendar', ['ical','ics','icalendar']);
-		
 		me.initActions();
 		me.initCxm();
 		
@@ -126,7 +127,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					xtype: 'wtsearchfield',
 					reference: 'fldsearch',
 					highlightKeywords: ['title', 'location'],
-					fields: [
+					fields: Ext.Array.push([
 						{
 							name: 'title',
 							type: 'string',
@@ -166,7 +167,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							label: me.res('fld-search.field.private.lbl')
 						}, {
 							name: 'tag',
-							type: 'tag[]',
+							type: 'tag',
 							label: me.res('fld-search.field.tags.lbl'),
 							customConfig: {
 								valueField: 'id',
@@ -174,6 +175,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 								colorField: 'color',
 								store: WT.getTagsStore() // This is filterable, let's do a separate copy!
 							}
+						}
+					], scfields),
+					tabs: Ext.isEmpty(scfields) ? undefined: [
+						{
+							title: WT.res('wtsearchfield.main.tit'),
+							fields: ['title', 'location', 'description', 'after', 'before', 'busy', 'private', 'tag']
+						}, {
+							title: WT.res('wtsearchfield.customFields.tit'),
+							fields: Ext.Array.pluck(scfields, 'name')
 						}
 					],
 					tooltip: me.res('fld-search.tip'),

@@ -34,11 +34,15 @@ package com.sonicle.webtop.calendar.dal;
 
 import com.github.rutledgepaulv.qbuilders.nodes.ComparisonNode;
 import com.github.rutledgepaulv.qbuilders.operators.ComparisonOperator;
+import com.sonicle.commons.web.json.CompId;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_CUSTOM_VALUES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
-import com.sonicle.webtop.core.app.sdk.BaseJOOQVisitor;
+import com.sonicle.webtop.core.app.sdk.JOOQPredicateVisitorWithCValues;
+import com.sonicle.webtop.core.app.sdk.QBuilderWithCValues;
 import java.util.Collection;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.jooq.Condition;
 import static org.jooq.impl.DSL.*;
@@ -47,13 +51,13 @@ import static org.jooq.impl.DSL.*;
  *
  * @author malbinola
  */
-public class EventPredicateVisitor extends BaseJOOQVisitor {
+public class EventPredicateVisitor extends JOOQPredicateVisitorWithCValues {
 	protected final Target target;
 	protected DateTime fromRange = null;
 	protected DateTime toRange = null;
 	
 	public EventPredicateVisitor(Target target) {
-		super();
+		super(false);
 		this.target = target;
 	}
 
@@ -75,61 +79,110 @@ public class EventPredicateVisitor extends BaseJOOQVisitor {
 
 	@Override
 	protected Condition toCondition(String fieldName, ComparisonOperator operator, Collection<?> values, ComparisonNode node) {
-		switch(fieldName) {
-			case "title":
-				return defaultCondition(EVENTS.TITLE, operator, values);
-				
-			case "location":
-				return defaultCondition(EVENTS.LOCATION, operator, values);
-				
-			case "description":
-				return defaultCondition(EVENTS.DESCRIPTION, operator, values);
-				
-			case "after":
-				fromRange = (DateTime)single(values);
-				if (Target.RECURRING.equals(target)) {
-					return RECURRENCES.START_DATE.greaterOrEqual(fromRange)
-							.or(RECURRENCES.UNTIL_DATE.greaterOrEqual(fromRange));
-				} else {
-					return EVENTS.START_DATE.greaterOrEqual(fromRange)
-							.or(EVENTS.END_DATE.greaterOrEqual(fromRange));
-				}
+		if ("title".equals(fieldName)) {
+			return defaultCondition(EVENTS.TITLE, operator, values);
 			
-			case "before":
-				toRange = (DateTime)single(values);
-				if (toRange != null) toRange = toRange.plusDays(1);
-				if (Target.RECURRING.equals(target)) {
-					return RECURRENCES.START_DATE.lessThan(toRange)
-							.or(RECURRENCES.UNTIL_DATE.lessThan(toRange));
-				} else {
-					return EVENTS.START_DATE.lessOrEqual(toRange)
-							.or(EVENTS.END_DATE.lessOrEqual(toRange));
-				}
-				
-			case "busy":
-				return defaultCondition(EVENTS.BUSY, operator, values);
-				
-			case "private":
-				return defaultCondition(EVENTS.IS_PRIVATE, operator, values);
+		} else if ("location".equals(fieldName)) {
+			return defaultCondition(EVENTS.LOCATION, operator, values);
 			
-			case "tag":
-				return exists(
+		} else if ("description".equals(fieldName)) {
+			return defaultCondition(EVENTS.DESCRIPTION, operator, values);
+			
+		} else if ("after".equals(fieldName)) {
+			fromRange = (DateTime)single(values);
+			if (Target.RECURRING.equals(target)) {
+				return RECURRENCES.START_DATE.greaterOrEqual(fromRange)
+						.or(RECURRENCES.UNTIL_DATE.greaterOrEqual(fromRange));
+			} else {
+				return EVENTS.START_DATE.greaterOrEqual(fromRange)
+						.or(EVENTS.END_DATE.greaterOrEqual(fromRange));
+			}
+			
+		} else if ("before".equals(fieldName)) {
+			toRange = (DateTime)single(values);
+			if (toRange != null) toRange = toRange.plusDays(1);
+			if (Target.RECURRING.equals(target)) {
+				return RECURRENCES.START_DATE.lessThan(toRange)
+						.or(RECURRENCES.UNTIL_DATE.lessThan(toRange));
+			} else {
+				return EVENTS.START_DATE.lessOrEqual(toRange)
+						.or(EVENTS.END_DATE.lessOrEqual(toRange));
+			}
+			
+		} else if ("busy".equals(fieldName)) {
+			return defaultCondition(EVENTS.BUSY, operator, values);
+			
+		} else if ("private".equals(fieldName)) {
+			return defaultCondition(EVENTS.IS_PRIVATE, operator, values);
+			
+		} else if ("tag".equals(fieldName)) {
+			return exists(
+				selectOne()
+				.from(EVENTS_TAGS)
+				.where(
+					EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+					.and(EVENTS_TAGS.TAG_ID.equal(singleAsString(values)))
+				)
+			);
+			
+		} else if ("any".equals(fieldName)) {
+			return EVENTS.TITLE.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values)))
+				.or(EVENTS.LOCATION.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))))
+				.or(EVENTS.DESCRIPTION.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))))
+				.or(EVENTS.ORGANIZER.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))));
+			
+		} else if (StringUtils.startsWith(fieldName, "CV")) {
+			CompId fn = new CompId(2).parse(fieldName, false);
+			if (fn.isTokenEmpty(1)) throw new UnsupportedOperationException("Field name invalid: " + fieldName);
+			
+			JOOQPredicateVisitorWithCValues.CValueCondition cvCondition = getCustomFieldCondition(fn, operator, values);
+			if (cvCondition.negated) {
+				return notExists(
 					selectOne()
-					.from(EVENTS_TAGS)
+					.from(EVENTS_CUSTOM_VALUES)
 					.where(
-						EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
-						.and(EVENTS_TAGS.TAG_ID.equal(singleAsString(values)))
+						EVENTS_CUSTOM_VALUES.EVENT_ID.equal(EVENTS.EVENT_ID)
+						.and(EVENTS_CUSTOM_VALUES.CUSTOM_FIELD_ID.equal(fn.getToken(1)))
+						.and(cvCondition.condition)
 					)
 				);
 				
-			case "any":
-				return EVENTS.TITLE.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values)))
-						.or(EVENTS.LOCATION.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))))
-						.or(EVENTS.DESCRIPTION.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))))
-						.or(EVENTS.ORGANIZER.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))));
-				
-			default:
-				throw new UnsupportedOperationException("Field not supported: " + fieldName);
+			} else {
+				return exists(
+					selectOne()
+					.from(EVENTS_CUSTOM_VALUES)
+					.where(
+						EVENTS_CUSTOM_VALUES.EVENT_ID.equal(EVENTS.EVENT_ID)
+						.and(EVENTS_CUSTOM_VALUES.CUSTOM_FIELD_ID.equal(fn.getToken(1)))
+						.and(cvCondition.condition)
+					)
+				);
+			}
+			
+		} else {
+			throw new UnsupportedOperationException("Field not supported: " + fieldName);
+		}
+	}
+	
+	@Override
+	protected Condition cvalueCondition(QBuilderWithCValues.Type cvalueType, ComparisonOperator operator, Collection<?> values) {
+		if (QBuilderWithCValues.Type.CVSTRING.equals(cvalueType)) {
+			return defaultCondition(EVENTS_CUSTOM_VALUES.STRING_VALUE, operator, values);
+			
+		} else if (QBuilderWithCValues.Type.CVNUMBER.equals(cvalueType)) {
+			return defaultCondition(EVENTS_CUSTOM_VALUES.NUMBER_VALUE, operator, values);
+			
+		} else if (QBuilderWithCValues.Type.CVBOOL.equals(cvalueType)) {
+			return defaultCondition(EVENTS_CUSTOM_VALUES.BOOLEAN_VALUE, operator, values);
+			
+		} else if (QBuilderWithCValues.Type.CVDATE.equals(cvalueType)) {
+			return defaultCondition(EVENTS_CUSTOM_VALUES.DATE_VALUE, operator, values);
+			
+		} else if (QBuilderWithCValues.Type.CVTEXT.equals(cvalueType)) {
+			return defaultCondition(EVENTS_CUSTOM_VALUES.TEXT_VALUE, operator, values);
+			
+		} else {
+			return null;
 		}
 	}
 	

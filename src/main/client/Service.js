@@ -513,17 +513,36 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				hdscale = WT.getHeaderScale(),
 				view = me.getVar('view');
 		
-		me.addAct('new', 'newEvent', {
-			ignoreSize: true,
-			handler: function() {
-				me.getAct('addEvent').execute();
-			}
-		});
 		me.addAct('toolbox', 'erpExport', {
 			tooltip: null,
 			iconCls: 'wtcal-icon-export-xs',
 			handler: function() {
 				me.erpExport();
+			}
+		});
+		if (WT.isPermitted(WT.ID, 'CUSTOM_FIELDS', 'MANAGE')) {
+			me.addAct('toolbox', 'manageCustomFields', {
+				text: WT.res('act-manageCustomFields.lbl'),
+				tooltip: WT.res('act-manageCustomFields.tip'),
+				iconCls: 'wt-icon-customField',
+				handler: function() {
+					me.showCustomFieldsUI();
+				}
+			});
+			me.addAct('toolbox', 'manageCustomPanels', {
+				text: WT.res('act-manageCustomPanels.lbl'),
+				tooltip: WT.res('act-manageCustomPanels.tip'),
+				iconCls: 'wt-icon-customPanel',
+				handler: function() {
+					me.showCustomPanelsUI();
+				}
+			});
+		}
+		
+		me.addAct('new', 'newEvent', {
+			ignoreSize: true,
+			handler: function() {
+				me.getAct('addEvent').execute();
 			}
 		});
 		me.addAct('today', {
@@ -1116,6 +1135,32 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		} else if(direction === 1) {
 			mc.setNextDay();
 		}
+	},
+	
+	showCustomPanelsUI: function() {
+		var me = this;
+		WT.createView(WT.ID, 'view.CustomPanels', {
+			swapReturn: true,
+			viewCfg: {
+				dockableConfig: {
+					title: WT.res('customPanels.tit') + ' [' + me.getName() + ']'
+				},
+				serviceId: me.ID
+			}
+		}).showView();
+	},
+	
+	showCustomFieldsUI: function() {
+		var me = this;
+		WT.createView(WT.ID, 'view.CustomFields', {
+			swapReturn: true,
+			viewCfg: {
+				dockableConfig: {
+					title: WT.res('customFields.tit') + ' [' + me.getName() + ']'
+				},
+				serviceId: me.ID
+			}
+		}).showView();
 	},
 	
 	addCalendarUI: function(domainId, userId) {

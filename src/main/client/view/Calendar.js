@@ -102,9 +102,27 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						width: 110+140
 					}), 
 					{
-						xtype: 'textfield',
-						reference: 'fldname',
-						bind: '{record.name}',
+						xtype: 'fieldcontainer',
+						layout: {
+							type: 'hbox',
+							padding: '0 0 1 0' // fixes classic-theme bottom border issue
+						},
+						items: [
+							{
+								xtype: 'textfield',
+								reference: 'fldname',
+								bind: '{record.name}',
+								margin: '0 5 0 0',
+								flex: 1
+							}, {
+								xtype: 'sopalettefield',
+								bind: '{record.color}',
+								hideTrigger: true,
+								colors: WT.getColorPalette('default'),
+								tilesPerRow: 11,
+								width: 24
+							}
+						],
 						fieldLabel: me.mys.res('calendar.fld-name.lbl'),
 						anchor: '100%'
 					}, {
@@ -120,12 +138,6 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						bind: '{record.description}',
 						fieldLabel: me.mys.res('calendar.fld-description.lbl'),
 						anchor: '100%'
-					}, {
-						xtype: 'sopalettefield',
-						bind: '{record.color}',
-						colors: WT.getColorPalette(),
-						fieldLabel: me.mys.res('calendar.fld-color.lbl'),
-						width: 110+100
 					},
 					WTF.lookupCombo('id', 'desc', {
 						reference: 'fldsync',

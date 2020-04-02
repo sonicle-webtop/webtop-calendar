@@ -49,6 +49,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.model.GridEvent'
 	],
 	uses: [
+		'Sonicle.picker.Color',
 		'WTA.util.FoldersTree',
 		'WTA.ux.SelectTagsBox',
 		'Sonicle.webtop.calendar.ux.RecurringConfirmBox',
@@ -745,14 +746,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			menu: {
 				showSeparator: false,
 				itemId: 'calendarColor',
-				items: [{
-						xtype: 'colorpicker',
-						colors: WT.getColorPalette(),
+				items: [
+					{
+						xtype: 'socolorpicker',
+						colors: WT.getColorPalette('default'),
+						tilesPerRow: 11,
 						listeners: {
 							select: function(s, color) {
 								var node = s.menuData.node;
 								me.getRef('cxmFolder').hide();
-								if (node) me.updateCalendarColorUI(node, '#'+color);
+								if (node) me.updateCalendarColorUI(node, Sonicle.String.prepend(color, '#', true));
 							}
 						}
 					},

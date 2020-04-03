@@ -40,7 +40,7 @@ import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_CUSTOM_VALUES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import com.sonicle.webtop.core.app.sdk.JOOQPredicateVisitorWithCValues;
-import com.sonicle.webtop.core.app.sdk.QBuilderWithCValues;
+import com.sonicle.webtop.core.app.sdk.QueryBuilderWithCValues;
 import java.util.Collection;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -126,10 +126,11 @@ public class EventPredicateVisitor extends JOOQPredicateVisitorWithCValues {
 			);
 			
 		} else if ("any".equals(fieldName)) {
-			return EVENTS.TITLE.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values)))
-				.or(EVENTS.LOCATION.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))))
-				.or(EVENTS.DESCRIPTION.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))))
-				.or(EVENTS.ORGANIZER.likeIgnoreCase(valueToSmartLikePattern(singleAsString(values))));
+			String singleAsString = valueToLikePattern(singleAsString(values));
+			return EVENTS.TITLE.likeIgnoreCase(singleAsString)
+				.or(EVENTS.LOCATION.likeIgnoreCase(singleAsString))
+				.or(EVENTS.DESCRIPTION.likeIgnoreCase(singleAsString))
+				.or(EVENTS.ORGANIZER.likeIgnoreCase(singleAsString));
 			
 		} else if (StringUtils.startsWith(fieldName, "CV")) {
 			CompId fn = new CompId(2).parse(fieldName, false);
@@ -165,20 +166,20 @@ public class EventPredicateVisitor extends JOOQPredicateVisitorWithCValues {
 	}
 	
 	@Override
-	protected Condition cvalueCondition(QBuilderWithCValues.Type cvalueType, ComparisonOperator operator, Collection<?> values) {
-		if (QBuilderWithCValues.Type.CVSTRING.equals(cvalueType)) {
+	protected Condition cvalueCondition(QueryBuilderWithCValues.Type cvalueType, ComparisonOperator operator, Collection<?> values) {
+		if (QueryBuilderWithCValues.Type.CVSTRING.equals(cvalueType)) {
 			return defaultCondition(EVENTS_CUSTOM_VALUES.STRING_VALUE, operator, values);
 			
-		} else if (QBuilderWithCValues.Type.CVNUMBER.equals(cvalueType)) {
+		} else if (QueryBuilderWithCValues.Type.CVNUMBER.equals(cvalueType)) {
 			return defaultCondition(EVENTS_CUSTOM_VALUES.NUMBER_VALUE, operator, values);
 			
-		} else if (QBuilderWithCValues.Type.CVBOOL.equals(cvalueType)) {
+		} else if (QueryBuilderWithCValues.Type.CVBOOL.equals(cvalueType)) {
 			return defaultCondition(EVENTS_CUSTOM_VALUES.BOOLEAN_VALUE, operator, values);
 			
-		} else if (QBuilderWithCValues.Type.CVDATE.equals(cvalueType)) {
+		} else if (QueryBuilderWithCValues.Type.CVDATE.equals(cvalueType)) {
 			return defaultCondition(EVENTS_CUSTOM_VALUES.DATE_VALUE, operator, values);
 			
-		} else if (QBuilderWithCValues.Type.CVTEXT.equals(cvalueType)) {
+		} else if (QueryBuilderWithCValues.Type.CVTEXT.equals(cvalueType)) {
 			return defaultCondition(EVENTS_CUSTOM_VALUES.TEXT_VALUE, operator, values);
 			
 		} else {

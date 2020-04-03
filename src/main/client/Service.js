@@ -521,6 +521,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.erpExport();
 			}
 		});
+		if (WT.isPermitted(WT.ID, 'TAGS', 'MANAGE')) {
+			me.addAct('toolbox', 'manageTags', {
+				text: WT.res('act-manageTags.lbl'),
+				tooltip: WT.res('act-manageTags.tip'),
+				iconCls: 'wt-icon-tag',
+				handler: function() {
+					me.showManageTagsUI();
+				}
+			});
+		}
 		if (WT.isPermitted(WT.ID, 'CUSTOM_FIELDS', 'MANAGE')) {
 			me.addAct('toolbox', 'manageCustomFields', {
 				text: WT.res('act-manageCustomFields.lbl'),
@@ -1151,6 +1161,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				serviceId: me.ID
 			}
 		}).showView();
+	},
+	
+	showManageTagsUI: function() {
+		var me = this,
+				vw = WT.createView(WT.ID, 'view.Tags', {
+					swapReturn: true,
+					viewCfg: {
+						enableSelection: false
+					}
+				});
+		vw.on('viewclose', function(s) {
+			if (s.syncCount > 0) me.reloadEvents();
+		});
+		vw.showView();
 	},
 	
 	showCustomFieldsUI: function() {

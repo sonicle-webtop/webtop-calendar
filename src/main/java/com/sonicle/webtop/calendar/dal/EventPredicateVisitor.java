@@ -39,12 +39,16 @@ import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_CUSTOM_VALUES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
+import com.sonicle.webtop.calendar.jooq.tables.EventsCustomValues;
+import com.sonicle.webtop.calendar.jooq.tables.EventsTags;
 import com.sonicle.webtop.core.app.sdk.JOOQPredicateVisitorWithCValues;
 import com.sonicle.webtop.core.app.sdk.QueryBuilderWithCValues;
 import java.util.Collection;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.jooq.Condition;
+import org.jooq.Field;
+import org.jooq.TableLike;
 import static org.jooq.impl.DSL.*;
 
 /**
@@ -52,6 +56,8 @@ import static org.jooq.impl.DSL.*;
  * @author malbinola
  */
 public class EventPredicateVisitor extends JOOQPredicateVisitorWithCValues {
+	private final EventsCustomValues PV_EVENTS_CUSTOM_VALUES = EVENTS_CUSTOM_VALUES.as("pvis_cv");
+	private final EventsTags PV_EVENTS_TAGS = EVENTS_TAGS.as("pvis_ct");
 	protected final Target target;
 	protected DateTime fromRange = null;
 	protected DateTime toRange = null;
@@ -135,30 +141,7 @@ public class EventPredicateVisitor extends JOOQPredicateVisitorWithCValues {
 		} else if (StringUtils.startsWith(fieldName, "CV")) {
 			CompId fn = new CompId(2).parse(fieldName, false);
 			if (fn.isTokenEmpty(1)) throw new UnsupportedOperationException("Field name invalid: " + fieldName);
-			
-			JOOQPredicateVisitorWithCValues.CValueCondition cvCondition = getCustomFieldCondition(fn, operator, values);
-			if (cvCondition.negated) {
-				return notExists(
-					selectOne()
-					.from(EVENTS_CUSTOM_VALUES)
-					.where(
-						EVENTS_CUSTOM_VALUES.EVENT_ID.equal(EVENTS.EVENT_ID)
-						.and(EVENTS_CUSTOM_VALUES.CUSTOM_FIELD_ID.equal(fn.getToken(1)))
-						.and(cvCondition.condition)
-					)
-				);
-				
-			} else {
-				return exists(
-					selectOne()
-					.from(EVENTS_CUSTOM_VALUES)
-					.where(
-						EVENTS_CUSTOM_VALUES.EVENT_ID.equal(EVENTS.EVENT_ID)
-						.and(EVENTS_CUSTOM_VALUES.CUSTOM_FIELD_ID.equal(fn.getToken(1)))
-						.and(cvCondition.condition)
-					)
-				);
-			}
+			return generateCValueCondition(fn, operator, values);
 			
 		} else {
 			throw new UnsupportedOperationException("Field not supported: " + fieldName);
@@ -166,21 +149,52 @@ public class EventPredicateVisitor extends JOOQPredicateVisitorWithCValues {
 	}
 	
 	@Override
-	protected Condition cvalueCondition(QueryBuilderWithCValues.Type cvalueType, ComparisonOperator operator, Collection<?> values) {
+	protected Field<?> getFieldEntityIdOfEntityTable() {
+		return EVENTS.EVENT_ID;
+	}
+	
+	@Override
+	protected TableLike<?> getTableTags() {
+		return PV_EVENTS_TAGS;
+	}
+	
+	@Override
+	protected Field<String> getFieldTagIdOfTableTags() {
+		return PV_EVENTS_TAGS.TAG_ID;
+	}
+	
+	@Override
+	protected Condition getConditionTagsForCurrentEntity() {
+		return PV_EVENTS_TAGS.EVENT_ID.eq(EVENTS.EVENT_ID);
+	}
+	
+	@Override
+	protected TableLike<?> getTableCustomValues() {
+		return PV_EVENTS_CUSTOM_VALUES;
+	}
+	
+	@Override
+	protected Condition getConditionCustomValuesForCurrentEntityAndField(String fieldId) {
+		return PV_EVENTS_CUSTOM_VALUES.EVENT_ID.eq(EVENTS.EVENT_ID)
+				.and(PV_EVENTS_CUSTOM_VALUES.CUSTOM_FIELD_ID.eq(fieldId));
+	}
+	
+	@Override
+	protected Condition getConditionCustomValuesForFieldValue(QueryBuilderWithCValues.Type cvalueType, ComparisonOperator operator, Collection<?> values) {
 		if (QueryBuilderWithCValues.Type.CVSTRING.equals(cvalueType)) {
-			return defaultCondition(EVENTS_CUSTOM_VALUES.STRING_VALUE, operator, values);
+			return defaultCondition(PV_EVENTS_CUSTOM_VALUES.STRING_VALUE, operator, values);
 			
 		} else if (QueryBuilderWithCValues.Type.CVNUMBER.equals(cvalueType)) {
-			return defaultCondition(EVENTS_CUSTOM_VALUES.NUMBER_VALUE, operator, values);
+			return defaultCondition(PV_EVENTS_CUSTOM_VALUES.NUMBER_VALUE, operator, values);
 			
 		} else if (QueryBuilderWithCValues.Type.CVBOOL.equals(cvalueType)) {
-			return defaultCondition(EVENTS_CUSTOM_VALUES.BOOLEAN_VALUE, operator, values);
+			return defaultCondition(PV_EVENTS_CUSTOM_VALUES.BOOLEAN_VALUE, operator, values);
 			
 		} else if (QueryBuilderWithCValues.Type.CVDATE.equals(cvalueType)) {
-			return defaultCondition(EVENTS_CUSTOM_VALUES.DATE_VALUE, operator, values);
+			return defaultCondition(PV_EVENTS_CUSTOM_VALUES.DATE_VALUE, operator, values);
 			
 		} else if (QueryBuilderWithCValues.Type.CVTEXT.equals(cvalueType)) {
-			return defaultCondition(EVENTS_CUSTOM_VALUES.TEXT_VALUE, operator, values);
+			return defaultCondition(PV_EVENTS_CUSTOM_VALUES.TEXT_VALUE, operator, values);
 			
 		} else {
 			return null;

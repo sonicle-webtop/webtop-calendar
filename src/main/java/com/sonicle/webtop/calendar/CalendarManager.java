@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.github.rutledgepaulv.qbuilders.conditions.Condition;
+import com.sonicle.commons.qbuilders.conditions.Condition;
 import com.sonicle.webtop.core.app.util.EmailNotification;
 import com.sonicle.webtop.calendar.model.GetEventScope;
 import com.rits.cloning.Cloner;

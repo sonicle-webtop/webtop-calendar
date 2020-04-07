@@ -32,8 +32,8 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
-import com.github.rutledgepaulv.qbuilders.nodes.ComparisonNode;
-import com.github.rutledgepaulv.qbuilders.operators.ComparisonOperator;
+import com.sonicle.commons.qbuilders.nodes.ComparisonNode;
+import com.sonicle.commons.qbuilders.operators.ComparisonOperator;
 import com.sonicle.commons.web.json.CompId;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_CUSTOM_VALUES;

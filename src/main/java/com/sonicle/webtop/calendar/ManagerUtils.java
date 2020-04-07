@@ -467,7 +467,7 @@ public class ManagerUtils {
 			tgt.setNumberValue(src.getNumberValue());
 			tgt.setBooleanValue(src.getBooleanValue());
 			tgt.setDateValue(src.getDateValue());
-			//tgt.setTextValue(src.getTextValue());
+			tgt.setTextValue(src.getTextValue());
 		}
 		return tgt;
 	}
@@ -484,7 +484,7 @@ public class ManagerUtils {
 			tgt.setNumberValue(src.getNumberValue());
 			tgt.setBooleanValue(src.getBooleanValue());
 			tgt.setDateValue(src.getDateValue());
-			//tgt.setTextValue(src.getTextValue());
+			tgt.setTextValue(src.getTextValue());
 		}
 		return tgt;
 	}

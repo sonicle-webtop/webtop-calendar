@@ -1258,6 +1258,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(false);
+				me.reloadCustomFields([]);
 			} else if (me.isMode(me.MODE_VIEW)) {
 				me.getAct('saveClose').setDisabled(true);
 				me.getAct('delete').setDisabled(true);
@@ -1295,38 +1296,41 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		},
 		
 		onTagsChanged: function(nv, ov) {
-			var me = this, mo, cftab;
 			if (ov && Sonicle.String.difference(nv, ov).length > 0) { // Make sure that there are really differences!
-				mo = me.getModel();
-				cftab = me.lref('tabcfields');
-				cftab.wait();
-				me.getCustomFieldsDefsData(mo.get('eventId'), nv, {
-					callback: function(success, json) {
-						if (success) {
-							Ext.iterate(json.data.cvalues, function(cval) {
-								var rec = mo.cvalues().getById(cval.id);
-								if (!rec) {
-									mo.cvalues().add(cval);
-								} else {
-									rec.set(cval);
-								}
-							});
-							mo.set('_cfdefs', json.data.cfdefs);
-							me.lref('tabcfields').setStore(mo.cvalues());
-						}
-						cftab.unwait();
-					}
-				});
+				this.reloadCustomFields(nv);
 			}
 		},
 		
-		getCustomFieldsDefsData: function(eventId, tags, opts) {
+		reloadCustomFields: function(tags) {
+			var me = this,
+					mo = me.getModel(),
+					cftab = me.lref('tabcfields');
+			me.getCustomFieldsDefsData(tags, mo.get('eventId'), {
+				callback: function(success, json) {
+					if (success) {
+						Ext.iterate(json.data.cvalues, function(cval) {
+							var rec = mo.cvalues().getById(cval.id);
+							if (!rec) {
+								mo.cvalues().add(cval);
+							} else {
+								rec.set(cval);
+							}
+						});
+						mo.set('_cfdefs', json.data.cfdefs);
+						me.lref('tabcfields').setStore(mo.cvalues());
+					}
+					cftab.unwait();
+				}
+			});
+		},
+		
+		getCustomFieldsDefsData: function(tags, eventId, opts) {
 			opts = opts || {};
 			var me = this;
 			WT.ajaxReq(me.mys.ID, 'GetCustomFieldsDefsData', {
 				params: {
-					eventId: eventId,
-					tags: WTU.arrayAsParam(tags)
+					tags: WTU.arrayAsParam(tags),
+					eventId: (eventId !== null && eventId > 0) ? eventId : null
 				},
 				callback: function(success, json) {
 					Ext.callback(opts.callback, opts.scope || me, [success, json]);

@@ -953,11 +953,11 @@ public class Service extends BaseService {
 		UserProfile up = getEnv().getProfile();
 		
 		try {
-			String eventId = ServletUtils.getStringParameter(request, "eventId", true);
 			ServletUtils.StringArray tags = ServletUtils.getObjectParameter(request, "tags", ServletUtils.StringArray.class, true);
+			Integer eventId = ServletUtils.getIntParameter(request, "eventId", false);
 			
-			Map<String, CustomFieldValue> cvalues = manager.getEventCustomValues(Integer.parseInt(eventId));
 			Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, tags);
+			Map<String, CustomFieldValue> cvalues = (eventId != null) ? manager.getEventCustomValues(eventId) : null;
 			Map<String, CustomField> cfields = new HashMap<>();
 			for (CustomPanel cpanel : cpanels.values()) {
 				for (String fieldId : cpanel.getFields()) {
@@ -969,7 +969,7 @@ public class Service extends BaseService {
 			
 		} catch(Throwable t) {
 			logger.error("Error in GetCustomFieldsDefsData", t);
-			ServletUtils.writeErrorHandlingJs(response, t.getMessage());
+			new JsonResult(t).printTo(out);
 		}
 	}
 	
@@ -1016,7 +1016,6 @@ public class Service extends BaseService {
 		} catch(Throwable t) {
 			logger.error("Error in ManageGridEvents", t);
 			new JsonResult(t).printTo(out);
-			
 		}
 	}
 	

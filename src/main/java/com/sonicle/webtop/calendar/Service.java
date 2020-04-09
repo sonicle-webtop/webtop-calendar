@@ -110,6 +110,7 @@ import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
 import com.sonicle.webtop.core.model.CustomField;
 import com.sonicle.webtop.core.model.CustomFieldEx;
+import com.sonicle.webtop.core.model.CustomFieldValue;
 import com.sonicle.webtop.core.model.CustomPanel;
 import com.sonicle.webtop.core.sdk.AsyncActionCollection;
 import com.sonicle.webtop.core.sdk.BaseService;
@@ -952,8 +953,10 @@ public class Service extends BaseService {
 		UserProfile up = getEnv().getProfile();
 		
 		try {
+			String eventId = ServletUtils.getStringParameter(request, "eventId", true);
 			ServletUtils.StringArray tags = ServletUtils.getObjectParameter(request, "tags", ServletUtils.StringArray.class, true);
 			
+			Map<String, CustomFieldValue> cvalues = manager.getEventCustomValues(Integer.parseInt(eventId));
 			Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, tags);
 			Map<String, CustomField> cfields = new HashMap<>();
 			for (CustomPanel cpanel : cpanels.values()) {
@@ -962,7 +965,7 @@ public class Service extends BaseService {
 					if (cfield != null) cfields.put(fieldId, cfield);
 				}
 			}
-			new JsonResult(new JsCustomFieldDefsData(cpanels.values(), cfields, up.getLanguageTag(), up.getTimeZone())).printTo(out);
+			new JsonResult(new JsCustomFieldDefsData(cpanels.values(), cfields, cvalues, up.getLanguageTag(), up.getTimeZone())).printTo(out);
 			
 		} catch(Throwable t) {
 			logger.error("Error in GetCustomFieldsDefsData", t);

@@ -1407,6 +1407,28 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
+	public Map<String, CustomFieldValue> getEventCustomValues(int eventId) throws WTException {
+		EventDAO evtDao = EventDAO.getInstance();
+		EventCustomValueDAO cvalDao = EventCustomValueDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			Integer calId = evtDao.selectCalendarId(con, eventId);
+			if (calId == null) return null;
+			checkRightsOnCalendar(calId, CheckRightsTarget.FOLDER, "READ");
+			
+			List<OEventCustomValue> ovals = cvalDao.selectByEvent(con, eventId);
+			return ManagerUtils.createCustomValuesMap(ovals);
+			
+		} catch (Throwable t) {
+			throw ExceptionUtils.wrapThrowable(t);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
 	public Event addEvent(Event event) throws WTException {
 		return addEvent(event, true);
 	}

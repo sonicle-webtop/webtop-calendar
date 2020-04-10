@@ -46,7 +46,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'WTA.ux.field.RecipientSuggestCombo',
 		'WTA.ux.field.SuggestCombo',
 		'WTA.ux.grid.Attachments',
-		'WTA.ux.panel.CustomFields',
+		'WTA.ux.panel.CustomFieldsEditor',
 		'WTA.model.ActivityLkp',
 		'WTA.model.CausalLkp',
 		'WTA.store.Timezone',
@@ -976,7 +976,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						recur,
 						attachs,
 						{
-							xtype: 'wtcustomfieldspanel',
+							xtype: 'wtcfieldseditorpanel',
 							reference: 'tabcfields',
 							title: me.mys.res('event.cfields.tit'),
 							bind: {

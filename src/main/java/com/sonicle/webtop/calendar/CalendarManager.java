@@ -3094,11 +3094,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Recur recur = orec.getRecur();
 				if (recur == null) throw new WTException("Unable to parse rrule [{}]", orec.getRule());
 				
-				Map<LocalDate, ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
-				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
+				Set<LocalDate> exclDates = recbDao.selectDatesByEventRecurrence(con, eventId, orec.getRecurrenceId());
+				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), exclDates, instanceMapper.isEventAllDay(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
 				for (LocalDate recurringDate : dates) {
-					if (obrecs.containsKey(recurringDate)) continue; // Skip broken date...
-
 					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
 					DateTime end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
@@ -3130,6 +3128,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return instances;
 	}
 	
+	/*
 	private <T> List<T> calculateRecurringInstances_OLD(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
@@ -3148,15 +3147,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (fromDate == null) fromDate = orec.getStartDate();
 			if (toDate == null) toDate = orec.getStartDate().plusYears(1);
 			
-			/*
-			List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
-			//TODO: ritornare direttamente l'hashmap da jooq
-			// Builds a hashset of broken dates for increasing performances
-			HashMap<String, ORecurrenceBroken> brokenDates = new HashMap<>();
-			for (ORecurrenceBroken obrec : obrecs) {
-				brokenDates.put(obrec.getEventDate().toString(), obrec);
-			}
-			*/
+			//List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
+			////TODO: ritornare direttamente l'hashmap da jooq
+			//// Builds a hashset of broken dates for increasing performances
+			//HashMap<String, ORecurrenceBroken> brokenDates = new HashMap<>();
+			//for (ORecurrenceBroken obrec : obrecs) {
+			//	brokenDates.put(obrec.getEventDate().toString(), obrec);
+			//}
 			
 			Map<LocalDate, ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
 			HashSet<String> brokenDates = new HashSet<>();
@@ -3208,8 +3205,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		return instances;
 	}
-	
-	
+	*/
 	
 	/*
 	private List<VVEventInstance> calculateRecurringInstances(Connection con, VVEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
@@ -4776,6 +4772,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		public int getEventId() {
 			return event.getEventId();
 		}
+		
+		@Override
+		public boolean isEventAllDay() {
+			return event.getAllDay();
+		}
 
 		@Override
 		public DateTime getEventStartDate() {
@@ -4813,6 +4814,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		@Override
 		public int getEventId() {
 			return event.getEventId();
+		}
+		
+		@Override
+		public boolean isEventAllDay() {
+			return event.getAllDay();
 		}
 
 		@Override
@@ -4874,6 +4880,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		public int getEventId() {
 			return event.getEventId();
 		}
+		
+		@Override
+		public boolean isEventAllDay() {
+			return event.getAllDay();
+		}
 
 		@Override
 		public DateTime getEventStartDate() {
@@ -4914,6 +4925,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 
 		@Override
+		public boolean isEventAllDay() {
+			return event.getAllDay();
+		}
+
+		@Override
 		public DateTime getEventStartDate() {
 			return event.getStartDate();
 		}
@@ -4939,6 +4955,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private interface RecurringInstanceMapper<T> {
 		public int getEventId();
+		public boolean isEventAllDay();
 		public DateTime getEventStartDate();
 		public DateTime getEventEndDate();
 		public DateTimeZone getEventTimezone();

@@ -224,6 +224,19 @@ public class CalendarDAO extends BaseDAO {
 			.fetchInto(OCalendar.class);
 	}
 	
+	public Integer selectDefaultByProfile(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(CALENDARS.CALENDAR_ID)
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+				.and(CALENDARS.IS_DEFAULT.equal(true))
+			)
+			.fetchOneInto(Integer.class);
+	}
+	
 	public List<OCalendar> selectByProvider(Connection con, Collection<Calendar.Provider> providers) throws DAOException {
 		List<String> providerList = providers.stream().map(prov -> EnumUtils.toSerializedName(prov)).collect(Collectors.toList());
 		DSLContext dsl = getDSL(con);

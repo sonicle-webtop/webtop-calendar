@@ -496,6 +496,28 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
+	@Override
+	public Integer getDefaultCalendarId() throws WTException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			
+			Integer calendarId = calDao.selectDefaultByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
+			if (calendarId == null) return null;
+			
+			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
+			
+			return calendarId;
+			
+		} catch(SQLException | DAOException | WTException ex) {
+			throw wrapException(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
 	public Map<String, String> getCalendarLinks(int calendarId) throws WTException {
 		checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
 		

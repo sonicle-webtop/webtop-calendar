@@ -507,7 +507,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = calDao.selectDefaultByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if (calendarId == null) return null;
 			
-			checkRightsOnCalendarFolder(calendarId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
 			
 			return calendarId;
 			

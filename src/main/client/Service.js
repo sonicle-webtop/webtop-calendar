@@ -40,15 +40,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.grid.column.Icon',
 		'Sonicle.grid.column.Color',
 		'Sonicle.grid.column.Tag',
-		'Sonicle.menu.TagItem',
 		'Sonicle.tree.Column',
 		'WTA.ux.field.Search',
+		'WTA.ux.menu.TagMenu',
 		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.GridEvent'
 	],
 	uses: [
+		'Sonicle.Data',
 		'Sonicle.picker.Color',
 		'WTA.util.FoldersTree',
 		'WTA.ux.SelectTagsBox',
@@ -171,10 +172,12 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							type: 'tag',
 							label: me.res('fld-search.field.tags.lbl'),
 							customConfig: {
+								store: WT.getTagsStore(), // This is filterable, let's do a separate copy!
 								valueField: 'id',
 								displayField: 'name',
 								colorField: 'color',
-								store: WT.getTagsStore() // This is filterable, let's do a separate copy!
+								sourceField: 'source',
+								sourceCls: 'wt-source'
 							}
 						}
 					], scfields),
@@ -521,16 +524,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.erpExport();
 			}
 		});
-		if (WT.isPermitted(WT.ID, 'TAGS', 'MANAGE')) {
-			me.addAct('toolbox', 'manageTags', {
-				text: WT.res('act-manageTags.lbl'),
-				tooltip: WT.res('act-manageTags.tip'),
-				iconCls: 'wt-icon-tag',
-				handler: function() {
-					me.showManageTagsUI();
-				}
-			});
-		}
+		me.addAct('toolbox', 'manageTags', {
+			text: WT.res('act-manageTags.lbl'),
+			tooltip: WT.res('act-manageTags.tip'),
+			iconCls: 'wt-icon-tag',
+			handler: function() {
+				me.showManageTagsUI();
+			}
+		});
 		if (WT.isPermitted(WT.ID, 'CUSTOM_FIELDS', 'MANAGE')) {
 			me.addAct('toolbox', 'manageCustomFields', {
 				text: WT.res('act-manageCustomFields.lbl'),
@@ -710,11 +711,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: me.res('mni-tags.lbl'),
 			tooltip: null,
 			menu: {
-				xtype: 'sostoremenu',
-				useItemIdPrefix: true,
-				store: WT.getTagsStore(),
-				textField: 'name',
-				tagField: 'id',
+				xtype: 'wttagmenu',
 				bottomStaticItems: [
 					'-',
 					me.addAct('manageTags', {
@@ -725,27 +722,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					})
 				],
-				itemCfgCreator: function(rec) {
-					return {
-						xclass: 'Sonicle.menu.TagItem',
-						color: rec.get('color'),
-						hideOnClick: true
-					};
+				restoreSelectedTags: function(menuData) {
+					return me.toMutualTags([menuData.event]);
 				},
 				listeners: {
-					beforeshow: function(s) {
-						s.setCheckedItems(me.toMutualTags([s.parentMenu.menuData.event]) || []);
-					},
-					click: function(s, itm, e) {
-						if (itm.tag) {
-							var rec = WTU.itselfOrFirst(e.menuData.event),
-								ids = WTU.collectIds([rec]);
-							me.updateEventItemsTags(ids, !itm.checked ? 'unset' : 'set', [itm.tag], {
-								callback: function(success) {
-									if (success) me.reloadEvents();
-								}
-							});
-						}
+					tagclick: function(s, tagId, checked, itm, e) {
+						var rec = WTU.itselfOrFirst(e.menuData.event),
+								ids = Sonicle.Data.collectValues([rec]);
+						me.updateEventItemsTags(ids, !checked ? 'unset' : 'set', [tagId], {
+							callback: function(success) {
+								if (success) me.reloadEvents();
+							}
+						});
 					}
 				}
 			}
@@ -1085,6 +1073,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							brk = (rec.get('isBroken') === true);
 					me.getAct('openEvent').setDisabled(!er.MANAGE);
 					me.getAct('moveEvent').setDisabled(!er.DELETE);
+					me.getAct('tags').setDisabled(!er.UPDATE);
 					me.getAct('deleteEvent').setDisabled(!er.DELETE);
 					me.getAct('restoreEvent').setDisabled(!brk || !er.UPDATE);
 				}
@@ -1331,7 +1320,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	manageEventItemsTagsUI: function(recs) {
 		var me = this,
-				ids = WTU.collectIds(recs),
+				ids = Sonicle.Data.collectValues(recs),
 				tags = me.toMutualTags(recs),
 				vw = WT.createView(WT.ID, 'view.Tags', {
 					swapReturn: true,

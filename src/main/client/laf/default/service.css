@@ -3,6 +3,7 @@
 .wtcal-icon-service-s { background-image: url('service_16.svg') !important; background-size: contain; }
 .wtcal-icon-service-m { background-image: url('service_32.svg') !important; background-size: contain; }
 .wtcal-icon-service-l { background-image: url('service_32.svg') !important; background-size: contain; }
+.wtcal-icon-reminder-event { background-image: url('event_16.svg') !important; background-size: contain; }
 .wtcal-icon-root-my-xs { background-image: url('root-my_16.png') !important; }
 .wtcal-icon-root-incoming-xs { background-image: url('root-incoming_16.png') !important; }
 .wtcal-icon-today { background-image: url('move-today_16.svg') !important; background-size: contain; }

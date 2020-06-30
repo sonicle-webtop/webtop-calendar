@@ -1,3 +1,11 @@
+$	5.9.0
+	%	Version 5.9.0
+	*	<h1>Labels</h1>
+		<p>Labels can help you to keep order: you can add as many labels as you want to an event.</p>
+		<img src="5.9.0_tags.png"/>
+	*	<h1>Custom fields</h1>
+		<p>You can create new custom fields and associate them to your events.</p>
+		<img src="5.9.0_cfields.png"/>
 $	5.8.0
 	%	Version 5.8.0
 	*	<h1>New unified selector for target calendar</h1>

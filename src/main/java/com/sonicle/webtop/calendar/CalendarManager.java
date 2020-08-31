@@ -3806,7 +3806,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				//orec.updateUntilDate(eventKey.instanceDate, einfo.getDateTimeZone());
 				LocalTime untilTime = einfo.getAllDay() ? DateTimeUtils.TIME_AT_STARTOFDAY : einfo.getStartDate().withZone(einfo.getDateTimeZone()).toLocalTime();
-				orec.updateUntilDate(eventKey.instanceDate, untilTime, einfo.getDateTimeZone());
+				orec.updateUntilDate(eventKey.instanceDate.minusDays(1), untilTime, einfo.getDateTimeZone());
 				recDao.update(con, orec);
 				
 				// 2 - Updates revision of this event

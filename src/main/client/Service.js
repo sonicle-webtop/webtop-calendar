@@ -407,6 +407,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					beforeeventresize: function(s, rec, data) {
 						me.updateSchedEventUI(rec, data.StartDate, data.EndDate, null);
 						return false;
+					},
+					beforeeventtitleupdate: function(s, rec, newTitle) {
+						me.updateSchedEventUI(rec, null, null, newTitle);
+						return false;
 					}
 				}
 			}, {

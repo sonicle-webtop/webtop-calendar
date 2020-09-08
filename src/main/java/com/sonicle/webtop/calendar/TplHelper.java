@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Locale;
 import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -194,10 +195,17 @@ public class TplHelper {
 		
 		String recipientAttendeeId = null;
 		MapItemList evtAtts = new MapItemList();
-		for(EventAttendee attendee : event.getAttendees()) {
+		for (EventAttendee attendee : event.getAttendees()) {
 			MapItem item = new MapItem();
-			String cn = attendee.getCN();
-			String address = attendee.getAddress();
+			String cn = null;
+			String address = null;
+			InternetAddress iaRecipient = attendee.getRecipientInternetAddress();
+			
+			if (iaRecipient != null) {
+				cn = iaRecipient.getPersonal();
+				address = iaRecipient.getAddress();
+			}
+			
 			if(StringUtils.equals(address, recipientEmail)) recipientAttendeeId = attendee.getAttendeeId();
 			item.put("cn", StringUtils.isBlank(cn) ? null : cn);
 			item.put("address", StringUtils.isBlank(address) ? null : address);
@@ -298,10 +306,17 @@ public class TplHelper {
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
 		
 		MapItemList evtAtts = new MapItemList();
-		for(EventAttendee attendee : event.getAttendees()) {
+		for (EventAttendee attendee : event.getAttendees()) {
 			MapItem item = new MapItem();
-			String cn = attendee.getCN();
-			String address = attendee.getAddress();
+			InternetAddress iaRecipient = attendee.getRecipientInternetAddress();
+			String cn = null;
+			String address = null;
+			
+			if (iaRecipient != null) {
+				cn = iaRecipient.getPersonal();
+				address = iaRecipient.getAddress();
+			}
+			
 			item.put("cn", StringUtils.isBlank(cn) ? null : cn);
 			item.put("address", StringUtils.isBlank(address) ? null : address);
 			evtAtts.add(item);

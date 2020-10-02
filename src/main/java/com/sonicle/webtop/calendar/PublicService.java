@@ -87,14 +87,14 @@ public class PublicService extends BasePublicService {
 	
 	@Override
 	public void processDefaultAction(HttpServletRequest request, HttpServletResponse response) throws Exception {
-		PublicPath path = new PublicPath(request.getPathInfo());
 		WebTopSession wts = getEnv().getWebTopSession();
 		
 		try {
+			PublicPath path = new PublicPath(request.getPathInfo());
+			String domainId = WT.findDomainIdByPublicName(path.getDomainPublicName());
+			if (domainId == null) throw new WTException("Invalid domain public name [{}]", path.getDomainPublicName());
+			
 			try {
-				String domainId = WT.findDomainIdByPublicName(path.getDomainPublicName());
-				if (domainId == null) throw new WTException("Invalid domain public name [{0}]", path.getDomainPublicName());
-				
 				if (path.getContext().equals(PUBPATH_CONTEXT_EVENT)) {
 					EventUrlPath eventUrlPath = new EventUrlPath(path.getRemainingPath());
 					CalendarManager adminCalMgr = getAdminManager(domainId);
@@ -123,22 +123,22 @@ public class PublicService extends BasePublicService {
 					
 					if (event == null) {
 						logger.trace("Event not found [{}]", eventUrlPath.getPublicUid());
-						writeErrorPage(request, response, wts, "eventnotfound");
+						writeErrorPage(request, response, domainId, wts, "eventnotfound");
 						
 					} else {
 						Calendar calendar = adminCalMgr.getCalendar(event.getCalendarId());
 						if (event.getIsPrivate()) event.censorize();
-						writeEventPage(request, response, wts, "Event", calendar, event);
+						writeEventPage(request, response, domainId, wts, "Event", calendar, event);
 					}
 
 				} else {
 					logger.trace("Invalid context [{}]", path.getContext());
-					writeErrorPage(request, response, wts, "badrequest");
+					writeErrorPage(request, response, domainId, wts, "badrequest");
 				}
 				
 			} catch(Exception ex) {
 				logger.trace("Error", ex);
-				writeErrorPage(request, response, wts, "badrequest");
+				writeErrorPage(request, response, domainId, wts, "badrequest");
 			}
 		} catch(Throwable t) {
 			logger.error("Unexpected error", t);
@@ -192,21 +192,21 @@ public class PublicService extends BasePublicService {
 		return attendees;
 	}
 	
-	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, Calendar calendar, Event event) throws IOException, TemplateException {
-		writeEventPage(request, response, wts, view, calendar, event, new JsWTSPublic.Vars());
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, String domainId, WebTopSession wts, String view, Calendar calendar, Event event) throws IOException, TemplateException {
+		writeEventPage(request, response, domainId, wts, view, calendar, event, new JsWTSPublic.Vars());
 	}
 	
-	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String view, Calendar calendar, Event event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, String domainId, WebTopSession wts, String view, Calendar calendar, Event event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
 		vars.put("view", view);
 		vars.put("eventData", buildEventData(calendar, event));
-		writePage(response, wts, vars, ServletHelper.getBaseUrl(request));
+		writePage(response, wts, vars, WT.getPublicContextPath(domainId));
 	}
 	
-	private void writeErrorPage(HttpServletRequest request, HttpServletResponse response, WebTopSession wts, String reskey) throws IOException, TemplateException {
+	private void writeErrorPage(HttpServletRequest request, HttpServletResponse response, String domainId, WebTopSession wts, String reskey) throws IOException, TemplateException {
 		JsWTSPublic.Vars vars = new JsWTSPublic.Vars();
 		vars.put("view", "Error");
 		vars.put("reskey", reskey);
-		writePage(response, wts, vars, ServletHelper.getBaseUrl(request));
+		writePage(response, wts, vars, WT.getPublicContextPath(domainId));
 	}
 	
 	public static class EventUrlPath extends UrlPathTokens {

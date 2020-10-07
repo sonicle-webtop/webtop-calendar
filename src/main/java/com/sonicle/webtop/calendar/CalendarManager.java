@@ -4159,13 +4159,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		if (processCustomValues && event.hasCustomValues()) {
+			ArrayList<String> customFieldIds = new ArrayList<>();
 			ArrayList<OEventCustomValue> ocvals = new ArrayList<>(event.getCustomValues().size());
 			for (CustomFieldValue cfv : event.getCustomValues().values()) {
 				OEventCustomValue ocv = ManagerUtils.createOEventCustomValue(cfv);
 				ocv.setEventId(originalEvent.getEventId());
 				ocvals.add(ocv);
+				customFieldIds.add(ocv.getCustomFieldId());
 			}
-			cvalDao.deleteByEvent(con, originalEvent.getEventId());
+			//TODO: use upsert when available
+			cvalDao.deleteByEventFields(con, originalEvent.getEventId(), customFieldIds);
 			cvalDao.batchInsert(con, ocvals);
 		}
 		

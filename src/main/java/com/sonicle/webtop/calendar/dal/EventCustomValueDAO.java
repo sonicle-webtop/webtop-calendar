@@ -102,14 +102,14 @@ public class EventCustomValueDAO extends BaseDAO {
 		return batch.execute();
 	}
 	
-	public int deleteByEvent(Connection con, int eventId) throws DAOException {
+	public int deleteByEventFields(Connection con, int eventId, Collection<String> customFieldIds) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_CUSTOM_VALUES)
 			.where(
 				EVENTS_CUSTOM_VALUES.EVENT_ID.equal(eventId)
+				.and(EVENTS_CUSTOM_VALUES.CUSTOM_FIELD_ID.in(customFieldIds))
 			)
 			.execute();
 	}
-	
 }

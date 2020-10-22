@@ -1575,7 +1575,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID, false);
 			
-			if (ical.getMethod().equals(Method.REQUEST)) {
+			if (Method.REQUEST.equals(ical.getMethod())) {
 				// Organizer -> Attendee
 				// The organizer after updating the event details send a mail message
 				// to all attendees telling to update their saved information
@@ -1616,7 +1616,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, original.getEventId(), null);
 				}
 				
-			} else if (ical.getMethod().equals(Method.REPLY)) {
+			} else if (Method.REPLY.equals(ical.getMethod())) {
 				// Attendee -> Organizer
 				// The attendee replies to an event sending to the organizer a mail 
 				// message with an attached ical (the above param), properly configured.
@@ -1655,7 +1655,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 				*/
 				
-			} else if (ical.getMethod().equals(Method.CANCEL)) {
+			} else if (Method.CANCEL.equals(ical.getMethod())) {
 				// Organizer -> Attendee
 				// The organizer after cancelling the event send a mail message
 				// to all attendees telling to update their saved information
@@ -1673,7 +1673,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 				
 			} else {
-				throw new WTException("Unsupported Calendar's method [{}]", ical.getMethod().toString());
+				throw new WTException("Unsupported Calendar's method [{}]", ical.getMethod() != null ? ical.getMethod().toString() : null);
 			}
 			
 		} catch (Throwable t) {

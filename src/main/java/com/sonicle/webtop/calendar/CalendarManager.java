@@ -2525,7 +2525,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public List<BaseReminder> getRemindersToBeNotified2(DateTime now) {
+	public List<BaseReminder> getRemindersToBeNotified(DateTime now) {
 		ArrayList<BaseReminder> alerts = new ArrayList<>();
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;

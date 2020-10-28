@@ -2525,75 +2525,80 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public List<BaseReminder> getRemindersToBeNotified(DateTime now) {
+	public List<BaseReminder> getRemindersToBeNotified2(DateTime now) {
+		ArrayList<BaseReminder> alerts = new ArrayList<>();
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
 		ensureSysAdmin();
-		ArrayList<VExpEventInstance> evtInstCandidates = new ArrayList<>();
 		
-		logger.trace("Analyzing event instances...");
 		try {
+			final boolean shouldLog = logger.isDebugEnabled();
 			final DateTime from = now.withTimeAtStartOfDay();
+			final DateTime to = from.plusDays(7*2+1);
 			con = WT.getConnection(SERVICE_ID, false);
+			if (shouldLog) logger.debug("Retrieving expired event instances... [{} -> {}]", from, to);
 			
-			for (VExpEventInstance evtInst : doEventGetExpiredForUpdate(con, from, from.plusDays(7*2+1))) {
-				final DateTime remindOn = evtInst.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(evtInst.getReminder());
-				if (now.compareTo(remindOn) < 0) continue;
-				// If instance should have been reminded in past...
-				if (evtInst.getRemindedOn() != null) {
-					// Only recurring event instances should pass here, classic events are already excluded by the db query
-					if (evtInst.getRecurrenceId() == null) throw new WTException("This should never happen (famous last words)");
-					final DateTime lastRemindedOn = evtInst.getRemindedOn().withZone(DateTimeZone.UTC);
-					if (remindOn.compareTo(lastRemindedOn) <= 0) continue;
-					// If instance should have been reminded after last remind...
+			List<VExpEventInstance> instances = doEventGetExpiredForUpdate(con, from, to);
+			HashMap<UserProfileId, Boolean> byEmailCache = new HashMap<>();
+			
+			int i = 0;
+			if (shouldLog) logger.debug("Found {} expired event instances [{}]", i);
+			for (VExpEventInstance instance : instances) {
+				i++;
+				try {
+					if (shouldLog) logger.debug("[{}] Working on event instance... [{}]", i, instance.getKey());
+					
+					final DateTime remindOn = instance.getStartDate().withZone(DateTimeZone.UTC).minusMinutes(instance.getReminder());
+					if (now.compareTo(remindOn) < 0) continue;
+					
+					// If instance should have been reminded in past...
+					if (instance.getRemindedOn() != null) {
+						// Only recurring event instances should pass here, classic events are already excluded by the db query
+						if (instance.getRecurrenceId() == null) throw new WTException("This should never happen (famous last words)");
+						final DateTime lastRemindedOn = instance.getRemindedOn().withZone(DateTimeZone.UTC);
+						if (remindOn.compareTo(lastRemindedOn) <= 0) continue;
+						// If instance should have been reminded after last remind...
+					}
+					
+					if (!byEmailCache.containsKey(instance.getCalendarProfileId())) {
+						CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, instance.getCalendarProfileId());
+						boolean bool = cus.getEventReminderDelivery().equals(CalendarSettings.EVENT_REMINDER_DELIVERY_EMAIL);
+						byEmailCache.put(instance.getCalendarProfileId(), bool);
+					}
+					
+					if (shouldLog) logger.debug("[{}] Creating alert... [{}]", i, instance.getKey());
+					BaseReminder alert = null;
+					if (byEmailCache.get(instance.getCalendarProfileId())) {
+						UserProfile.Data ud = WT.getUserData(instance.getCalendarProfileId());
+						if (ud == null) throw new WTException("UserData is null [{}]", instance.getCalendarProfileId());
+						CoreUserSettings cus = new CoreUserSettings(instance.getCalendarProfileId());
+						EventInstance eventInstance = getEventInstance(instance.getKey());
+						alert = createEventReminderAlertEmail(ud.getLocale(), cus.getShortDateFormat(), cus.getShortTimeFormat(), ud.getPersonalEmailAddress(), instance.getCalendarProfileId(), eventInstance);
+						
+					} else {
+						alert = createEventReminderAlertWeb(instance);
+					}
+					
+					if (shouldLog) logger.debug("[{}] Updating event record... [{}]", i, instance.getEventId());
+					int ret = evtDao.updateRemindedOn(con, instance.getEventId(), now);
+					if (ret != 1) continue;
+					
+					alerts.add(alert);
+					if (shouldLog) logger.debug("[{}] Alert collected [{}]", i, instance.getKey());
+					
+				} catch (Throwable t1) {
+					logger.warn("[{}] Unable to manage reminder. Event instance skipped! [{}]", t1, i, instance.getKey());
 				}
-				
-				int ret = evtDao.updateRemindedOn(con, evtInst.getEventId(), now);
-				evtInstCandidates.add(evtInst);
 			}
 			DbUtils.commitQuietly(con);
 			
-		} catch(SQLException | DAOException | WTException ex) {
+		} catch (Throwable t) {
 			DbUtils.rollbackQuietly(con);
-			logger.error("Error collecting instances", ex);
+			logger.error("Error handling event instances' reminder alerts", t);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
-		
-		logger.debug("Found {} instances to be reminded", evtInstCandidates.size());
-		
-		ArrayList<BaseReminder> alerts = new ArrayList<>();
-		HashMap<UserProfileId, Boolean> byEmailCache = new HashMap<>();
-		
-		logger.trace("Preparing alerts...");
-		for (VExpEventInstance evtInst : evtInstCandidates) {
-			logger.debug("Working on instance [{}, {}]", evtInst.getEventId(), evtInst.getStartDate());
-			if (!byEmailCache.containsKey(evtInst.getCalendarProfileId())) {
-				CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, evtInst.getCalendarProfileId());
-				boolean bool = cus.getEventReminderDelivery().equals(CalendarSettings.EVENT_REMINDER_DELIVERY_EMAIL);
-				byEmailCache.put(evtInst.getCalendarProfileId(), bool);
-			}
-			
-			if (byEmailCache.get(evtInst.getCalendarProfileId())) {
-				UserProfile.Data ud = WT.getUserData(evtInst.getCalendarProfileId());
-				CoreUserSettings cus = new CoreUserSettings(evtInst.getCalendarProfileId());
-				
-				try {
-					EventInstance eventInstance = getEventInstance(evtInst.getKey());
-					alerts.add(createEventReminderAlertEmail(ud.getLocale(), cus.getShortDateFormat(), cus.getShortTimeFormat(), ud.getPersonalEmailAddress(), evtInst.getCalendarProfileId(), eventInstance));
-				} catch(WTException ex) {
-					logger.error("Error preparing email", ex);
-				}
-			} else {
-				alerts.add(createEventReminderAlertWeb(evtInst));
-			}
-		}
-		
-		//FIXME: remove this when zpush is using manager methods
-		//sendInvitationForZPushEvents();
-		// ----------------------------
-		
 		return alerts;
 	}
 

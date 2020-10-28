@@ -2543,7 +2543,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			HashMap<UserProfileId, Boolean> byEmailCache = new HashMap<>();
 			
 			int i = 0;
-			if (shouldLog) logger.debug("Found {} expired event instances [{}]", i);
+			if (shouldLog) logger.debug("Found {} expired event instances", instances.size());
 			for (VExpEventInstance instance : instances) {
 				i++;
 				try {

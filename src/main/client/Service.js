@@ -349,18 +349,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					model: 'Sonicle.calendar.data.EventModel',
 					proxy: WTF.apiProxy(me.ID, 'ManageEventsScheduler', 'events', {autoAbort: true})
 				},
-				tbar: [
-					me.getAct('today'),
-					me.getAct('previousday'),
-					me.getAct('nextday'),
-					'->',
-					me.getAct('dayview'),
-					me.getAct('week5view'),
-					me.getAct('weekview'),
-					me.getAct('dweekview'),
-					me.getAct('monthview'),
-					'->'
-				],
+				tbar: {
+					enableOverflow: true,
+					items: [
+						me.getAct('today'),
+						me.getAct('previousday'),
+						me.getAct('nextday'),
+						'->',
+						me.getAct('dayview'),
+						me.getAct('week5view'),
+						me.getAct('weekview'),
+						me.getAct('dweekview'),
+						me.getAct('monthview'),
+						'->'
+					]
+				},
 				listeners: {
 					rangeselect: function(s,dates,onComplete) {
 						onComplete();

@@ -543,6 +543,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			calendar = doCalendarInsert(con, calendar);
 			
 			DbUtils.commitQuietly(con);
+			onAfterCalendarAction(calendar.getCalendarId(), calendar.getProfileId());
 			if (isAuditEnabled()) {
 				writeAuditLog(AuditContext.CALENDAR, AuditAction.CREATE, calendar.getCalendarId(), null);
 			}
@@ -580,6 +581,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cal = doCalendarInsert(con, cal);
 			
 			DbUtils.commitQuietly(con);
+			onAfterCalendarAction(cal.getCalendarId(), cal.getProfileId());
 			if (isAuditEnabled()) {
 				writeAuditLog(AuditContext.CALENDAR, AuditAction.CREATE, cal.getCalendarId(), null);
 			}
@@ -607,6 +609,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (!ret) throw new WTNotFoundException("Calendar not found [{}]", calendarId);
 			
 			DbUtils.commitQuietly(con);
+			onAfterCalendarAction(calendarId, calendar.getProfileId());
 			if (isAuditEnabled()) {
 				writeAuditLog(AuditContext.CALENDAR, AuditAction.UPDATE, calendarId, null);
 			}
@@ -648,6 +651,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			DbUtils.commitQuietly(con);
+			onAfterCalendarAction(calendarId, cal.getProfileId());
 			if (isAuditEnabled()) {
 				writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, calendarId, null);
 				writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, "*", calendarId);
@@ -4644,6 +4648,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		event.setStartDate(newStart);
 		event.setEndDate(newEnd);
 		return event;
+	}
+	
+	private void onAfterCalendarAction(int calendarId, UserProfileId owner) {
+		if (!owner.equals(getTargetProfileId())) shareCache.init();
 	}
 	
 	private void checkRightsOnCalendarRoot(UserProfileId owner, String action) throws WTException {

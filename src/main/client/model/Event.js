@@ -83,12 +83,16 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.hasMany('cvalues', 'Sonicle.webtop.core.ux.data.CustomFieldValueModel')
 	],
 	
-	isRecurring: function() {
-		return this.get('_recurringInfo') === 'recurring';
+	wasRecurring: function() {
+		return !this.phantom && this.get('_recurringInfo') === 'recurring';
 	},
 	
-	isBroken: function() {
-		return this.get('_recurringInfo') === 'broken';
+	wasBroken: function() {
+		return !this.phantom && this.get('_recurringInfo') === 'broken';
+	},
+	
+	isRecurring: function() {
+		return !Ext.isEmpty(this.get('rrule'));
 	},
 	
 	isNotifyable: function() {
@@ -112,6 +116,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		
 		me.set('startDate', dt);
 		me.set('endDate', Ext.Date.add(dt, Ext.Date.MINUTE, dur, true));
+		if (me.phantom) me.set('rstart', Ext.Date.clone(dt));
 	},
 	
 	setEnd: function(date) {
@@ -133,6 +138,16 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		
 		v = me.setDatePart('startDate', dt);
 		me.set('endDate', Ext.Date.add(v, Ext.Date.MINUTE, dur, true));
+		if (me.phantom) me.set('rstart', Ext.Date.clone(v));
+	},
+	
+	setRecurStart: function(date) {
+		var me = this, sta;
+		me.setDatePart('rstart', date);
+		if (me.phantom && Ext.isDate(date)) {
+			sta = me.get('startDate');
+			if (Ext.isDate(sta)) me.setStartDate(Ext.Date.clone(Sonicle.Date.min(date, sta)));
+		}
 	},
 	
 	setStartTime: function(date) {

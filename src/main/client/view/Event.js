@@ -127,14 +127,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					return (val) ? Ext.Date.clone(val): null;
 				},
 				set: function(val) {
-					this.get('record').setDatePart('rstart', val);
+					this.get('record').setRecurStart(val);
 				}
 			},
 			allDay: WTF.checkboxBind('record', 'allDay'),
 			isPrivate: WTF.checkboxBind('record', 'isPrivate'),
 			busy: WTF.checkboxBind('record', 'busy'),
 			foHasRecurrence: WTF.foIsEmpty('record', 'rrule'),
-			foIsRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring'),
+			foWasRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring'),
 			foTags: WTF.foTwoWay('record', 'tags', function(v) {
 					return Sonicle.String.split(v, '|');
 				}, function(v) {
@@ -320,7 +320,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'datefield',
 					bind: {
 						value: '{startDate}',
-						disabled: '{foIsRecurring}'
+						disabled: '{foWasRecurring}'
 					},
 					startDay: WT.getStartDay(),
 					format: WT.getShortDateFmt(),
@@ -384,7 +384,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					xtype: 'datefield',
 					bind: {
 						value: '{endDate}',
-						disabled: '{foIsRecurring}'
+						disabled: '{foWasRecurring}'
 					},
 					startDay: WT.getStartDay(),
 					format: WT.getShortDateFmt(),
@@ -1083,7 +1083,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this,
 				mo = me.getModel();
 		
-		if (mo.isRecurring()) {
+		if (mo.wasRecurring()) {
 			if (mo.isModified('rrule') || mo.isModified('rstart')) {
 				me.mys.confirmOnSeries(function(bid) {
 					if (bid === 'yes') me._saveEventUI(mo, 'all');
@@ -1125,7 +1125,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this,
 				mo = me.getModel();
 		
-		if (mo.isRecurring()) {
+		if (mo.wasRecurring()) {
 			me.mys.confirmOnRecurringFor('delete', function(bid, value) {
 				if (bid === 'ok') me._deleteEventUI(mo, value);
 			}, me);
@@ -1269,10 +1269,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			} else if (me.isMode(me.MODE_EDIT)) {
 				me.getAct('saveClose').setDisabled(false);
 				me.getAct('delete').setDisabled(false);
-				me.getAct('restore').setDisabled(!mo.isBroken());
+				me.getAct('restore').setDisabled(!mo.wasBroken());
 				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
-				me.lref('tabrecurrence').setDisabled(mo.isBroken());
+				me.lref('tabrecurrence').setDisabled(mo.wasBroken());
 			}
 
 			me.lref('fldtitle').focus(true);

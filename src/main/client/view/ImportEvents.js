@@ -36,7 +36,7 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 	
 	dockableConfig: {
 		title: '{importEvents.tit}',
-		iconCls: 'wtcal-icon-import-xs',
+		iconCls: 'wtcal-icon-import',
 		width: 480,
 		height: 380
 	},

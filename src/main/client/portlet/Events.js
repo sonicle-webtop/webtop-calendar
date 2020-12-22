@@ -37,6 +37,6 @@ Ext.define('Sonicle.webtop.calendar.portlet.Events', {
 	],
 	
 	title: '{portlet.events.tit}',
-	iconCls: 'wtcal-icon-event-xs',
+	iconCls: 'wtcal-icon-event',
 	bodyClass: 'Sonicle.webtop.calendar.portlet.EventsBody'
 });

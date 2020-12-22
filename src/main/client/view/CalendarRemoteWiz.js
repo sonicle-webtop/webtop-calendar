@@ -44,7 +44,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 	
 	dockableConfig: {
 		title: '{calendarRemoteWiz.tit}',
-		iconCls: 'wtcal-icon-calendar-remote-xs',
+		iconCls: 'wtcal-icon-calendarRemote',
 		width: 450,
 		height: 300
 	},

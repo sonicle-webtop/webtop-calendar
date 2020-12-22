@@ -161,7 +161,7 @@ Ext.define('Sonicle.webtop.calendar.view.pub.Event', {
 							xtype: 'soiconcolumn',
 							dataIndex: 'response',
 							getIconCls: function(v,rec) {
-								return me.mys.cssIconCls('response-'+v, 'xs');
+								return me.mys.cssIconCls('response-'+v);
 							},
 							iconSize: WTU.imgSizeToPx('xs'),
 							width: 40

@@ -4,8 +4,6 @@
 .wtcal-icon-service-m { background-image: url('service_32.svg') !important; background-size: contain; }
 .wtcal-icon-service-l { background-image: url('service_32.svg') !important; background-size: contain; }
 .wtcal-icon-reminder-event { background-image: url('event_16.svg') !important; background-size: contain; }
-.wtcal-icon-root-my-xs { background-image: url('root-my_16.png') !important; }
-.wtcal-icon-root-incoming-xs { background-image: url('root-incoming_16.png') !important; }
 .wtcal-icon-today { background-image: url('move-today_16.svg') !important; background-size: contain; }
 .wtcal-icon-previousday { background-image: url('move-previous_16.svg') !important; background-size: contain; }
 .wtcal-icon-nextday { background-image: url('move-next_16.svg') !important; background-size: contain; }
@@ -14,25 +12,7 @@
 .wtcal-icon-weekview { background-image: url('calendar-sel-7_16.svg') !important; background-size: contain; }
 .wtcal-icon-dweekview { background-image: url('calendar-sel-14_16.svg') !important; background-size: contain; }
 .wtcal-icon-monthview { background-image: url('calendar-sel-31_16.svg') !important; background-size: contain; }
-.wtcal-icon-now-xs { background-image: url('now_16.png') !important; }
-.wtcal-icon-calendar-xs { background-image: url('calendar_16.png') !important; }
-.wtcal-icon-calendar-remote-xs { background-image: url('calendar-remote_16.png') !important; }
-.wtcal-icon-addCalendar-xs { background-image: url('calendar-add_16.png') !important; }
-.wtcal-icon-editCalendar-xs { background-image: url('calendar-edit_16.png') !important; }
-.wtcal-icon-deleteCalendar-xs { background-image: url('calendar-delete_16.png') !important; }
-.wtcal-icon-event-xs { background-image: url('calendar_16.png') !important; }
-.wtcal-icon-newEvent { background-image: url('event-new_16.svg') !important; background-size: contain; }
-.wtcal-icon-addEvent-xs { background-image: url('event-add_16.png') !important; }
-.wtcal-icon-import-xs { background-image: url('import_16.png') !important; }
-.wtcal-icon-export-xs { background-image: url('export_16.png') !important; }
-.wtcal-icon-single-event-xs { background-image: url('event-single_16.png') !important; }
-.wtcal-icon-recurring-event-xs { background-image: url('event-recurring_16.png') !important; }
-.wtcal-icon-broken-event-xs { background-image: url('event-broken_16.png') !important; }
-.wtcal-icon-response-NA-xs { background-image: url('response-needsAction_16.png') !important; }
-.wtcal-icon-response-AC-xs { background-image: url('response-accepted_16.png') !important; }
-.wtcal-icon-response-DE-xs { background-image: url('response-declined_16.png') !important; }
-.wtcal-icon-response-TE-xs { background-image: url('response-tentative_16.png') !important; }
-
+.wtcal-icon-now { background-image: url('now_16.svg') !important; background-size: contain; }
 .wtcal-icon-calendar { background-image: url('calendar_16.svg') !important; background-size: contain; }
 .wtcal-icon-calendarMy { background-image: url('calendar-my_16.svg') !important; background-size: contain; }
 .wtcal-icon-calendarIncoming { background-image: url('calendar-incoming_16.svg') !important; background-size: contain; }
@@ -41,9 +21,15 @@
 .wtcal-icon-editCalendar { background-image: url('calendar-edit_16.svg') !important; background-size: contain; }
 .wtcal-icon-deleteCalendar { background-image: url('calendar-delete_16.svg') !important; background-size: contain; }
 .wtcal-icon-event { background-image: url('event_16.svg') !important; background-size: contain; }
+.wtcal-icon-newEvent { background-image: url('event-new_16.svg') !important; background-size: contain; }
+.wtcal-icon-addEvent { background-image: url('event-add_16.svg') !important; background-size: contain; }
+.wtcal-icon-event-single { background-image: url('event_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-recurring { background-image: url('event-recurring_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-broken { background-image: url('event-broken_16.svg') !important; background-size: contain; }
-.wtcal-icon-event-add { background-image: url('event-add_16.svg') !important; background-size: contain; }
+.wtcal-icon-response-NA { background-image: url('response-needsAction_16.svg') !important; background-size: contain; }
+.wtcal-icon-response-AC { background-image: url('response-accepted_16.svg') !important; background-size: contain; }
+.wtcal-icon-response-DE { background-image: url('response-declined_16.svg') !important; background-size: contain; }
+.wtcal-icon-response-TE { background-image: url('response-tentative_16.svg') !important; background-size: contain; }
 .wtcal-icon-import { background-image: url('event-import_16.svg') !important; background-size: contain; }
 .wtcal-icon-export { background-image: url('event-export_16.svg') !important; background-size: contain; }
 

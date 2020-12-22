@@ -438,10 +438,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					{
 						xtype: 'soiconcolumn',
 						getIconCls: function(v,rec) {
-							var ico = 'single-event';
-							if (rec.get('isBroken')) ico = 'broken-event';
-							if (rec.get('isRecurring')) ico = 'recurring-event';
-							return WTF.cssIconCls(me.XID, ico, 'xs');
+							var ico = 'event-single';
+							if (rec.get('isBroken')) ico = 'event-broken';
+							if (rec.get('isRecurring')) ico = 'event-recurring';
+							return WTF.cssIconCls(me.XID, ico);
 						},
 						iconSize: WTU.imgSizeToPx('xs'),
 						width: 40
@@ -526,7 +526,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		me.addAct('toolbox', 'erpExport', {
 			tooltip: null,
-			iconCls: 'wtcal-icon-export-xs',
+			iconCls: 'wtcal-icon-export',
 			handler: function() {
 				me.erpExport();
 			}
@@ -638,7 +638,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAct('editSharing', {
 			text: WT.res('sharing.tit'),
 			tooltip: null,
-			iconCls: WTF.cssIconCls(WT.XID, 'sharing', 'xs'),
+			iconCls: 'wt-icon-sharing',
 			handler: function(s, e) {
 				var node = e.menuData.node;
 				if (node) me.editShare(node.getId());
@@ -659,6 +659,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('addCalendar', {
+			ignoreSize: true,
 			tooltip: null,
 			handler: function(s, e) {
 				var node = e.menuData.node;
@@ -666,6 +667,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('addRemoteCalendar', {
+			ignoreSize: true,
 			tooltip: null,
 			handler: function(s, e) {
 				var node = e.menuData.node;
@@ -680,6 +682,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('editCalendar', {
+			ignoreSize: true,
 			tooltip: null,
 			handler: function(s, e) {
 				var node = e.menuData.node;
@@ -687,6 +690,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('deleteCalendar', {
+			ignoreSize: true,
 			tooltip: null,
 			handler: function(s, e) {
 				var node = e.menuData.node;
@@ -842,7 +846,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAct('addSchedEvent', {
 			text: me.res('act-addEvent.lbl'),
 			tooltip: null,
-			iconCls: 'wtcal-icon-addEvent-xs',
+			iconCls: 'wtcal-icon-addEvent',
 			handler: function(s, e) {
 				var node = WTA.util.FoldersTree.getTargetFolder(me.trFolders()),
 						mdata = e.menuData;
@@ -856,6 +860,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		});
 		me.addAct('addEvent', {
+			ignoreSize: true,
 			tooltip: null,
 			handler: function(s, e) {
 				var node = (e && e.menuData) ? e.menuData.node : WTA.util.FoldersTree.getTargetFolder(me.trFolders()),

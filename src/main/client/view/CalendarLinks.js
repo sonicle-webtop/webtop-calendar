@@ -38,7 +38,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarLinks', {
 	
 	dockableConfig: {
 		title: '{calendarLinks.tit}',
-		iconCls: 'wtcal-icon-calendar-xs',
+		iconCls: 'wtcal-icon-calendar',
 		width: 600,
 		height: 150,
 		modal: true,

@@ -63,7 +63,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	dockableConfig: {
 		title: '{event.tit}',
-		iconCls: 'wtcal-icon-event-xs',
+		iconCls: 'wtcal-icon-event',
 		width: 700
 		//height: see below...
 	},
@@ -157,7 +157,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.addAct('saveClose', {
 							text: WT.res('act-saveClose.lbl'),
 							tooltip: null,
-							iconCls: 'wt-icon-saveClose-xs',
+							iconCls: 'wt-icon-saveClose',
 							handler: function() {
 								me.saveEventUI();
 							}
@@ -174,7 +174,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.addAct('restore', {
 							text: null,
 							tooltip: WT.res('act-restore.lbl'),
-							iconCls: 'wt-icon-restore-xs',
+							iconCls: 'wt-icon-restore',
 							handler: function() {
 								me.restoreEventUI();
 							},
@@ -337,7 +337,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					width: 80
 				}, {
 					xtype: 'button',
-					iconCls: 'wtcal-icon-now-xs',
+					iconCls: 'wtcal-icon-now',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					bind: {
 						disabled: '{fldallDay.checked}'
@@ -401,7 +401,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					width: 80
 				}, {
 					xtype: 'button',
-					iconCls: 'wtcal-icon-now-xs',
+					iconCls: 'wtcal-icon-now',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					bind: {
 						disabled: '{fldallDay.checked}'
@@ -707,7 +707,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.addAct('addAttendee', {
 							text: WT.res('act-add.lbl'),
 							tooltip: null,
-							iconCls: 'wt-icon-add-xs',
+							iconCls: 'wt-icon-add',
 							handler: function() {
 								me.addAttendeeUI();
 							}

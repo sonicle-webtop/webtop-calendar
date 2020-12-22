@@ -1513,10 +1513,10 @@ public class Service extends BaseService {
 	
 	private ExtTreeNode createRootNode(boolean chooser, ShareRootCalendar root) {
 		if (root instanceof MyShareRootCalendar) {
-			return createRootNode(chooser, root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.CALENDARS_MY), false, "wtcal-icon-root-my-xs")
+			return createRootNode(chooser, root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), lookupResource(CalendarLocale.CALENDARS_MY), false, "wtcal-icon-calendarMy")
 					.setExpanded(true);
 		} else {
-			return createRootNode(chooser, root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), root.getDescription(), false, "wtcal-icon-root-incoming-xs")
+			return createRootNode(chooser, root.getShareId(), root.getOwnerProfileId().toString(), root.getPerms().toString(), root.getDescription(), false, "wtcal-icon-calendarIncoming")
 					.setExpanded(true);
 		}
 	}

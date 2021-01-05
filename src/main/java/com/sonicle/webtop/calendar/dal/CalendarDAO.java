@@ -41,14 +41,15 @@ import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
-import com.sonicle.webtop.core.sdk.UserProfileId;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.joda.time.DateTime;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 
 /**
  *
@@ -119,7 +120,12 @@ public class CalendarDAO extends BaseDAO {
 	}
 	
 	public Set<Integer> selectIdsByProfile(Connection con, String domainId, String userId) throws DAOException {
+		return selectIdsByProfileIn(con, domainId, userId, null);
+	}
+	
+	public Set<Integer> selectIdsByProfileIn(Connection con, String domainId, String userId, Collection<Integer> calendarIds) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		Condition cndtIn = calendarIds != null ? CALENDARS.CALENDAR_ID.in(calendarIds) : DSL.trueCondition();
 		return dsl
 			.select(
 				CALENDARS.CALENDAR_ID
@@ -128,6 +134,12 @@ public class CalendarDAO extends BaseDAO {
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
 				.and(CALENDARS.USER_ID.equal(userId))
+				.and(cndtIn)
+			)
+			.orderBy(
+				CALENDARS.BUILT_IN.desc(),
+				//CALENDARS.PROVIDER.asc(),
+				CALENDARS.NAME.asc()
 			)
 			.fetchSet(CALENDARS.CALENDAR_ID);
 	}
@@ -153,6 +165,7 @@ public class CalendarDAO extends BaseDAO {
 			)
 			.orderBy(
 				CALENDARS.BUILT_IN.desc(),
+				//CALENDARS.PROVIDER.asc(),
 				CALENDARS.NAME.asc()
 			)
 			.fetchInto(OCalendar.class);
@@ -169,6 +182,7 @@ public class CalendarDAO extends BaseDAO {
 			)
 			.orderBy(
 				CALENDARS.BUILT_IN.desc(),
+				//CALENDARS.PROVIDER.asc(),
 				CALENDARS.NAME.asc()
 			)
 			.fetchInto(OCalendar.class);
@@ -185,7 +199,7 @@ public class CalendarDAO extends BaseDAO {
 			)
 			.orderBy(
 				CALENDARS.BUILT_IN.desc(),
-				CALENDARS.PROVIDER.asc(),
+				//CALENDARS.PROVIDER.asc(),
 				CALENDARS.NAME.asc()
 			)
 			.fetchInto(OCalendar.class);
@@ -203,7 +217,7 @@ public class CalendarDAO extends BaseDAO {
 			)
 			.orderBy(
 				CALENDARS.BUILT_IN.desc(),
-				CALENDARS.PROVIDER.asc(),
+				//CALENDARS.PROVIDER.asc(),
 				CALENDARS.NAME.asc()
 			)
 			.fetchInto(OCalendar.class);
@@ -233,7 +247,7 @@ public class CalendarDAO extends BaseDAO {
 				.and(CALENDARS.BUILT_IN.equal(false))
 			)
 			.orderBy(
-				CALENDARS.PROVIDER.asc(),
+				//CALENDARS.PROVIDER.asc(),
 				CALENDARS.NAME.asc()
 			)
 			.fetchInto(OCalendar.class);

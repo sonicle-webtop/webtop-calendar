@@ -351,12 +351,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private Set<Integer> listCalendarIds(UserProfileId pid) throws WTException {
+		return listCalendarIdsIn(pid, null);
+	}
+	
+	private Set<Integer> listCalendarIdsIn(UserProfileId pid, Collection<Integer> calendarIds) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			return calDao.selectIdsByProfile(con, pid.getDomainId(), pid.getUserId());
+			if (calendarIds == null) {
+				return calDao.selectIdsByProfile(con, pid.getDomainId(), pid.getUserId());
+			} else {
+				return calDao.selectIdsByProfileIn(con, pid.getDomainId(), pid.getUserId(), calendarIds);
+			}
 			
 		} catch (Throwable t) {
 			throw ExceptionUtils.wrapThrowable(t);
@@ -5064,20 +5072,38 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				for (ShareRootCalendar root : internalListIncomingCalendarShareRoots()) {
 					shareRoots.add(root);
 					ownerToShareRoot.put(root.getOwnerProfileId(), root);
+					
+					// While getting folders, we need to keep implicit order defined
+					// in DB access layer. When dealing with wildcards, it's already
+					// ensured by the situation while with explicit share we have to
+					// use the internal query to ensure the correct semantic 
+					// ordering of folder IDs!
+					
+					boolean wildcardFound = false;
+					Map<Integer, OShare> explicitShares = new LinkedHashMap<>();
 					for (OShare folder : coreMgr.listIncomingShareFolders(root.getShareId(), GROUPNAME_CALENDAR)) {
 						if (folder.hasWildcard()) {
+							wildcardFound = true;
 							final UserProfileId ownerPid = coreMgr.userUidToProfileId(folder.getUserUid());
-							ownerToWildcardShareFolder.put(ownerPid, folder.getShareId().toString());
-							for (Calendar calendar : listCalendars(ownerPid, false).values()) {
-								folderTo.add(calendar.getCalendarId());
-								rootShareToFolderShare.put(root.getShareId(), calendar.getCalendarId());
-								folderToWildcardShareFolder.put(calendar.getCalendarId(), folder.getShareId().toString());
+							for (Integer calendarId : listCalendarIds(ownerPid)) {
+								folderTo.add(calendarId);
+								rootShareToFolderShare.put(root.getShareId(), calendarId);
+								folderToWildcardShareFolder.put(calendarId, folder.getShareId().toString());
 							}
+							ownerToWildcardShareFolder.put(ownerPid, folder.getShareId().toString());
+							break; // If we have wildcard, it's enought...skip other folders!
+							
 						} else {
-							int categoryId = Integer.valueOf(folder.getInstance());
-							folderTo.add(categoryId);
-							rootShareToFolderShare.put(root.getShareId(), categoryId);
-							folderToShareFolder.put(categoryId, folder.getShareId().toString());
+							explicitShares.put(Integer.valueOf(folder.getInstance()), folder);
+						}
+					}
+					
+					if (!wildcardFound) {
+						for (Integer explicitCalendarId : listCalendarIdsIn(root.getOwnerProfileId(), explicitShares.keySet())) {
+							folderTo.add(explicitCalendarId);
+							rootShareToFolderShare.put(root.getShareId(), explicitCalendarId);
+							final OShare share = explicitShares.get(explicitCalendarId);
+							folderToShareFolder.put(explicitCalendarId, share.getShareId().toString());
 						}
 					}
 				}

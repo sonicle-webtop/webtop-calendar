@@ -43,6 +43,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.plugin.FileDrop',
 		'WTA.ux.data.EmptyModel',
 		'WTA.ux.data.ValueModel',
+		'WTA.ux.field.Meeting',
+		'WTA.ux.field.MeetingUrl',
 		'WTA.ux.field.RecipientSuggestCombo',
 		'WTA.ux.field.SuggestCombo',
 		'WTA.ux.grid.Attachments',
@@ -80,7 +82,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this;
 		Ext.merge(cfg || {}, {
             dockableConfig: {
-               height: cfg.showStatisticFields ? 520 : 460
+               height: cfg.showStatisticFields ? 550 : 490
          }});
 		me.callParent([cfg]);
 		
@@ -140,7 +142,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}, function(v) {
 					return Sonicle.String.join('|', v);
 			}),
-			foHasTags: WTF.foIsEmpty('record', 'tags', true)
+			foHasTags: WTF.foIsEmpty('record', 'tags', true),
+			foLocationIsMeeting: WTF.foGetFn('record', 'location', function(val) {
+				return WT.isMeetingUrl(val);
+			}),
+			foHasMeeting: WTF.foGetFn('record', 'extractedUrl', function(val) {
+				return WT.isMeetingUrl(val);
+			})
 		});
 	},
 	
@@ -196,6 +204,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							iconCls: 'wt-icon-tag',
 							handler: function() {
 								me.manageTagsUI(Sonicle.String.split(me.getModel().get('tags'), '|'));
+							}
+						}),
+						me.addAct('addMeeting', {
+							text: null,
+							tooltip: WT.res(WT.ID, 'act-addMeeting.lbl', WT.getMeetingConfig().name),
+							iconCls: 'wt-icon-newMeeting',
+							disabled: Ext.isEmpty(WT.getMeetingProvider()) || !WT.isPermitted(WT.ID, 'MEETING', 'CREATE'),
+							handler: function() {
+								me.addMeetingUI();
 							}
 						}),
 						'->',
@@ -280,6 +297,20 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				labelWidth: 60
 			},
 			items: [{
+				xtype: 'wtmeetingurlfield',
+				bind: {
+					value: '{record.extractedUrl}',
+					hidden: '{!foHasMeeting}'
+				},
+				linkText: me.res('event.meeting.info'),
+				hidden: true,
+				listeners: {
+					copy: function() {
+						WT.toast(WT.res('meeting.toast.link.copied'));
+					}
+				},
+				anchor: '100%'
+			}, {
 				xtype: 'wtsuggestcombo',
 				reference: 'fldtitle',
 				bind: '{record.title}',
@@ -296,17 +327,35 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			}, {
 				//FIXME: check suggestcombo on delete all field
 				xtype: 'textfield',
-				bind: '{record.location}',
 				sid: me.mys.ID,
+				bind: {
+					value: '{record.location}',
+					hidden: '{foLocationIsMeeting}'
+				},
 				suggestionContext: 'eventlocation',
 				//suggestionContext: 'report_idcalendar', //TODO: verificare nome contesto
-				fieldLabel: me.mys.res('event.fld-location.lbl'),
-				anchor: '100%',
 				listeners: {
 					enterkey: function() {
 						me.getAct('saveClose').execute();
 					}
-				}
+				},
+				fieldLabel: me.mys.res('event.fld-location.lbl'),
+				hidden: true,
+				anchor: '100%'
+			}, {
+				xtype: 'wtmeetingfield',
+				bind: {
+					value: '{record.location}',
+					hidden: '{!foLocationIsMeeting}'
+				},
+				listeners: {
+					copy: function() {
+						WT.toast(WT.res('meeting.toast.link.copied'));
+					}
+				},
+				hidden: true,
+				fieldLabel: me.mys.res('event.fld-location.lbl'),
+				anchor: '100%'
 			}, {
 				xtype: 'formseparator'
 			}, {
@@ -337,7 +386,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					width: 80
 				}, {
 					xtype: 'button',
-					iconCls: 'wtcal-icon-now',
+					ui: 'default-toolbar',
+					glyph: 'xf017@FontAwesome',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					bind: {
 						disabled: '{fldallDay.checked}'
@@ -401,7 +451,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					width: 80
 				}, {
 					xtype: 'button',
-					iconCls: 'wtcal-icon-now',
+					ui: 'default-toolbar',
+					glyph: 'xf017@FontAwesome',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					bind: {
 						disabled: '{fldallDay.checked}'
@@ -1204,6 +1255,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		this.lref('tabinvitation.gpattendees').getStore().remove(rec);
 	},
 	
+	addMeetingUI: function() {
+		var me = this;
+		me.wait();
+		me.getMeetingLink({
+			callback: function(success, data) {
+				me.unwait();
+				if (success) {
+					var fmt = Ext.String.format,
+							name = WT.getVar('userDisplayName'),
+							mo = me.getModel();
+					if (Ext.isEmpty(mo.get('title'))) mo.set('title', fmt(data.embedTexts.eventTitle, name));
+					mo.set('location', data.link);
+					mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmt(data.embedTexts.eventDescription, name, data.link)));
+				}
+			}
+		});
+	},
+	
 	isPlanningActive: function() {
 		return (this.lref('tabinvitation').getLayout().getActiveItem().getItemId() === 'planning');
 	},
@@ -1230,6 +1299,19 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		} else {
 			me.mys.printEventsDetail([eventKey]);
 		}
+	},
+	
+	getMeetingLink: function(opts) {
+		opts = opts || {};
+		var me = this;	
+		WT.ajaxReq(WT.ID, 'ManageMeeting', {
+			params: {
+				crud: 'create'
+			},
+			callback: function(success, json) {
+				Ext.callback(opts.callback, opts.scope || me, [success, json.data, json]);
+			}
+		});
 	},
 	
 	privates: {

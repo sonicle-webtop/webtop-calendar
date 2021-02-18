@@ -70,25 +70,51 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 				deferEmptyText: false,
 				emptyText: me.mys.res('portlet.events.gp.emp')
 			},
-			columns: [{
-				xtype: 'socolorcolumn',
-				dataIndex: 'calendarName',
-				colorField: 'calendarColor',
-				width: 30
-			}, {
-				dataIndex: 'title',
-				flex: 1
-			}],
-			features: [{
-				ftype: 'rowbody',
-				getAdditionalData: function(data, idx, rec, orig) {
-					var info = me.buildDateTimeInfo(rec.get('startDate'), rec.get('endDate')),
-						loc = Ext.String.ellipsis(rec.get('location'), 150);
-					return {
-						rowBody: info + (!Ext.isEmpty(loc) ? (' <span style="color:grey;">' + Ext.String.htmlEncode('@'+loc) + '</span>') : '')
-					};
+			columns: [
+				{
+					xtype: 'socolorcolumn',
+					dataIndex: 'calendarName',
+					colorField: 'calendarColor',
+					width: 30
+				}, {
+					dataIndex: 'title',
+					flex: 1
+				}, {
+					xtype: 'soactioncolumn',
+					itemsPadding: 5,
+					items: [
+						{
+							glyph: 'xf03d@FontAwesome',
+							tooltip: me.mys.res('portlet.events.gp.act-joinMeeting.tip'),
+							handler: function(g, ridx) {
+								var rec = g.getStore().getAt(ridx);
+								Sonicle.URLMgr.open(rec.get('meeting'), true);
+							},
+							isDisabled: function(s, ridx, cidx, itm, rec) {
+								return !rec.hasMeeting();
+							},
+							getClass: function(v, meta, rec) {
+								return !rec.hasMeeting() ? Ext.baseCSSPrefix + 'hidden-display' : '';
+							}
+							//disabledCls: 'x-item-disabled x-hidden-display'
+							//disabledCls: Ext.baseCSSPrefix + 'hidden-display'
+						}
+					],
+					autoWidth: 1
 				}
-			}],
+			],
+			features: [
+				{
+					ftype: 'rowbody',
+					getAdditionalData: function(data, idx, rec, orig) {
+						var info = me.buildDateTimeInfo(rec.get('startDate'), rec.get('endDate')),
+								loc = Ext.String.ellipsis(rec.get('location'), 150);
+						return {
+							rowBody: info + (!Ext.isEmpty(loc) ? (' <span style="color:grey;">' + Ext.String.htmlEncode('@'+loc) + '</span>') : '')
+						};
+					}
+				}
+			],
 			listeners: {
 				rowdblclick: function(s, rec) {
 					var er = me.mys.toRightsObj(rec.get('_erights'));
@@ -112,10 +138,11 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 	},
 	
 	search: function(s) {
-		var me = this;
+		var me = this,
+				sbar = me.lref('sbar');
 		me.isSearch = true;
-		me.lref('sbar').setStatus(me.buildSearchStatus(-1));
-		me.lref('sbar').show();
+		sbar.setStatus(me.buildSearchStatus(-1));
+		sbar.show();
 		WTU.loadWithExtraParams(me.lref('gp').getStore(), {query: s});
 	},
 	

@@ -328,6 +328,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					attendeesIconCls: 'fa fa-users',
 					recurrenceIconCls: 'fa fa-refresh',
 					recurrenceBrokenIconCls: 'fa fa-chain-broken',
+					meetingIconCls: 'fa fa-video-camera',
 					commentsIconCls: 'fa fa-commenting-o',
 					todayText: me.res('scheduler.today'),
 					moreText: me.res('scheduler.more'),
@@ -1704,7 +1705,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		obj.startDate = Ext.isDefined(evt.startDate) ? evt.startDate : new Date();
 		obj.endDate = Ext.isDefined(evt.endDate) ? evt.endDate : new Date();
 		obj.rstart = Ext.isDefined(evt.recStartDate) ? evt.recStartDate : evt.startDate;
-		obj.timezone = Ext.isDefined(evt.timezone) ? evt.timezone : WT.getVar('timezone');
+		obj.timezone = !Ext.isEmpty(evt.timezone) ? evt.timezone : WT.getTimezone();
 		if (Ext.isDefined(evt.allDay)) obj.allDay = evt.allDay;
 		if (Ext.isDefined(evt.title)) obj.title = evt.title;
 		if (Ext.isDefined(evt.description)) obj.description = evt.description;

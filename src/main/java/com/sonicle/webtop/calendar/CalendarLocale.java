@@ -50,6 +50,8 @@ public class CalendarLocale {
 	public static final String TPL_EMAIL_INVITATION_WHEN_END = "tpl.email.invitation.when.end";
 	public static final String TPL_EMAIL_INVITATION_WHERE = "tpl.email.invitation.where";
 	public static final String TPL_EMAIL_INVITATION_WHERE_MAP = "tpl.email.invitation.where.map";
+	public static final String TPL_EMAIL_INVITATION_HOWTOJIN_MEETING = "tpl.email.invitation.howtojoin.meeting";
+	public static final String TPL_EMAIL_INVITATION_JOIN_MEETING = "tpl.email.invitation.join.meeting";
 	public static final String TPL_EMAIL_INVITATION_ORGANIZER = "tpl.email.invitation.organizer";
 	public static final String TPL_EMAIL_INVITATION_WHO = "tpl.email.invitation.who";
 	public static final String TPL_EMAIL_INVITATION_GOING = "tpl.email.invitation.going";

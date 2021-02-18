@@ -33,11 +33,14 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.webtop.calendar.TplHelper;
 import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -57,11 +60,12 @@ public class JsPletEvents {
 	public Boolean isAllDay;
 	public String title;
 	public String location;
+	public String meeting;
 	public String _owner;
 	public String _frights;
 	public String _erights;
 	
-	public JsPletEvents(ShareRootCalendar root, ShareFolderCalendar folder, SchedEventInstance event, DateTimeZone profileTz) {
+	public JsPletEvents(ShareRootCalendar root, ShareFolderCalendar folder, SchedEventInstance event, DateTimeZone profileTz, Pattern meetingUrlPattern) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		final Calendar calendar = folder.getCalendar();
 		
@@ -81,6 +85,9 @@ public class JsPletEvents {
 		
 		title = event.getTitle();
 		location = event.getLocation();
+		if (event.getLocation() != null && meetingUrlPattern != null && meetingUrlPattern.matcher(event.getLocation()).lookingAt()) {
+			meeting = event.getLocation();
+		}
 		
 		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
 		_frights = folder.getElementsPerms().toString();

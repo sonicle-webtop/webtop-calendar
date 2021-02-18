@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarUtils;
+import com.sonicle.webtop.calendar.TplHelper;
 import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -42,6 +43,8 @@ import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.sdk.UserProfileId;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -63,6 +66,7 @@ public class JsSchedulerEvent {
 	public String title;
 	public String color;
 	public String location;
+	public String meeting;
 	public Boolean isPrivate;
 	public Integer reminder;
 	public Boolean isReadOnly;
@@ -81,7 +85,7 @@ public class JsSchedulerEvent {
 	
 	public JsSchedulerEvent() {}
 	
-	public JsSchedulerEvent(ShareRootCalendar root, ShareFolderCalendar folder, CalendarPropSet folderProps, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
+	public JsSchedulerEvent(ShareRootCalendar root, ShareFolderCalendar folder, CalendarPropSet folderProps, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz, Pattern meetingUrlPattern) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
@@ -110,6 +114,9 @@ public class JsSchedulerEvent {
 		color = calendar.getColor();
 		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		location = event.getLocation();
+		if (event.getLocation() != null && meetingUrlPattern != null && meetingUrlPattern.matcher(event.getLocation()).lookingAt()) {
+			meeting = event.getLocation();
+		}
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)

@@ -64,7 +64,6 @@ import org.joda.time.format.DateTimeFormatter;
  */
 public class JsEvent {
 	public String id;
-	
 	public Integer eventId;
 	public Integer calendarId;
 	public Integer recurrenceId;

@@ -178,6 +178,8 @@ import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
 import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.model.UpdateTagsOperation;
+import com.sonicle.webtop.core.CoreServiceSettings;
+import com.sonicle.webtop.core.app.CoreManifest;
 import com.sonicle.webtop.core.app.sdk.AuditReferenceDataEntry;
 import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
 import com.sonicle.webtop.core.app.util.ExceptionUtils;
@@ -1495,7 +1497,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			storeAsSuggestion(coreMgr, SUGGESTION_EVENT_TITLE, event.getTitle());
-			storeAsSuggestion(coreMgr, SUGGESTION_EVENT_LOCATION, event.getLocation());
+			if (!StringUtils.startsWithIgnoreCase(event.getLocation(), "http")) {
+				storeAsSuggestion(coreMgr, SUGGESTION_EVENT_LOCATION, event.getLocation());
+			}
 			
 			Event eventDump = getEvent(result.oevent.getEventId());
 			
@@ -4400,9 +4404,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private void notifyForEventModification(UserProfileId fromProfileId, List<RecipientTuple> recipients, EventFootprint event, String crud) {
+		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, fromProfileId.getDomainId());
 		UserProfile.Data udFrom = WT.getUserData(fromProfileId);
 		InternetAddress from = udFrom.getPersonalEmail();
 		
+		Map<String, String> meetingProviders = css.getMeetingProviders();
 		Session session = getMailSession();
 		for (RecipientTuple rcpt : recipients) {
 			if (!InternetAddressUtils.isAddressValid(rcpt.recipient)) {
@@ -4414,7 +4420,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			try {
 				String title = TplHelper.buildEventModificationTitle(ud.getLocale(), event, crud);
-				String customBodyHtml = TplHelper.buildEventModificationBody(ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), event);
+				String customBodyHtml = TplHelper.buildEventModificationBody(event, ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), meetingProviders);
 				String source = EmailNotification.buildSource(ud.getLocale(), SERVICE_ID);
 				String because = lookupResource(ud.getLocale(), CalendarLocale.EMAIL_EVENTMODIFICATION_FOOTER_BECAUSE);
 
@@ -4454,6 +4460,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private void notifyForInvitation(UserProfileId senderProfileId, List<RecipientTuple> recipients, Event event, String crud) {
+		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, senderProfileId.getDomainId());
 		ICalendarOutput out = new ICalendarOutput(ICalendarUtils.buildProdId(ManagerUtils.getProductName()));
 		net.fortuna.ical4j.model.property.Method icalMethod = crud.equals(Crud.DELETE) ? net.fortuna.ical4j.model.property.Method.CANCEL : net.fortuna.ical4j.model.property.Method.REQUEST;
 		
@@ -4471,7 +4478,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			String filename = ICalendarUtils.buildICalendarAttachmentFilename(WT.getPlatformName());
 			MimeBodyPart attPart = ICalendarUtils.createInvitationAttachmentPart(icalText, filename);
 			
+			Map<String, String> meetingProviders = css.getMeetingProviders();
 			IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail");
+			//FIXME: if mailMgr is not present, send with base SMTP
 			Session session = getMailSession();
 			for (RecipientTuple rcpt : recipients) {
 				if (!InternetAddressUtils.isAddressValid(rcpt.recipient)) {
@@ -4483,7 +4492,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				try {
 					String title = TplHelper.buildEventInvitationTitle(ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), event.getFootprint(), crud);
-					String customBodyHtml = TplHelper.buildTplEventInvitationBody(ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), event, crud, rcpt.recipient.getAddress(), servicePublicUrl);
+					String customBodyHtml = TplHelper.buildTplEventInvitationBody(crud, event, rcpt.recipient.getAddress(), ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), meetingProviders, servicePublicUrl);
 					String source = NotificationHelper.buildSource(ud.getLocale(), SERVICE_ID);
 					String because = lookupResource(ud.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
 
@@ -4505,6 +4514,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private void notifyOrganizer(UserProfileId senderProfileId, Event event, String updatedAttendeeId) {
 		CoreUserSettings cus = new CoreUserSettings(senderProfileId);
+		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, senderProfileId.getDomainId());
 		String dateFormat = cus.getShortDateFormat();
 		String timeFormat = cus.getShortTimeFormat();
 		Locale locale = getProfileOrTargetLocale(senderProfileId);
@@ -4519,6 +4529,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 			}
 			if (targetAttendee == null) throw new WTException("Attendee not found [{0}]", updatedAttendeeId);
+			Map<String, String> meetingProviders = css.getMeetingProviders();
 			
 			InternetAddress from = WT.getNotificationAddress(senderProfileId.getDomainId());
 			InternetAddress to = InternetAddressUtils.toInternetAddress(event.getOrganizer());
@@ -4527,7 +4538,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
 			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
 			String subject = TplHelper.buildResponseUpdateTitle(locale, event, targetAttendee);
-			String customBodyHtml = TplHelper.buildTplResponseUpdateBody(locale, dateFormat, timeFormat, event, servicePublicUrl);
+			String customBodyHtml = TplHelper.buildTplResponseUpdateBody(event, locale, dateFormat, timeFormat, meetingProviders, servicePublicUrl);
 			
 			EmailNotification.NoReplyBuilder builder = new EmailNotification.NoReplyBuilder()
 					.withCustomBody(event.getTitle(), customBodyHtml);
@@ -4775,12 +4786,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private ReminderEmail createEventReminderAlertEmail(Locale locale, String dateFormat, String timeFormat, String recipientEmail, UserProfileId ownerId, EventInstance event) throws WTException {
+		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, ownerId.getDomainId());
 		ReminderEmail alert = new ReminderEmail(SERVICE_ID, ownerId, "event", event.getKey());
 		
 		try {
+			Map<String, String> meetingProviders = css.getMeetingProviders();
+			
 			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
 			String because = lookupResource(locale, CalendarLocale.EMAIL_REMINDER_FOOTER_BECAUSE);
-			String customBodyHtml = TplHelper.buildTplEventReminderBody(locale, dateFormat, timeFormat, event);
+			String customBodyHtml = TplHelper.buildTplEventReminderBody(event, locale, dateFormat, timeFormat, meetingProviders);
 			
 			String title = TplHelper.buildEventReminderTitle(locale, dateFormat, timeFormat, event.getFootprint());
 			String html = TplHelper.buildEventInvitationHtml(locale, event.getTitle(), customBodyHtml, source, because, recipientEmail, null);

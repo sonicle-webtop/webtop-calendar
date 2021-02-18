@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.LangUtils;
+import com.sonicle.commons.RegexUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.cache.AbstractPassiveExpiringCache;
 import com.sonicle.commons.db.DbUtils;
@@ -92,6 +93,7 @@ import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek5;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek7;
 import com.sonicle.webtop.core.CoreManager;
+import com.sonicle.webtop.core.CoreServiceSettings;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
@@ -142,6 +144,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletRequest;
@@ -179,6 +182,7 @@ public class Service extends BaseService {
 	private StringSet inactiveRoots = null;
 	private IntegerSet inactiveFolders = null;
 	private ErpExportWizard erpWizard = null;
+	private Pattern MEETING_PROVIDERS_URLS_PATTERN = null;
 
 	@Override
 	public void initialize() throws Exception {
@@ -186,6 +190,7 @@ public class Service extends BaseService {
 		manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, false, up.getId());
 		ss = new CalendarServiceSettings(SERVICE_ID, up.getDomainId());
 		us = new CalendarUserSettings(SERVICE_ID, up.getId());
+		MEETING_PROVIDERS_URLS_PATTERN = getEnv().getCoreServiceSettings().getMeetingProvidersURLsPattern();
 		initFolders();
 	}
 	
@@ -720,7 +725,7 @@ public class Service extends BaseService {
 				String from = ServletUtils.getStringParameter(request, "startDate", true);
 				String to = ServletUtils.getStringParameter(request, "endDate", true);
 				
-				// Defines view boundary 
+				// Defines view boundary
 				DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
 				DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
 				
@@ -733,7 +738,7 @@ public class Service extends BaseService {
 					if (fold == null) continue;
 					CalendarPropSet pset = folderProps.get(instance.getCalendarId());
 					
-					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz));
+					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz, MEETING_PROVIDERS_URLS_PATTERN));
 				}
 				
 				new JsonResult("events", items).printTo(out);
@@ -994,7 +999,7 @@ public class Service extends BaseService {
 					if (fold == null) continue;
 					CalendarPropSet pset = folderProps.get(instance.getCalendarId());
 					
-					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz));
+					items.add(new JsSchedulerEvent(root, fold, pset, instance, up.getId(), utz, MEETING_PROVIDERS_URLS_PATTERN));
 				}
 				
 				new JsonResult("events", items).printTo(out);
@@ -1313,7 +1318,6 @@ public class Service extends BaseService {
 		
 		try {
 			String query = ServletUtils.getStringParameter(request, "query", null);
-			
 			if (query == null) {
 				final ShareRootCalendar root = roots.get(MyShareRootCalendar.SHARE_ID);
 				final Set<Integer> ids = manager.listCalendarIds();
@@ -1321,7 +1325,7 @@ public class Service extends BaseService {
 					final ShareFolderCalendar folder = folders.get(instance.getCalendarId());
 					if (folder == null) continue;
 					
-					items.add(new JsPletEvents(root, folder, instance, utz));
+					items.add(new JsPletEvents(root, folder, instance, utz, MEETING_PROVIDERS_URLS_PATTERN));
 				}
 			} else {
 				final Set<Integer> ids = folders.keySet();
@@ -1334,7 +1338,7 @@ public class Service extends BaseService {
 					if (fold == null) continue;
 					//CalendarPropSet pset = folderProps.get(instance.getCalendarId());
 					
-					items.add(new JsPletEvents(root, fold, instance, utz));
+					items.add(new JsPletEvents(root, fold, instance, utz, MEETING_PROVIDERS_URLS_PATTERN));
 				}
 			}
 			new JsonResult(items).printTo(out);

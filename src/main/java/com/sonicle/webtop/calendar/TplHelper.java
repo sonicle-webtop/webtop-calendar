@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.LangUtils;
+import com.sonicle.commons.RegexUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.MapItemList;
@@ -45,10 +46,17 @@ import com.sonicle.webtop.core.util.RRuleStringify;
 import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.helpers.MessageFormatter;
@@ -59,6 +67,15 @@ import org.slf4j.helpers.MessageFormatter;
  */
 public class TplHelper {
 	private static final String SERVICE_ID = "com.sonicle.webtop.calendar";
+	
+	public static String findMatchingMeetingUrl(Map<String, String> meetingProviders, String url) {
+		for (Map.Entry<String, String> entry : meetingProviders.entrySet()) {
+			if (StringUtils.startsWithIgnoreCase(url, entry.getKey())) {
+				return entry.getValue();
+			}
+		}
+		return null;
+	}
 	
 	private static String buildEventTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event) {
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
@@ -129,28 +146,18 @@ public class TplHelper {
 		return MessageFormat.format(pattern, event.getTitle());
 	}
 	
-	public static String buildEventModificationBody(Locale locale, String dateFormat, String timeFormat, EventFootprint event) throws IOException, TemplateException, AddressException {
-		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		
+	public static String buildEventModificationBody(EventFootprint event, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
 		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
 		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
-		evt.put("timezone", event.getTimezone());
-		evt.put("startDate", fmt.print(event.getStartDate()));
-		evt.put("endDate", fmt.print(event.getEndDate()));
-		evt.put("occurs", null);
-		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
-			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
-			RRuleStringify rrs = new RRuleStringify(strings, etz);
-			evt.put("occurs", rrs.toHumanReadableTextQuietly(event.getRecurrenceRule()));
-		}
-		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
-		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
+		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
+		fillEventOccurs(evt, event.getTimezone(), event.getRecurrenceRule(), locale);
+		fillEventLocation(evt, event.getLocation(), locale, meetingProviders); 
 		
 		MapItem vars = new MapItem();
 		vars.put("i18n", i18n);
@@ -159,14 +166,13 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventModification-body.html", vars);
 	}
 	
-	public static String buildTplEventInvitationBody(Locale locale, String dateFormat, String timeFormat, Event event, String crud, String recipientEmail, String servicePublicUrl) throws IOException, TemplateException, AddressException {
-		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		
+	public static String buildTplEventInvitationBody(String crud, Event event, String recipientEmail, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders, String servicePublicUrl) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
 		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
 		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
 		i18n.put("organizer", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
 		i18n.put("who", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHO));
 		i18n.put("going", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING));
@@ -176,21 +182,12 @@ public class TplHelper {
 		i18n.put("goingNo", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING_NO));
 		i18n.put("view", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
 		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
-		evt.put("timezone", event.getTimezone());
-		evt.put("startDate", fmt.print(event.getStartDate()));
-		evt.put("endDate", fmt.print(event.getEndDate()));
-		evt.put("occurs", null);
-		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
-			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
-			RRuleStringify rrs = new RRuleStringify(strings, etz);
-			evt.put("occurs", rrs.toHumanReadableTextQuietly(event.getRecurrenceRule()));
-		}
-		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
-		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
+		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
+		fillEventOccurs(evt, event.getTimezone(), event.getRecurrenceRule(), locale);
+		fillEventLocation(evt, event.getLocation(), locale, meetingProviders);
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
 		
 		String recipientAttendeeId = null;
@@ -228,30 +225,20 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventInvitation-body.html", vars);
 	}
 	
-	public static String buildTplResponseUpdateBody(Locale locale, String dateFormat, String timeFormat, Event event, String servicePublicUrl) throws IOException, TemplateException, AddressException {
-		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		
+	public static String buildTplResponseUpdateBody(Event event, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders, String servicePublicUrl) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
 		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
 		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
 		i18n.put("view", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
-		evt.put("timezone", event.getTimezone());
-		evt.put("startDate", fmt.print(event.getStartDate()));
-		evt.put("endDate", fmt.print(event.getEndDate()));
-		evt.put("occurs", null);
-		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
-			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
-			RRuleStringify rrs = new RRuleStringify(strings, etz);
-			evt.put("occurs", rrs.toHumanReadableTextQuietly(event.getRecurrenceRule()));
-		}
-		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
-		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
+		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
+		fillEventOccurs(evt, event.getTimezone(), event.getRecurrenceRule(), locale);
+		fillEventLocation(evt, event.getLocation(), locale, meetingProviders);
 		
 		String viewUrl = CalendarManager.buildEventPublicUrl(servicePublicUrl, event.getPublicUid());
 		
@@ -283,26 +270,21 @@ public class TplHelper {
 		return builder.build(locale, source, because, recipientEmail).write();
 	}
 	
-	public static String buildTplEventReminderBody(Locale locale, String dateFormat, String timeFormat, Event event) throws IOException, TemplateException, AddressException {
-		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		
+	public static String buildTplEventReminderBody(Event event, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
 		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
 		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
 		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
 		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
 		i18n.put("organizer", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
 		i18n.put("who", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHO));
 		
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
 		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
-		evt.put("timezone", event.getTimezone());
-		evt.put("startDate", fmt.print(event.getStartDate()));
-		evt.put("endDate", fmt.print(event.getEndDate()));
-		evt.put("location", StringUtils.defaultIfBlank(event.getLocation(), null));
-		evt.put("locationUrl", TplHelper.buildGoogleMapsUrl(event.getLocation())); 
+		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
+		fillEventLocation(evt, event.getLocation(), locale, meetingProviders);
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
 		
 		MapItemList evtAtts = new MapItemList();
@@ -328,6 +310,39 @@ public class TplHelper {
 		vars.put("eventAttendees", evtAtts);
 		
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventInvitation-body.html", vars);
+	}
+	
+	private static void fillEventDates(MapItem item, String eventTimezone, DateTime eventStart, DateTime eventEnd, String dateFormat, String timeFormat) {
+		DateTimeZone etz = DateTimeZone.forID(eventTimezone);
+		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		item.put("timezone", eventTimezone);
+		item.put("startDate", fmt.print(eventStart));
+		item.put("endDate", fmt.print(eventEnd));
+	}
+	
+	private static void fillEventOccurs(MapItem item, String eventTimezone, String eventRecurrenceRule, Locale locale) {
+		DateTimeZone etz = DateTimeZone.forID(eventTimezone);
+		item.put("occurs", null);
+		if (!StringUtils.isBlank(eventRecurrenceRule)) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			item.put("occurs", rrs.toHumanReadableTextQuietly(eventRecurrenceRule));
+		}
+	}
+	
+	private static void fillEventLocation(MapItem item, String eventLocation, Locale locale, Map<String, String> meetingProviders) {
+		String location = StringUtils.defaultIfBlank(eventLocation, null);
+		String meetingProvider = findMatchingMeetingUrl(meetingProviders, location);
+		if (meetingProvider != null) {
+			item.put("meeting", location);
+			item.put("meetingLinkName", location);
+			item.put("meetingLinkUrl", StringUtils.defaultString(location));
+			item.put("joinMeetingOn", WT.lookupFormattedResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_JOIN_MEETING, meetingProvider));
+			
+		} else {
+			item.put("location", StringUtils.defaultIfBlank(location, null));
+			item.put("locationUrl", TplHelper.buildGoogleMapsUrl(location));
+		}
 	}
 	
 	/*

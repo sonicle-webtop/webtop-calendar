@@ -44,8 +44,13 @@ Ext.define('Sonicle.webtop.calendar.model.PletEvents', {
 		WTF.roField('endDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('title', 'string'),
 		WTF.roField('location', 'string'),
+		WTF.roField('meeting', 'string'),
 		WTF.roField('_owner', 'string'),
 		WTF.roField('_frights', 'string'),
 		WTF.roField('_erights', 'string')
-	]
+	],
+	
+	hasMeeting: function() {
+		return !Ext.isEmpty(this.get('meeting'));
+	}
 });

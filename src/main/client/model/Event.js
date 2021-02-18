@@ -34,6 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.model.Event', {
 	extend: 'WTA.ux.data.BaseModel',
 	requires: [
+		'Sonicle.String',
 		'Sonicle.webtop.core.ux.data.CustomFieldValueModel',
 		'Sonicle.webtop.calendar.model.EventAttendee',
 		'Sonicle.webtop.calendar.model.EventAttachment',
@@ -71,7 +72,17 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('rrule', 'string', true),
 		WTF.field('rstart', 'date', true, {dateFormat: 'Y-m-d'}),
 		WTF.field('tags', 'string', true),
-		
+		WTF.calcField('extractedUrl', 'string', ['location', 'description'], function(v, rec, loc, desc) {
+			var reURL = Sonicle.String.reSimpleURLs,
+				groups = null;
+			Ext.iterate([loc, desc], function(value) {
+				if (!Ext.isEmpty(value)) {
+					groups = value.match(reURL);
+					if (groups) return false;
+				}
+			});
+			return Ext.isArray(groups) ? groups[0] : null;
+		}),
 		// Read-only fields
 		WTF.roField('_profileId', 'string'),
 		WTF.roField('_recurringInfo', 'string', {defaultValue: 'none'}),

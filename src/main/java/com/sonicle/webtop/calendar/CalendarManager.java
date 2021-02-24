@@ -4068,9 +4068,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		RecurrenceBrokenDAO rbkDao = RecurrenceBrokenDAO.getInstance();
 		DateTime revision = BaseDAO.createRevisionTimestamp();
 		
-		if (StringUtils.isBlank(event.getOrganizer())) {
-			event.setOrganizer(ManagerUtils.buildOrganizer(getTargetProfileId())); // Make sure organizer is filled
-		}
+		// Copy original data into new event object, otherwise they will be nulled
+		// in fillOEvent method below. This is a workaround: better solution is
+		// to separate Update and Create objects in ManagerUtils!
+		event.setPublicUid(originalEvent.getPublicUid());
+		event.setOrganizer(originalEvent.getOrganizer());
+		event.setHref(originalEvent.getHref());
+		event.setEtag(originalEvent.getEtag());
+		//if (StringUtils.isBlank(event.getOrganizer())) {
+		//	event.setOrganizer(ManagerUtils.buildOrganizer(getTargetProfileId())); // Make sure organizer is filled
+		//}
 		ManagerUtils.fillOEvent(originalEvent, event);
 		originalEvent.ensureCoherence();
 		

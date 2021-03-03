@@ -24,16 +24,13 @@
 	</properties>
 	
 	<dependencies>
+		<!-- This WebTop Service's API project -->
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>webtop-calendar-api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>webtop-mail-api</artifactId>
-			<version>LATEST</version>
-		</dependency>
+		<!-- Libraries (3rd party) -->
 		<dependency>
 			<groupId>com.sonicle.libraries</groupId>
 			<artifactId>sonicle-commons</artifactId>
@@ -63,6 +60,13 @@
 			<groupId>net.sf.supercsv</groupId>
 			<artifactId>super-csv-joda</artifactId>
 			<version>${super-csv.version}</version>
+		</dependency>
+		<!-- Other WebTop Services (integrations) -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>webtop-mail-api</artifactId>
+			<version>LATEST</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 </project>

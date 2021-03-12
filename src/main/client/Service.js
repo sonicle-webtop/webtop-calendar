@@ -342,7 +342,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					businessHoursEnd: me.getVar('workdayEnd').getHours(),
 					ddIncrement: me.getVar('timeResolution'),
 					minEventDisplayMinutes: me.getVar('timeResolution'),
-					hourHeight: me.getVar('timeResolution') === 30 ? 42 : 84
+					hourHeight: me.getVar('timeResolution') === 15 ? 84 : 42
 				},
 				monthViewCfg: {
 					showHeader: true,

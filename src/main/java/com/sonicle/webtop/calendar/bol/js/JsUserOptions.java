@@ -40,6 +40,7 @@ import com.sonicle.webtop.core.sdk.bol.js.JsUserOptionsBase;
  */
 public class JsUserOptions extends JsUserOptionsBase {
 	public String view;
+	public Integer timeResolution;
 	public String workdayStart;
 	public String workdayEnd;
 	public String eventReminderDelivery;

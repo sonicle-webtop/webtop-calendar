@@ -71,6 +71,10 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 		return getString(DEFAULT_PREFIX + VIEW, "w5");
 	}
 	
+	public Integer getDefaultSchedulerTimeResolution() {
+		return getInteger(DEFAULT_PREFIX + SCHEDULER_TIMERESOLUTION, 30);
+	}
+	
 	public LocalTime getDefaultWorkdayStart() {
 		return getTime(DEFAULT_PREFIX + WORKDAY_START, "09:00", "HH:mm");
 	}

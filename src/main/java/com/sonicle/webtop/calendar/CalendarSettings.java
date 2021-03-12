@@ -86,6 +86,13 @@ public class CalendarSettings {
 	/**
 	 * [user][default]
 	 * [string]
+	 * Calendar grid event minutes ("15" for 15 minutes, "30" for 30 minutes)
+	 */
+	public static final String SCHEDULER_TIMERESOLUTION = "scheduler.timeresolution";
+	
+	/**
+	 * [user][default]
+	 * [string]
 	 * Workday hours start time
 	 */
 	public static final String WORKDAY_START = "workday.start";

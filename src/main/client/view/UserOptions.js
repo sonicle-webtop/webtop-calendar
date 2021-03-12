@@ -35,7 +35,8 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 	extend: 'WTA.sdk.UserOptionsView',
 	requires: [
 		'Sonicle.webtop.calendar.store.View',
-		'Sonicle.webtop.calendar.store.ReminderDelivery'
+		'Sonicle.webtop.calendar.store.ReminderDelivery',
+		'Sonicle.webtop.calendar.store.TimeResolution'
 	],
 	
 	viewModel: {
@@ -82,6 +83,21 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 						scope: me
 					}
 				}
+			}), WTF.lookupCombo('id', 'desc', {
+				bind: '{record.timeResolution}',
+				store: {
+					type: 'wtcaltimeresolution',
+					autoLoad: true
+				},
+				fieldLabel: WT.res(me.ID, 'opts.main.fld-timeResolution.lbl'),
+				width: 280,
+				listeners: {
+					blur: {
+						fn: me.onBlurAutoSave,
+						scope: me
+					}
+				},
+				needReload: true
 			}), {
 				xtype: 'timefield',
 				bind: '{foWorkdayStart}',

@@ -221,6 +221,7 @@ public class Service extends BaseService {
 		co.put("eventStatFieldsVisible", ss.getEventStatisticFieldsVisible());
 		co.put("defaultCalendarSync", EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 		co.put("view", us.getView());
+		co.put("timeResolution", us.getSchedulerTimeResolution());
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));
 		co.put("cfieldsSearchable", LangUtils.serialize(getSearchableCustomFieldDefs(), ObjCustomFieldDefs.FieldsList.class));

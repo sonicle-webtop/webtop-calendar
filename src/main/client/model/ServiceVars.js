@@ -39,6 +39,7 @@ Ext.define('Sonicle.webtop.calendar.model.ServiceVars', {
 		WTF.field('eventStatFieldsVisible', 'boolean', true),
 		WTF.field('defaultCalendarSync', 'string', true),
 		WTF.field('view', 'string', true),
+		WTF.field('timeResolution', 'int', true),
 		WTF.field('workdayStart', 'date', true, {dateFormat: 'H:i'}),
 		WTF.field('workdayEnd', 'date', true, {dateFormat: 'H:i'})
 	]

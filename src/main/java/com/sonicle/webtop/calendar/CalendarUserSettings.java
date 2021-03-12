@@ -53,7 +53,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	 public String getView() {
 		String value = getString(VIEW, null);
-		if(value != null) return value;
+		if (value != null) return value;
 		return css.getDefaultView();
 	}
 	
@@ -61,9 +61,19 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setString(VIEW, value);
 	}
 	
+	public Integer getSchedulerTimeResolution() {
+		Integer value = getInteger(SCHEDULER_TIMERESOLUTION, null);
+		if (value != null) return value;
+		return css.getDefaultSchedulerTimeResolution();
+	}
+	
+	public boolean setSchedulerTimeResolution(Integer value) {
+		return setInteger(SCHEDULER_TIMERESOLUTION, value);
+	}
+	
 	public LocalTime getWorkdayStart() {
 		LocalTime value = getTime(WORKDAY_START, (LocalTime)null, "HH:mm");
-		if(value != null) return value;
+		if (value != null) return value;
 		return css.getDefaultWorkdayStart();
 	}
 	
@@ -73,7 +83,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	public LocalTime getWorkdayEnd() {
 		LocalTime value = getTime(WORKDAY_END, (LocalTime)null, "HH:mm");
-		if(value != null) return value;
+		if (value != null) return value;
 		return css.getDefaultWorkdayEnd();
 	}
 	
@@ -83,7 +93,7 @@ public class CalendarUserSettings extends BaseUserSettings {
 	
 	public String getEventReminderDelivery() {
 		String value = getString(EVENT_REMINDER_DELIVERY, null);
-		if(value != null) return value;
+		if (value != null) return value;
 		return css.getDefaultEventReminderDelivery();
 	}
 	

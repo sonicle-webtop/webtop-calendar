@@ -65,25 +65,27 @@ public class UserOptionsService extends BaseUserOptionsService {
 			CalendarUserSettings cus = new CalendarUserSettings(SERVICE_ID, getTargetProfileId());
 			DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
 			
-			if(crud.equals(Crud.READ)) {
+			if (crud.equals(Crud.READ)) {
 				JsUserOptions jso = new JsUserOptions(getTargetProfileId().toString());
 				
 				// Main
 				jso.view = cus.getView();
+				jso.timeResolution = cus.getSchedulerTimeResolution();
 				jso.workdayStart = hmf.print(cus.getWorkdayStart());
 				jso.workdayEnd = hmf.print(cus.getWorkdayEnd());
 				jso.eventReminderDelivery = cus.getEventReminderDelivery();
 				
 				new JsonResult(jso).printTo(out);
 				
-			} else if(crud.equals(Crud.UPDATE)) {
+			} else if (crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, JsUserOptions> pl = ServletUtils.getPayload(request, JsUserOptions.class);
 				
 				// Main
-				if(pl.map.has("view")) cus.setView(pl.data.view);
-				if(pl.map.has("workdayStart")) cus.setWorkdayStart(hmf.parseLocalTime(pl.data.workdayStart));
-				if(pl.map.has("workdayEnd")) cus.setWorkdayEnd(hmf.parseLocalTime(pl.data.workdayEnd));
-				if(pl.map.has("eventReminderDelivery")) cus.setEventReminderDelivery(pl.data.eventReminderDelivery);
+				if (pl.map.has("view")) cus.setView(pl.data.view);
+				if (pl.map.has("timeResolution")) cus.setSchedulerTimeResolution(pl.data.timeResolution);
+				if (pl.map.has("workdayStart")) cus.setWorkdayStart(hmf.parseLocalTime(pl.data.workdayStart));
+				if (pl.map.has("workdayEnd")) cus.setWorkdayEnd(hmf.parseLocalTime(pl.data.workdayEnd));
+				if (pl.map.has("eventReminderDelivery")) cus.setEventReminderDelivery(pl.data.eventReminderDelivery);
 				
 				new JsonResult().printTo(out);
 			}

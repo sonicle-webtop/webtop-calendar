@@ -37,6 +37,7 @@ Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
 	proxy: WTF.optionsProxy('com.sonicle.webtop.calendar'),
 	fields: [
 		WTF.field('view', 'string', false),
+		WTF.field('timeResolution', 'int', false),
 		WTF.field('workdayStart', 'date', false, {dateFormat: 'H:i'}),
 		WTF.field('workdayEnd', 'date', false, {dateFormat: 'H:i'}),
 		WTF.field('eventReminderDelivery', 'string', false)

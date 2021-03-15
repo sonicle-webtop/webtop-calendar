@@ -1,3 +1,13 @@
+$	5.10.0
+	%	Version 5.10.0
+	*	<h1>Meetings integration</h1>
+		<p>When configured, it is possible to create meetings from a new event.<br>
+		Furthermore the system can now recognize meeting invitation events of the most known
+		platforms, simplifying access through a single click.</p>
+		<img src="5.10.0_meeting.png"/>
+	*	<h1>Time resolution</h1>
+		<p>It is now possible to change time resolution of the calendar grid to 15 minutes.</p>
+		<img src="5.10.0_gridresolution.png"/>
 $	5.9.0
 	%	Version 5.9.0
 	*	<h1>Labels</h1>

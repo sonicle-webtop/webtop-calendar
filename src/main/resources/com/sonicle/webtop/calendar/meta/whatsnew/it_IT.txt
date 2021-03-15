@@ -1,3 +1,13 @@
+$	5.10.0
+	%	Versione 5.10.0
+	*	<h1>Integrazione sistemi di meeting</h1>
+		<p>Se configurato, è possibile creare meeting direttamente da un nuovo evento.<br>
+		Inoltre il sistema è in grado di riconoscere gli inviti a meeting delle piattaforme
+		più utilizzate conosciute, semplificando l'accesso al meeting attraverso un singolo click.</p>
+		<img src="5.10.0_meeting.png"/>
+	*	<h1>Risoluzione oraria</h1>
+		<p>E' ora possibile cambiare la risoluzione della griglia del calendario a 15 minuti.</p>
+		<img src="5.10.0_gridresolution.png"/>
 $	5.9.0
 	%	Versione 5.9.0
 	*	<h1>Etichette</h1>

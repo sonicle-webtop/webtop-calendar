@@ -63,7 +63,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.internet.InternetAddress;
 import net.fortuna.ical4j.model.Recur;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;

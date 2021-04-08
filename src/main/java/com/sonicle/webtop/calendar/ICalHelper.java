@@ -41,7 +41,7 @@ import java.net.URI;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
-import javax.mail.internet.AddressException;
+import jakarta.mail.internet.AddressException;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.Date;
 import net.fortuna.ical4j.model.ParameterList;

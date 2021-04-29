@@ -60,7 +60,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.webtop.calendar.store.AttendeeRespStatus'
 	],
 	uses: [
-		'Sonicle.webtop.core.view.Tags'
+		'Sonicle.webtop.core.view.Tags',
+		'Sonicle.webtop.core.view.Meeting'
 	],
 	
 	dockableConfig: {
@@ -1256,18 +1257,28 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	addMeetingUI: function() {
-		var me = this;
-		me.wait();
-		me.getMeetingLink({
-			callback: function(success, data) {
-				me.unwait();
-				if (success) {
-					var fmt = Ext.String.format,
-							name = WT.getVar('userDisplayName'),
-							mo = me.getModel();
-					if (Ext.isEmpty(mo.get('title'))) mo.set('title', fmt(data.embedTexts.eventTitle, name));
-					mo.set('location', data.link);
-					mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmt(data.embedTexts.eventDescription, name, data.link)));
+		var me = this,
+				Meeting = Sonicle.webtop.core.view.Meeting;
+		
+		Meeting.promptForInfo({
+			whatAsRoomName: true,
+			hideDateTime: true,
+			callback: function(ok, values) {
+				if (ok) {
+					me.wait();
+					Meeting.getMeetingLink(values[0], {
+						callback: function(success, data) {
+							me.unwait();
+							if (success) {
+								var fmt = Ext.String.format,
+										name =  WT.getVar('userDisplayName'),
+										mo = me.getModel();
+								if (Ext.isEmpty(mo.get('title'))) mo.set('title', fmt(data.embedTexts.subject, name));
+								mo.set('location', data.link);
+								mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmt(data.embedTexts.unschedDescription, name, data.link)));
+							}
+						}
+					});
 				}
 			}
 		});
@@ -1299,19 +1310,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		} else {
 			me.mys.printEventsDetail([eventKey]);
 		}
-	},
-	
-	getMeetingLink: function(opts) {
-		opts = opts || {};
-		var me = this;	
-		WT.ajaxReq(WT.ID, 'ManageMeeting', {
-			params: {
-				crud: 'create'
-			},
-			callback: function(success, json) {
-				Ext.callback(opts.callback, opts.scope || me, [success, json.data, json]);
-			}
-		});
 	},
 	
 	privates: {

@@ -59,6 +59,7 @@ public class JsSchedulerEvent {
 	public Integer eventId;
 	public Integer originalEventId;
 	public Integer calendarId;
+	public String calendarName;
 	public String startDate;
 	public String endDate;
 	public String timezone;
@@ -82,6 +83,7 @@ public class JsSchedulerEvent {
 	public String _owner;
 	public String _rights;
 	public String _profileId;
+	public String description;
 	
 	public JsSchedulerEvent() {}
 	
@@ -103,6 +105,7 @@ public class JsSchedulerEvent {
 		eventId = event.getEventId();
 		originalEventId = event.getEventId();
 		calendarId = event.getCalendarId();
+		calendarName = calendar.getName();
 		
 		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForPreview(event.getAllDay(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
 		isAllDay = eventBoundary.allDay;
@@ -129,6 +132,10 @@ public class JsSchedulerEvent {
 		hasCmts = !StringUtils.isBlank(event.getDescription());
 		tags = event.getTags();
 		
+		if (hasCmts) {
+			description = event.getDescription().length() > 200 ? event.getDescription().substring(0, 200) : event.getDescription();
+		}
+		
 		folderName = calendar.getName();
 		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
 		_rights = event.isCensorized() ? "" : ("m" + folder.getElementsPerms().toString());
@@ -151,6 +158,7 @@ public class JsSchedulerEvent {
 		eventId = event.getEventId();
 		originalEventId = event.getEventId();
 		calendarId = event.getCalendarId();
+		calendarName = calendar.getName();
 		
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
@@ -174,6 +182,10 @@ public class JsSchedulerEvent {
 		isRecurring = event.isEventRecurring();
 		isBroken = event.isEventBroken();
 		hasCmts = !StringUtils.isBlank(event.getDescription());
+		
+		if (!keepDataPrivate && hasCmts) {
+			description = event.getDescription().length() > 200 ? event.getDescription().substring(0, 200) : event.getDescription();
+		}
 		
 		folderName = calendar.getName();
 		_owner = (rootFolder instanceof MyShareRootCalendar) ? "" : rootFolder.getDescription();

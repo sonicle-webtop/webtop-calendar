@@ -41,7 +41,7 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 	
 	viewModel: {
 		formulas: {
-			foWorkdayStart: {
+			workdayStart: {
 				bind: {bindTo: '{record.workdayStart}'},
 				get: function(val) {
 					return val;
@@ -50,7 +50,7 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 					this.get('record').setWorkdayStart(val);
 				}
 			},
-			foWorkdayEnd: {
+			workdayEnd: {
 				bind: {bindTo: '{record.workdayEnd}'},
 				get: function(val) {
 					return val;
@@ -100,7 +100,7 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 				needReload: true
 			}), {
 				xtype: 'timefield',
-				bind: '{foWorkdayStart}',
+				bind: '{workdayStart}',
 				format: 'H:i',
 				increment : 60,
 				snapToIncrement: true,
@@ -123,7 +123,7 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 				}*/
 			}, {
 				xtype: 'timefield',
-				bind: '{foWorkdayEnd}',
+				bind: '{workdayEnd}',
 				format: 'H:i',
 				increment : 60,
 				snapToIncrement: true,

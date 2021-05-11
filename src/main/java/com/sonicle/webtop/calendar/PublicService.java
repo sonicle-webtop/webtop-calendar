@@ -169,7 +169,7 @@ public class PublicService extends BasePublicService {
 		js.organizer = event.getOrganizer();
 		//js.organizer = buildOrganizer(new UserProfileId(event.getCalendarProfileId()));
 		js.attendees = buildAttendees(js.id, event);
-		return JsonResult.GSON.toJson(js);
+		return JsonResult.gson().toJson(js);
 	}
 	
 	private String buildWhenString(Calendar calendar, Event event) {

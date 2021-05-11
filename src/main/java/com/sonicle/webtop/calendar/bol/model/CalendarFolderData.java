@@ -52,10 +52,10 @@ public class CalendarFolderData {
 	}
 
 	public static CalendarFolderData fromJson(String value) {
-		return JsonResult.gson.fromJson(value, CalendarFolderData.class);
+		return JsonResult.gson().fromJson(value, CalendarFolderData.class);
 	}
 
 	public static String toJson(CalendarFolderData value) {
-		return JsonResult.gson.toJson(value, CalendarFolderData.class);
+		return JsonResult.gson().toJson(value, CalendarFolderData.class);
 	}
 }

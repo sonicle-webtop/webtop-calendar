@@ -332,7 +332,7 @@ public class JsEvent {
 		
 		public static class List extends ArrayList<Attendee> {
 			public static List fromJson(String value) {
-				return JsonResult.gson.fromJson(value, List.class);
+				return JsonResult.gson().fromJson(value, List.class);
 			}
 		}
 	}

@@ -85,9 +85,7 @@ public class JsPletEvents {
 		
 		title = event.getTitle();
 		location = event.getLocation();
-		if (event.getLocation() != null && meetingUrlPattern != null && meetingUrlPattern.matcher(event.getLocation()).lookingAt()) {
-			meeting = event.getLocation();
-		}
+		meeting = com.sonicle.webtop.calendar.ManagerUtils.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		
 		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
 		_frights = folder.getElementsPerms().toString();

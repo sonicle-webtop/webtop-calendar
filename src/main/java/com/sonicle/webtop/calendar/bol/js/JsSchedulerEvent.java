@@ -117,9 +117,7 @@ public class JsSchedulerEvent {
 		color = calendar.getColor();
 		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		location = event.getLocation();
-		if (event.getLocation() != null && meetingUrlPattern != null && meetingUrlPattern.matcher(event.getLocation()).lookingAt()) {
-			meeting = event.getLocation();
-		}
+		meeting = com.sonicle.webtop.calendar.ManagerUtils.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)

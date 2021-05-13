@@ -488,26 +488,4 @@ public class ManagerUtils {
 		}
 		return tgt;
 	}
-	
-	/**
-	 * @deprecated use com.sonicle.webtop.core.model.Meeting.extractMeetingUrl instead
-	 */
-	@Deprecated
-	public static String extractMeetingUrl(java.util.regex.Pattern meetingUrlPattern, String... texts) {
-		if (meetingUrlPattern != null) {
-			String MATCH_SIMPLE_URL = "(?:http:\\/\\/|https:\\/\\/|ftp:\\/\\/|\\/\\/)(?:[-a-zA-Z0-9@:%_\\+.~#?&\\/=])+";
-			java.util.regex.Pattern urlPattern = java.util.regex.Pattern.compile(MATCH_SIMPLE_URL, java.util.regex.Pattern.CASE_INSENSITIVE);
-			for (String text : texts) {
-				if (StringUtils.isBlank(text)) continue;
-				java.util.regex.Matcher matcher = urlPattern.matcher(text);
-				while (matcher.find()) {
-					String url = matcher.group();
-					if (meetingUrlPattern.matcher(url).lookingAt()) {
-						return url;
-					}
-				}	
-			}
-		}
-		return null;
-	}
 }

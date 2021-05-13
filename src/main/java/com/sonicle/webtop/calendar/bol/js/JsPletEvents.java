@@ -39,6 +39,7 @@ import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.core.model.Meeting;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.joda.time.DateTimeZone;
@@ -85,7 +86,7 @@ public class JsPletEvents {
 		
 		title = event.getTitle();
 		location = event.getLocation();
-		meeting = com.sonicle.webtop.calendar.ManagerUtils.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
+		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		
 		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
 		_frights = folder.getElementsPerms().toString();

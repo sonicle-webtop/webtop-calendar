@@ -42,6 +42,7 @@ import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.core.model.Meeting;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -117,7 +118,7 @@ public class JsSchedulerEvent {
 		color = calendar.getColor();
 		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		location = event.getLocation();
-		meeting = com.sonicle.webtop.calendar.ManagerUtils.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
+		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		isPrivate = event.getIsPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)

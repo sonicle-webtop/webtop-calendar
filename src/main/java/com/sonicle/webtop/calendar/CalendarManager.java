@@ -45,6 +45,7 @@ import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.URIUtils;
+import com.sonicle.commons.concurrent.KeyedReentrantLocks;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.time.DateRange;
 import com.sonicle.commons.time.DateTimeRange;
@@ -240,6 +241,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private final OwnerCache ownerCache = new OwnerCache();
 	private final ShareCache shareCache = new ShareCache();
+	private final KeyedReentrantLocks locks = new KeyedReentrantLocks<String>();
 	
 	private static final ConcurrentHashMap<String, UserProfileId> pendingRemoteCalendarSyncs = new ConcurrentHashMap<>();
 	
@@ -336,8 +338,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return folders;
 	}
 	
+	/**
+	 * @deprecated Use listMyCalendarIds() instead.
+	 */
 	@Override
+	@Deprecated
 	public Set<Integer> listCalendarIds() throws WTException {
+		return listMyCalendarIds();
+	}
+	
+	@Override
+	public Set<Integer> listMyCalendarIds() throws WTException {
 		return listCalendarIds(getTargetProfileId());
 	}
 	
@@ -348,7 +359,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public Set<Integer> listAllCalendarIds() throws WTException {
-		return Stream.concat(listCalendarIds().stream(), listIncomingCalendarIds().stream())
+		return Stream.concat(listMyCalendarIds().stream(), listIncomingCalendarIds().stream())
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 	
@@ -450,6 +461,73 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
+	public Integer getDefaultCalendarId() throws WTException {
+		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, getTargetProfileId());
+		
+		Integer calendarId = null;
+		try (KeyedReentrantLocks.KeyedLock lock = locks.tryAcquire("getDefaultCalendarId", 60 * 1000)) {
+			if (lock != null) {
+				calendarId = us.getDefaultCalendarFolder();
+				if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "CREATE")) {
+					try {
+						calendarId = getBuiltInCalendarId();
+						if (calendarId == null) throw new WTException("Built-in calendar is null");
+						us.setDefaultCalendarFolder(calendarId);
+					} catch (Throwable t) {
+						logger.error("Unable to get built-in calendar", t);
+					}
+				}
+			}
+		}
+		return calendarId;
+	}
+	
+	@Override
+	public Integer getBuiltInCalendarId() throws WTException {
+		CalendarDAO catDao = CalendarDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			Integer catId = catDao.selectBuiltInIdByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
+			if (catId == null) return null;
+			
+			checkRightsOnCalendar(catId, CheckRightsTarget.FOLDER, "READ");
+			
+			return catId;
+			
+		} catch(SQLException | DAOException | WTException ex) {
+			throw wrapException(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	/*
+	@Override
+	public Integer getDefaultCalendarId() throws WTException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			
+			Integer calendarId = calDao.selectDefaultByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
+			if (calendarId == null) return null;
+			
+			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			
+			return calendarId;
+			
+		} catch(SQLException | DAOException | WTException ex) {
+			throw wrapException(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	*/
+	
+	@Override
 	public boolean existCalendar(int calendarId) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
@@ -501,28 +579,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} catch (Throwable t) {
 			throw ExceptionUtils.wrapThrowable(t);
-		} finally {
-			DbUtils.closeQuietly(con);
-		}
-	}
-	
-	@Override
-	public Integer getDefaultCalendarId() throws WTException {
-		CalendarDAO calDao = CalendarDAO.getInstance();
-		Connection con = null;
-		
-		try {
-			con = WT.getConnection(SERVICE_ID);
-			
-			Integer calendarId = calDao.selectDefaultByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
-			if (calendarId == null) return null;
-			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
-			
-			return calendarId;
-			
-		} catch(SQLException | DAOException | WTException ex) {
-			throw wrapException(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -587,7 +643,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cal.setBuiltIn(true);
 			cal.setName(WT.getPlatformName());
 			cal.setDescription("");
-			cal.setIsDefault(true);
 			cal = doCalendarInsert(con, cal);
 			
 			DbUtils.commitQuietly(con);
@@ -595,6 +650,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (isAuditEnabled()) {
 				writeAuditLog(AuditContext.CALENDAR, AuditAction.CREATE, cal.getCalendarId(), null);
 			}
+			
+			// Sets calendar as default
+			CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, cal.getProfileId());
+			us.setDefaultCalendarFolder(cal.getCalendarId());
 			
 			return cal;
 			

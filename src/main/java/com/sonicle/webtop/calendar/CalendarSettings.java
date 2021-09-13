@@ -136,6 +136,13 @@ public class CalendarSettings {
 	
 	/**
 	 * [user]
+	 * [int]
+	 * ID of the folder choosen as default.
+	 */
+	public static final String DEFAULT_CALENDAR_FOLDER = "calendar.folder.default";
+	
+	/**
+	 * [user]
 	 * [boolean]
 	 * Enable/disable statistic fields (activity, customer, stat.customer, causal) display.
 	 */

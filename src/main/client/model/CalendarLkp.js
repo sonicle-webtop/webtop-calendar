@@ -47,10 +47,10 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarLkp', {
 		}),
 		WTF.roField('name', 'string'),
 		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
-		WTF.field('isDefault', 'boolean', false, {defaultValue: false}),
 		WTF.field('evtPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('evtBusy', 'boolean', false, {defaultValue: false}),
 		WTF.roField('evtReminder', 'int', true),
+		WTF.roField('_default', 'boolean', {defaultValue: false}),
 		WTF.roField('_profileId', 'string'),
 		WTF.roField('_profileDescription', 'string'),
 		WTF.calcField('_label', 'string', ['name', '_profileDescription'], function(v, rec) {

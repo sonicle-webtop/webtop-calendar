@@ -86,7 +86,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		// Read-only fields
 		WTF.roField('_profileId', 'string'),
 		WTF.roField('_recurringInfo', 'string', {defaultValue: 'none'}),
-		WTF.field('_cfdefs', 'string', true)
+		WTF.roField('_cfdefs', 'string')
 	],
 	hasMany: [
 		WTF.hasMany('attendees', 'Sonicle.webtop.calendar.model.EventAttendee'),

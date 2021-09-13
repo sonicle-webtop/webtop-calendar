@@ -223,6 +223,21 @@ public class CalendarDAO extends BaseDAO {
 			.fetchInto(OCalendar.class);
 	}
 	
+	public Integer selectBuiltInIdByProfile(Connection con, String domainId, String userId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				CALENDARS.CALENDAR_ID
+			)
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.USER_ID.equal(userId))
+				.and(CALENDARS.BUILT_IN.equal(true))
+			)
+			.fetchOneInto(Integer.class);
+	}
+	
 	public OCalendar selectBuiltInByProfile(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl

@@ -357,19 +357,22 @@ public class Service extends BaseService {
 					boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", false);
 					ShareRootCalendar root = roots.get(node);
 					
+					Integer defltCalendarId = manager.getDefaultCalendarId();
 					if (root instanceof MyShareRootCalendar) {
 						for (Calendar cal : manager.listCalendars().values()) {
 							MyShareFolderCalendar folder = new MyShareFolderCalendar(node, cal);
 							if (writableOnly && !folder.getElementsPerms().implies("CREATE")) continue;
 							
-							children.add(createFolderNode(chooser, folder, null, root.getPerms()));
+							final boolean isDefault = folder.getCalendar().getCalendarId().equals(defltCalendarId);
+							children.add(createFolderNode(chooser, folder, null, root.getPerms(), isDefault));
 						}
 					} else {
 						if (foldersByRoot.containsKey(root.getShareId())) {
 							for (ShareFolderCalendar folder : foldersByRoot.get(root.getShareId())) {
 								if (writableOnly && !folder.getElementsPerms().implies("CREATE")) continue;
 								
-								final ExtTreeNode etn = createFolderNode(chooser, folder, folderProps.get(folder.getCalendar().getCalendarId()), root.getPerms());
+								final boolean isDefault = folder.getCalendar().getCalendarId().equals(defltCalendarId);
+								final ExtTreeNode etn = createFolderNode(chooser, folder, folderProps.get(folder.getCalendar().getCalendarId()), root.getPerms(), isDefault);
 								if (etn != null) children.add(etn);
 							}
 						}
@@ -438,11 +441,13 @@ public class Service extends BaseService {
 		List<JsCalendarLkp> items = new ArrayList<>();
 		
 		try {
+			Integer defltCalendarId = manager.getDefaultCalendarId();
 			synchronized(roots) {
 				for (ShareRootCalendar root : roots.values()) {
 					if (foldersByRoot.containsKey(root.getShareId())) {
-						for (ShareFolderCalendar fold : foldersByRoot.get(root.getShareId())) {
-							items.add(new JsCalendarLkp(root, fold, folderProps.get(fold.getCalendar().getCalendarId()), items.size()));
+						for (ShareFolderCalendar folder : foldersByRoot.get(root.getShareId())) {
+							final boolean isDefault = folder.getCalendar().getCalendarId().equals(defltCalendarId);
+							items.add(new JsCalendarLkp(root, folder, folderProps.get(folder.getCalendar().getCalendarId()), isDefault, items.size()));
 						}
 					}
 				}
@@ -651,20 +656,34 @@ public class Service extends BaseService {
 		}
 	}
 	
+	public void processSetDefaultCalendar(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		try {
+			Integer id = ServletUtils.getIntParameter(request, "id", true);
+			
+			us.setDefaultCalendarFolder(id);
+			Integer defltCalendarId = manager.getDefaultCalendarId();
+			new JsonResult(String.valueOf(defltCalendarId)).printTo(out);
+				
+		} catch(Throwable t) {
+			logger.error("Error in SetDefaultCalendar", t);
+			new JsonResult(t).printTo(out);
+		}
+	}
+	
 	public void processSetCalendarColor(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		try {
 			Integer id = ServletUtils.getIntParameter(request, "id", true);
 			String color = ServletUtils.getStringParameter(request, "color", null);
-
-			updateCalendarFolderColor(id, color);
-
-			new JsonResult().printTo(out);
 			
-		} catch(Exception ex) {
-			new JsonResult(ex).printTo(out);
+			updateCalendarFolderColor(id, color);
+			new JsonResult().printTo(out);
+				
+		} catch(Throwable t) {
+			logger.error("Error in SetCalendarColor", t);
+			new JsonResult(t).printTo(out);
 		}
 	}
-	
+				
 	public void processSetCalendarSync(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		try {
 			Integer id = ServletUtils.getIntParameter(request, "id", true);
@@ -672,10 +691,10 @@ public class Service extends BaseService {
 			
 			updateCalendarFolderSync(id, EnumUtils.forSerializedName(sync, Calendar.Sync.class));
 			new JsonResult().printTo(out);
-			
-		} catch(Exception ex) {
-			logger.error("Error in SetCategorySync", ex);
-			new JsonResult(ex).printTo(out);
+				
+		} catch(Throwable t) {
+			logger.error("Error in SetCalendarSync", t);
+			new JsonResult(t).printTo(out);
 		}
 	}
 	
@@ -1539,7 +1558,7 @@ public class Service extends BaseService {
 		return node;
 	}
 	
-	private ExtTreeNode createFolderNode(boolean chooser, ShareFolderCalendar folder, CalendarPropSet folderProps, SharePermsRoot rootPerms) {
+	private ExtTreeNode createFolderNode(boolean chooser, ShareFolderCalendar folder, CalendarPropSet folderProps, SharePermsRoot rootPerms, boolean isDefault) {
 		Calendar cal = folder.getCalendar();
 		String id = new CompositeId().setTokens(folder.getShareId(), cal.getCalendarId()).toString();
 		String color = cal.getColor();
@@ -1565,7 +1584,7 @@ public class Service extends BaseService {
 		node.put("_provider", EnumUtils.toSerializedName(cal.getProvider()));
 		node.put("_color", Calendar.getHexColor(color));
 		node.put("_sync", EnumUtils.toSerializedName(sync));
-		node.put("_default", cal.getIsDefault());
+		node.put("_default", isDefault);
 		node.put("_active", active);
 		node.put("_isPrivate", cal.getIsPrivate());
 		node.put("_defBusy", cal.getDefaultBusy());

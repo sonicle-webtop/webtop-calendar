@@ -41,7 +41,6 @@ import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttachment;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.OEventCustomValue;
-import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -59,16 +58,12 @@ import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.IdentifierUtils;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import jakarta.mail.internet.InternetAddress;
-import net.fortuna.ical4j.model.Recur;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 /**
  *
@@ -148,7 +143,6 @@ public class ManagerUtils {
 			tgt.setDescription(src.getDescription());
 			tgt.setColor(src.getColor());
 			tgt.setSync(EnumUtils.forSerializedName(src.getSync(), Calendar.Sync.class));
-			tgt.setIsDefault(src.getIsDefault());
 			tgt.setIsPrivate(src.getIsPrivate());
 			tgt.setDefaultBusy(src.getBusy());
 			tgt.setDefaultReminder(src.getReminder());
@@ -176,7 +170,6 @@ public class ManagerUtils {
 			tgt.setDescription(src.getDescription());
 			tgt.setColor(src.getColor());
 			tgt.setSync(EnumUtils.toSerializedName(src.getSync()));
-			tgt.setIsDefault(src.getIsDefault());
 			tgt.setIsPrivate(src.getIsPrivate());
 			tgt.setBusy(src.getDefaultBusy());
 			tgt.setReminder(src.getDefaultReminder());

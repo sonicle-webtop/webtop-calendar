@@ -63,7 +63,6 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		me.callParent([cfg]);
 		
 		WTU.applyFormulas(me.getVM(), {
-			isDefault: WTF.checkboxBind('record', 'isDefault'),
 			visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
 			showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
 			//invitation: WTF.checkboxBind('record', 'invitation'),
@@ -125,14 +124,6 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 						],
 						fieldLabel: me.mys.res('calendar.fld-name.lbl'),
 						anchor: '100%'
-					}, {
-						xtype: 'checkbox',
-						bind: {
-							value: '{isDefault}',
-							disabled: '{foIsRemote}'
-						},
-						hideEmptyLabel: false,
-						boxLabel: me.mys.res('calendar.fld-default.lbl')
 					}, {
 						xtype: 'textareafield',
 						bind: '{record.description}',

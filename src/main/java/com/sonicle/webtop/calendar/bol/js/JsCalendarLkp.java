@@ -45,30 +45,30 @@ public class JsCalendarLkp {
 	public Integer calendarId;
 	public String name;
 	public String color;
-	public Boolean isDefault;
 	public Boolean evtPrivate;
 	public Boolean evtBusy;
 	public Integer evtReminder;
+	public Boolean _default;
 	public String _profileId;
 	public String _profileDescription;
 	public Boolean _writable;
 	public Integer _order;
 	
-	public JsCalendarLkp(Calendar cal) {
-		calendarId = cal.getCalendarId();
-		name = cal.getName();
-		color = cal.getColor();
-		isDefault = cal.getIsDefault();
-		evtPrivate = cal.getIsPrivate();
-		evtBusy = cal.getDefaultBusy();
-		evtReminder = cal.getDefaultReminder();
-		_profileId = cal.getProfileId().toString();
+	public JsCalendarLkp(Calendar cal, boolean isDefault) {
+		this.calendarId = cal.getCalendarId();
+		this.name = cal.getName();
+		this.color = cal.getColor();
+		this.evtPrivate = cal.getIsPrivate();
+		this.evtBusy = cal.getDefaultBusy();
+		this.evtReminder = cal.getDefaultReminder();
+		this._default = isDefault;
+		this._profileId = cal.getProfileId().toString();
 	}
 	
-	public JsCalendarLkp(ShareRootCalendar root, ShareFolderCalendar folder, CalendarPropSet folderProps, int order) {
-		this(folder.getCalendar().applyPropSet(folderProps));
-		_profileDescription = root.getDescription();
-		_writable = folder.getElementsPerms().implies("CREATE");
-		_order = order;
+	public JsCalendarLkp(ShareRootCalendar root, ShareFolderCalendar folder, CalendarPropSet folderProps, boolean isDefault, int order) {
+		this(folder.getCalendar().applyPropSet(folderProps), isDefault);
+		this._profileDescription = root.getDescription();
+		this._writable = folder.getElementsPerms().implies("CREATE");
+		this._order = order;
 	}
 }

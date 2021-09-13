@@ -117,6 +117,14 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setObject(INACTIVE_CALENDAR_FOLDERS, value, IntegerSet.class);
 	}
 	
+	public Integer getDefaultCalendarFolder() {
+		return getInteger(DEFAULT_CALENDAR_FOLDER, null);
+	}
+	
+	public boolean setDefaultCalendarFolder(Integer calendarId) {
+		return setInteger(DEFAULT_CALENDAR_FOLDER, calendarId);
+	}
+	
 	/**
 	 * @deprecated Remove when transition (CheckedCalendarRoots -> InactiveCalendarRoots) is completed
 	 * @return

@@ -100,13 +100,15 @@ public class Eas extends EasApi {
 		}
 		
 		try {
+			Integer defltCalendarId = manager.getDefaultCalendarId();
 			Map<Integer, Calendar> cals = manager.listCalendars();
 			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(cals.keySet());
 			for (Calendar cal : cals.values()) {
 				if (cal.isProviderRemote()) continue;
 				if (Calendar.Sync.OFF.equals(cal.getSync())) continue;
 				
-				items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), null, ShareFolderCalendar.realElementsPerms(cal.getSync())));
+				final boolean isDefault = cal.getCalendarId().equals(defltCalendarId);
+				items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), null, ShareFolderCalendar.realElementsPerms(cal.getSync()), isDefault));
 			}
 			
 			List<ShareRootCalendar> shareRoots = manager.listIncomingCalendarRoots();
@@ -121,7 +123,8 @@ public class Eas extends EasApi {
 					CalendarPropSet calProps = props.get(cal.getCalendarId());
 					if (Calendar.Sync.OFF.equals(calProps.getSyncOrDefault(Calendar.Sync.OFF))) continue;
 					
-					items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), folder.getPerms(), folder.getRealElementsPerms(calProps.getSync())));
+					final boolean isDefault = cal.getCalendarId().equals(defltCalendarId);
+					items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), folder.getPerms(), folder.getRealElementsPerms(calProps.getSync()), isDefault));
 				}
 			}
 			
@@ -279,7 +282,7 @@ public class Eas extends EasApi {
 		}
 	}
 	
-	private SyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, DateTime lastRevisionTimestamp, SharePerms folderPerms, SharePerms elementPerms) {
+	private SyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, DateTime lastRevisionTimestamp, SharePerms folderPerms, SharePerms elementPerms, boolean isDefault) {
 		String displayName = cal.getName();
 		if (!currentProfileId.equals(cal.getProfileId())) {
 			UserProfile.Data owud = WT.getUserData(cal.getProfileId());
@@ -292,7 +295,7 @@ public class Eas extends EasApi {
 				.id(cal.getCalendarId())
 				.displayName(displayName)
 				.etag(buildEtag(lastRevisionTimestamp))
-				.deflt(cal.getIsDefault())
+				.deflt(isDefault)
 				.foAcl((folderPerms == null) ? SharePermsFolder.full().toString() : folderPerms.toString())
 				.elAcl((elementPerms == null) ? SharePermsElements.full().toString() : elementPerms.toString())
 				.ownerId(cal.getProfileId().toString());

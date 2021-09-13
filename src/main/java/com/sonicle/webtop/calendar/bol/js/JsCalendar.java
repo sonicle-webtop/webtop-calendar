@@ -55,7 +55,6 @@ public class JsCalendar {
 	public String description;
 	public String color;
 	public String sync;
-	public Boolean isDefault;
 	public Boolean isPrivate;
 	public Boolean busy;
 	public Integer reminder;
@@ -76,7 +75,6 @@ public class JsCalendar {
 		description = cal.getDescription();
 		color = cal.getColor();
 		sync = EnumUtils.toSerializedName(cal.getSync());
-		isDefault = cal.getIsDefault();
 		isPrivate = cal.getIsPrivate();
 		busy = cal.getDefaultBusy();
 		reminder = cal.getDefaultReminder();
@@ -105,7 +103,6 @@ public class JsCalendar {
 		cal.setDescription(js.description);
 		cal.setColor(js.color);
 		cal.setSync(EnumUtils.forSerializedName(js.sync, Calendar.Sync.class));
-		cal.setIsDefault(js.isDefault);
 		cal.setIsPrivate(js.isPrivate);
 		cal.setDefaultBusy(js.busy);
 		cal.setDefaultReminder(js.reminder);

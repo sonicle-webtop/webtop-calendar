@@ -1,3 +1,7 @@
+$	5.12.0
+	*	<h1>Calendario predefinito</h1>
+		<p>E' ora possibile impostare un calendario come predefinito scegliendo fra quelli disponibili (condivisi e non).</p>
+		<img src="5.12.0_defaultcalendar.png"/>
 $	5.10.0
 	%	Versione 5.10.0
 	*	<h1>Integrazione sistemi di meeting</h1>

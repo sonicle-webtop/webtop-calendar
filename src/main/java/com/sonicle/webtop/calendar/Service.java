@@ -1011,7 +1011,7 @@ public class Service extends BaseService {
 				
 				Map<String, CustomField.Type> map = cacheSearchableCustomFieldType.shallowCopy();
 				Set<Integer> activeCalIds = getActiveFolderIds();
-				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, EventQuery.toCondition(queryObj, map, utz), utz);
+				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, EventQuery.createCondition(queryObj, map, utz), utz);
 				for (SchedEventInstance instance : instances) {
 					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
 					if (root == null) continue;
@@ -1350,7 +1350,7 @@ public class Service extends BaseService {
 			} else {
 				final Set<Integer> ids = folders.keySet();
 				final String pattern = LangUtils.patternizeWords(query);
-				List<SchedEventInstance> instances = manager.listEventInstances(ids, buildSearchRange(DateTimeUtils.now(), utz), EventQuery.toCondition(pattern), utz, true);
+				List<SchedEventInstance> instances = manager.listEventInstances(ids, buildSearchRange(DateTimeUtils.now(), utz), EventQuery.createCondition(pattern), utz, true);
 				for (SchedEventInstance instance : instances) {
 					final ShareRootCalendar root = rootByFolder.get(instance.getCalendarId());
 					if (root == null) continue;

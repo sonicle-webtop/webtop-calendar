@@ -117,7 +117,7 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 			],
 			listeners: {
 				rowdblclick: function(s, rec) {
-					var er = me.mys.toRightsObj(rec.get('_erights'));
+					var er = WTA.util.FoldersTree.toRightsObj(rec.get('_erights'));
 					me.mys.openEventUI(er.UPDATE, rec.get('id'));
 				}
 			}

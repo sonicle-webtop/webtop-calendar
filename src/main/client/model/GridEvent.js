@@ -37,7 +37,7 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 	fields: [
 		WTF.roField('id', 'string'),
 		WTF.roField('eventId', 'int'),
-		WTF.roField('startDate', 'string', {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.roField('startDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('endDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('timezone', 'string'),
 		WTF.roField('title', 'string'),

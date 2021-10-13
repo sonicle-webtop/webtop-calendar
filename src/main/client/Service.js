@@ -40,6 +40,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.grid.column.Icon',
 		'Sonicle.grid.column.Color',
 		'Sonicle.grid.column.Tag',
+		'Sonicle.grid.plugin.StateResetMenu',
 		'Sonicle.tree.Column',
 		'WTA.ux.field.Search',
 		'WTA.ux.menu.TagMenu',
@@ -79,8 +80,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	init: function() {
 		var me = this,
 				tagsStore = WT.getTagsStore(),
-				scfields = WTA.ux.field.Search.customFieldDefs2Fields(me.getVar('cfieldsSearchable'));
-		
+				scfields = WTA.ux.field.Search.customFieldDefs2Fields(me.getVar('cfieldsSearchable')),
+				durRes = function(sym) { return WT.res('word.dur.'+sym); },
+				durSym = [durRes('y'), durRes('d'), durRes('h'), durRes('m'), durRes('s')];
+				
 		//TODO: trovare una collocazione a questa chiamata
 		Sonicle.upload.Uploader.registerMimeType('text/calendar', ['ical','ics','icalendar']);
 		me.initActions();
@@ -421,6 +424,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}, {
 				xtype: 'grid',
 				reference: 'gpresults',
+				stateful: true,
+				stateId: me.buildStateId('gpeventsresults'),
 				store: {
 					model: 'Sonicle.webtop.calendar.model.GridEvent',
 					proxy: WTF.apiProxy(me.ID, 'ManageGridEvents', 'events', {
@@ -467,6 +472,25 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						header: me.res('event.fld-endDate.lbl'),
 						width: 150
 					}, {
+						dataIndex: 'startDate',
+						header: me.res('gpevents.duration.lbl'),
+						renderer : function(v, meta, rec) {
+							var SoD = Sonicle.Date,
+									end = rec.get('endDate'),
+									diff;
+							if (rec.get('isAllDay') === true) {
+								if (end.getHours() === 23 && end.getMinutes() === 59) {
+									end = SoD.setTime(SoD.add(end, {days: 1}, true), 0, 0, 0);
+								}
+								diff = SoD.diffDays(end, v) * 86400;
+							} else {
+								diff = SoD.diff(v, end, Ext.Date.SECOND, true);
+							}
+							return diff ? SoD.humanReadableDuration(Math.abs(diff), true, durSym) : '';
+						},
+						hidden: true,
+						width: 80
+					}, {
 						xtype: 'sotagcolumn',
 						dataIndex: 'tags',
 						header: me.res('gpevents.tags.lbl'),
@@ -480,6 +504,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						dataIndex: 'location',
 						header: me.res('event.fld-location.lbl'),
 						flex: 1
+					}
+				],
+				plugins: [
+					{
+						ptype: 'so-gridstateresetmenu',
+						menuStateResetText: WT.res('act-clearColumnState.lbl'),
+						menuStateResetTooltip: WT.res('act-clearColumnState.tip'),
+						listeners: {
+							stateresetclick: function(s, grid) {
+								WT.clearState(grid);
+							}
+						}
 					}
 				],
 				tools: [{

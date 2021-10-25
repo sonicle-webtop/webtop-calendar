@@ -40,6 +40,9 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		'Sonicle.webtop.calendar.model.EventAttachment',
 		'Sonicle.data.writer.Json'
 	],
+	uses: [
+		'Sonicle.form.field.rr.Recurrence'
+	],
 	proxy: WTF.apiProxy('com.sonicle.webtop.calendar', 'ManageEvents', 'data', {
 		writer: {
 			type: 'sojson',
@@ -69,7 +72,11 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.field('masterDataId', 'string', true),
 		WTF.field('statMasterDataId', 'string', true),
 		WTF.field('causalId', 'int', true),
-		WTF.field('rrule', 'string', true),
+		WTF.field('rrule', 'string', true, {
+			isEqual: function(value1, value2) {
+				return Sonicle.form.field.rr.Recurrence.isRRuleEqual(value1, value2);
+			}
+		}),
 		WTF.field('rstart', 'date', true, {dateFormat: 'Y-m-d'}),
 		WTF.field('tags', 'string', true),
 		WTF.calcField('extractedUrl', 'string', ['location', 'description'], function(v, rec, loc, desc) {

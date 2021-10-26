@@ -3170,6 +3170,28 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return obrecs.keySet();
 	}
 	
+	private LocalDate calculateRecurrenceStart(Connection con, int eventId, DateTime eventStart, DateTime eventEnd, DateTimeZone eventTimezone) throws WTException {
+		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
+		
+		try {
+			ORecurrence orec = recDao.selectByEvent(con, eventId);
+			if (orec == null) {
+				logger.warn("Unable to retrieve recurrence for event [{}]", eventId);
+				return null;
+			} else {
+				Recur recur = orec.getRecur();
+				if (recur == null) throw new WTException("Unable to parse rrule [{}]", orec.getRule());
+				
+				Set<LocalDate> exclDates = recbDao.selectDatesByEventRecurrence(con, eventId, orec.getRecurrenceId());
+				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), true, exclDates, eventStart, eventEnd, eventTimezone, null, null, 1);
+				return !dates.isEmpty() ? dates.get(0) : null;
+			}
+		} catch (Throwable t) {
+			throw ExceptionUtils.wrapThrowable(t);
+		}
+	}
+	
 	private <T> List<T> calculateRecurringInstances(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime rangeFrom, DateTime rangeTo, DateTimeZone userTimezone, int limit) throws WTException {
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
@@ -3733,6 +3755,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		Event eventDump = null;
 		if (originalEventInfo.isRecurring()) {
+			LocalDate firstInstanceDate = calculateRecurrenceStart(con, oevtOrig.getEventId(), oevtOrig.getStartDate(), oevtOrig.getEndDate(), oevtOrig.getDateTimezone());
+			boolean firstInstance = firstInstanceDate != null ? eventKey.instanceDate.equals(firstInstanceDate) : false;
+			if (firstInstance) target = UpdateEventTarget.ALL_SERIES;
+			
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts new broken event (attendees and rr are not supported here)
 				EventInsertResult insert = doEventInsert(con, event, null, false, false, false, false, processTags, processCustomValues, ProcessReminder.YES, validTags);
@@ -3865,6 +3891,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		Event eventDump = null;
 		if (einfo.isRecurring()) {
+			LocalDate firstInstanceDate = calculateRecurrenceStart(con, einfo.getEventId(), einfo.getStartDate(), einfo.getStartDate(), einfo.getDateTimeZone());
+			boolean firstInstance = firstInstanceDate != null ? eventKey.instanceDate.equals(firstInstanceDate) : false;
+			if (firstInstance) target = UpdateEventTarget.ALL_SERIES;
+			
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts new broken record (without new broken event) on deleted date
 				doRecurrenceExcludeDate(con, einfo.getEventId(), einfo.getRecurrenceId(), eventKey.instanceDate, null);
@@ -5032,7 +5062,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Event clone = cloner.deepClone(event);
 			clone.setStartDate(startDate);
 			clone.setEndDate(endDate);
-			return clone;	
+			return clone;
 		}
 	}
 	

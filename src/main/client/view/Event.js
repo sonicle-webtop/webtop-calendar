@@ -534,7 +534,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			}, WTF.remoteCombo('id', 'desc', {
 				reference: 'fldactivity',
 				bind: '{record.activityId}',
-				autoLoadOnValue: true,
+				autoLoadOnValue: me.showStatisticFields ? true : false,
 				hidden: !me.showStatisticFields,
 				store: {
 					model: 'WTA.model.ActivityLkp',
@@ -568,7 +568,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			WTF.remoteCombo('id', 'desc', {
 				reference: 'fldmasterdata',
 				bind: '{record.masterDataId}',
-				autoLoadOnValue: true,
+				autoLoadOnValue: me.showStatisticFields ? true : false,
 				hidden: !me.showStatisticFields,
 				store: {
 					model: 'WTA.model.Simple',
@@ -595,7 +595,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			WTF.remoteCombo('id', 'desc', {
 				reference: 'fldstatmasterdata',
 				bind: '{record.statMasterDataId}',
-				autoLoadOnValue: true,
+				autoLoadOnValue: me.showStatisticFields ? true : false,
 				hidden: !me.showStatisticFields,
 				store: {
 					model: 'WTA.model.Simple',
@@ -619,7 +619,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			WTF.remoteCombo('id', 'desc', {
 				reference: 'fldcausal',
 				bind: '{record.causalId}',
-				autoLoadOnValue: true,
+				autoLoadOnValue: me.showStatisticFields ? true : false,
 				hidden: !me.showStatisticFields,
 				store: {
 					model: 'WTA.model.CausalLkp',

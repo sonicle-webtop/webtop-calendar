@@ -1733,13 +1733,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEvent2: function(data, opts) {
 		opts = opts || {};
 		var me = this,
-				data2 = me.parseEventApiData(data),
+				data2 = me.parseEventApiData(data) || {},
 				vw = WT.createView(me.ID, 'view.Event', {
 					swapReturn: true,
 					viewCfg: {
 						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
 					}
 				});	
+		
+		//TODO: delete _profileId when is not required anymore in Event view
+		data2['_profileId'] = WTA.util.FoldersTree.getFolderById(me.trFolders(), data2.calendarId).getProfileId();
 		
 		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);

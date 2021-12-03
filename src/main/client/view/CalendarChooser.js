@@ -117,7 +117,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 				xtype: 'sotreecolumn',
 				dataIndex: 'text',
 				renderer: WTA.util.FoldersTree.coloredBoxTreeRenderer({
-					defaultText: me.mys.res('calendar.fld-default.lbl').toLowerCase()
+					defaultText: me.res('trfolders.default')
 				}),
 				flex: 1
 			}],

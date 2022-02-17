@@ -84,17 +84,18 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 					itemsPadding: 5,
 					items: [
 						{
-							glyph: 'xf03d@FontAwesome',
 							tooltip: me.mys.res('portlet.events.gp.act-joinMeeting.tip'),
 							handler: function(g, ridx) {
 								var rec = g.getStore().getAt(ridx);
 								Sonicle.URLMgr.open(rec.get('meeting'), true);
 							},
-							isDisabled: function(s, ridx, cidx, itm, rec) {
+							isActionDisabled: function(s, ridx, cidx, itm, rec) {
 								return !rec.hasMeeting();
 							},
 							getClass: function(v, meta, rec) {
-								return !rec.hasMeeting() ? Ext.baseCSSPrefix + 'hidden-display' : '';
+								var cls = 'fas fa-video ';
+								if (!rec.hasMeeting()) cls += (Ext.baseCSSPrefix + 'hidden-display');
+								return cls;
 							}
 							//disabledCls: 'x-item-disabled x-hidden-display'
 							//disabledCls: Ext.baseCSSPrefix + 'hidden-display'

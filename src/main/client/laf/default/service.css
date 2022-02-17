@@ -22,6 +22,7 @@
 .wtcal-icon-event { background-image: url('event_16.svg') !important; background-size: contain; }
 .wtcal-icon-newEvent { background-image: url('event-new_16.svg') !important; background-size: contain; }
 .wtcal-icon-addEvent { background-image: url('event-add_16.svg') !important; background-size: contain; }
+.wtcal-icon-rejoinSeries { background-image: url('event-rejoinSeries_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-single { background-image: url('event_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-recurring { background-image: url('event-recurring_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-broken { background-image: url('event-broken_16.svg') !important; background-size: contain; }

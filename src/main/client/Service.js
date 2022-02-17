@@ -90,10 +90,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.initCxm();
 		
 		me.on('activate', me.onActivate, me);
-		me.onMessage('notifyReminder', function() {
+		me.onPushMessage('notifyReminder', function() {
 			WT.info('reminder arrived');
 		});
-		me.onMessage('remoteSyncResult', function(msg) {
+		me.onPushMessage('remoteSyncResult', function(msg) {
 			var pl = msg.payload,
 					ok = (pl.success === true),
 					tag = me.self.noTagRemoteSync(pl.calendarId),
@@ -323,14 +323,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				startDay: WT.getStartDay(),
 				use24HourTime: WT.getUse24HourTime(),
 				viewCfg: {
-					timezoneIconCls: 'fa fa-globe',
-					privateIconCls: 'fa fa-lock',
-					reminderIconCls: 'fa fa-bell-o',
-					attendeesIconCls: 'fa fa-users',
-					recurrenceIconCls: 'fa fa-refresh',
-					recurrenceBrokenIconCls: 'fa fa-chain-broken',
-					meetingIconCls: 'fa fa-video-camera',
-					commentsIconCls: 'fa fa-commenting-o',
+					timezoneIconCls: 'fas fa-globe',
+					privateIconCls: 'fas fa-lock',
+					reminderIconCls: 'far fa-bell',
+					attendeesIconCls: 'fas fa-users',
+					recurrenceIconCls: 'fas fa-sync',
+					recurrenceBrokenIconCls: 'fas fa-unlink',
+					meetingIconCls: 'fas fa-video',
+					commentsIconCls: 'far fa-comment-dots',
 					todayText: me.res('scheduler.today'),
 					moreText: me.res('scheduler.more'),
 					ddCreateEventText: me.res('scheduler.ddcreateevent'),
@@ -931,7 +931,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.addAct('restoreEvent', {
 			text: WT.res('act-restore.lbl'),
 			tooltip: null,
-			iconCls: 'wt-icon-restore-xs',
+			iconCls: 'wtcal-icon-rejoinSeries',
 			handler: function(s, e) {
 				var rec = e.menuData.event;
 				if (rec) me.restoreSchedEventUI(rec);

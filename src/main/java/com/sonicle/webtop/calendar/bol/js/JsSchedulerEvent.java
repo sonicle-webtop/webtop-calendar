@@ -120,7 +120,7 @@ public class JsSchedulerEvent {
 		location = event.getLocation();
 		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		isPrivate = event.getIsPrivate();
-		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getValue();
+		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getMinutesValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = calendar.isProviderRemote() || event.isCensorized(); // Maybe it's better to call this isLocked (no actions will be avail in client scheduler component)
 		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());

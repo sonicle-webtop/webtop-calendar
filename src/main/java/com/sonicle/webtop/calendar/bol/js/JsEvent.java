@@ -110,7 +110,7 @@ public class JsEvent {
 		location = event.getLocation();
 		isPrivate = event.getIsPrivate();
 		busy = event.getBusy();
-		reminder = EventInstance.Reminder.getMinutes(event.getReminder());
+		reminder = EventInstance.Reminder.getMinutesValue(event.getReminder());
 		activityId = event.getActivityId();
 		masterDataId = event.getMasterDataId();
 		statMasterDataId = event.getStatMasterDataId();

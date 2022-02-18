@@ -343,7 +343,7 @@ public class Eas extends EasApi {
 				.location(event.getLocation())
 				.prvt(event.getIsPrivate())
 				.busy(event.getBusy())
-				.reminder(Event.Reminder.getMinutes(event.getReminder()))
+				.reminder(Event.Reminder.getMinutesValue(event.getReminder()))
 				.recRule(event.hasRecurrence() ? event.getRecurrenceRule() : null)
 				.recStart(event.hasRecurrence() ? DateTimeUtils.print(ISO_DATE_FMT, event.getRecurrenceStartDate()) : null)
 				.exDates(exDates)

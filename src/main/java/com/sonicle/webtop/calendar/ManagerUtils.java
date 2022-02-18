@@ -300,7 +300,7 @@ public class ManagerUtils {
 			tgt.setLocation(src.getLocation());
 			tgt.setIsPrivate(src.getIsPrivate());
 			tgt.setBusy(src.getBusy());
-			tgt.setReminder(Event.Reminder.getMinutes(src.getReminder()));
+			tgt.setReminder(Event.Reminder.getMinutesValue(src.getReminder()));
 			tgt.setHref(src.getHref());
 			tgt.setEtag(src.getEtag());
 			tgt.setActivityId(src.getActivityId());

@@ -75,6 +75,7 @@ public class EventCustomValueDAO extends BaseDAO {
 	}
 	
 	public int[] batchInsert(Connection con, Collection<OEventCustomValue> values) throws DAOException {
+		if (values.isEmpty()) return new int[0];
 		DSLContext dsl = getDSL(con);
 		BatchBindStep batch = dsl.batch(
 			dsl.insertInto(EVENTS_CUSTOM_VALUES, 

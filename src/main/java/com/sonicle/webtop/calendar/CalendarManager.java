@@ -3755,9 +3755,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		Event eventDump = null;
 		if (originalEventInfo.isRecurring()) {
-			LocalDate firstInstanceDate = calculateRecurrenceStart(con, oevtOrig.getEventId(), oevtOrig.getStartDate(), oevtOrig.getEndDate(), oevtOrig.getDateTimezone());
-			boolean firstInstance = firstInstanceDate != null ? eventKey.instanceDate.equals(firstInstanceDate) : false;
-			if (firstInstance) target = UpdateEventTarget.ALL_SERIES;
+			// If target is SINCE and the referenced instance is clearly 
+			// the first of the recurrence, we can actually treat the 
+			// modification as an update to the whole series.
+			if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) {
+				LocalDate firstInstanceDate = calculateRecurrenceStart(con, oevtOrig.getEventId(), oevtOrig.getStartDate(), oevtOrig.getEndDate(), oevtOrig.getDateTimezone());
+				boolean firstInstance = firstInstanceDate != null ? eventKey.instanceDate.equals(firstInstanceDate) : false;
+				if (firstInstance) target = UpdateEventTarget.ALL_SERIES;
+			}
 			
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts new broken event (attendees and rr are not supported here)
@@ -3891,9 +3896,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		Event eventDump = null;
 		if (einfo.isRecurring()) {
-			LocalDate firstInstanceDate = calculateRecurrenceStart(con, einfo.getEventId(), einfo.getStartDate(), einfo.getStartDate(), einfo.getDateTimeZone());
-			boolean firstInstance = firstInstanceDate != null ? eventKey.instanceDate.equals(firstInstanceDate) : false;
-			if (firstInstance) target = UpdateEventTarget.ALL_SERIES;
+			// If target is SINCE and the referenced instance is clearly 
+			// the first of the recurrence, we can actually treat the 
+			// modification as an update to the whole series.
+			if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) {
+				LocalDate firstInstanceDate = calculateRecurrenceStart(con, einfo.getEventId(), einfo.getStartDate(), einfo.getStartDate(), einfo.getDateTimeZone());
+				boolean firstInstance = firstInstanceDate != null ? eventKey.instanceDate.equals(firstInstanceDate) : false;
+				if (firstInstance) target = UpdateEventTarget.ALL_SERIES;
+			}
 			
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts new broken record (without new broken event) on deleted date

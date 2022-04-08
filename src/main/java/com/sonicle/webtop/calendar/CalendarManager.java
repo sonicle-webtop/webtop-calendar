@@ -4879,6 +4879,60 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
+	/*
+	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
+		UserProfileId targetPid = getTargetProfileId();
+		
+		if(RunContext.isWebTopAdmin()) return;
+		
+		// Skip rights check if running user is resource's owner
+		UserProfileId owner = ownerCache.get(calendarId);
+		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
+		if (owner.equals(targetPid)) return;
+		
+		// Checks rights on the wildcard instance (if present)
+		CoreManager core = WT.getCoreManager(targetPid);
+		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
+		if (wildcardShareId != null) {
+			if (core.isShareFolderPermitted(wildcardShareId, action)) return;
+		}
+		
+		// Checks rights on calendar instance
+		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
+		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
+		if (core.isShareFolderPermitted(shareId, action)) return;
+		
+		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
+	}
+	
+	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
+		UserProfileId targetPid = getTargetProfileId();
+		
+		if(RunContext.isWebTopAdmin()) return;
+		
+		// Skip rights check if running user is resource's owner
+		UserProfileId owner = ownerCache.get(calendarId);
+		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
+		if (owner.equals(targetPid)) return;
+		
+		// Checks rights on the wildcard instance (if present)
+		CoreManager core = WT.getCoreManager(targetPid);
+		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
+		if (wildcardShareId != null) {
+			if (core.isShareElementsPermitted(wildcardShareId, action)) return;
+			//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
+		}
+		
+		// Checks rights on calendar instance
+		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
+		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
+		if (core.isShareElementsPermitted(shareId, action)) return;
+		//if (core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
+		
+		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
+	}
+	*/
+	
 	private enum CheckRightsTarget {
 		FOLDER, ELEMENTS
 	}

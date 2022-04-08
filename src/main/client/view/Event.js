@@ -1003,7 +1003,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						size: file.size,
 						_uplId: uploadId
 					}));
-					me.lref('tpnlmain').getLayout().setActiveItem(s);
+					me.lref('tpnlmain').setActiveItem(s);
 				}
 			}
 		};
@@ -1035,7 +1035,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								store: '{record.cvalues}',
 								fieldsDefs: '{record._cfdefs}'
 							},
-							defaultLabelWidth: 120
+							serviceId: me.mys.ID,
+							defaultLabelWidth: 120,
+							listeners: {
+								prioritize: function(s) {
+									me.lref('tpnlmain').setActiveItem(s);
+								}
+							}
 						}
 					],
 					flex: 1

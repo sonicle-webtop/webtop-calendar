@@ -132,7 +132,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -144,8 +143,6 @@ import java.util.Locale;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;
-import net.fortuna.ical4j.model.PeriodList;
-import net.fortuna.ical4j.model.property.RRule;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -211,6 +208,7 @@ import java.util.stream.Stream;
 import jakarta.mail.Session;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.MimeMultipart;
+import java.util.concurrent.TimeUnit;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Parameter;
 import net.fortuna.ical4j.model.Recur;
@@ -241,7 +239,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private final OwnerCache ownerCache = new OwnerCache();
 	private final ShareCache shareCache = new ShareCache();
-	private final KeyedReentrantLocks locks = new KeyedReentrantLocks<String>();
+	private final KeyedReentrantLocks<String> locks = new KeyedReentrantLocks<>();
 	
 	private static final ConcurrentHashMap<String, UserProfileId> pendingRemoteCalendarSyncs = new ConcurrentHashMap<>();
 	
@@ -465,19 +463,22 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, getTargetProfileId());
 		
 		Integer calendarId = null;
-		try (KeyedReentrantLocks.KeyedLock lock = locks.tryAcquire("getDefaultCalendarId", 60 * 1000)) {
-			if (lock != null) {
-				calendarId = us.getDefaultCalendarFolder();
-				if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "CREATE")) {
-					try {
-						calendarId = getBuiltInCalendarId();
-						if (calendarId == null) throw new WTException("Built-in calendar is null");
-						us.setDefaultCalendarFolder(calendarId);
-					} catch (Throwable t) {
-						logger.error("Unable to get built-in calendar", t);
-					}
+		try {
+			locks.tryLock("getDefaultCalendarId", 60, TimeUnit.SECONDS);
+			calendarId = us.getDefaultCalendarFolder();
+			if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "CREATE")) {
+				try {
+					calendarId = getBuiltInCalendarId();
+					if (calendarId == null) throw new WTException("Built-in calendar is null");
+					us.setDefaultCalendarFolder(calendarId);
+				} catch (Throwable t) {
+					logger.error("Unable to get built-in calendar", t);
 				}
 			}
+		} catch (InterruptedException ex) {
+			// Do nothing...
+		} finally {
+			locks.unlock("getDefaultCalendarId");
 		}
 		return calendarId;
 	}

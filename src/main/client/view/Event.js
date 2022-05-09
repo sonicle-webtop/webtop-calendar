@@ -287,15 +287,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					margin: '0 0 5 0'
 				},
 				me.mys.hasAudit() ? {
-					xtype: 'toolbar',
+					xtype: 'statusbar',
 					dock: 'bottom',
-					padding: '5 5 5 5',
 					items: [
-						'->',
 						me.addAct('eventAuditLog', {
 							text: null,
 							tooltip: WT.res('act-auditLog.lbl'),
-							iconCls: 'fas fa-history',
+							iconCls: 'fas fa-history wt-theme-glyph',
 							handler: function() {
 								me.mys.openAuditUI(me.getModel().get('eventId'), 'EVENT');
 							},

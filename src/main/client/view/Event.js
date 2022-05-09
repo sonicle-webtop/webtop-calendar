@@ -285,7 +285,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					hidden: true,
 					hideLabel: true,
 					margin: '0 0 5 0'
-				}
+				},
+				me.mys.hasAudit() ? {
+					xtype: 'toolbar',
+					dock: 'bottom',
+					padding: '5 5 5 5',
+					items: [
+						'->',
+						me.addAct('eventAuditLog', {
+							text: null,
+							tooltip: WT.res('act-auditLog.lbl'),
+							iconCls: 'fas fa-history',
+							handler: function() {
+								me.mys.openAuditUI(me.getModel().get('eventId'), 'EVENT');
+							},
+							scope: me
+						})
+					]
+				} : null
 			]
 		});
 		me.callParent(arguments);
@@ -1351,6 +1368,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(false);
+				if (me.mys.hasAudit()) me.getAct('eventAuditLog').setDisabled(true);
 				me.reloadCustomFields([]);
 			} else if (me.isMode(me.MODE_VIEW)) {
 				me.getAct('saveClose').setDisabled(true);
@@ -1359,6 +1377,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('tags').setDisabled(true);
 				me.lref('fldcalendar').setReadOnly(true);
 				me.lref('tabrecurrence').setDisabled(false);
+				if (me.mys.hasAudit()) me.getAct('eventAuditLog').setDisabled(false);
 			} else if (me.isMode(me.MODE_EDIT)) {
 				me.getAct('saveClose').setDisabled(false);
 				me.getAct('delete').setDisabled(false);
@@ -1366,6 +1385,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(mo.wasBroken());
+				if (me.mys.hasAudit()) me.getAct('eventAuditLog').setDisabled(false);
 			}
 
 			me.lref('fldtitle').focus(true);

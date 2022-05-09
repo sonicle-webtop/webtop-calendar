@@ -95,6 +95,7 @@ import com.sonicle.webtop.calendar.rpt.RptAgendaWeek7;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreServiceSettings;
 import com.sonicle.webtop.core.CoreUserSettings;
+import com.sonicle.webtop.core.app.CoreManifest;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.WebTopSession;
@@ -225,6 +226,7 @@ public class Service extends BaseService {
 		co.put("workdayStart", hmf.print(us.getWorkdayStart()));
 		co.put("workdayEnd", hmf.print(us.getWorkdayEnd()));
 		co.put("cfieldsSearchable", LangUtils.serialize(getSearchableCustomFieldDefs(), ObjCustomFieldDefs.FieldsList.class));
+		co.put("hasAudit", manager.isAuditEnabled() && (RunContext.isImpersonated() || RunContext.isPermitted(true, CoreManifest.ID, "AUDIT")));
 		return co;
 	}
 	

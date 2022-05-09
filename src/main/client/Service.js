@@ -742,6 +742,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (node) me.syncRemoteCalendarUI(node.get('_calId'));
 			}
 		});
+		if (me.hasAudit()) {
+			me.addAct('calendarAuditLog', {
+				text: WT.res('act-auditLog.lbl'),
+				tooltip: null,
+				handler: function(s, e) {
+					var node = e.menuData.node;
+					if (node) me.openAuditUI(node.get('_calId'), 'CALENDAR');
+				}
+			});
+		}
 		me.addAct('importEvents', {
 			tooltip: null,
 			handler: function(s, e) {
@@ -960,6 +970,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (rec) me.printEventsDetail([rec.getId()]);
 			}
 		});
+		if (me.hasAudit()) {
+			me.addAct('eventAuditLog', {
+				text: WT.res('act-auditLog.lbl'),
+				tooltip: null,
+				handler: function(s, e) {
+					var rec = e.menuData.event;
+					me.openAuditUI(rec.get('eventId'), 'EVENT');
+				},
+				scope: me
+			});
+		}
 		
 		me.addAct('refresh', {
 			scale: hdscale,
@@ -1070,6 +1091,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('syncRemoteCalendar'),
 				'-',
 				me.getAct('applyTags'),
+				me.hasAudit() ? me.getAct('calendarAuditLog'): null,
 				'-',
 				me.getAct('addEvent'),
 				me.getAct('importEvents')
@@ -1129,6 +1151,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('printEvent'),
 				'-',
 				me.getAct('tags'),
+				me.hasAudit() ? me.getAct('eventAuditLog') : null,
 				'-',
 				me.getAct('deleteEvent'),
 				me.getAct('restoreEvent')
@@ -1987,6 +2010,45 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			callback: function(success, json) {
 				Ext.callback(opts.callback, opts.scope, [success, json.data, json]);
 			}
+		});
+	},
+	
+	hasAudit: function() {
+		var me = this;
+		return me.getVar('hasAudit');
+	},
+	
+	openAuditUI: function(referenceId, context) {
+		var me = this,
+				tagsStore = WT.getTagsStore();
+		
+		WT.getServiceApi(WT.ID).showAuditLog(me.ID, context, null, referenceId, function(data) {
+			var str = '', logDate, actionString, eldata;
+			
+			Ext.each(data,function(el) {
+				logDate = Ext.Date.parseDate(el.timestamp, 'Y-m-d H:i:s');
+				actionString = Ext.String.format('auditLog.{0}.{1}', context, el.action);
+				str += Ext.String.format('{0} - {1} - {2} ({3})\n', Ext.Date.format(logDate, WT.getShortDateTimeFmt()), me.res(actionString), el.userName, el.userId);
+				eldata = Ext.JSON.decode(el.data);
+				
+				if (el.action === 'TAG' && eldata) {
+					if (eldata.set) {
+						Ext.each(eldata.set, function(tag) {
+							var r = tagsStore.findRecord('id', tag);
+							var desc = r ? r.get('name') : tag;
+							str += Ext.String.format('\t+ {0}\n', desc);
+						});
+					}
+					if (eldata.unset) {
+						Ext.each(eldata.unset, function(tag) {
+							var r = tagsStore.findRecord('id', tag);
+							var desc = r ? r.get('name') : tag;
+							str += Ext.String.format('\t- {0}\n', desc);
+						});
+					}
+				}
+			});
+			return str;
 		});
 	},
 	

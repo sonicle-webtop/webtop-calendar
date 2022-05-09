@@ -52,6 +52,8 @@ import com.sonicle.commons.time.DateTimeRange;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.CompositeId;
+import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.commons.web.json.JsonUtils;
 import com.sonicle.dav.CalDav;
 import com.sonicle.dav.CalDavFactory;
 import com.sonicle.dav.DavSyncStatus;
@@ -724,7 +726,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			onAfterCalendarAction(calendarId, cal.getProfileId());
 			if (isAuditEnabled()) {
 				writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, calendarId, null);
-				writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, "*", calendarId);
+				// removed due to new audit implementation
+				// writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, "*", calendarId);
 			}
 			
 		} catch (Throwable t) {
@@ -2248,6 +2251,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE");
+			List<String> auditTag = new ArrayList<>();
+			String tagAction = UpdateTagsOperation.SET.equals(operation) ? "set" : "unset";
 			
 			if (UpdateTagsOperation.SET.equals(operation) || UpdateTagsOperation.RESET.equals(operation)) {
 				Set<String> validTags = coreMgr.listTagIds();
@@ -2260,15 +2265,26 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				for (String tagId : okTagIds) {
 					etagDao.insertByCalendar(con, calendarId, tagId);
 				}
+				if (UpdateTagsOperation.SET.equals(operation)) auditTag.addAll(okTagIds);
 				
 			} else if (UpdateTagsOperation.UNSET.equals(operation)) {
 				con = WT.getConnection(SERVICE_ID, false);
 				etagDao.deleteByCalendarTags(con, calendarId, tagIds);
+				auditTag.addAll(tagIds);
 			}
 			
 			DbUtils.commitQuietly(con);
-			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, "*", calendarId);
+			
+			HashMap<String,List<String>> audit = new HashMap<>();
+			audit.put(tagAction, auditTag);
+			
+			if (isAuditEnabled() && !auditTag.isEmpty()) {
+				writeAuditLog(
+					AuditContext.CALENDAR,
+					AuditAction.TAG,
+					calendarId,
+					JsonResult.gson().toJson(audit)
+				);
 			}
 			
 		} catch (Throwable t) {
@@ -2284,6 +2300,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
 		EventTagDAO etagDao = EventTagDAO.getInstance();
 		Connection con = null;
+		List<String> auditTag = new ArrayList<>();
+		String tagAction = UpdateTagsOperation.SET.equals(operation) ? "set" : "unset";
 		
 		try {
 			List<Integer> okCalendarIds = listAllCalendarIds().stream()
@@ -2297,6 +2315,30 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						.collect(Collectors.toList());
 				
 				con = WT.getConnection(SERVICE_ID, false);
+				
+				if (isAuditEnabled()) {
+					if (UpdateTagsOperation.RESET.equals(operation)) {
+						for (int eId : eventIds) {
+							List<String> oldTagIds = new ArrayList<>();
+							List<String> newTagIds = new ArrayList<>();
+							
+							oldTagIds.addAll(getEvent(eId).getTags());
+							newTagIds.addAll(okTagIds);
+							
+							HashMap<String,List<String>> audit = coreMgr.compareTags(oldTagIds, newTagIds);
+							
+							writeAuditLog(
+								AuditContext.EVENT,
+								AuditAction.TAG,
+								eId,
+								JsonResult.gson().toJson(audit)
+							);
+						}
+					} else {
+						auditTag.addAll(okTagIds);
+					}
+				}
+				
 				if (UpdateTagsOperation.RESET.equals(operation)) etagDao.deleteByCalendarsEvents(con, okCalendarIds, eventIds);
 				for (String tagId : okTagIds) {
 					etagDao.insertByCalendarsEvents(con, okCalendarIds, eventIds, tagId);
@@ -2305,14 +2347,25 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			} else if (UpdateTagsOperation.UNSET.equals(operation)) {
 				con = WT.getConnection(SERVICE_ID, false);
 				etagDao.deleteByCalendarsEventsTags(con, okCalendarIds, eventIds, tagIds);
+				auditTag.addAll(tagIds);
 			}
 			
 			DbUtils.commitQuietly(con);
-			if (isAuditEnabled()) {
-				ArrayList<AuditReferenceDataEntry> updated = new ArrayList<>();
-				Iterator it = eventIds.iterator();
-				while (it.hasNext()) updated.add(new AuditEventObj((Integer)it.next()));
-				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, updated);
+			
+			if (isAuditEnabled() && !UpdateTagsOperation.RESET.equals(operation)) {
+				for (int eId : eventIds) {
+					HashMap<String,List<String>> audit = new HashMap<>();
+					audit.put(tagAction, auditTag);
+					
+					if (isAuditEnabled() && !auditTag.isEmpty()) {
+						writeAuditLog(
+							AuditContext.EVENT,
+							AuditAction.TAG,
+							eId,
+							JsonResult.gson().toJson(audit)
+						);
+					}
+				}
 			}
 			
 		} catch (Throwable t) {
@@ -5294,7 +5347,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private enum AuditAction {
-		CREATE, UPDATE, DELETE, MOVE
+		CREATE, UPDATE, DELETE, MOVE, TAG
 	}
 	
 	private void writeAuditLog(AuditContext context, AuditAction action, Object reference, Object data) {

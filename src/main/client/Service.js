@@ -1753,16 +1753,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		});
 	},
 	
-	addEvent2: function(data, opts) {
+	addEventWithData: function(data, opts) {
 		opts = opts || {};
 		var me = this,
-				data2 = me.parseEventApiData(data) || {},
-				vw = WT.createView(me.ID, 'view.Event', {
-					swapReturn: true,
-					viewCfg: {
-						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
-					}
-				});	
+			data2 = me.parseEventApiData(data) || {},
+			vw = WT.createView(me.ID, 'view.Event', {
+				swapReturn: true,
+				viewCfg: {
+					uploadTag: opts.uploadTag,
+					showStatisticFields: me.getVar('eventStatFieldsVisible') === true
+				}
+			});	
 		
 		//TODO: delete _profileId when is not required anymore in Event view
 		data2['_profileId'] = WTA.util.FoldersTree.getFolderById(me.trFolders(), data2.calendarId).getProfileId();
@@ -1776,6 +1777,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				dirty: opts.dirty
 			});
 		});
+		return vw;
 	},
 	
 	addEventOn: function(calendarId, isPrivate, busy, reminder, day, opts) {
@@ -1786,12 +1788,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEvent: function(calendarId, isPrivate, busy, reminder, start, end, allDay, opts) {
 		opts = opts || {};
 		var me = this,
-				vw = WT.createView(me.ID, 'view.Event', {
-					swapReturn: true,
-					viewCfg: {
-						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
-					}
-				});
+			vw = WT.createView(me.ID, 'view.Event', {
+				swapReturn: true,
+				viewCfg: {
+					uploadTag: opts.uploadTag,
+					showStatisticFields: me.getVar('eventStatFieldsVisible') === true
+				}
+			});
 		
 		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
@@ -1813,18 +1816,20 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			});
 		});
+		return vw;
 	},
 	
 	openEvent: function(edit, ekey, opts) {
 		opts = opts || {};
 		var me = this,
-				vw = WT.createView(me.ID, 'view.Event', {
-					swapReturn: true,
-					viewCfg: {
-						showStatisticFields: me.getVar('eventStatFieldsVisible') === true
-					}
-				}),
-				mode = edit ? 'edit' : 'view';
+			vw = WT.createView(me.ID, 'view.Event', {
+				swapReturn: true,
+				viewCfg: {
+					uploadTag: opts.uploadTag,
+					showStatisticFields: me.getVar('eventStatFieldsVisible') === true
+				}
+			}),
+			mode = edit ? 'edit' : 'view';
 		
 		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
@@ -1836,6 +1841,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				}
 			});
 		});
+		return vw;
 	},
 	
 	updateEvent: function(ekey, newStartDate, newEndDate, newTitle, target, notify, opts) {
@@ -2110,10 +2116,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			if (Ext.isDefined(data.title)) obj.title = data.title;
 			if (Ext.isDefined(data.description)) obj.description = data.description;
 			if (Ext.isDefined(data.location)) obj.location = data.location;
-			if (Ext.isDefined(data.isPrivate)) obj.isPrivate = data.isPrivate;
+			if (Ext.isDefined(data.visibility)) obj.isPrivate = (data.visibility === 'private');
 			if (Ext.isDefined(data.busy)) obj.busy = data.busy;
 			if (Ext.isDefined(data.reminder)) obj.reminder = data.reminder;
-			
+			if (Ext.isDefined(data.masterDataId)) obj.masterDataId = data.masterDataId;
+			if (Ext.isDefined(data.statMasterDataId)) obj.statMasterDataId = data.statMasterDataId;
+			if (Ext.isDefined(data.activityId)) obj.activityId = data.activityId;
+			if (Ext.isDefined(data.causalId)) obj.causalId = data.causalId;
+			if (Ext.isDefined(data.tags)) obj.tags = data.tags;
 			return obj;
 		},
 		

@@ -35,6 +35,15 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	extend: 'WTA.sdk.ServiceApi',
 	
 	/**
+	 * @deprecated Use openEvent() instead
+	 */
+	editEvent: function(data, opts) {
+		data = data || {};
+		Ext.log.warn('ServiceApi.editEvent() is deprecated. Use ServiceApi.openEvent() instead.');
+		this.openEvent(data.ekey, opts);
+	},
+	
+	/**
 	 * Force a reload for the current view.
 	 */
 	reloadEvents: function() {
@@ -42,61 +51,58 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	},
 	
 	/**
+	 * Opens an event using the choosen editing mode, defaults to edit.
+	 * @param {String} ekey The event KEY.
+	 * @param {Object} opts An object containing configuration.
+	 * @param {edit|view} [opts.mode="edit"] Opening mode.
+	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
+	 * @param {Object} [opts.scope] The callback method scope.
+	 * @param {Boolean} [opts.dirty] The dirty state of the model.
+	 * @param {Boolean} [opts.uploadTag] A custom upload tag.
+	 * @returns {WTA.sdk.ModelView}
+	 */
+	openEvent: function(ekey, opts) {
+		opts = opts || {};
+		return this.service.openEvent(opts.mode === 'view' ? false : true, ekey, {
+			callback: opts.callback,
+			scope: opts.scope,
+			dirty: opts.dirty,
+			uploadTag: opts.uploadTag
+		});
+	},
+	
+	/**
 	 * Adds a new event.
 	 * @param {Object} data An object containing event data.
+	 * @paran {String} [data.calendarId] The calendar ID in which to add the item.
 	 * @param {Date} [data.startDate] The start date-time.
 	 * @param {Date} [data.endDate] The end date-time.
-	 * @param {Boolean} [data.timezone] The timezone identifier.
-	 * @param {Boolean} [data.allDay]
-	 * @param {String} [data.title]
-	 * @param {String} [data.description]
-	 * @param {String} [data.location]
-	 * @param {Boolean} [data.isPrivate]
-	 * @param {Boolean} [data.busy]
-	 * @param {Integer} [data.reminder]
+	 * @param {String} [data.timezone] The timezone identifier.
+	 * @param {Boolean} [data.allDay] Set to `true` to mark the appointment as 'all-day'.
+	 * @param {String} [data.title] The title.
+	 * @param {String} [data.description] The extended description.
+	 * @param {String} [data.location] The location.
+	 * @param {default|private} [data.visibility] Visibility value.
+	 * @param {Boolean} [data.busy] Set to `true` to mark as 'busy' the underlyning time-range.
+	 * @param {0|5|10|15|30|45|60|120|180|240|300|360|420|480|540|600|660|720|1080|1440|2880|10080|20160|43200} [data.reminder] Minutes before start at which set reminder.
+	 * @param {String} [data.masterDataId] The ID of the linked MasterData.
+	 * @param {String} [data.statMasterDataId] The ID of the linked statistic MasterData.
+	 * @param {String} [data.activityId] The ID of the Activity.
+	 * @param {String} [data.causalId] The ID of the Causal.
+	 * @param {String} [data.tags] Pipe-separated list of WebTop's tag IDs.
 	 * @param {Object} opts An object containing configuration.
 	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
 	 * @param {Object} [opts.scope] The callback method scope.
 	 * @param {Boolean} [opts.dirty] The dirty state of the model.
+	 * @param {Boolean} [opts.uploadTag] A custom upload tag.
+	 * @returns {WTA.sdk.ModelView}
 	 */
 	addEvent: function(data, opts) {
 		opts = opts || {};
-		this.service.addEvent2(data, {
+		return this.service.addEventWithData(data, {
 			callback: opts.callback,
 			scope: opts.scope,
 			dirty: opts.dirty
-		});
-	},
-	
-	/**
-	 * Opens an event for viewing it.
-	 * @param {Object} data An object containing event data.
-	 * @param {String} data.ekey The event key identifier.
-	 * @param {Object} opts An object containing configuration.
-	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
-	 * @param {Object} [opts.scope] The callback method scope.
-	 */
-	openEvent: function(data, opts) {
-		opts = opts || {};
-		this.service.openEvent(false, data.ekey, {
-			callback: opts.callback,
-			scope: opts.scope
-		});
-	},
-	
-	/**
-	 * Opens an event for editing it.
-	 * @param {Object} data An object containing event data.
-	 * @param {String} data.ekey The event key identifier.
-	 * @param {Object} opts An object containing configuration.
-	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
-	 * @param {Object} [opts.scope] The callback method scope.
-	 */
-	editEvent: function(data, opts) {
-		opts = opts || {};
-		this.service.openEvent(true, data.ekey, {
-			callback: opts.callback,
-			scope: opts.scope
 		});
 	},
 	

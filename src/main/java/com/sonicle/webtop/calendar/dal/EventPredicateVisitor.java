@@ -121,6 +121,18 @@ public class EventPredicateVisitor extends JOOQPredicateVisitorWithCValues {
 		} else if ("private".equals(fieldName)) {
 			return defaultCondition(EVENTS.IS_PRIVATE, operator, values);
 			
+		} else if ("masterDataId".equals(fieldName)) {
+			return defaultCondition(EVENTS.MASTER_DATA_ID, operator, values);
+			
+		} else if ("statMasterDataId".equals(fieldName)) {
+			return defaultCondition(EVENTS.STAT_MASTER_DATA_ID, operator, values);
+			
+		} else if ("activityId".equals(fieldName)) {
+			return defaultCondition(EVENTS.ACTIVITY_ID, operator, values);
+			
+		} else if ("causalId".equals(fieldName)) {
+			return defaultCondition(EVENTS.CAUSAL_ID, operator, values);
+			
 		} else if ("tag".equals(fieldName)) {
 			return exists(
 				selectOne()

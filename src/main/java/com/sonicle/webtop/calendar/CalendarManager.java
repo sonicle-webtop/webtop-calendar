@@ -614,7 +614,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.commitQuietly(con);
 			onAfterCalendarAction(calendar.getCalendarId(), calendar.getProfileId());
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.CALENDAR, AuditAction.CREATE, calendar.getCalendarId(), null);
+				auditLogWrite(AuditContext.CALENDAR, AuditAction.CREATE, calendar.getCalendarId(), null);
 			}
 			
 			return calendar;
@@ -651,7 +651,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.commitQuietly(con);
 			onAfterCalendarAction(cal.getCalendarId(), cal.getProfileId());
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.CALENDAR, AuditAction.CREATE, cal.getCalendarId(), null);
+				auditLogWrite(AuditContext.CALENDAR, AuditAction.CREATE, cal.getCalendarId(), null);
 			}
 			
 			// Sets calendar as default
@@ -683,7 +683,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.commitQuietly(con);
 			onAfterCalendarAction(calendarId, calendar.getProfileId());
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.CALENDAR, AuditAction.UPDATE, calendarId, null);
+				auditLogWrite(AuditContext.CALENDAR, AuditAction.UPDATE, calendarId, null);
 			}
 			
 		} catch (Throwable t) {
@@ -725,9 +725,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.commitQuietly(con);
 			onAfterCalendarAction(calendarId, cal.getProfileId());
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, calendarId, null);
+				auditLogWrite(AuditContext.CALENDAR, AuditAction.DELETE, calendarId, null);
 				// removed due to new audit implementation
-				// writeAuditLog(AuditContext.CALENDAR, AuditAction.DELETE, "*", calendarId);
+				// auditLogWrite(AuditContext.CALENDAR, AuditAction.DELETE, "*", calendarId);
 			}
 			
 		} catch (Throwable t) {
@@ -1556,7 +1556,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, result.oevent.getEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.CREATE, result.oevent.getEventId(), null);
 			}
 			
 			storeAsSuggestion(coreMgr, SUGGESTION_EVENT_TITLE, event.getTitle());
@@ -1692,7 +1692,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, original.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, original.getEventId(), null);
 				}
 				
 			} else if (Method.REPLY.equals(ical.getMethod())) {
@@ -1748,7 +1748,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, evt.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, evt.getEventId(), null);
 				}
 				
 			} else {
@@ -2147,9 +2147,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			afterEventOperation(operations, notifyAttendees ? copy : false, null);
 			if (isAuditEnabled()) {
 				if (copy) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, copied);
+					auditLogWrite(AuditContext.EVENT, AuditAction.CREATE, copied);
 				} else {
-					writeAuditLog(AuditContext.EVENT, AuditAction.MOVE, moved);
+					auditLogWrite(AuditContext.EVENT, AuditAction.MOVE, moved);
 				}
 			}
 			
@@ -2279,7 +2279,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			audit.put(tagAction, auditTag);
 			
 			if (isAuditEnabled() && !auditTag.isEmpty()) {
-				writeAuditLog(
+				auditLogWrite(
 					AuditContext.CALENDAR,
 					AuditAction.TAG,
 					calendarId,
@@ -2327,7 +2327,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							
 							HashMap<String,List<String>> audit = coreMgr.compareTags(oldTagIds, newTagIds);
 							
-							writeAuditLog(
+							auditLogWrite(
 								AuditContext.EVENT,
 								AuditAction.TAG,
 								eId,
@@ -2358,7 +2358,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					audit.put(tagAction, auditTag);
 					
 					if (isAuditEnabled() && !auditTag.isEmpty()) {
-						writeAuditLog(
+						auditLogWrite(
 							AuditContext.EVENT,
 							AuditAction.TAG,
 							eId,
@@ -3724,7 +3724,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 		DbUtils.commitQuietly(con);
 		if (isAuditEnabled()) {
-			writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, event.getEventId(), null);
+			auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, event.getEventId(), null);
 		}
 
 		Event eventDump = getEvent(event.getEventId());
@@ -3830,8 +3830,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, oevtOrig.getEventId(), null);
-					writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, oevtOrig.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
 				}
 
 				//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
@@ -3868,8 +3868,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
-					writeAuditLog(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
 				}
 				
 				// TODO: eventually add support to clone attendees in the newly inserted event and so sending invitation emails
@@ -3887,7 +3887,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
 				}
 
 				eventDump = getEvent(originalEventInfo.getEventId());
@@ -3899,7 +3899,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, originalEventInfo.getEventId(), null);
 			}
 			
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
@@ -3913,7 +3913,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, oevtOrig.getEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, oevtOrig.getEventId(), null);
 			}
 			
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
@@ -3968,7 +3968,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, einfo.getEventId(), null);
 				}
 				
 				eventDump = getEvent(einfo.getEventId());
@@ -3988,7 +3988,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, einfo.getEventId(), null);
 				}
 				
 				eventDump = getEvent(einfo.getEventId());
@@ -4001,7 +4001,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
-					writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+					auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
 				}
 			}
 			
@@ -4016,8 +4016,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
-				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getLinkedEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, einfo.getLinkedEventId(), null);
 			}
 			
 		} else {
@@ -4028,7 +4028,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
 			}
 		}
 		
@@ -4073,8 +4073,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
-				writeAuditLog(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
-				writeAuditLog(AuditContext.EVENT, AuditAction.UPDATE, einfo.getLinkedEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, einfo.getEventId(), null);
+				auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, einfo.getLinkedEventId(), null);
 			}
 			
 			// TODO: eventually add support to notify attendees of the linked event of date restoration
@@ -5348,14 +5348,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private enum AuditAction {
 		CREATE, UPDATE, DELETE, MOVE, TAG
-	}
-	
-	private void writeAuditLog(AuditContext context, AuditAction action, Object reference, Object data) {
-		writeAuditLog(EnumUtils.getName(context), EnumUtils.getName(action), (reference != null) ? String.valueOf(reference) : null, (data != null) ? String.valueOf(data) : null);
-	}
-	
-	private void writeAuditLog(AuditContext context, AuditAction action, Collection<AuditReferenceDataEntry> entries) {
-		writeAuditLog(EnumUtils.getName(context), EnumUtils.getName(action), entries);
 	}
 	
 	private class AuditEventObj implements AuditReferenceDataEntry {

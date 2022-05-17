@@ -179,6 +179,7 @@ import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
 import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.model.UpdateTagsOperation;
 import com.sonicle.webtop.core.CoreServiceSettings;
+import com.sonicle.webtop.core.app.AuditLogManager;
 import com.sonicle.webtop.core.app.CoreManifest;
 import com.sonicle.webtop.core.app.sdk.AuditReferenceDataEntry;
 import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
@@ -2318,21 +2319,23 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				if (isAuditEnabled()) {
 					if (UpdateTagsOperation.RESET.equals(operation)) {
-						for (int eId : eventIds) {
-							List<String> oldTagIds = new ArrayList<>();
-							List<String> newTagIds = new ArrayList<>();
-							
-							oldTagIds.addAll(getEvent(eId).getTags());
-							newTagIds.addAll(okTagIds);
-							
-							HashMap<String,List<String>> audit = coreMgr.compareTags(oldTagIds, newTagIds);
-							
-							auditLogWrite(
-								AuditContext.EVENT,
-								AuditAction.TAG,
-								eId,
-								JsonResult.gson().toJson(audit)
-							);
+						AuditLogManager.Batch auditBatch = auditLogGetBatch(AuditContext.EVENT, AuditAction.TAG);
+						if (auditBatch != null) {
+							for (int eId : eventIds) {
+								List<String> oldTagIds = new ArrayList<>();
+								List<String> newTagIds = new ArrayList<>();
+
+								oldTagIds.addAll(getEvent(eId).getTags());
+								newTagIds.addAll(okTagIds);
+
+								HashMap<String,List<String>> audit = coreMgr.compareTags(oldTagIds, newTagIds);
+
+								auditBatch.write(
+									eId,
+									JsonResult.gson().toJson(audit)
+								);
+							}
+							auditBatch.flush();
 						}
 					} else {
 						auditTag.addAll(okTagIds);
@@ -2353,18 +2356,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			DbUtils.commitQuietly(con);
 			
 			if (isAuditEnabled() && !UpdateTagsOperation.RESET.equals(operation)) {
-				for (int eId : eventIds) {
-					HashMap<String,List<String>> audit = new HashMap<>();
-					audit.put(tagAction, auditTag);
-					
-					if (isAuditEnabled() && !auditTag.isEmpty()) {
-						auditLogWrite(
-							AuditContext.EVENT,
-							AuditAction.TAG,
-							eId,
-							JsonResult.gson().toJson(audit)
-						);
+				AuditLogManager.Batch auditBatch = auditLogGetBatch(AuditContext.EVENT, AuditAction.TAG);
+				if (auditBatch != null) {
+					for (int eId : eventIds) {
+						HashMap<String,List<String>> audit = new HashMap<>();
+						audit.put(tagAction, auditTag);
+
+						if (isAuditEnabled() && !auditTag.isEmpty()) {
+							auditBatch.write(
+								eId,
+								JsonResult.gson().toJson(audit)
+							);
+						}
 					}
+					auditBatch.flush();
 				}
 			}
 			

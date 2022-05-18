@@ -2305,19 +2305,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			List<Integer> okCalendarIds = listAllCalendarIds().stream()
 				.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE"))
 				.collect(Collectors.toList());
-			
-			
-			
-			
+			Set<String> validTags = coreMgr.listTagIds();
+			List<String> okTagIds = tagIds.stream()
+				.filter(tagId -> validTags.contains(tagId))
+				.collect(Collectors.toList());
 			
 			List<String> auditTags = new ArrayList<>();
 			Map<Integer, List<String>> auditOldTags = null;
 			if (UpdateTagsOperation.SET.equals(operation) || UpdateTagsOperation.RESET.equals(operation)) {
-				Set<String> validTags = coreMgr.listTagIds();
-				List<String> okTagIds = tagIds.stream()
-					.filter(tagId -> validTags.contains(tagId))
-					.collect(Collectors.toList());
-				
 				con = WT.getConnection(SERVICE_ID, false);
 				if (UpdateTagsOperation.RESET.equals(operation)) {
 					if (isAuditEnabled()) {
@@ -2325,7 +2320,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 					etagDao.deleteByCalendarsEvents(con, okCalendarIds, eventIds);
 				} else {
-					if (isAuditEnabled()) auditTags.addAll(tagIds);
+					if (isAuditEnabled()) auditTags.addAll(okTagIds);
 				}
 				for (String tagId : okTagIds) {
 					etagDao.insertByCalendarsEvents(con, okCalendarIds, eventIds, tagId);
@@ -2333,8 +2328,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 			} else if (UpdateTagsOperation.UNSET.equals(operation)) {
 				con = WT.getConnection(SERVICE_ID, false);
-				etagDao.deleteByCalendarsEventsTags(con, okCalendarIds, eventIds, tagIds);
-				if (isAuditEnabled()) auditTags.addAll(tagIds);
+				etagDao.deleteByCalendarsEventsTags(con, okCalendarIds, eventIds, okTagIds);
+				if (isAuditEnabled()) auditTags.addAll(okTagIds);
 			}
 			
 			DbUtils.commitQuietly(con);
@@ -2345,7 +2340,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (auditBatch != null) {
 					if (UpdateTagsOperation.RESET.equals(operation)) {
 						for (int eventId : eventIds) {
-							HashMap<String, List<String>> data = coreMgr.compareTags(new ArrayList<>(auditOldTags.get(eventId)), new ArrayList<>(tagIds));
+							HashMap<String, List<String>> data = coreMgr.compareTags(new ArrayList<>(auditOldTags.get(eventId)), new ArrayList<>(okTagIds));
 							auditBatch.write(
 								eventId,
 								JsonResult.gson().toJson(data)

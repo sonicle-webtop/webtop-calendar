@@ -2252,34 +2252,33 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE");
-			List<String> auditTag = new ArrayList<>();
-			String tagAction = UpdateTagsOperation.SET.equals(operation) ? "set" : "unset";
-			
+			List<String> auditTags = new ArrayList<>();
 			if (UpdateTagsOperation.SET.equals(operation) || UpdateTagsOperation.RESET.equals(operation)) {
 				Set<String> validTags = coreMgr.listTagIds();
 				List<String> okTagIds = tagIds.stream()
-						.filter(tagId -> validTags.contains(tagId))
-						.collect(Collectors.toList());
+					.filter(tagId -> validTags.contains(tagId))
+					.collect(Collectors.toList());
 				
 				con = WT.getConnection(SERVICE_ID, false);
 				if (UpdateTagsOperation.RESET.equals(operation)) etagDao.deleteByCalendar(con, calendarId);
 				for (String tagId : okTagIds) {
 					etagDao.insertByCalendar(con, calendarId, tagId);
 				}
-				if (UpdateTagsOperation.SET.equals(operation)) auditTag.addAll(okTagIds);
+				if (UpdateTagsOperation.SET.equals(operation)) auditTags.addAll(okTagIds);
 				
 			} else if (UpdateTagsOperation.UNSET.equals(operation)) {
 				con = WT.getConnection(SERVICE_ID, false);
 				etagDao.deleteByCalendarTags(con, calendarId, tagIds);
-				auditTag.addAll(tagIds);
+				auditTags.addAll(tagIds);
 			}
 			
 			DbUtils.commitQuietly(con);
 			
-			HashMap<String,List<String>> audit = new HashMap<>();
-			audit.put(tagAction, auditTag);
-			
-			if (isAuditEnabled() && !auditTag.isEmpty()) {
+			if (isAuditEnabled() && !auditTags.isEmpty()) {
+				String tagAction = UpdateTagsOperation.SET.equals(operation) ? "set" : "unset";
+				HashMap<String, List<String>> audit = new HashMap<>();
+				audit.put(tagAction, auditTags);
+				
 				auditLogWrite(
 					AuditContext.CALENDAR,
 					AuditAction.TAG,
@@ -2301,48 +2300,33 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
 		EventTagDAO etagDao = EventTagDAO.getInstance();
 		Connection con = null;
-		List<String> auditTag = new ArrayList<>();
-		String tagAction = UpdateTagsOperation.SET.equals(operation) ? "set" : "unset";
 		
 		try {
 			List<Integer> okCalendarIds = listAllCalendarIds().stream()
-					.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE"))
-					.collect(Collectors.toList());
+				.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE"))
+				.collect(Collectors.toList());
 			
+			
+			
+			
+			
+			List<String> auditTags = new ArrayList<>();
+			Map<Integer, List<String>> auditOldTags = null;
 			if (UpdateTagsOperation.SET.equals(operation) || UpdateTagsOperation.RESET.equals(operation)) {
 				Set<String> validTags = coreMgr.listTagIds();
 				List<String> okTagIds = tagIds.stream()
-						.filter(tagId -> validTags.contains(tagId))
-						.collect(Collectors.toList());
+					.filter(tagId -> validTags.contains(tagId))
+					.collect(Collectors.toList());
 				
 				con = WT.getConnection(SERVICE_ID, false);
-				
-				if (isAuditEnabled()) {
-					if (UpdateTagsOperation.RESET.equals(operation)) {
-						AuditLogManager.Batch auditBatch = auditLogGetBatch(AuditContext.EVENT, AuditAction.TAG);
-						if (auditBatch != null) {
-							for (int eId : eventIds) {
-								List<String> oldTagIds = new ArrayList<>();
-								List<String> newTagIds = new ArrayList<>();
-
-								oldTagIds.addAll(getEvent(eId).getTags());
-								newTagIds.addAll(okTagIds);
-
-								HashMap<String,List<String>> audit = coreMgr.compareTags(oldTagIds, newTagIds);
-
-								auditBatch.write(
-									eId,
-									JsonResult.gson().toJson(audit)
-								);
-							}
-							auditBatch.flush();
-						}
-					} else {
-						auditTag.addAll(okTagIds);
+				if (UpdateTagsOperation.RESET.equals(operation)) {
+					if (isAuditEnabled()) {
+						auditOldTags = etagDao.selectTagsByEvent(con, eventIds);
 					}
+					etagDao.deleteByCalendarsEvents(con, okCalendarIds, eventIds);
+				} else {
+					if (isAuditEnabled()) auditTags.addAll(tagIds);
 				}
-				
-				if (UpdateTagsOperation.RESET.equals(operation)) etagDao.deleteByCalendarsEvents(con, okCalendarIds, eventIds);
 				for (String tagId : okTagIds) {
 					etagDao.insertByCalendarsEvents(con, okCalendarIds, eventIds, tagId);
 				}
@@ -2350,26 +2334,38 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			} else if (UpdateTagsOperation.UNSET.equals(operation)) {
 				con = WT.getConnection(SERVICE_ID, false);
 				etagDao.deleteByCalendarsEventsTags(con, okCalendarIds, eventIds, tagIds);
-				auditTag.addAll(tagIds);
+				if (isAuditEnabled()) auditTags.addAll(tagIds);
 			}
 			
 			DbUtils.commitQuietly(con);
 			
-			if (isAuditEnabled() && !UpdateTagsOperation.RESET.equals(operation)) {
+			if (isAuditEnabled()) {
+				String tagAction = UpdateTagsOperation.SET.equals(operation) ? "set" : "unset";
 				AuditLogManager.Batch auditBatch = auditLogGetBatch(AuditContext.EVENT, AuditAction.TAG);
 				if (auditBatch != null) {
-					for (int eId : eventIds) {
-						HashMap<String,List<String>> audit = new HashMap<>();
-						audit.put(tagAction, auditTag);
-
-						if (isAuditEnabled() && !auditTag.isEmpty()) {
+					if (UpdateTagsOperation.RESET.equals(operation)) {
+						for (int eventId : eventIds) {
+							HashMap<String, List<String>> data = coreMgr.compareTags(new ArrayList<>(auditOldTags.get(eventId)), new ArrayList<>(tagIds));
 							auditBatch.write(
-								eId,
-								JsonResult.gson().toJson(audit)
+								eventId,
+								JsonResult.gson().toJson(data)
 							);
 						}
+						auditBatch.flush();
+
+					} else {
+						if (!auditTags.isEmpty()) {
+							for (int eventId : eventIds) {
+								HashMap<String, List<String>> data = new HashMap<>();
+								data.put(tagAction, auditTags);
+								auditBatch.write(
+									eventId,
+									JsonResult.gson().toJson(data)
+								);
+							}
+							auditBatch.flush();
+						}
 					}
-					auditBatch.flush();
 				}
 			}
 			

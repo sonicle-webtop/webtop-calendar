@@ -39,6 +39,8 @@ import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.jooq.DSLContext;
 import static org.jooq.impl.DSL.*;
@@ -67,6 +69,23 @@ public class EventTagDAO extends BaseDAO {
 				EVENTS_TAGS.TAG_ID.asc()
 			)
 			.fetchSet(EVENTS_TAGS.TAG_ID);
+	}
+	
+	public Map<Integer, List<String>> selectTagsByEvent(Connection con, Collection<Integer> eventIds) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS_TAGS.EVENT_ID,
+				EVENTS_TAGS.TAG_ID
+			)
+			.from(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.in(eventIds)
+			)
+			.orderBy(
+				EVENTS_TAGS.TAG_ID.asc()
+			)
+			.fetchGroups(EVENTS_TAGS.EVENT_ID, EVENTS_TAGS.TAG_ID);
 	}
 	
 	public int insert(Connection con, int eventId, String tagId) throws DAOException {

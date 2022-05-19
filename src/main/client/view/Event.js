@@ -293,7 +293,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.addAct('eventAuditLog', {
 							text: null,
 							tooltip: WT.res('act-auditLog.lbl'),
-							iconCls: 'fas fa-history wt-theme-glyph',
+							iconCls: 'fas fa-history',
 							handler: function() {
 								me.mys.openAuditUI(me.getModel().get('eventId'), 'EVENT');
 							},
@@ -403,7 +403,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}, {
 					xtype: 'button',
 					ui: 'default-toolbar',
-					iconCls: 'far fa-clock wt-theme-glyph',
+					iconCls: 'far fa-clock',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					bind: {
 						disabled: '{fldallDay.checked}'
@@ -468,7 +468,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}, {
 					xtype: 'button',
 					ui: 'default-toolbar',
-					iconCls: 'far fa-clock wt-theme-glyph',
+					iconCls: 'far fa-clock',
 					tooltip: me.mys.res('event.btn-now.tip'),
 					bind: {
 						disabled: '{fldallDay.checked}'

@@ -742,7 +742,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (node) me.syncRemoteCalendarUI(node.get('_calId'));
 			}
 		});
-		if (me.hasAudit()) {
+		if (me.hasAuditUI()) {
 			me.addAct('calendarAuditLog', {
 				text: WT.res('act-auditLog.lbl'),
 				tooltip: null,
@@ -970,7 +970,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (rec) me.printEventsDetail([rec.getId()]);
 			}
 		});
-		if (me.hasAudit()) {
+		if (me.hasAuditUI()) {
 			me.addAct('eventAuditLog', {
 				text: WT.res('act-auditLog.lbl'),
 				tooltip: null,
@@ -1091,7 +1091,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('syncRemoteCalendar'),
 				'-',
 				me.getAct('applyTags'),
-				me.hasAudit() ? me.getAct('calendarAuditLog'): null,
+				me.hasAuditUI() ? me.getAct('calendarAuditLog'): null,
 				'-',
 				me.getAct('addEvent'),
 				me.getAct('importEvents')
@@ -1151,7 +1151,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('printEvent'),
 				'-',
 				me.getAct('tags'),
-				me.hasAudit() ? me.getAct('eventAuditLog') : null,
+				me.hasAuditUI() ? me.getAct('eventAuditLog') : null,
 				'-',
 				me.getAct('deleteEvent'),
 				me.getAct('restoreEvent')
@@ -2017,11 +2017,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				Ext.callback(opts.callback, opts.scope, [success, json.data, json]);
 			}
 		});
-	},
-	
-	hasAudit: function() {
-		var me = this;
-		return me.getVar('hasAudit');
 	},
 	
 	openAuditUI: function(referenceId, context) {

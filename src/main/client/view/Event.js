@@ -286,7 +286,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					hideLabel: true,
 					margin: '0 0 5 0'
 				},
-				me.mys.hasAudit() ? {
+				me.mys.hasAuditUI() ? {
 					xtype: 'statusbar',
 					dock: 'bottom',
 					items: [
@@ -1366,7 +1366,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(false);
-				if (me.mys.hasAudit()) me.getAct('eventAuditLog').setDisabled(true);
+				if (me.mys.hasAuditUI()) me.getAct('eventAuditLog').setDisabled(true);
 				me.reloadCustomFields([]);
 			} else if (me.isMode(me.MODE_VIEW)) {
 				me.getAct('saveClose').setDisabled(true);
@@ -1375,7 +1375,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('tags').setDisabled(true);
 				me.lref('fldcalendar').setReadOnly(true);
 				me.lref('tabrecurrence').setDisabled(false);
-				if (me.mys.hasAudit()) me.getAct('eventAuditLog').setDisabled(false);
+				if (me.mys.hasAuditUI()) me.getAct('eventAuditLog').setDisabled(false);
 			} else if (me.isMode(me.MODE_EDIT)) {
 				me.getAct('saveClose').setDisabled(false);
 				me.getAct('delete').setDisabled(false);
@@ -1383,7 +1383,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('tags').setDisabled(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(mo.wasBroken());
-				if (me.mys.hasAudit()) me.getAct('eventAuditLog').setDisabled(false);
+				if (me.mys.hasAuditUI()) me.getAct('eventAuditLog').setDisabled(false);
 			}
 
 			me.lref('fldtitle').focus(true);

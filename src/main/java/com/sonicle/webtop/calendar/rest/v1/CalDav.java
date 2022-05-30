@@ -491,7 +491,9 @@ public class CalDav extends CaldavApi {
 	}
 	
 	private CalendarManager getManager(UserProfileId targetProfileId) {
-		return (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
+		CalendarManager manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
+		manager.setSoftwareName("rest-caldav");
+		return manager;
 	}
 	
 	@Override

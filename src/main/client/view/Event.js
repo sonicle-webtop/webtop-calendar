@@ -41,6 +41,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.form.field.TagDisplay',
 		'Sonicle.form.field.rr.Recurrence',
 		'Sonicle.plugin.FileDrop',
+		'WTA.util.CustomFields',
 		'WTA.ux.data.EmptyModel',
 		'WTA.ux.data.ValueModel',
 		'WTA.ux.field.Meeting',
@@ -1051,6 +1052,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								fieldsDefs: '{record._cfdefs}'
 							},
 							serviceId: me.mys.ID,
+							mainView: me,
 							defaultLabelWidth: 120,
 							listeners: {
 								prioritize: function(s) {
@@ -1367,7 +1369,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.lref('fldcalendar').setReadOnly(false);
 				me.lref('tabrecurrence').setDisabled(false);
 				if (me.mys.hasAuditUI()) me.getAct('eventAuditLog').setDisabled(true);
-				me.reloadCustomFields([]);
+				WTA.util.CustomFields.reloadCustomFields((me.opts.data || {}).tags, me.opts.cfData, {
+					serviceId: me.mys.ID,
+					model: me.getModel(),
+					idField: 'eventId',
+					cfPanel: me.lref('tabcfields')
+				});
 			} else if (me.isMode(me.MODE_VIEW)) {
 				me.getAct('saveClose').setDisabled(true);
 				me.getAct('delete').setDisabled(true);
@@ -1399,54 +1406,24 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		},
 		
 		onBeforeModelSave: function(s) {
-			var cp = this.lref('tabcfields');
+			var me = this,
+				cp = me.lref('tabcfields');
 			if (!cp.isValid()) {
-				this.lref('tpnlmain').getLayout().setActiveItem(cp);
+				me.lref('tpnlmain').getLayout().setActiveItem(cp);
 				return false;
 			}
 		},
 		
 		onTagsChanged: function(nv, ov) {
-			if (ov && Sonicle.String.difference(nv, ov).length > 0) { // Make sure that there are really differences!
-				this.reloadCustomFields(nv);
-			}
-		},
-		
-		reloadCustomFields: function(tags) {
-			var me = this,
-					mo = me.getModel(),
-					cftab = me.lref('tabcfields');
-			me.getCustomFieldsDefsData(tags, mo.get('eventId'), {
-				callback: function(success, json) {
-					if (success) {
-						Ext.iterate(json.data.cvalues, function(cval) {
-							var rec = mo.cvalues().getById(cval.id);
-							if (!rec) {
-								mo.cvalues().add(cval);
-							} else {
-								rec.set(cval);
-							}
-						});
-						mo.set('_cfdefs', json.data.cfdefs);
-						me.lref('tabcfields').setStore(mo.cvalues());
-					}
-					cftab.unwait();
-				}
-			});
-		},
-		
-		getCustomFieldsDefsData: function(tags, eventId, opts) {
-			opts = opts || {};
 			var me = this;
-			WT.ajaxReq(me.mys.ID, 'GetCustomFieldsDefsData', {
-				params: {
-					tags: WTU.arrayAsParam(tags),
-					eventId: (eventId !== null && eventId > 0) ? eventId : null
-				},
-				callback: function(success, json) {
-					Ext.callback(opts.callback, opts.scope || me, [success, json]);
-				}
-			});
+			if (ov && Sonicle.String.difference(nv, ov).length > 0) { // Make sure that there are really differences!
+				WTA.util.CustomFields.reloadCustomFields(nv, false, {
+					serviceId: me.mys.ID,
+					model: me.getModel(),
+					idField: 'eventId',
+					cfPanel: me.lref('tabcfields')
+				});
+			}
 		}
 	}
 });

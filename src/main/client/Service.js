@@ -80,7 +80,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	init: function() {
 		var me = this,
 				tagsStore = WT.getTagsStore(),
-				scfields = WTA.ux.field.Search.customFieldDefs2Fields(me.getVar('cfieldsSearchable')),
+				scfields = WTA.ux.field.Search.customFieldDefs2Fields(me.ID, me.getVar('cfieldsSearchable')),
 				durRes = function(sym) { return WT.res('word.dur.'+sym); },
 				durSym = [durRes('y'), durRes('d'), durRes('h'), durRes('m'), durRes('s')];
 				
@@ -1756,7 +1756,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	addEventWithData: function(data, opts) {
 		opts = opts || {};
 		var me = this,
-			data2 = me.parseEventApiData(data) || {},
+			ret = me.parseEventApiData(data) || {},
 			vw = WT.createView(me.ID, 'view.Event', {
 				swapReturn: true,
 				viewCfg: {
@@ -1766,14 +1766,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			});	
 		
 		//TODO: delete _profileId when is not required anymore in Event view
-		data2['_profileId'] = WTA.util.FoldersTree.getFolderById(me.trFolders(), data2.calendarId).getProfileId();
+		ret['_profileId'] = WTA.util.FoldersTree.getFolderById(me.trFolders(), ret.calendarId).getProfileId();
 		
 		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
 		});
 		vw.showView(function() {
 			vw.begin('new', {
-				data: data2,
+				data: ret[0],
+				cfData: ret[1],
 				dirty: opts.dirty
 			});
 		});
@@ -2100,7 +2101,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		parseEventApiData: function(data) {
 			data = data || {};
-			var obj = {};
+			var obj = {}, cfobj;
 			
 			obj.calendarId = WTA.util.FoldersTree.getFolderForAdd(this.trFolders(), data.calendarId).getFolderId();
 			obj.startDate = Ext.isDefined(data.startDate) ? data.startDate : new Date();
@@ -2118,8 +2119,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			if (Ext.isDefined(data.statMasterDataId)) obj.statMasterDataId = data.statMasterDataId;
 			if (Ext.isDefined(data.activityId)) obj.activityId = data.activityId;
 			if (Ext.isDefined(data.causalId)) obj.causalId = data.causalId;
-			if (Ext.isDefined(data.tags)) obj.tags = data.tags;
-			return obj;
+			if (Ext.isDefined(data.tags)) {
+				if (Ext.isArray(data.tags)) {
+					obj.tags = Sonicle.String.join('|', data.tags);
+				} else if (Ext.isString(data.tags)) {
+					obj.tags = data.tags;
+				}
+			}
+			if (Ext.isDefined(data.customFields) && Ext.isObject(data.customFields)) {
+				cfobj = data.customFields;
+			}
+			
+			return [obj, cfobj];
 		},
 		
 		createHiddenCalendars: function(rootNodeId) {

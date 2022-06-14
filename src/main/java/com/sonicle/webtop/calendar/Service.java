@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.BitFlag;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.LangUtils;
@@ -236,7 +237,7 @@ public class Service extends BaseService {
 		
 		try {
 			ObjCustomFieldDefs.FieldsList scfields = new ObjCustomFieldDefs.FieldsList();
-			for (CustomFieldEx cfield : coreMgr.listCustomFields(SERVICE_ID, true, null).values()) {
+			for (CustomFieldEx cfield : coreMgr.listCustomFields(SERVICE_ID, BitFlag.of(CoreManager.CustomFieldListOptions.SEARCHABLE)).values()) {
 				scfields.add(new ObjCustomFieldDefs.Field(cfield, up.getLanguageTag()));
 			}
 			return scfields;
@@ -981,7 +982,7 @@ public class Service extends BaseService {
 		
 		try {
 			ServletUtils.StringArray tags = ServletUtils.getObjectParameter(request, "tags", ServletUtils.StringArray.class, true);
-			Integer eventId = ServletUtils.getIntParameter(request, "eventId", false);
+			Integer eventId = ServletUtils.getIntParameter(request, "id", false);
 			
 			Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, tags);
 			Map<String, CustomFieldValue> cvalues = (eventId != null) ? manager.getEventCustomValues(eventId) : null;
@@ -1605,7 +1606,7 @@ public class Service extends BaseService {
 		protected Map<String, CustomField.Type> internalGetMap() {
 			try {
 				CoreManager coreMgr = WT.getCoreManager();
-				return coreMgr.listCustomFieldTypesById(SERVICE_ID, true);
+				return coreMgr.listCustomFieldTypesById(SERVICE_ID, BitFlag.of(CoreManager.CustomFieldListOptions.SEARCHABLE));
 				
 			} catch(Throwable t) {
 				logger.error("[SearchableCustomFieldTypeCache] Unable to build cache", t);

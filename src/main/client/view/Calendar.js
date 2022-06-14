@@ -78,6 +78,18 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	
 	initComponent: function() {
 		var me = this;
+		Ext.apply(me, {
+        	bbar: {
+        		xtype: 'statusbar',
+        		items: [
+					WTF.recordInfoButton({
+						getTooltip: function() {
+							return Ext.String.format('ID: {0}', Sonicle.String.coalesce(me.getModel().get('calendarId'), '?'));
+						}
+					})
+        		]
+        	}
+        });
 		me.callParent(arguments);
 		
 		me.add({

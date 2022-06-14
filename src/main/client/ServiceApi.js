@@ -89,7 +89,8 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	 * @param {String} [data.statMasterDataId] The ID of the linked statistic MasterData.
 	 * @param {String} [data.activityId] The ID of the Activity.
 	 * @param {String} [data.causalId] The ID of the Causal.
-	 * @param {String} [data.tags] Pipe-separated list of WebTop's tag IDs.
+	 * @param {String[]|String} [data.tags] Array or pipe-separated list of WebTop's tag IDs.
+	 * @param {Object} [data.customFields] Map of values, with CustomField name as key.
 	 * @param {Object} opts An object containing configuration.
 	 * @param {Function} [opts.callback] Callback method for 'viewsave' event.
 	 * @param {Object} [opts.scope] The callback method scope.

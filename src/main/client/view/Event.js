@@ -780,6 +780,31 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								me.addAttendeeUI();
 							}
 						}),
+						{
+							xtype: 'splitbutton',
+							tooltip: me.res('act-pasteList.lbl'),
+							iconCls: 'wt-icon-clipboard-paste',
+							handler: function() {
+								me.pasteList();
+							},
+							menu: [
+								{
+									text: me.res('act-pasteList.lbl'),
+									tooltip: me.res('act-pasteList.tip'),
+									iconCls: 'wt-icon-clipboard-paste',
+									handler: function() {
+										me.pasteList();
+									}
+								},
+								{
+									text: me.res('act-pasteContactsList.lbl'),
+									iconCls: 'wt-icon-clipboard-paste',
+									handler: function() {
+										me.pasteContactsList();
+									}
+								}
+							]
+						},						
 						'->',
 						{
 							xtype: 'button',
@@ -1334,6 +1359,73 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			me.mys.printEventsDetail([eventKey]);
 		}
 	},
+	
+	pasteList: function() {
+		var me=this;
+		
+		WT.prompt('',{
+			title: me.mys.res("act-pasteList.tit"),
+			fn: function(btn,text) {
+				if (btn==='ok') {
+					me.loadValues(text);
+				}
+			},
+			scope: me,
+			width: 400,
+			multiline: 200,
+			value: ''
+		});
+	},
+	
+	pasteContactsList: function() {
+		var me = this;
+		WT.confirm(me.mys.res('confirmBox.listChoose.lbl'), function(bid, value) {
+			if (bid === 'ok') {
+				var conSvc = WT.getServiceApi('com.sonicle.webtop.contacts');
+					conSvc.expandRecipientsList({
+							address: value
+						}, {
+							callback: function(success, json) {
+								if (success) {
+									var data = json.data,
+											emails = '', i;
+									for (i=0; i<data.length; i++) {
+										emails += data[i] + '\n';
+									}
+									this.loadValues(emails);
+								}
+							},
+							scope: me
+					});
+				
+			}
+		}, me, {
+			buttons: Ext.Msg.OKCANCEL,
+			title: me.mys.res('act-pasteContactsList.confirm.tit'),
+			instClass: 'Sonicle.webtop.mail.ux.ChooseListConfirmBox'
+		});
+	},
+	
+    loadValues: function(v) {
+        var me=this,
+			g=me.lref('tabinvitation.gpattendees'),
+			s=g.store,
+			lines = v.split(/\r\n|\r|\n/g);
+			
+        for(var i=0;i<lines.length;++i) {
+            var email=lines[i].trim();
+            if (email.length>0) {
+				s.add(s.createModel({
+					notify: true,
+					recipient: email,
+					recipientType: 'IND',
+					recipientRole: 'REQ',
+					responseStatus: 'NA'
+				}));					
+            }
+        }
+        
+    },
 	
 	privates: {
 		setCalendarDefaults: function(cal) {

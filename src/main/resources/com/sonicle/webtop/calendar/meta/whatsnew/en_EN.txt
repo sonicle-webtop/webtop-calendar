@@ -1,3 +1,7 @@
+$	5.15.0
+	*	<h1>Paste attendees from text list or contacts list</h1>
+		<p>On ane event with attendees, it's now possible to paste from a text list or a WebTop contacts list</p>
+		<img src="5.15.0_pasteattendees.png"/>
 $	5.12.0
 	*	<h1>Default calendar</h1>
 		<p>It's now possible to set a calendar as default by choosing from those available (shared or not).</p>

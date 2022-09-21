@@ -2519,8 +2519,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public void exportEvents(LogEntries log, DateTime fromDate, DateTime toDate, OutputStream os) throws Exception {
 		Connection con = null, ccon = null;
 		ICsvMapWriter mapw = null;
-		UserDAO userDao = UserDAO.getInstance();
-		CalendarDAO calDao = CalendarDAO.getInstance();
 		EventDAO edao = EventDAO.getInstance();
 		
 		try {
@@ -2556,19 +2554,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			ccon = WT.getCoreConnection();
 			
+			final UserProfileId pid = getTargetProfileId();
+			final UserProfile.Data udata = WT.getUserData(pid);
 			HashMap<String, Object> map = null;
-			for (OCalendar ocal : calDao.selectByDomain(con, getTargetProfileId().getDomainId())) {
-				final UserProfileId pid = new UserProfileId(ocal.getDomainId(), ocal.getUserId());
-				final OUser user = userDao.selectByDomainUser(ccon, ocal.getDomainId(), ocal.getUserId());
-				if (user == null) throw new WTException("User [{0}] not found", pid.toString());
-				final UserProfile.Data udata = WT.getUserData(pid);
-				
-				for (VVEvent ve : edao.viewByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+			for (Integer calendarId : listMyCalendarIds()) {
+				for (VVEvent ve : edao.viewByCalendarRangeCondition(con, calendarId, fromDate, toDate, null)) {
 					final VVEventInstance vei = new VVEventInstance(ve);
 					try {
 						map = new HashMap<>();
-						map.put("userId", user.getUserId());
-						map.put("descriptionId", user.getDisplayName());
+						map.put("userId", pid.getUserId());
+						map.put("descriptionId", udata.getDisplayName());
 						fillExportMapBasic(map, coreMgr, con, vei);
 						fillExportMapDates(map, udata.getTimeZone(), vei);
 						mapw.write(map, headers, processors);
@@ -2577,13 +2572,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Event skipped [{0}]. Reason: {1}", ve.getEventId(), ex.getMessage()));
 					}
 				}
-				for(VVEvent ve : edao.viewRecurringByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
+				for(VVEvent ve : edao.viewRecurringByCalendarRangeCondition(con, calendarId, fromDate, toDate, null)) {
 					final List<VVEventInstance> instances = calculateRecurringInstances(con, new VVEventInstanceMapper(ve), fromDate, toDate, udata.getTimeZone());
 					
 					try {
 						map = new HashMap<>();
-						map.put("userId", user.getUserId());
-						map.put("descriptionId", user.getDisplayName());
+						map.put("userId", pid.getUserId());
+						map.put("descriptionId", udata.getDisplayName());
 						fillExportMapBasic(map, coreMgr, con, ve);
 						for (VVEventInstance vei : instances) {
 							fillExportMapDates(map, udata.getTimeZone(), vei);

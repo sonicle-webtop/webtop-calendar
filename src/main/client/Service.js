@@ -1766,7 +1766,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			});	
 		
 		//TODO: delete _profileId when is not required anymore in Event view
-		ret['_profileId'] = WTA.util.FoldersTree.getFolderById(me.trFolders(), ret.calendarId).getProfileId();
+		ret[0]['_profileId'] = WTA.util.FoldersTree.getFolderById(me.trFolders(), ret[0].calendarId).getProfileId();
 		
 		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);

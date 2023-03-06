@@ -3266,8 +3266,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Set<LocalDate> exclDates = recbDao.selectDatesByEventRecurrence(con, eventId, orec.getRecurrenceId());
 				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), exclDates, instanceMapper.isEventAllDay(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
 				for (LocalDate recurringDate : dates) {
-					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
-					DateTime end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					DateTime start;
+					try {
+						start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
+					} catch (org.joda.time.IllegalInstantException ex1) {
+						start = recurringDate.toDateTime(eventStartTime.plusHours(1), eventTimezone).withZone(userTimezone);
+					}
+					DateTime end;
+					try {
+						end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					} catch (org.joda.time.IllegalInstantException ex1) {
+						end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime.plusHours(1), eventTimezone).withZone(userTimezone);
+					}
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
 
 					instances.add(instanceMapper.createInstance(key, start, end));
@@ -3755,9 +3765,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (date == null) throw new WTException("Date is required for recurring events [{}]", eventId);
 			
 			Set<LocalDate> excludedDates = doGetExcludedDates(con, oevt.getEventId(), oevt.getRecurrenceId());
-			int eventDays = CalendarUtils.calculateLengthInDays(oevt.getStartDate(), oevt.getEndDate());
-			ei.setStartDate(ei.getStartDate().withDate(date));
-			ei.setEndDate(ei.getEndDate().withDate(ei.getStartDate().plusDays(eventDays).toLocalDate()));
+			recalculateStartEndForInstanceDate(date, ei);
 			ei.setRecurrence(orec.getRule(), orec.getLocalStartDate(ei.getDateTimeZone()), excludedDates);
 			
 			ei.setKey(EventKey.buildKey(eventId, eventId, date));
@@ -3787,6 +3795,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		return ei;
+	}
+	
+	private void recalculateStartEndForInstanceDate(LocalDate instanceDate, EventInstance event) {
+		int spanDays = Math.abs(CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate()));
+		event.setStartDate(ManagerUtils.instanceDateToDateTime(instanceDate, event.getStartDate(), event.getDateTimeZone()));
+		event.setEndDate(ManagerUtils.instanceDateToDateTime(instanceDate.plusDays(spanDays), event.getEndDate(), event.getDateTimeZone()));
 	}
 		
 	private void doEventInstanceUpdateAndCommit(Connection con, OEventInfo originalEventInfo, UpdateEventTarget target, EventKey eventKey, Event event, boolean processAttachments, boolean processTags, boolean processCustomValues, boolean notifyAttendees, Set<String> validTags) throws IOException, WTException {

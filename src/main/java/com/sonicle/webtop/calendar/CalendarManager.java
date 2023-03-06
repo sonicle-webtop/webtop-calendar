@@ -3266,8 +3266,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Set<LocalDate> exclDates = recbDao.selectDatesByEventRecurrence(con, eventId, orec.getRecurrenceId());
 				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), exclDates, instanceMapper.isEventAllDay(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
 				for (LocalDate recurringDate : dates) {
-					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
-					DateTime end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					DateTime start;
+					try {
+						start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
+					} catch (org.joda.time.IllegalInstantException ex1) {
+						start = recurringDate.toDateTime(eventStartTime.plusHours(1), eventTimezone).withZone(userTimezone);
+					}
+					DateTime end;
+					try {
+						end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
+					} catch (org.joda.time.IllegalInstantException ex1) {
+						end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime.plusHours(1), eventTimezone).withZone(userTimezone);
+					}
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
 
 					instances.add(instanceMapper.createInstance(key, start, end));

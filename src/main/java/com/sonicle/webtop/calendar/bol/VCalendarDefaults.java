@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2014 Sonicle S.r.l.
+/*
+ * Copyright (C) 2022 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,50 +28,40 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2014 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2022 Sonicle S.r.l.".
  */
-package com.sonicle.webtop.calendar.bol.js;
-
-import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.CalendarFSFolder;
-import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
-import com.sonicle.webtop.calendar.model.CalendarPropSet;
-import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
-import com.sonicle.webtop.calendar.model.ShareRootCalendar;
-import com.sonicle.webtop.core.app.model.FolderShare;
+package com.sonicle.webtop.calendar.bol;
 
 /**
  *
  * @author malbinola
  */
-public class JsCalendarLkp {
-	public Integer calendarId;
-	public String name;
-	public String color;
-	public Boolean evtPrivate;
-	public Boolean evtBusy;
-	public Integer evtReminder;
-	public Boolean _default;
-	public String _profileId;
-	public String _profileDescription;
-	public Boolean _writable;
-	public Integer _order;
-	
-	public JsCalendarLkp(Calendar cal, boolean isDefault) {
-		this.calendarId = cal.getCalendarId();
-		this.name = cal.getName();
-		this.color = cal.getColor();
-		this.evtPrivate = cal.getIsPrivate();
-		this.evtBusy = cal.getDefaultBusy();
-		this.evtReminder = cal.getDefaultReminder();
-		this._default = isDefault;
-		this._profileId = cal.getProfileId().toString();
+public class VCalendarDefaults {
+	private Boolean defaultsPrivate;
+	private Boolean defaultsBusy;
+	private Integer defaultsReminder;
+
+	public Boolean getDefaultsPrivate() {
+		return defaultsPrivate;
 	}
-	
-	public JsCalendarLkp(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, boolean isDefault, int order) {
-		this(folder.getCalendar().applyPropSet(folderProps), isDefault);
-		this._profileDescription = origin.getDisplayName();
-		this._writable = folder.getPermissions().getItemsPermissions().has(FolderShare.ItemsRight.CREATE);
-		this._order = order;
+
+	public void setDefaultsPrivate(Boolean defaultsPrivate) {
+		this.defaultsPrivate = defaultsPrivate;
+	}
+
+	public Boolean getDefaultsBusy() {
+		return defaultsBusy;
+	}
+
+	public void setDefaultsBusy(Boolean defaultsBusy) {
+		this.defaultsBusy = defaultsBusy;
+	}
+
+	public Integer getDefaultsReminder() {
+		return defaultsReminder;
+	}
+
+	public void setDefaultsReminder(Integer defaultsReminder) {
+		this.defaultsReminder = defaultsReminder;
 	}
 }

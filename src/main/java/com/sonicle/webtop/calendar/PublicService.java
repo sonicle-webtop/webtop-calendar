@@ -140,8 +140,8 @@ public class PublicService extends BasePublicService {
 				logger.trace("Error", ex);
 				writeErrorPage(request, response, domainId, wts, "badrequest");
 			}
-		} catch(Throwable t) {
-			logger.error("Unexpected error", t);
+		} catch(Exception ex) {
+			logger.error("Unexpected error", ex);
 		}
 	}
 	

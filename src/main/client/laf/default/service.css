@@ -33,34 +33,51 @@
 .wtcal-icon-import { background-image: url('event-import_16.svg') !important; background-size: contain; }
 .wtcal-icon-export { background-image: url('event-export_16.svg') !important; background-size: contain; }
 
-.wtcal-planning-free {
-	background-color: #F3E4B1;
-}
-.wtcal-planning-legend-free {
-	margin: 0;
-	padding: 0;
-	border: 1px solid;
-	background-color: #F3E4B1;
+
+
+.wtcal-planning-free {}
+.wtcal-planning-free-out {
+    background-color: #fafafa;
 }
 .wtcal-planning-busy {
-	background-color: #9FC6E7;
-}
-.wtcal-planning-legend-busy {
-	margin: 0;
-	padding: 0;
-	border: 1px solid;
-	background-color: #9FC6E7;
+    background-color: #9fc6e7;
 }
 .wtcal-planning-unknown {
-	background-color: lightgray;
+    background-color: #e2e2e2;
 }
-.wtcal-planning-legend-unknown {
+.wtcal-planning-legend {
 	margin: 0;
 	padding: 0;
 	border: 1px solid;
-	background-color: lightgray;
 }
+.wtcal-planning-grid .wtcal-planning-free.x-grid-cell-selected {
+    background-color: #cff0db;
+}
+.wtcal-planning-grid .wtcal-planning-free-out.x-grid-cell-selected {
+    background-color: #cce6d5;
+}
+.wtcal-planning-grid .wtcal-planning-unknown.x-grid-cell-selected {
+    background-color: #b7d7c1;
+}
+.wtcal-planning-grid .wtcal-planning-free.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #fbdddd;
+}
+.wtcal-planning-grid .wtcal-planning-free-out.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #f7d9d9;
+}
+.wtcal-planning-grid .wtcal-planning-busy.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #c8c3d7;
+}
+.wtcal-planning-grid .wtcal-planning-unknown.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #e3c4c5;
+}
+.wtcal-planning-grid .x-group-sub-header .x-column-header-inner {
+    padding-right: 5px;
+    padding-left: 5px;
+}
+/*
 .wtcal-planning-overlaps {
 	background-image: url('striked-shadow_20.png');
 	background-repeat: repeat;
 }
+*/

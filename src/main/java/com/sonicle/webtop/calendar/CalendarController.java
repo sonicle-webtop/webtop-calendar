@@ -32,8 +32,14 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.EnumUtils;
+import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
+import com.sonicle.webtop.core.app.events.ResourceAvailabilityChangeEvent;
+import com.sonicle.webtop.core.app.events.ResourceUpdateEvent;
+import com.sonicle.webtop.core.app.events.UserUpdateEvent;
+import com.sonicle.webtop.core.app.model.ResourcePermissions;
 import com.sonicle.webtop.core.sdk.BaseController;
 import com.sonicle.webtop.core.sdk.BaseReminder;
 import com.sonicle.webtop.core.sdk.ServiceVersion;
@@ -41,49 +47,121 @@ import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
 import java.util.List;
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
 import com.sonicle.webtop.core.app.sdk.interfaces.IControllerRemindersHooks;
 import com.sonicle.webtop.core.app.sdk.interfaces.IControllerServiceHooks;
-import com.sonicle.webtop.core.app.sdk.interfaces.IControllerUserEvents;
+import com.sonicle.webtop.core.msg.ResourceAvailChangeSM;
+import com.sonicle.webtop.core.sdk.WTRuntimeException;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import net.engio.mbassy.listener.Handler;
 
 /**
  *
  * @author malbinola
  */
-public class CalendarController extends BaseController implements IControllerServiceHooks, IControllerUserEvents, IControllerRemindersHooks {
-	public static final Logger logger = WT.getLogger(CalendarController.class);
+public class CalendarController extends BaseController implements IControllerServiceHooks, IControllerRemindersHooks {
+	//private static final Logger LOGGER = WT.getLogger(CalendarController.class);
 	
 	public CalendarController() {
 		super();
 	}
 	
 	@Override
-	public void initProfile(ServiceVersion current, UserProfileId profileId) throws WTException {
-		CalendarManager manager = new CalendarManager(true, profileId);
-		
-		// Adds built-in calendar
-		try {
-			manager.addBuiltInCalendar();
-		} catch(WTException ex) {
-			throw ex;
-		}
-	}
+	public void initProfile(ServiceVersion current, UserProfileId profileId) throws WTException {}
 	
 	@Override
 	public void upgradeProfile(ServiceVersion current, UserProfileId profileId, ServiceVersion profileLastSeen) throws WTException {}
-	
-	@Override
-	public void onUserAdded(UserProfileId profileId) throws WTException {}
-
-	@Override
-	public void onUserRemoved(UserProfileId profileId) throws WTException {
-		CalendarManager manager = new CalendarManager(true, profileId);
-		manager.eraseData(true);
-	}
 
 	@Override
 	public List<BaseReminder> returnReminders(DateTime now) {
 		CalendarManager manager = new CalendarManager(true, RunContext.getRunProfileId());
 		return manager.getRemindersToBeNotified(now);
+	}
+	
+	@Handler
+	public void onUserUpdateEvent(UserUpdateEvent event) {
+		if (UserUpdateEvent.Type.CREATE.equals(event.getType())) {
+			try {
+				CalendarManager manager = createManager(event.getUserProfileId());
+				manager.addBuiltInCalendar();
+				
+			} catch (Exception ex) {
+				throw new WTRuntimeException("Error creating built-in calendar for '{}': \"{}\"", event.getUserProfileId().toString(), ex.getMessage());
+			}
+		} else if (UserUpdateEvent.Type.DELETE.equals(event.getType())) {
+			try {
+				CalendarManager manager = createManager(event.getUserProfileId());
+				manager.eraseData(true);
+				
+			} catch (Exception ex) {
+				throw new WTRuntimeException("Error clearing data for '{}': \"{}\"", event.getUserProfileId().toString(), ex.getMessage());
+			}
+		}
+	}
+	
+	@Handler
+	public void onResourceUpdateEvent(ResourceUpdateEvent event) {
+		if (ResourceUpdateEvent.Type.CREATE.equals(event.getType())) {
+			try {
+				CalendarManager manager = createManager(event.getResourceProfileId());
+				manager.addBuiltInCalendar();
+				
+			} catch (Exception ex) {
+				throw new WTRuntimeException("Error creating built-in calendar for '{}': \"{}\"", event.getResourceProfileId().toString(), ex.getMessage());
+			}
+		} else if (ResourceUpdateEvent.Type.DELETE.equals(event.getType())) {
+			try {
+				CalendarManager manager = createManager(event.getResourceProfileId());
+				manager.eraseData(true);
+				
+			} catch (Exception ex) {
+				throw new WTRuntimeException("Error clearing data for '{}': \"{}\"", event.getResourceProfileId().toString(), ex.getMessage());
+			}
+		}
+	}
+	
+	@Handler
+	public void onResourceAvailabilityChangeEvent(ResourceAvailabilityChangeEvent event) {
+		final ResourceAvailChangeSM message = createResourceAvailChangeMessage(event);
+		if (ResourceAvailabilityChangeEvent.Type.ENABLE.equals(event.getType())) {
+			try {
+				final Set<UserProfileId> profileIds = collectResourceUsersToBeNotified(event.getResourceProfileId());
+				for (UserProfileId profileId : profileIds) {
+					WT.notify(profileId, message);
+				}
+			} catch (Exception ex) {
+				throw new WTRuntimeException("Error notifying users: {}", ex.getMessage());
+			}
+		} else if (ResourceAvailabilityChangeEvent.Type.DISABLE.equals(event.getType())) {
+			try {
+				final Set<UserProfileId> profileIds = collectResourceUsersToBeNotified(event.getResourceProfileId());
+				for (UserProfileId profileId : profileIds) {
+					WT.notify(profileId, message);
+				}
+			} catch (Exception ex) {
+				throw new WTRuntimeException("Error notifying users: {}", ex.getMessage());
+			}
+		}
+	}
+	
+	private Set<UserProfileId> collectResourceUsersToBeNotified(UserProfileId resourceProfile) throws WTException {
+		CoreManager coreMgr = WT.getCoreManager(true, RunContext.buildDomainAdminProfileId(resourceProfile.getDomainId()));
+		
+		Set<UserProfileId> items = new LinkedHashSet<>();
+		ResourcePermissions permissions = coreMgr.getResourcePermissions(resourceProfile.getUserId(), true);
+		items.addAll(coreMgr.expandSubjectsToUserProfiles(Arrays.asList(permissions.getManagerSubject()), true));
+		items.addAll(coreMgr.expandSubjectsToUserProfiles(permissions.getAllowedSubjects(), true));
+		return items;
+	}
+	
+	private ResourceAvailChangeSM createResourceAvailChangeMessage(ResourceAvailabilityChangeEvent event) {
+		final String dn = WT.getProfileData(event.getResourceProfileId()).getDisplayName();
+		final boolean available = ResourceAvailabilityChangeEvent.Type.ENABLE.equals(event.getType());
+		return new ResourceAvailChangeSM(SERVICE_ID, event.getResourceProfileId().getUserId(), dn, event.getResourceType(), available);
+	}
+	
+	private CalendarManager createManager(UserProfileId profileId) {
+		return new CalendarManager(true, profileId);
 	}
 }

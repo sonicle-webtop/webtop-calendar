@@ -34,8 +34,11 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.TplHelper;
+import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
 import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarFSFolder;
+import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
 import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
@@ -66,7 +69,7 @@ public class JsPletEvents {
 	public String _frights;
 	public String _erights;
 	
-	public JsPletEvents(ShareRootCalendar root, ShareFolderCalendar folder, SchedEventInstance event, DateTimeZone profileTz, Pattern meetingUrlPattern) {
+	public JsPletEvents(CalendarFSOrigin origin, CalendarFSFolder folder, SchedEventInstance event, DateTimeZone profileTz, Pattern meetingUrlPattern) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
 		final Calendar calendar = folder.getCalendar();
 		
@@ -88,8 +91,8 @@ public class JsPletEvents {
 		location = event.getLocation();
 		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		
-		_owner = (root instanceof MyShareRootCalendar) ? "" : root.getDescription();
-		_frights = folder.getElementsPerms().toString();
-		_erights = folder.getElementsPerms().toString();
+		_owner = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
+		_frights = folder.getPermissions().getFolderPermissions().toString();
+		_erights = folder.getPermissions().getItemsPermissions().toString();
 	}
 }

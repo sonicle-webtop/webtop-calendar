@@ -101,12 +101,12 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setString(EVENT_REMINDER_DELIVERY, value);
 	}
 	
-	public StringSet getInactiveCalendarRoots() {
-		return getObject(INACTIVE_CALENDAR_ROOTS, new StringSet(), StringSet.class);
+	public StringSet getInactiveCalendarOrigins() {
+		return getObject(INACTIVE_CALENDAR_ORIGINS, new StringSet(), StringSet.class);
 	}
 	
-	public boolean setInactiveCalendarRoots(StringSet value) {
-		return setObject(INACTIVE_CALENDAR_ROOTS, value, StringSet.class);
+	public boolean setInactiveCalendarOrigins(StringSet value) {
+		return setObject(INACTIVE_CALENDAR_ORIGINS, value, StringSet.class);
 	}
 	
 	public IntegerSet getInactiveCalendarFolders() {

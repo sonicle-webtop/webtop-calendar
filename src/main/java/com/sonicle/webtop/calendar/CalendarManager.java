@@ -47,13 +47,12 @@ import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.concurrent.KeyedReentrantLocks;
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.DateRange;
 import com.sonicle.commons.time.DateTimeRange;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
-import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
-import com.sonicle.commons.web.json.JsonUtils;
 import com.sonicle.dav.CalDav;
 import com.sonicle.dav.CalDavFactory;
 import com.sonicle.dav.DavSyncStatus;
@@ -79,11 +78,9 @@ import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
 import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
+import com.sonicle.webtop.calendar.bol.VEventFootprint;
 import com.sonicle.webtop.calendar.bol.VExpEvent;
 import com.sonicle.webtop.calendar.bol.VExpEventInstance;
-import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
-import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
-import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.model.EventKey;
@@ -105,17 +102,11 @@ import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.bol.OActivity;
 import com.sonicle.webtop.core.bol.OCausal;
-import com.sonicle.webtop.core.bol.OShare;
 import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ActivityDAO;
 import com.sonicle.webtop.core.dal.CausalDAO;
 import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseManager;
-import com.sonicle.webtop.core.model.IncomingShareRoot;
-import com.sonicle.webtop.core.bol.model.Sharing;
-import com.sonicle.webtop.core.model.SharePermsFolder;
-import com.sonicle.webtop.core.model.SharePermsElements;
-import com.sonicle.webtop.core.model.SharePermsRoot;
 import com.sonicle.webtop.core.dal.DAOException;
 import com.sonicle.webtop.core.sdk.AuthException;
 import com.sonicle.webtop.core.sdk.BaseReminder;
@@ -171,9 +162,13 @@ import com.sonicle.webtop.calendar.model.EventFootprint;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.io.ICalendarInput;
+import com.sonicle.webtop.calendar.model.CalendarFSFolder;
+import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
+import com.sonicle.webtop.calendar.model.ComparableEventBounds;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
 import com.sonicle.webtop.calendar.model.EventQuery;
@@ -181,15 +176,22 @@ import com.sonicle.webtop.calendar.model.UpdateTagsOperation;
 import com.sonicle.webtop.core.CoreServiceSettings;
 import com.sonicle.webtop.core.app.AuditLogManager;
 import com.sonicle.webtop.core.app.CoreManifest;
+import com.sonicle.webtop.core.app.sdk.AbstractFolderShareCache;
 import com.sonicle.webtop.core.app.sdk.AuditReferenceDataEntry;
+import com.sonicle.webtop.core.app.sdk.WTConstraintException;
 import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
+import com.sonicle.webtop.core.app.sdk.WTParseException;
+import com.sonicle.webtop.core.app.sdk.WTUnsupportedOperationException;
 import com.sonicle.webtop.core.app.util.ExceptionUtils;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOIntegrityViolationException;
 import com.sonicle.webtop.core.model.CustomFieldValue;
+import com.sonicle.webtop.core.app.model.FolderShare;
+import com.sonicle.webtop.core.app.model.FolderShareOriginFolders;
+import com.sonicle.webtop.core.app.model.FolderShareOrigin;
+import com.sonicle.webtop.core.app.model.FolderSharing;
 import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.AbstractMapCache;
-import com.sonicle.webtop.core.sdk.AbstractShareCache;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.mail.IMailManager;
@@ -219,6 +221,7 @@ import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.Method;
+import net.sf.qualitycheck.Check;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -226,6 +229,14 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.shiro.subject.Subject;
 import org.joda.time.Duration;
+import com.sonicle.commons.flags.BitFlagsEnum;
+import com.sonicle.commons.time.DateTimeRange2;
+import com.sonicle.commons.time.TimeRange;
+import com.sonicle.mail.email.EmailMessage;
+import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
+import com.sonicle.webtop.core.app.model.Resource;
+import com.sonicle.webtop.core.app.model.ResourceGetOption;
+import com.sonicle.webtop.core.msg.ResourceReservationReplySM;
 
 /**
  *
@@ -253,6 +264,24 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
+	/**
+	 * @deprecated Use listMyCalendarIds() instead.
+	 */
+	@Deprecated
+	@Override
+	public Set<Integer> listCalendarIds() throws WTException {
+		return listMyCalendarIds();
+	}
+	
+	/**
+	 * @deprecated Use listMyCalendar() instead.
+	 */
+	@Deprecated
+	@Override
+	public Map<Integer, Calendar> listCalendars() throws WTException {
+		return listCalendars(getTargetProfileId(), true);
+	}
+	
 	private CoreManager getCoreManager() {
 		return WT.getCoreManager(getTargetProfileId());
 	}
@@ -269,83 +298,72 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private List<ShareRootCalendar> internalListIncomingCalendarShareRoots() throws WTException {
+	@Override
+	public List<FolderSharing.SubjectRights> getFolderShareConfiguration(final UserProfileId originProfileId, final FolderSharing.Scope scope) throws WTException {
 		CoreManager coreMgr = getCoreManager();
-		List<ShareRootCalendar> roots = new ArrayList();
-		HashSet<String> hs = new HashSet<>();
-		for (IncomingShareRoot share : coreMgr.listIncomingShareRoots(SERVICE_ID, GROUPNAME_CALENDAR)) {
-			final SharePermsRoot perms = coreMgr.getShareRootPermissions(share.getShareId());
-			ShareRootCalendar root = new ShareRootCalendar(share, perms);
-			if (hs.contains(root.getShareId())) continue; // Avoid duplicates ??????????????????????
-			hs.add(root.getShareId());
-			roots.add(root);
-		}
-		return roots;
-	}
-	
-	public String buildSharingId(int calendarId) throws WTException {
-		UserProfileId targetPid = getTargetProfileId();
-		
-		// Skip rights check if running user is resource's owner
-		UserProfileId owner = ownerCache.get(calendarId);
-		if (owner == null) throw new WTException("owner({0}) -> null", calendarId);
-		
-		String rootShareId = null;
-		if (owner.equals(targetPid)) {
-			rootShareId = MyShareRootCalendar.SHARE_ID;
-		} else {
-			rootShareId = shareCache.getShareRootIdByFolderId(calendarId);
-		}
-		if (rootShareId == null) throw new WTException("Unable to find a root share [{0}]", calendarId);
-		return new CompositeId().setTokens(rootShareId, calendarId).toString();
-	}
-	
-	public Sharing getSharing(String shareId) throws WTException {
-		CoreManager coreMgr = getCoreManager();
-		return coreMgr.getSharing(SERVICE_ID, GROUPNAME_CALENDAR, shareId);
-	}
-	
-	public void updateSharing(Sharing sharing) throws WTException {
-		CoreManager coreMgr = getCoreManager();
-		coreMgr.updateSharing(SERVICE_ID, GROUPNAME_CALENDAR, sharing);
+		return coreMgr.getFolderShareSharingRights(originProfileId, SERVICE_ID, GROUPNAME_CALENDAR, scope);
 	}
 	
 	@Override
-	public List<ShareRootCalendar> listIncomingCalendarRoots() throws WTException {
-		return shareCache.getShareRoots();
+	public void updateFolderShareConfiguration(final UserProfileId originProfileId, final FolderSharing.Scope scope, final List<FolderSharing.SubjectRights> rights) throws WTException {
+		CoreManager coreMgr = getCoreManager();
+		coreMgr.updateFolderShareSharingRights(originProfileId, SERVICE_ID, GROUPNAME_CALENDAR, scope, rights);
 	}
 	
 	@Override
-	public Map<Integer, ShareFolderCalendar> listIncomingCalendarFolders(String rootShareId) throws WTException {
+	public Map<UserProfileId, CalendarFSOrigin> listIncomingCalendarOrigins() throws WTException {
+		return shareCache.getOriginsMap();
+	}
+	
+	@Override
+	public CalendarFSOrigin getIncomingCalendarOriginByFolderId(final int calendarId) throws WTException {
+		return shareCache.getOriginByFolderId(calendarId);
+	}
+	
+	@Override
+	public Map<Integer, CalendarFSFolder> listIncomingCalendarFolders(final CalendarFSOrigin origin) throws WTException {
+		Check.notNull(origin, "origin");
+		return listIncomingCalendarFolders(origin.getProfileId());
+	}
+	
+	@Override
+	public Map<Integer, CalendarFSFolder> listIncomingCalendarFolders(final UserProfileId originProfileId) throws WTException {
+		Check.notNull(originProfileId, "originProfileId");
 		CoreManager coreMgr = getCoreManager();
-		LinkedHashMap<Integer, ShareFolderCalendar> folders = new LinkedHashMap<>();
+		LinkedHashMap<Integer, CalendarFSFolder> folders = new LinkedHashMap<>();
 		
-		for (Integer folderId : shareCache.getFolderIdsByShareRoot(rootShareId)) {
-			final String shareFolderId = shareCache.getShareFolderIdByFolderId(folderId);
-			if (StringUtils.isBlank(shareFolderId)) continue;
-			SharePermsFolder fperms = coreMgr.getShareFolderPermissions(shareFolderId);
-			SharePermsElements eperms = coreMgr.getShareElementsPermissions(shareFolderId);
-			if (folders.containsKey(folderId)) {
-				final ShareFolderCalendar shareFolder = folders.get(folderId);
-				if (shareFolder == null) continue;
-				shareFolder.getPerms().merge(fperms);
-				shareFolder.getElementsPerms().merge(eperms);
-			} else {
-				final Calendar calendar = getCalendar(folderId);
-				if (calendar == null) continue;
-				folders.put(folderId, new ShareFolderCalendar(shareFolderId, fperms, eperms, calendar));
+		CalendarFSOrigin origin = shareCache.getOrigin(originProfileId);
+		if (origin != null) {
+			for (Integer folderId : shareCache.getFolderIdsByOrigin(originProfileId)) {
+				if (origin.isResource()) {
+					final Calendar calendar = getCalendar(folderId, false);
+					if (calendar == null) continue;
+					
+					folders.put(folderId, new CalendarFSFolder(folderId, origin.getWildcardPermissions(), calendar));
+					
+				} else {
+					final Calendar calendar = getCalendar(folderId, false);
+					if (calendar == null) continue;
+					
+					FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(SERVICE_ID, GROUPNAME_CALENDAR, originProfileId, FolderSharing.Scope.folder(String.valueOf(folderId)), false);
+					if (permissions == null) {
+						// If permissions are not defined at requested folder scope,
+						// generates an empty permission object that will be filled below
+						// with wildcard rights
+						permissions = FolderShare.Permissions.none();
+					}
+					permissions.getFolderPermissions().set(origin.getWildcardPermissions().getFolderPermissions());
+					permissions.getItemsPermissions().set(origin.getWildcardPermissions().getItemsPermissions());
+					
+					// Here we can have folders with no READ permission: these folders
+					// will be included in cache for now, Manager's clients may filter
+					// out them in downstream processing.
+					// if (!permissions.getFolderPermissions().has(FolderShare.FolderRight.READ)) continue;
+					folders.put(folderId, new CalendarFSFolder(folderId, permissions, calendar));
+				}	
 			}
 		}
 		return folders;
-	}
-	
-	/**
-	 * @deprecated Use listMyCalendarIds() instead.
-	 */
-	@Override
-	@Deprecated
-	public Set<Integer> listCalendarIds() throws WTException {
-		return listMyCalendarIds();
 	}
 	
 	@Override
@@ -361,7 +379,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	@Override
 	public Set<Integer> listAllCalendarIds() throws WTException {
 		return Stream.concat(listMyCalendarIds().stream(), listIncomingCalendarIds().stream())
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+			.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 	
 	private Set<Integer> listCalendarIds(UserProfileId pid) throws WTException {
@@ -369,44 +387,49 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private Set<Integer> listCalendarIdsIn(UserProfileId pid, Collection<Integer> calendarIds) throws WTException {
-		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			if (calendarIds == null) {
-				return calDao.selectIdsByProfile(con, pid.getDomainId(), pid.getUserId());
-			} else {
-				return calDao.selectIdsByProfileIn(con, pid.getDomainId(), pid.getUserId(), calendarIds);
-			}
+			return doListCalendarIdsIn(con, pid, calendarIds);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
+	private Set<Integer> doListCalendarIdsIn(Connection con, UserProfileId profileId, Collection<Integer> calendarIds) throws WTException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		
+		if (calendarIds == null) {
+			return calDao.selectIdsByProfile(con, profileId.getDomainId(), profileId.getUserId());
+		} else {
+			return calDao.selectIdsByProfileIn(con, profileId.getDomainId(), profileId.getUserId(), calendarIds);
+		}
+	}
+	
 	@Override
-	public Map<Integer, Calendar> listCalendars() throws WTException {
+	public Map<Integer, Calendar> listMyCalendars() throws WTException {
 		return listCalendars(getTargetProfileId(), true);
 	}
 	
-	private Map<Integer, Calendar> listCalendars(UserProfileId pid, boolean checkRights) throws WTException {
+	private Map<Integer, Calendar> listCalendars(UserProfileId ownerPid, boolean checkRights) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		LinkedHashMap<Integer, Calendar> items = new LinkedHashMap<>();
 		Connection con = null;
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			for (OCalendar ocal : calDao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
-				if (checkRights && !quietlyCheckRightsOnCalendar(ocal.getCalendarId(), CheckRightsTarget.FOLDER, "READ")) continue;
+			for (OCalendar ocal : calDao.selectByProfile(con, ownerPid.getDomainId(), ownerPid.getUserId())) {
+				if (checkRights && !quietlyCheckRightsOnCalendar(ocal.getCalendarId(), FolderShare.FolderRight.READ)) continue;
 				items.put(ocal.getCalendarId(), ManagerUtils.createCalendar(ocal));
 			}
 			return items;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -425,8 +448,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			return items;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -439,14 +462,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			List<Integer> okCalendarIds = calendarIds.stream()
-					.filter(categoryId -> quietlyCheckRightsOnCalendar(categoryId, CheckRightsTarget.FOLDER, "READ"))
-					.collect(Collectors.toList());
+				.filter(categoryId -> quietlyCheckRightsOnCalendar(categoryId, FolderShare.FolderRight.READ))
+				.collect(Collectors.toList());
 			
 			con = WT.getConnection(SERVICE_ID);
 			return evtDao.selectMaxRevTimestampByCalendars(con, okCalendarIds);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -457,10 +480,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return ownerCache.get(calendarId);
 	}
 	
-	public String getIncomingCalendarShareRootId(int calendarId) throws WTException {
-		return shareCache.getShareRootIdByFolderId(calendarId);
-	}
-	
 	@Override
 	public Integer getDefaultCalendarId() throws WTException {
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, getTargetProfileId());
@@ -469,13 +488,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			locks.tryLock("getDefaultCalendarId", 60, TimeUnit.SECONDS);
 			calendarId = us.getDefaultCalendarFolder();
-			if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "CREATE")) {
+			if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE)) {
 				try {
 					calendarId = getBuiltInCalendarId();
 					if (calendarId == null) throw new WTException("Built-in calendar is null");
 					us.setDefaultCalendarFolder(calendarId);
-				} catch (Throwable t) {
-					logger.error("Unable to get built-in calendar", t);
+				} catch (Exception ex) {
+					logger.error("Unable to get built-in calendar", ex);
 				}
 			}
 		} catch (InterruptedException ex) {
@@ -493,15 +512,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			Integer catId = catDao.selectBuiltInIdByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
-			if (catId == null) return null;
+			Integer calendarId = catDao.selectBuiltInIdByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
+			if (calendarId == null) return null;
 			
-			checkRightsOnCalendar(catId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
-			return catId;
+			return calendarId;
 			
 		} catch(SQLException | DAOException | WTException ex) {
-			throw wrapException(ex);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -519,12 +538,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = calDao.selectDefaultByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if (calendarId == null) return null;
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			return calendarId;
 			
 		} catch(SQLException | DAOException | WTException ex) {
-			throw wrapException(ex);
+			throw wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -537,13 +556,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			con = WT.getConnection(SERVICE_ID);
 			return calDao.existsById(con, calendarId);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -551,16 +570,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public Calendar getCalendar(int calendarId) throws WTException {
+		return getCalendar(calendarId, true);
+	}
+	
+	private Calendar getCalendar(int calendarId, boolean checkRights) throws WTException {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			if (checkRights) checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			con = WT.getConnection(SERVICE_ID);
 			return doCalendarGet(con, calendarId);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -577,19 +600,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			OCalendar ocal = calDao.selectBuiltInByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if (ocal == null) return null;
 			
-			checkRightsOnCalendar(ocal.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(ocal.getCalendarId(), FolderShare.FolderRight.READ);
 			
 			return ManagerUtils.createCalendar(ocal);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	public Map<String, String> getCalendarLinks(int calendarId) throws WTException {
-		checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+		checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 		
 		UserProfile.Data ud = WT.getUserData(getTargetProfileId());
 		String davServerBaseUrl = WT.getDavServerBaseUrl(getTargetProfileId().getDomainId());
@@ -606,7 +629,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarRoot(calendar.getProfileId(), "MANAGE");
+			checkRightsOnCalendarOrigin(calendar.getProfileId(), "MANAGE");
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			calendar.setBuiltIn(false);
@@ -620,9 +643,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return calendar;
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -630,11 +653,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public Calendar addBuiltInCalendar() throws WTException {
+		return addBuiltInCalendar(null);
+	}
+	
+	@Override
+	public Calendar addBuiltInCalendar(final String color) throws WTException {
 		CalendarDAO caldao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendarRoot(getTargetProfileId(), "MANAGE");
+			checkRightsOnCalendarOrigin(getTargetProfileId(), "MANAGE");
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			OCalendar ocal = caldao.selectBuiltInByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
@@ -647,6 +675,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cal.setBuiltIn(true);
 			cal.setName(WT.getPlatformName());
 			cal.setDescription("");
+			cal.setColor(color);
+			cal.setDefaultBusy(true);
 			cal = doCalendarInsert(con, cal);
 			
 			DbUtils.commitQuietly(con);
@@ -661,21 +691,21 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return cal;
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	@Override
-	public void updateCalendar(Calendar calendar) throws WTException {
+	public void updateCalendar(Calendar calendar) throws WTNotFoundException, WTException {
 		Connection con = null;
 		
 		try {
 			int calendarId = calendar.getCalendarId();
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "UPDATE");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.UPDATE);
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			boolean ret = doCalendarUpdate(con, calendar);
@@ -687,26 +717,27 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				auditLogWrite(AuditContext.CALENDAR, AuditAction.UPDATE, calendarId, null);
 			}
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	@Override
-	public void deleteCalendar(int calendarId) throws WTException {
+	public void deleteCalendar(int calendarId) throws WTNotFoundException, WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		CalendarPropsDAO psetDao = CalendarPropsDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "DELETE");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.DELETE);
 			
-			// Retrieve sharing status (for later)
-			String sharingId = buildSharingId(calendarId);
-			Sharing sharing = getSharing(sharingId);
+			// Retrieve sharing configuration (for later)
+			final UserProfileId sharingOwnerPid = getCalendarOwner(calendarId);
+			final FolderSharing.Scope sharingScope = FolderSharing.Scope.folder(String.valueOf(calendarId));
+			List<FolderSharing.SubjectRights> sharingRights = getFolderShareConfiguration(sharingOwnerPid, sharingScope);
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			Calendar cal = ManagerUtils.createCalendar(calDao.selectById(con, calendarId));
@@ -717,10 +748,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			doEventsDeleteByCalendar(con, calendarId, !cal.isProviderRemote());
 			
 			// Cleanup sharing, if necessary
-			if ((sharing != null) && !sharing.getRights().isEmpty()) {
-				logger.debug("Removing {} active sharing [{}]", sharing.getRights().size(), sharing.getId());
-				sharing.getRights().clear();
-				updateSharing(sharing);
+			if ((sharingRights != null) && !sharingRights.isEmpty()) {
+				logger.debug("Removing {} active sharing [{}]", sharingRights.size(), sharingOwnerPid);
+				sharingRights.clear();
+				updateFolderShareConfiguration(sharingOwnerPid, sharingScope, sharingRights);
 			}
 			
 			DbUtils.commitQuietly(con);
@@ -731,9 +762,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// auditLogWrite(AuditContext.CALENDAR, AuditAction.DELETE, "*", calendarId);
 			}
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -753,8 +784,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			OCalendarPropSet opset = psetDao.selectByProfileCalendar(con, profileId.getDomainId(), profileId.getUserId(), calendarId);
 			return (opset == null) ? new CalendarPropSet() : ManagerUtils.createCalendarPropSet(opset);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -779,8 +810,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			return psets;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -810,8 +841,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			return propertySet;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -825,7 +856,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			
 			List<Integer> okCalendarIds = calendarIds.stream()
-					.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ"))
+					.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, FolderShare.FolderRight.READ))
 					.collect(Collectors.toList());
 			
 			HashSet<LocalDate> dates = new HashSet<>();
@@ -834,15 +865,38 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			int noOfRecurringInst = Days.daysBetween(from, to).getDays() + 2;
 			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, null)) {
-				final List<SchedEventInstance> instances = calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt, false), from, to, refTimezone, noOfRecurringInst);
+				final List<SchedEventInstance> instances = calculateRecurringInstances_OLD(con, new SchedEventInstanceMapper(vevt, false), from, to, refTimezone, noOfRecurringInst);
 				for (SchedEventInstance instance : instances) {
 					dates.addAll(CalendarUtils.getDatesSpan(instance.getAllDay(), instance.getStartDate(), instance.getEndDate(), instance.getDateTimeZone()));
 				}
 			}
 			return new ArrayList<>(dates);
 		
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
+	public List<ComparableEventBounds> listEventsBounds(final Collection<Integer> calendarIds, final DateTimeRange2 viewRange, final DateTimeZone targetTimezone) throws WTException {
+		Check.notNull(calendarIds, "calendarIds");
+		Check.notNull(viewRange, "viewRange");
+		Check.notNull(viewRange.getStart(), "viewRange.getStart()");
+		Check.notNull(viewRange.getEnd(), "viewRange.getEnd()");
+		Connection con = null;
+		
+		try {
+			List<Integer> okCalendarIds = calendarIds.stream()
+				.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, FolderShare.FolderRight.READ))
+				.collect(Collectors.toList());
+			
+			con = WT.getConnection(SERVICE_ID);
+			return doListEventsBounds(con, okCalendarIds, viewRange.getStart(), viewRange.getEnd(), targetTimezone);
+			
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -861,7 +915,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			ArrayList<EventObject> items = new ArrayList<>();
 			Map<String, List<VEventObject>> vobjMap = null;
@@ -881,8 +935,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			return items;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -896,7 +950,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			ArrayList<EventObjectChanged> inserted = new ArrayList<>();
 			ArrayList<EventObjectChanged> updated = new ArrayList<>();
@@ -926,8 +980,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return new CollectionChangeSet<>(inserted, updated, deleted);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -947,7 +1001,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			ArrayList<EventObjectWithICalendar> items = new ArrayList<>();
 			Map<String, List<VEventObject>> map = evtDao.viewCalObjectsByCalendarHrefs(con, calendarId, hrefs);
@@ -964,8 +1018,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			return items;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -979,13 +1033,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			VEventObject vevt = evtDao.viewCalObjectById(con, calendarId, eventId);
 			return (vevt == null) ? null : doEventObjectPrepare(con, vevt, outputType);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1028,7 +1082,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public void updateEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar) throws WTException {
+	public void updateEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar) throws WTNotFoundException, WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		int eventId = getEventIdByCategoryHref(calendarId, href, true);
 		
@@ -1077,20 +1131,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				//TODO: handle raw value to persist custom properties
 				try {
 					addEvent(eiEx.event, null, true);
-				} catch(Throwable t) {
-					logger.error("Unable to insert exception on {} as new event", eiEx.addsExOnMaster, t);
+				} catch (Exception ex) {
+					logger.error("Unable to insert exception on {} as new event", eiEx.addsExOnMaster, ex);
 				}
 			}
 		}
 	}
 	
 	@Override
-	public void deleteEventObject(int calendarId, String href) throws WTException {
+	public void deleteEventObject(int calendarId, String href) throws WTNotFoundException, WTException {
 		int eventId = getEventIdByCategoryHref(calendarId, href, true);
 		deleteEvent(eventId, true);
 	}
 	
-	private int getEventIdByCategoryHref(int calendarId, String href, boolean throwExIfManyMatchesFound) throws WTException {
+	private int getEventIdByCategoryHref(int calendarId, String href, boolean throwExIfManyMatchesFound) throws WTNotFoundException, WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -1098,12 +1152,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			
 			List<Integer> ids = evtDao.selectAliveIdsByCalendarHrefs(con, calendarId, href);
-			if (ids.isEmpty()) throw new NotFoundException("Event not found [{}, {}]", calendarId, href);
+			if (ids.isEmpty()) throw new WTNotFoundException("Event not found [{}, {}]", calendarId, href);
 			if (throwExIfManyMatchesFound && (ids.size() > 1)) throw new WTException("Many matches for href [{}]", href);
 			return ids.get(ids.size()-1);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1116,7 +1170,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			List<Integer> okCalendarIds = calendarIds.stream()
-					.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ"))
+					.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, FolderShare.FolderRight.READ))
 					.collect(Collectors.toList());
 			
 			EventPredicateVisitor epv = new EventPredicateVisitor(EventPredicateVisitor.Target.NORMAL)
@@ -1143,13 +1197,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				return true;
 			}
 			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, recCondition)) {
-				List<SchedEventInstance> instances = calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt, false), instFrom, instTo, targetTimezone, noOfRecurringInst);
+				List<SchedEventInstance> instances = calculateRecurringInstances_OLD(con, new SchedEventInstanceMapper(vevt, false), instFrom, instTo, targetTimezone, noOfRecurringInst);
 				if (!instances.isEmpty()) return true;
 			}
 			return false;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1205,9 +1259,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			UserProfileId runProfile = RunContext.getRunProfileId();
 			List<Integer> okCalendarIds = calendarIds.stream()
-					.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.FOLDER, "READ"))
+					.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, FolderShare.FolderRight.READ))
 					.collect(Collectors.toList());
 			
+			// Prepares condition Visitor
 			EventPredicateVisitor epv = new EventPredicateVisitor(EventPredicateVisitor.Target.NORMAL)
 					.withIgnoreCase(true)
 					.withForceStringLikeComparison(true);
@@ -1239,7 +1294,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, okCalendarIds, from, to, recCondition)) {
 				boolean keepPrivate = needsTreatAsPrivate(runProfile, vevt.getCalendarProfileId(), vevt.getIsPrivate());
-				instances.addAll(calculateRecurringInstances(con, new SchedEventInstanceMapper(vevt, keepPrivate), instFrom, instTo, targetTimezone, noOfRecurringInst));
+				instances.addAll(calculateRecurringInstances_OLD(con, new SchedEventInstanceMapper(vevt, keepPrivate), instFrom, instTo, targetTimezone, noOfRecurringInst));
 			}
 			
 			//TODO: transform to an ordered insert
@@ -1254,8 +1309,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return instances;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1269,8 +1324,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				con = WT.getConnection(SERVICE_ID);
 				return calculateRecurringInstances(con, event, fromDate, toDate, userTimezone, 200);
 
-			} catch (Throwable t) {
-				throw ExceptionUtils.wrapThrowable(t);
+			} catch (Exception ex) {
+				throw ExceptionUtils.wrapThrowable(ex);
 			} finally {
 				DbUtils.closeQuietly(con);
 			}
@@ -1328,8 +1383,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return null;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1344,8 +1399,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			VVEventInstance ve = getSchedulerEventByUid(con, eventPublicUid);
 			return (ve == null) ? null : EventKey.buildKey(ve.getEventId(), ve.getSeriesEventId());
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1358,8 +1413,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			return doEventGetId(con, publicUid, null);
 		
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1393,8 +1448,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				return null;
 			}
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1427,8 +1482,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				return null;
 			}
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1446,15 +1501,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			Event event = doEventGet(con, eventId, processAttachments, processTags);
 			if (event == null) return null;
-			checkRightsOnCalendar(event.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(event.getCalendarId(), FolderShare.FolderRight.READ);
 			
 			boolean keepPrivate = needsTreatAsPrivate(RunContext.getRunProfileId(), event.getIsPrivate(), event.getCalendarId());
 			if (keepPrivate) event.censorize();
 			
 			return event;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1474,15 +1529,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return event;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	@Override
-	public EventAttachmentWithBytes getEventAttachment(int eventId, String attachmentId) throws WTException {
+	public EventAttachmentWithBytes getEventAttachment(int eventId, String attachmentId) throws WTNotFoundException, WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		EventAttachmentDAO attDao = EventAttachmentDAO.getInstance();
 		Connection con = null;
@@ -1491,7 +1546,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			Map<Integer, Integer> map = evtDao.selectCalendarsByIds(con, Arrays.asList(eventId));
 			if (!map.containsKey(eventId)) throw new WTNotFoundException("Event not found [{}]", eventId);
-			checkRightsOnCalendar(map.get(eventId), CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(map.get(eventId), FolderShare.FolderRight.READ);
 			
 			OEventAttachment oatt = attDao.selectByIdEvent(con, attachmentId, eventId);
 			if (oatt == null) return null;
@@ -1499,8 +1554,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			OEventAttachmentData oattData = attDao.selectBytes(con, attachmentId);
 			return ManagerUtils.fillEventAttachment(new EventAttachmentWithBytes(oattData.getBytes()), oatt);
 		
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1516,13 +1571,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			Integer calId = evtDao.selectCalendarId(con, eventId);
 			if (calId == null) return null;
-			checkRightsOnCalendar(calId, CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(calId, FolderShare.FolderRight.READ);
 			
 			List<OEventCustomValue> ovals = cvalDao.selectByEvent(con, eventId);
 			return ManagerUtils.createCustomValuesMap(ovals);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1546,7 +1601,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		event.ensureCoherence();
 		
 		try {
-			checkRightsOnCalendar(event.getCalendarId(), CheckRightsTarget.ELEMENTS, "CREATE");
+			checkRightsOnCalendar(event.getCalendarId(), FolderShare.ItemsRight.CREATE);
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			String provider = calDao.selectProviderById(con, event.getCalendarId());
@@ -1591,24 +1646,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return evt;
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
-	}
-	
-	@Override
-	public Event addEventFromICal(int calendarId, net.fortuna.ical4j.model.Calendar ical) throws WTException {
-		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
-		
-		ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
-		if (parsed.isEmpty()) throw new WTException("iCal must contain at least one event");
-		
-		Event event = parsed.get(0).event;
-		event.setCalendarId(calendarId);
-		return addEvent(event, false);
 	}
 	
 	public void updateEvent(Event event, boolean processAttachments, boolean processTags, boolean processCustomValues, boolean notifyAttendees) throws WTException {
@@ -1620,7 +1663,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		event.ensureCoherence();
 		
 		try {
-			checkRightsOnCalendar(event.getCalendarId(), CheckRightsTarget.ELEMENTS, "UPDATE");
+			checkRightsOnCalendar(event.getCalendarId(), FolderShare.ItemsRight.UPDATE);
 			Set<String> validTags = processTags ? coreMgr.listTagIds() : null;
 			con = WT.getConnection(SERVICE_ID, false);
 			
@@ -1635,12 +1678,316 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			doEventMasterUpdateAndCommit(con, event, processAttachments, processTags, processCustomValues, notifyAttendees, validTags);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
+	}
+	
+	@Override
+	public Event handleInvitationFromICal(final net.fortuna.ical4j.model.Calendar ical, final Integer calendarId, final BitFlags<HandleICalInviationOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
+		Check.notNull(ical, "ical");
+		Check.notNull(options, "options");
+		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		EventDAO evtDao = EventDAO.getInstance();
+		Connection con = null;
+		
+		final VEvent ve = ICalendarUtils.getVEvent(ical);
+		if (ve == null) throw new WTParseException("Calendar object does not contain any events");
+		final String uid = ICalendarUtils.getUidValue(ve);
+		if (StringUtils.isBlank(uid)) throw new WTParseException("Event object does not provide a valid Uid");
+		final InternetAddress iaOrganizer = ICalendarUtils.getOrganizerAddress(ve);
+		if (iaOrganizer == null) throw new WTParseException("Event object does not provide a valid Organizer");
+		
+		try {
+			con = WT.getConnection(SERVICE_ID, false);
+			
+			// By default the search scope is wide (personal + incoming) to 
+			// allow for eg. to reply to an invitation even if a user is 
+			// acting on behalf another: tipically mailbox and calendars are shared.
+			final GetEventScope scope = options.has(HandleICalInviationOption.EVENT_LOOKUP_SCOPE_STRICT) ? GetEventScope.PERSONAL : GetEventScope.PERSONAL_AND_INCOMING;
+			
+			if (Method.REQUEST.equals(ical.getMethod())) { // A request has been received
+				// Organizer -(invite)-> Attendee
+				// The organizer sends a REQUEST to an attendee when creates a new 
+				// appointment and also when makes some modifications to a placed one
+				
+				boolean defaultIsPrivate = false;
+				boolean defaultBusy = true;
+				if (calendarId != null) {
+					VCalendarDefaults defaults = doCalendarGetDefaults(calendarId);
+					if (defaults != null) {
+						defaultBusy = defaults.getDefaultsBusy();
+						defaultIsPrivate = defaults.getDefaultsPrivate();
+					}
+				}
+				
+				EventInput eventInput = new ICalendarInput(udata.getTimeZone())
+					.withIgnoreClassification(options.has(HandleICalInviationOption.IGNORE_ICAL_CLASSIFICATION))
+					.withIgnoreTransparency(options.has(HandleICalInviationOption.IGNORE_ICAL_TRASPARENCY))
+					.withIgnoreAlarms(options.has(HandleICalInviationOption.IGNORE_ICAL_ALARMS))
+					.withDefaultIsPrivate(defaultIsPrivate)
+					.withDefaultBusy(defaultBusy)
+					.fromVEvent(ve, null);
+				Event event = doEventGet(con, scope, eventInput.event.getPublicUid());
+				
+				if (options.has(HandleICalInviationOption.CONSTRAIN_AVAILABILITY)) {
+					// For now, availability is checked only against built-in calendar
+					Integer builtinCalendarId = getBuiltInCalendarId();
+					if (builtinCalendarId == null) throw new WTNotFoundException("Built-in calendar not found [{}]", getTargetProfileId());
+					
+					// Extract event bounds from parsed event
+					final List<ComparableEventBounds> inputBounds;
+					if (eventInput.event.hasRecurrence()) {
+						inputBounds = calculateRecurringInstances(new EventBoundsRecurringContext(eventInput.event), null, null, 365);
+					} else {
+						inputBounds = Arrays.asList(new ComparableEventBounds(eventInput.event.getStartDate(), eventInput.event.getEndDate(), EventInstanceId.build(String.valueOf(0), null)));
+					}
+					
+					// Add actual bound (if applicable) to exclusion list
+					Set<DateTimeRange2> exclusions = null;
+					if (event != null) {
+						exclusions = new LinkedHashSet<>();
+						if (event.hasRecurrence()) {
+							exclusions.addAll(calculateRecurringInstances(new EventBoundsRecurringContext(event), null, null, 365));
+						} else {
+							exclusions.add(new ComparableEventBounds(event.getStartDate(), event.getEndDate(), EventInstanceId.build(String.valueOf(0), null)));
+						}
+					}
+					
+					DateTimeRange2 boundingRange = findBoundingRange(inputBounds);
+					List<ComparableEventBounds> otherBounds = doListEventsBounds(con, Arrays.asList(builtinCalendarId), boundingRange.getStart(), boundingRange.getEnd(), udata.getTimeZone());
+					if (areMyBoundsOverlappingWith(inputBounds, otherBounds, exclusions)) throw new WTConstraintException("Availability constraint cannot be satisfied");
+				}
+				
+				if (event == null) { // New invitation
+					Check.notNull(calendarId, "calendarId");
+					if (!doListCalendarIdsIn(con, getTargetProfileId(), null).contains(calendarId)) {
+						throw new WTException("Invitations must be inserted into personal calendar");
+					}
+					checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE);
+					eventInput.event.setCalendarId(calendarId);
+					
+					return addEvent(eventInput.event, false);
+					
+				} else { // Invitation update
+					checkRightsOnCalendar(event.getCalendarId(), FolderShare.ItemsRight.UPDATE);
+					eventInput.event.setCalendarId(event.getCalendarId());
+					
+					//TODO: handle this as an option into doEventUpdate in order to instruct internal code to not update these field
+					OEvent original = evtDao.selectById(con, event.getEventId());
+					// Set into parsed all fields that can't be changed by the iCal
+					// update otherwise data can be lost inside doEventUpdate
+					eventInput.event.setEventId(original.getEventId());
+					eventInput.event.setCalendarId(original.getCalendarId());
+					eventInput.event.setReadOnly(original.getReadOnly());
+					eventInput.event.setReminder(Event.Reminder.valueOf(original.getReminder()));
+					eventInput.event.setEtag(original.getEtag());
+					eventInput.event.setActivityId(original.getActivityId());
+					eventInput.event.setMasterDataId(original.getMasterDataId());
+					eventInput.event.setStatMasterDataId(original.getStatMasterDataId());
+					eventInput.event.setCausalId(original.getCausalId());
+					///////////////////////////////////////////////////////////
+
+					doEventUpdate(con, original, eventInput.event, false, false, true, false, false, false, null);
+
+					DbUtils.commitQuietly(con);
+					if (isAuditEnabled()) {
+						auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, original.getEventId(), null);
+					}
+					return null;
+				}
+				
+			} else if (Method.REPLY.equals(ical.getMethod())) { // An invitation reply has been received
+				// Attendee -(reply)-> Organizer
+				// The attendee replied to an invitation, the organizer received 
+				// a message with an attached iCalendar object, properly filled.
+				// When preparing the reply, the iCalendar should be kept untouched 
+				// except for the attendee list: it should contains only the 
+				// references of the attendee that have actually replied to the invitation.
+				
+				// We expect to find only one attendee in the Event object
+				Attendee att = ICalendarUtils.getAttendee(ve);
+				if (att == null) throw new WTParseException("Event object does not provide any attendees");
+				
+				// Look for the event in personal and incoming calendars.
+				// (i can be the organizer of a meeting created for my boss that 
+				// share his calendar of me; all received replies must be bringed
+				// back to the event in the shared calendar)
+				Event evt = doEventGet(con, scope, uid);
+				if (evt == null) throw new WTNotFoundException("Event not found [{}]", uid);
+				
+				// Extract response info...
+				PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
+				ICalendarInput.partStatToResponseStatus(partStat);
+				
+				List<String> updatedAttIds = doEventAttendeeUpdateResponseByRecipient(con, evt, att.getCalAddress().getSchemeSpecificPart(), ICalendarInput.partStatToResponseStatus(partStat));
+				
+				DbUtils.commitQuietly(con);
+				
+				// Commented to not send notification email in this case: 
+				// the organizer already knows this info, he updated 'manually' the 
+				// event by clicking the "Update event" button on the preview!
+				/*
+				if (!updatedAttIds.isEmpty()) {
+					evt = getEvent(evt.getEventId());
+					for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
+				}
+				*/
+				return null;
+				
+			} else if (Method.CANCEL.equals(ical.getMethod())) { // Cancellation has been received
+				// Organizer -(cancelled invite)-> Attendee
+				// The organizer after cancelling the event send a mail message
+				// to all attendees telling to update their saved information.
+				
+				EventInput eventInput = new ICalendarInput(udata.getTimeZone())
+					.withIncludeVEventSourceInOutput(true)
+					.fromVEvent(ve, null);
+				
+				if (eventInput.isSourceEventCancelled()) {
+					//if (eventInput.exRefersToPublicUid != null) {
+						//TODO: add support to single event instance (of recurrence) cancellation
+					//} else {
+						Event evt = doEventGet(con, scope, uid);
+						if (evt == null) throw new WTNotFoundException("Event not found [{}]", uid);
+						
+						doEventDelete(con, evt.getEventId(), true);
+						
+						DbUtils.commitQuietly(con);
+						if (isAuditEnabled()) {
+							auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, evt.getEventId(), null);
+						}
+					//}
+				} else {
+					// Nothing done
+				}		
+				return null;
+				
+			} else {
+				throw new WTUnsupportedOperationException("Unsupported Calendar's method [{}]", ical.getMethod() != null ? ical.getMethod().toString() : null);
+			}
+			
+		} catch (Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ExceptionUtils.wrapThrowable(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	private DateTimeRange2 findBoundingRange(Collection<? extends DateTimeRange2> ranges) {
+		DateTime min = null, max = null;
+		for (DateTimeRange2 range : ranges) {
+			if (range.getStart() != null) {
+				if (min == null || range.getStart().compareTo(min) < 0) {
+					min = range.getStart();
+				}
+			}
+			if (range.getEnd() != null) {
+				if (max == null || range.getEnd().compareTo(max) > 0) {
+					max = range.getEnd();
+				}
+			}
+		}
+		return DateTimeRange2.builder().withStart(min).withEnd(max).build();
+	}
+	
+	private Set<ComparableEventBounds> findOverlappingBounds(Collection<ComparableEventBounds> bounds) {
+		ArrayList<ComparableEventBounds> list = new ArrayList<>(bounds);
+		LangUtils.quickSort(list);
+		//https://massivealgorithms.blogspot.com/2015/06/given-n-appointments-find-all.html
+		Set<ComparableEventBounds> overlapping = new HashSet<>();
+		ComparableEventBounds latest = null;
+        Iterator<ComparableEventBounds> iter = list.iterator();
+        while (iter.hasNext()) {
+            ComparableEventBounds next = iter.next();
+            if ((latest != null) && (next.getStart().compareTo(latest.getEnd()) < 0)) {
+				overlapping.add(next);
+				overlapping.add(latest);
+            }
+            if ((latest == null) || (next.getEnd().compareTo(latest.getEnd()) > 0)) {
+                latest = next;
+            }
+        }
+		return overlapping;
+	}
+	
+	private boolean areMyBoundsOverlappingWith(List<ComparableEventBounds> myBounds, List<ComparableEventBounds> withBounds, Set<? extends DateTimeRange2> matchExclusions) {
+		List<ComparableEventBounds> list = new ArrayList<>(myBounds.size() + withBounds.size());
+		list.addAll(myBounds);
+		list.addAll(withBounds);
+		list = LangUtils.quickSort(list);
+		
+		if (logger.isTraceEnabled()) {
+			StringBuilder sb = null;
+			
+			sb = new StringBuilder();
+			for (ComparableEventBounds ceb : myBounds) sb.append("\n").append("    (").append(ceb.toString()).append(")");
+			logger.trace("[areMyBoundsOverlappingWith]\n    myBounds:{}", sb.toString());
+			
+			sb = new StringBuilder();
+			for (ComparableEventBounds ceb : withBounds) sb.append("\n").append("    (").append(ceb.toString()).append(")");
+			logger.trace("[areMyBoundsOverlappingWith]\n    withBounds:{}", sb.toString());
+			
+			if (matchExclusions != null) {
+				sb = new StringBuilder();
+				for (DateTimeRange2 ceb : matchExclusions) sb.append("\n").append("    (").append(ceb.toString()).append(")");
+				logger.trace("[areMyBoundsOverlappingWith]\n    exclusions:{}", sb.toString());
+			}	
+			
+			sb = new StringBuilder();
+			for (ComparableEventBounds ceb : list) sb.append("\n").append("    (").append(ceb.toString()).append(")");
+			logger.trace("[areMyBoundsOverlappingWith]\n    list (sorted):{}", sb.toString());
+		}
+		
+		ComparableEventBounds latest = null;
+        Iterator<ComparableEventBounds> iter = list.iterator();
+        while (iter.hasNext()) {
+            ComparableEventBounds next = iter.next();
+			if (matchExclusions != null && matchExclusions.contains(next)) {
+				if (logger.isTraceEnabled()) logger.trace("[areMyBoundsOverlappingWith]\n    '({})' IGNORED", next.toString());
+				continue;
+			}
+            if ((latest != null) && (next.getStart().compareTo(latest.getEnd()) < 0)) {
+				if (logger.isTraceEnabled()) logger.trace("[areMyBoundsOverlappingWith]\n    '({})' HAS COLLISION", next.toString());
+				return true;
+				/*
+				if (myBounds.contains(next)) {
+					logger.trace("[areMyBoundsOverlappingWith]\n    collision  '({})'", next.toString());
+					return true;
+				}
+				if (myBounds.contains(latest)) {
+					logger.trace("[areMyBoundsOverlappingWith] '{}' (latest) in myBounds", latest.toString());
+					return true;
+				}
+				*/
+				//if (myBounds.contains(next) || myBounds.contains(latest)) return true;
+            }
+            if ((latest == null) || (next.getEnd().compareTo(latest.getEnd()) > 0)) {
+                latest = next;
+				if (logger.isTraceEnabled()) logger.trace("[areMyBoundsOverlappingWith]\n    '({})' HAS LATEST END", next.toString());
+            }
+        }
+		return false;
+	}
+	
+	/**
+	 * @deprecated use handleInvitationFromICal instead
+	 */
+	@Deprecated
+	@Override
+	public Event addEventFromICal(int calendarId, net.fortuna.ical4j.model.Calendar ical) throws WTException {
+		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		
+		ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
+		if (parsed.isEmpty()) throw new WTException("iCal must contain at least one event");
+		
+		Event event = parsed.get(0).event;
+		event.setCalendarId(calendarId);
+		return addEvent(event, false);
 	}
 	
 	@Override
@@ -1673,7 +2020,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Event parsedEvent = parsed.get(0).event;
 				parsedEvent.setCalendarId(evt.getCalendarId());
 
-				checkRightsOnCalendar(evt.getCalendarId(), CheckRightsTarget.ELEMENTS, "UPDATE");
+				checkRightsOnCalendar(evt.getCalendarId(), FolderShare.ItemsRight.UPDATE);
 
 				OEvent original = edao.selectById(con, evt.getEventId());
 
@@ -1699,7 +2046,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			} else if (Method.REPLY.equals(ical.getMethod())) {
 				// Attendee -> Organizer
 				// The attendee replies to an event sending to the organizer a mail 
-				// message with an attached ical (the above param), properly configured.
+				// message of an attached ical (the above param), properly configured.
 				// The ical should be kept untouched in the reply except for the 
 				// attendee list: it should contains only the references of the 
 				// attendee that replies to the invitation.
@@ -1709,7 +2056,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 				// Gets the event looking also into incoming calendars...
 				// (i can be the organizer of a meeting created for my boss that 
-				// share his calendar with me; all received replies must be bringed
+				// share his calendar of me; all received replies must be bringed
 				// back to the event in the shared calendar)
 				//Event evt = getEvent(uid);
 				// Previous impl. forced (forceOriginal == true)
@@ -1756,9 +2103,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				throw new WTException("Unsupported Calendar's method [{}]", ical.getMethod() != null ? ical.getMethod().toString() : null);
 			}
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1774,16 +2121,50 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			Integer calendarId = evtDao.selectCalendarId(con, eventId);
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", eventId);
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
+			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.DELETE);
 			
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
 			
-			doEventInstanceDeleteAndCommit(con, UpdateEventTarget.ALL_SERIES, new EventKey(eventId), notifyAttendees);
+			doEventInstanceDeleteAndCommit(con, UpdateEventTarget.ALL_SERIES, new EventKey(eventId), notifyAttendees, false);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	@Override
+	public void deleteEvent(String publicUid, Integer calendarId, boolean notifyAttendees) throws WTException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		EventDAO evtDao = EventDAO.getInstance();
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID, false);
+			
+			Integer eventId = doEventGetId(con, publicUid, Arrays.asList(calendarId));
+			if (eventId == null) throw new WTException("Event ID lookup failed [{0}]", publicUid);
+			
+			Integer targetCalendarId = null;
+			if (calendarId == null) {
+				targetCalendarId = evtDao.selectCalendarId(con, eventId);
+				if (targetCalendarId == null) throw new WTException("Unable to retrieve event [{}]", eventId);
+			} else {
+				targetCalendarId = calendarId;
+			}
+			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.DELETE);
+			
+			String provider = calDao.selectProviderById(con, targetCalendarId);
+			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", targetCalendarId);
+			
+			doEventInstanceDeleteAndCommit(con, UpdateEventTarget.ALL_SERIES, new EventKey(eventId), notifyAttendees, false);
+			
+		} catch (Exception ex) {
+			DbUtils.rollbackQuietly(con);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1827,8 +2208,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			//TODO: completare implementazione differenziando eventi singoli, broken ed istanze ricorrenti...
 			return EventKey.buildKey(oevt.getEventId(), oevt.getEventId());
 		
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1852,8 +2233,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			return instance;
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1879,7 +2260,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = evtDao.selectCalendarId(con, event.getEventId());
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", event.getEventId());
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE");
+			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.UPDATE);
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
 			
@@ -1895,9 +2276,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			EventKey eventKey = new EventKey(event.getKey());
 			doEventInstanceUpdateAndCommit(con, einfo, target, eventKey, event, processAttachments, processTags, processCustomValues, notifyAttendees, validTags);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1915,7 +2296,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			OEventInfo einfo = evtDao.selectOEventInfoById(con, key.eventId);
 			if (einfo == null) throw new WTException("Unable to retrieve event-info [{}]", key.eventId);
 			
-			checkRightsOnCalendar(einfo.getCalendarId(), CheckRightsTarget.ELEMENTS, "UPDATE");
+			checkRightsOnCalendar(einfo.getCalendarId(), FolderShare.ItemsRight.UPDATE);
 			String provider = calDao.selectProviderById(con, einfo.getCalendarId());
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", einfo.getCalendarId());
 			
@@ -1943,9 +2324,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			ei.ensureCoherence();
 			doEventInstanceUpdateAndCommit(con, einfo, target, key, ei, true, true, true, notifyAttendees, null);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -1993,9 +2374,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 			}
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2019,16 +2400,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = evtDao.selectCalendarId(con, key.eventId);
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", key.eventId);
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
+			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.DELETE);
 			
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
 			
-			doEventInstanceDeleteAndCommit(con, target, key, notifyAttendees);
+			doEventInstanceDeleteAndCommit(con, target, key, notifyAttendees, true);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2046,16 +2427,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Integer calendarId = evtDao.selectCalendarId(con, key.eventId);
 			if (calendarId == null) throw new WTException("Unable to retrieve event [{}]", key.eventId);
 			
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE");
+			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.UPDATE);
 			
 			String provider = calDao.selectProviderById(con, calendarId);
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", calendarId);
 			
 			doEventInstanceRestoreAndCommit(con, key, true);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2097,12 +2478,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public void moveEvent(boolean copy, Collection<Integer> eventIds, int targetCalendarId, boolean notifyAttendees) throws WTException {
+	public void moveEvent(boolean copy, Collection<Integer> eventIds, int targetCalendarId, boolean notifyAttendees) throws WTNotFoundException, WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendar(targetCalendarId, CheckRightsTarget.ELEMENTS, "CREATE");
+			checkRightsOnCalendar(targetCalendarId, FolderShare.ItemsRight.CREATE);
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			
@@ -2119,7 +2500,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (eventId == null) continue;
 				if (!map.containsKey(eventId)) throw new WTNotFoundException("Event not found [{}]", eventId);
 				int calendarId = map.get(eventId);
-				checkRightsOnCalendar(readOkCache, calendarId, CheckRightsTarget.FOLDER, "READ");
+				checkRightsOnCalendar(readOkCache, calendarId, FolderShare.FolderRight.READ);
 				
 				if (copy || (targetCalendarId != calendarId)) {
 					if (copy) {
@@ -2134,7 +2515,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						operations.put(result.oevent.getEventId(), Crud.CREATE);
 						
 					} else {
-						checkRightsOnCalendar(deleteOkCache, calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
+						checkRightsOnCalendar(deleteOkCache, calendarId, FolderShare.ItemsRight.DELETE);
 						boolean ret = doEventMove(con, eventId, targetCalendarId);
 						if (!ret) throw new WTNotFoundException("Event not found [{}]", eventId);
 						
@@ -2154,16 +2535,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 			}
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
 	@Override
-	public void moveEventInstance(EventKey key, int targetCalendarId) throws WTException {
+	public void moveEventInstance(EventKey key, int targetCalendarId) throws WTNotFoundException, WTException {
 		moveEvent(false, Arrays.asList(key.eventId), targetCalendarId, false);
 	}
 	
@@ -2178,10 +2559,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			ei = doEventInstanceGet(con, key.eventId, key.instanceDate, true, true);
-			checkRightsOnCalendar(ei.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(ei.getCalendarId(), FolderShare.FolderRight.READ);
 			
 			if (targetCalendarId != ei.getCalendarId()) {
-				checkRightsOnCalendar(ei.getCalendarId(), CheckRightsTarget.ELEMENTS, "DELETE");
+				checkRightsOnCalendar(ei.getCalendarId(), FolderShare.ItemsRight.DELETE);
 				String provider = calDao.selectProviderById(con, targetCalendarId);
 				if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", targetCalendarId);
 				
@@ -2196,8 +2577,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				// There is no need to notify attendees, the event is simply moved from a calendar to another!
 			}
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2213,7 +2594,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			
 			ei = doEventInstanceGet(con, key.eventId, key.instanceDate, true, true, true);
-			checkRightsOnCalendar(ei.getCalendarId(), CheckRightsTarget.FOLDER, "READ");
+			checkRightsOnCalendar(ei.getCalendarId(), FolderShare.FolderRight.READ);
 			int calendarId = (newCalendarId != null) ? newCalendarId : ei.getCalendarId();
 			
 			boolean keepPrivate = needsTreatAsPrivate(RunContext.getRunProfileId(), ei.getIsPrivate(), ei.getCalendarId());
@@ -2235,8 +2616,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				ei.setEndDate(newEnd);
 			}
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2251,7 +2632,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE");
+			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.UPDATE);
 			List<String> auditTags = new ArrayList<>();
 			if (UpdateTagsOperation.SET.equals(operation) || UpdateTagsOperation.RESET.equals(operation)) {
 				Set<String> validTags = coreMgr.listTagIds();
@@ -2287,9 +2668,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				);
 			}
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2303,7 +2684,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			List<Integer> okCalendarIds = listAllCalendarIds().stream()
-				.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "UPDATE"))
+				.filter(calendarId -> quietlyCheckRightsOnCalendar(calendarId, FolderShare.ItemsRight.UPDATE))
 				.collect(Collectors.toList());
 			Set<String> validTags = coreMgr.listTagIds();
 			List<String> okTagIds = tagIds.stream()
@@ -2364,74 +2745,92 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 			}
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
 	}
 	
-	public LinkedHashSet<String> calculateAvailabilitySpans(int minRange, UserProfileId pid, DateTime fromDate, DateTime toDate, DateTimeZone userTz, boolean busy) throws WTException {
-		CalendarDAO calDao = CalendarDAO.getInstance();
+	public Map<String, DateTime> generateTimeSpans(final LocalDate fromDate, final LocalDate toDate, final TimeRange timeRange, final boolean applyTimeRangeForEachDay, final DateTimeZone timezone, final int minuteResolution) {
+		LinkedHashMap<String, DateTime> spans = new LinkedHashMap<>();
+		DateTimeFormatter ymdhmZoneFmt = DateTimeUtils.createYmdHmFormatter(timezone);
+		
+		DateTime boundaryInstant = new DateTime(timezone).withDate(toDate.plusDays(1)).withTimeAtStartOfDay();
+		DateTime instant = new DateTime(timezone).withDate(fromDate).withTimeAtStartOfDay();
+		while (instant.compareTo(boundaryInstant) < 0) {
+			boolean add = false;
+			if (timeRange != null) {
+				final LocalTime time = instant.toLocalTime();
+				if (applyTimeRangeForEachDay) {
+					add = DateTimeUtils.between(time, timeRange.getStart(), timeRange.getEnd());
+				} else {
+					final LocalDate date = instant.toLocalDate();
+					if (date.isEqual(fromDate) && date.isEqual(toDate)) {
+						add = DateTimeUtils.between(time, timeRange.getStart(), timeRange.getEnd());
+					} else if (date.isEqual(fromDate)) {
+						add = (time.compareTo(timeRange.getStart()) >= 0);
+					} else if (date.isEqual(toDate)) {
+						add = (time.compareTo(timeRange.getEnd()) < 0);
+					} else {
+						add = true;
+					}
+				}	
+			} else {
+				add = true;
+			}
+			
+			if (add) spans.put(ymdhmZoneFmt.print(instant), instant);
+			instant = instant.plusMinutes(minuteResolution);
+		}
+		return spans;
+	}
+	
+	public Map<String, DateTime> calculateTransparencyTimeSpans(final UserProfileId profileId, final boolean busy, final LocalDate fromDate, final LocalDate toDate, final TimeRange timeRange, final DateTimeZone timezone, final int minuteResolution) throws WTException {
+		Check.stateIsTrue(!(minuteResolution < 1 || 60 % minuteResolution != 0), "minuteResolution must be a divider of 60");
 		EventDAO evtDao = EventDAO.getInstance();
-		LinkedHashSet<String> hours = new LinkedHashSet<>();
 		Connection con = null;
 		
-		//TODO: review this method
-		
+		LinkedHashMap<String, DateTime> spans = new LinkedHashMap<>();
 		try {
+			DateTime from = new DateTime(timezone).withDate(fromDate).withTimeAtStartOfDay();
+			DateTime to = new DateTime(timezone).withDate(toDate).withTimeAtStartOfDay();
+			
+			// We do NOT have to define two EPVs here: we are interested to a 
+			// condition (busy or not) that not involved dates fields' changes 
+			// between recurring and simple events.
+			EventPredicateVisitor epv = new EventPredicateVisitor(EventPredicateVisitor.Target.NORMAL)
+				.withIgnoreCase(true)
+				.withForceStringLikeComparison(true);
+			Condition<EventQuery> conditionPredicate = busy ? new EventQuery().isBusy().isTrue() : new EventQuery().isBusy().isFalse();
+			
 			con = WT.getConnection(SERVICE_ID);
-			
-			// Lists desired calendars by profile
-			final List<VVEventInstance> veis = new ArrayList<>();
-			for (OCalendar ocal : calDao.selectByProfile(con, pid.getDomainId(), pid.getUserId())) {
-				for (VVEvent ve : evtDao.viewByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
-					veis.add(new VVEventInstance(ve));
-				}
-				for (VVEvent ve : evtDao.viewRecurringByCalendarRangeCondition(con, ocal.getCalendarId(), fromDate, toDate, null)) {
-					veis.add(new VVEventInstance(ve));
-				}
-			}
-			
-			DateTime startDt, endDt;
-			for (VVEventInstance vei : veis) {
-				if (vei.getBusy() != busy) continue; // Ignore events that are not marked as busy!
+			int noOfRecurringInst = 365+2;
+			final Set<Integer> calendarIds = doListCalendarIdsIn(con, profileId, null);
+			for (VVEvent vevt : evtDao.viewByCalendarRangeCondition(con, calendarIds, from, to, BaseDAO.createCondition(conditionPredicate, epv))) {
+				SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), vevt);
 				
-				if (vei.getRecurrenceId() == null) {
-					startDt = vei.getStartDate().withZone(userTz);
-					endDt = vei.getEndDate().withZone(userTz);
-					hours.addAll(generateTimeSpans(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
-				} else {
-					final List<VVEventInstance> instances = calculateRecurringInstances(con, new VVEventInstanceMapper(vei), fromDate, toDate, userTz);
-					for (VVEventInstance instance : instances) {
-						startDt = instance.getStartDate().withZone(userTz);
-						endDt = instance.getEndDate().withZone(userTz);
-						hours.addAll(generateTimeSpans(minRange, startDt.toLocalDate(), endDt.toLocalDate(), startDt.toLocalTime(), endDt.toLocalTime(), userTz));
-					}
+				final DateTime rouStart = DateTimeUtils.roundToNearestMinute(item.getStartDate().withZone(timezone), minuteResolution);
+				final DateTime rouEnd = DateTimeUtils.roundToNearestMinute(item.getEndDate().withZone(timezone), minuteResolution);
+				final TimeRange rouTimeRange = TimeRange.builder().with(rouStart.toLocalTime(), rouEnd.toLocalTime()).build();
+				spans.putAll(generateTimeSpans(rouStart.toLocalDate(), rouEnd.toLocalDate(), rouTimeRange, false, timezone, minuteResolution));
+			}
+			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, doListCalendarIdsIn(con, profileId, null), from, to, BaseDAO.createCondition(conditionPredicate, epv))) {
+				for (SchedEventInstance item : calculateRecurringInstances_OLD(con, new SchedEventInstanceMapper(vevt, false), from, to, timezone, noOfRecurringInst)) {
+					final DateTime rouStart = DateTimeUtils.roundToNearestMinute(item.getStartDate().withZone(timezone), minuteResolution);
+					final DateTime rouEnd = DateTimeUtils.roundToNearestMinute(item.getEndDate().withZone(timezone), minuteResolution);
+					final TimeRange rouTimeRange = TimeRange.builder().with(rouStart.toLocalTime(), rouEnd.toLocalTime()).build();
+					spans.putAll(generateTimeSpans(rouStart.toLocalDate(), rouEnd.toLocalDate(), rouTimeRange, false, timezone, minuteResolution));
 				}
 			}
-		
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+			
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
-		return hours;
-	}
-	
-	public ArrayList<String> generateTimeSpans(int minRange, LocalDate fromDate, LocalDate toDate, LocalTime fromTime, LocalTime toTime, DateTimeZone tz) {
-		ArrayList<String> hours = new ArrayList<>();
-		DateTimeFormatter ymdhmZoneFmt = DateTimeUtils.createYmdHmFormatter(tz);
-		
-		DateTime instant = new DateTime(tz).withDate(fromDate).withTime(fromTime).withSecondOfMinute(0).withMillisOfSecond(0);
-		DateTime boundaryInstant = new DateTime(tz).withDate(toDate).withTime(toTime).withSecondOfMinute(0).withMillisOfSecond(0);
-		while(instant.compareTo(boundaryInstant) < 0) {
-			hours.add(ymdhmZoneFmt.print(instant));
-			instant = instant.plusMinutes(minRange);
-		}
-		
-		return hours;
+		return spans;
 	}
 	
 	public List<EventAttendee> listEventAttendees(int eventId, boolean notifiedOnly) throws WTException {
@@ -2441,8 +2840,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			return getEventAttendees(con, eventId, notifiedOnly);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2466,8 +2865,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "CREATE");
-			if (mode.equals("copy")) checkRightsOnCalendar(calendarId, CheckRightsTarget.ELEMENTS, "DELETE");
+			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE);
+			if (mode.equals("copy")) checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.DELETE);
 			
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started at {0}", new DateTime()));
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Reading source file..."));
@@ -2506,9 +2905,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s imported!", count));
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Ended at {0}", new DateTime()));
@@ -2573,7 +2972,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 				}
 				for(VVEvent ve : edao.viewRecurringByCalendarRangeCondition(con, calendarId, fromDate, toDate, null)) {
-					final List<VVEventInstance> instances = calculateRecurringInstances(con, new VVEventInstanceMapper(ve), fromDate, toDate, udata.getTimeZone());
+					final List<VVEventInstance> instances = calculateRecurringInstances_OLD(con, new VVEventInstanceMapper(ve), fromDate, toDate, udata.getTimeZone());
 					
 					try {
 						map = new HashMap<>();
@@ -2637,9 +3036,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			DbUtils.commitQuietly(con);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			throw ExceptionUtils.wrapThrowable(t);
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -2707,15 +3106,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					alerts.add(alert);
 					if (shouldLog) logger.debug("[{}] Alert collected [{}]", i, instance.getKey());
 					
-				} catch (Throwable t1) {
-					logger.warn("[{}] Unable to manage reminder. Event instance skipped! [{}]", t1, i, instance.getKey());
+				} catch (Exception ex1) {
+					logger.warn("[{}] Unable to manage reminder. Event instance skipped! [{}]", ex1, i, instance.getKey());
 				}
 			}
 			DbUtils.commitQuietly(con);
 			
-		} catch (Throwable t) {
+		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
-			logger.error("Error handling event instances' reminder alerts", t);
+			logger.error("Error handling event instances' reminder alerts", ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -3180,8 +3579,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				}
 			}
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 			pendingRemoteCalendarSyncs.remove(PENDING_KEY);
@@ -3189,12 +3588,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private <T> T calculateFirstRecurringInstance(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTimeZone userTimezone) throws WTException {
-		List<T> instances = calculateRecurringInstances(con, instanceMapper, null, null, userTimezone, 1);
+		List<T> instances = calculateRecurringInstances_OLD(con, instanceMapper, null, null, userTimezone, 1);
 		return instances.isEmpty() ? null : instances.get(0);
-	}
-	
-	private <T> List<T> calculateRecurringInstances(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
-		return calculateRecurringInstances(con, instanceMapper, fromDate, toDate, userTimezone, -1);
 	}
 	
 	private Set<LocalDate> doGetExcludedDates(Connection con, int eventId, int recurrenceId) {
@@ -3232,12 +3627,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), true, exclDates, eventStart, eventEnd, eventTimezone, null, null, 1);
 				return !dates.isEmpty() ? dates.get(0) : null;
 			}
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		}
 	}
 	
-	private <T> List<T> calculateRecurringInstances(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime rangeFrom, DateTime rangeTo, DateTimeZone userTimezone, int limit) throws WTException {
+	@Deprecated
+	private <T> List<T> calculateRecurringInstances_OLD(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
+		return calculateRecurringInstances_OLD(con, instanceMapper, fromDate, toDate, userTimezone, -1);
+	}
+	
+	@Deprecated
+	private <T> List<T> calculateRecurringInstances_OLD(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime rangeFrom, DateTime rangeTo, DateTimeZone userTimezone, int limit) throws WTException {
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
 		ArrayList<T> instances = new ArrayList<>();
@@ -3266,20 +3667,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Set<LocalDate> exclDates = recbDao.selectDatesByEventRecurrence(con, eventId, orec.getRecurrenceId());
 				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), exclDates, instanceMapper.isEventAllDay(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
 				for (LocalDate recurringDate : dates) {
-					DateTime start;
-					try {
-						start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
-					} catch (org.joda.time.IllegalInstantException ex1) {
-						start = recurringDate.toDateTime(eventStartTime.plusHours(1), eventTimezone).withZone(userTimezone);
-					}
-					DateTime end;
-					try {
-						end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
-					} catch (org.joda.time.IllegalInstantException ex1) {
-						end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime.plusHours(1), eventTimezone).withZone(userTimezone);
-					}
+					DateTime start = DateTimeUtils.toDateTime(recurringDate, eventStartTime, eventTimezone).withZone(userTimezone);
+					DateTime end = DateTimeUtils.toDateTime(recurringDate.plusDays(eventDays), eventEndTime, eventTimezone).withZone(userTimezone);
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
-
+					final EventInstanceId id = EventInstanceId.build(String.valueOf(eventId), start, eventTimezone);
+					
 					instances.add(instanceMapper.createInstance(key, start, end));
 				}
 				
@@ -3300,172 +3692,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				*/
 			}
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		}
 		
 		return instances;
 	}
-	
-	/*
-	private <T> List<T> calculateRecurringInstances_OLD(Connection con, RecurringInstanceMapper<T> instanceMapper, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
-		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
-		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
-		ArrayList<T> instances = new ArrayList<>();
-		
-		int eventId = instanceMapper.getEventId();
-		DateTime eventStartDate = instanceMapper.getEventStartDate();
-		DateTime eventEndDate = instanceMapper.getEventEndDate();
-		
-		// Retrieves reccurence and broken dates (if any)
-		ORecurrence orec = recDao.selectByEvent(con, eventId);
-		if (orec == null) {
-			logger.warn("Unable to retrieve recurrence for event [{}]", eventId);
-			
-		} else {
-			if (fromDate == null) fromDate = orec.getStartDate();
-			if (toDate == null) toDate = orec.getStartDate().plusYears(1);
-			
-			//List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
-			////TODO: ritornare direttamente l'hashmap da jooq
-			//// Builds a hashset of broken dates for increasing performances
-			//HashMap<String, ORecurrenceBroken> brokenDates = new HashMap<>();
-			//for (ORecurrenceBroken obrec : obrecs) {
-			//	brokenDates.put(obrec.getEventDate().toString(), obrec);
-			//}
-			
-			Map<LocalDate, ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, eventId, orec.getRecurrenceId());
-			HashSet<String> brokenDates = new HashSet<>();
-			for (LocalDate ld : obrecs.keySet()) {
-				brokenDates.add(ld.toString());
-			}
-			
-			
-			try {
-				// Calculate event length in order to generate events like original one
-				int eventDays = CalendarUtils.calculateLengthInDays(eventStartDate, eventEndDate);
-				RRule rr = new RRule(orec.getRule());
-				
-				// Calcutate recurrence set for required dates range
-				PeriodList periods = ICal4jUtils.calculateRecurrenceSet(eventStartDate, eventEndDate, orec.getStartDate(), rr, fromDate, toDate, userTimezone);
-				
-				// Recurrence start is useful to skip undesired dates at beginning.
-				// If event does not starts at recurrence real beginning (eg. event
-				// start on MO but first recurrence begin on WE), ical4j lib includes 
-				// those dates in calculated recurrence set, as stated in RFC 
-				// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
-				LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(orec.getStartDate(), rr.getRecur(), userTimezone).toLocalDate();
-				//LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(eventStartDate, rr.getRecur(), userTimezone).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
-				LocalDate rrEnd = orec.getUntilDate().toLocalDate();
-
-				// Iterates returned recurring periods and builds cloned events...
-				int count = -1;
-				for (net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
-					count++;
-					if ((limit != -1) && (count > limit)) break;
-					final LocalDate perStart = ICal4jUtils.toJodaDateTime(per.getStart()).toLocalDate();
-					final LocalDate perEnd = ICal4jUtils.toJodaDateTime(per.getEnd()).toLocalDate();
-
-					if (brokenDates.contains(perStart.toString())) continue; // Skip broken dates...
-					if ((perStart.compareTo(rrStart) >= 0) && (perEnd.compareTo(rrEnd) <= 0)) { // Skip unwanted dates at beginning
-						final DateTime newStart = eventStartDate.withDate(perStart);
-						final DateTime newEnd = eventEndDate.withDate(newStart.plusDays(eventDays).toLocalDate());
-						final String key = EventKey.buildKey(eventId, eventId, perStart);
-						
-						instances.add(instanceMapper.createInstance(key, newStart, newEnd));
-					}
-				}
-
-			} catch(DAOException ex) {
-				throw wrapException(ex);
-			} catch(ParseException ex) {
-				throw new WTException(ex, "Unable to parse rrule");
-			}
-		}
-		return instances;
-	}
-	*/
-	
-	/*
-	private List<VVEventInstance> calculateRecurringInstances(Connection con, VVEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone) throws WTException {
-		return calculateRecurringInstances(con, event, fromDate, toDate, userTimezone, -1);
-	}
-	
-	private List<VVEventInstance> calculateRecurringInstances(Connection con, VVEvent event, DateTime fromDate, DateTime toDate, DateTimeZone userTimezone, int limit) throws WTException {
-		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
-		RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
-		
-		if (event.getRecurrenceId() == null) throw new WTException("Specified event [{}] does not have a recurrence set", event.getEventId());
-		
-		// Retrieves reccurence and broken dates (if any)
-		ORecurrence orec = recDao.select(con, event.getRecurrenceId());
-		if (orec == null) throw new WTException("Unable to retrieve recurrence [{}]", event.getRecurrenceId());
-		List<ORecurrenceBroken> obrecs = recbDao.selectByEventRecurrence(con, event.getEventId(), event.getRecurrenceId());
-		
-		if (fromDate == null) fromDate = orec.getStartDate();
-		if (toDate == null) toDate = orec.getStartDate().plusYears(5);
-		
-		//TODO: ritornare direttamente l'hashmap da jooq
-		// Builds a hashset of broken dates for increasing performances
-		HashMap<String, ORecurrenceBroken> brokenDates = new HashMap<>();
-		for(ORecurrenceBroken obrec : obrecs) {
-			brokenDates.put(obrec.getEventDate().toString(), obrec);
-		}
-		
-		// If not present, updates rrule
-		if (StringUtils.isBlank(orec.getRule())) {
-			orec.setRule(orec.buildRRule(DateTimeZone.UTC).getValue());
-			recDao.updateRRule(con, orec.getRecurrenceId(), orec.getRule());
-		}
-		
-		try {
-			ArrayList<VVEventInstance> instances = new ArrayList<>();
-			
-			// Calculate event length in order to generate events like original one
-			int eventDays = calculateEventLengthInDays(event);
-			RRule rr = new RRule(orec.getRule());
-			
-			// Calcutate recurrence set for required dates range
-			PeriodList periods = ICal4jUtils.calculateRecurrenceSet(event.getStartDate(), event.getEndDate(), orec.getStartDate(), rr, fromDate, toDate, userTimezone);
-			
-			// Recurrence start is useful to skip undesired dates at beginning.
-			// If event does not starts at recurrence real beginning (eg. event
-			// start on MO but first recurrence begin on WE), ical4j lib includes 
-			// those dates in calculated recurrence set, as stated in RFC 
-			// (http://tools.ietf.org/search/rfc5545#section-3.8.5.3).
-			LocalDate rrStart = ICal4jUtils.calculateRecurrenceStart(event.getStartDate(), rr.getRecur(), userTimezone).toLocalDate(); //TODO: valutare se salvare la data già aggiornata
-			LocalDate rrEnd = orec.getUntilDate().toLocalDate();
-			
-			// Iterates returned recurring periods and builds cloned events...
-			int count = -1;
-			final Cloner cloner = Cloner.standard();
-			for (net.fortuna.ical4j.model.Period per : (Iterable<net.fortuna.ical4j.model.Period>) periods) {
-				count++;
-				if ((limit != -1) && (count > limit)) break;
-				final LocalDate perStart = ICal4jUtils.toJodaDateTime(per.getStart()).toLocalDate();
-				final LocalDate perEnd = ICal4jUtils.toJodaDateTime(per.getEnd()).toLocalDate();
-				
-				if (brokenDates.containsKey(perStart.toString())) continue; // Skip broken dates...
-				if ((perStart.compareTo(rrStart) >= 0) && (perEnd.compareTo(rrEnd) <= 0)) { // Skip unwanted dates at beginning
-					final DateTime newStart = event.getStartDate().withDate(perStart);
-					final DateTime newEnd = event.getEndDate().withDate(newStart.plusDays(eventDays).toLocalDate());
-					
-					// Generate cloned event like original one
-					VVEvent clone = cloner.deepClone(event);
-					clone.setStartDate(newStart);
-					clone.setEndDate(newEnd);
-					instances.add(new VVEventInstance(EventKey.buildKey(event.getEventId(), event.getEventId(), perStart), clone));	
-				}
-			}
-			return instances;
-			
-		} catch(DAOException ex) {
-			throw wrapException(ex);
-		} catch(ParseException ex) {
-			throw new WTException(ex, "Unable to parse rrule");
-		}
-	}
-	*/
 	
 	public static String buildEventPublicUrl(String publicBaseUrl, String eventPublicId) {
 		String s = PublicService.PUBPATH_CONTEXT_EVENT + "/" + eventPublicId;
@@ -3539,8 +3771,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			return doCalendarGetOwnerInfo(con, calendarId);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -3551,6 +3783,25 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return calDao.selectOwnerInfoById(con, calendarId);
 	}
 	
+	private VCalendarDefaults doCalendarGetDefaults(int calendarId) throws WTException {
+		Connection con = null;
+		
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			return doCalendarGetDefaults(con, calendarId);
+			
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
+	private VCalendarDefaults doCalendarGetDefaults(Connection con, int calendarId) throws DAOException {
+		CalendarDAO calDao = CalendarDAO.getInstance();
+		return calDao.selectDefaultsById(con, calendarId);
+	}
+	
 	private Map<Integer, Integer> mapCalendarByEvent(Collection<Integer> eventIds) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
@@ -3559,8 +3810,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			return evtDao.selectCalendarsByIds(con, eventIds);
 			
-		} catch (Throwable t) {
-			throw ExceptionUtils.wrapThrowable(t);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
@@ -3586,6 +3837,27 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (ocal.getIsDefault()) calDao.resetIsDefaultByProfile(con, ocal.getDomainId(), ocal.getUserId());
 		
 		return calDao.update(con, ocal) == 1;
+	}
+	
+	private ArrayList<ComparableEventBounds> doListEventsBounds(final Connection con, final Collection<Integer> calendarIds, final DateTime spanFrom, final DateTime spanTo, final DateTimeZone targetTimezone) throws WTException {
+		Check.notNull(calendarIds, "calendarIds");
+		Check.notNull(spanFrom, "spanFrom");
+		Check.notNull(spanTo, "spanTo");
+		EventDAO evtDao = EventDAO.getInstance();
+		
+		ArrayList<ComparableEventBounds> bounds = new ArrayList<>();
+		for (VEventFootprint vfootprint : evtDao.viewRangesByCalendarRangeCondition(con, calendarIds, spanFrom, spanTo, EventDAO.toBusyCondition())) {
+			final EventInstanceId id = EventInstanceId.build(String.valueOf(vfootprint.getEventId()), null);
+			final DateTime start = vfootprint.getStartDate().withZone(targetTimezone);
+			final DateTime end = vfootprint.getEndDate().withZone(targetTimezone);
+			bounds.add(new ComparableEventBounds(start, end, id));
+		}
+		
+		int noOfRecurringInst = Days.daysBetween(spanFrom, spanTo).getDays() + 2;
+		for (VEventFootprint vfootprint : evtDao.viewRecurringRangesByCalendarRangeCondition(con, calendarIds, spanFrom, spanTo, EventDAO.toBusyCondition())) {
+			bounds.addAll(calculateRecurringInstances(new VEventFootprintBoundsRecurringContext(con, vfootprint), spanFrom, spanTo, noOfRecurringInst));
+		}
+		return bounds;
 	}
 	
 	private EventObject doEventObjectPrepare(Connection con, VEventObject vobj, EventObjectOutputType outputType) throws WTException {
@@ -3620,7 +3892,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				//TODO: add support to excluded dates
 				net.fortuna.ical4j.model.Calendar iCal = out.toCalendar(event);
 				if (vobj.getHasIcalendar()) {
-					//TODO: in order to be fully compliant, merge generated vcard with the original one in db table!
+					//TODO: in order to be fully compliant, merge generated vcard of the original one in db table!
 				}
 				try {
 					eco.setIcalendar(out.write(iCal));
@@ -3720,7 +3992,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		OEvent oevtOrig = evtDao.selectById(con, event.getEventId());
 		if (oevtOrig == null) throw new WTException("Unable get original event [{}]", event.getEventId());
 		
-		// 1 - Updates event with new data
+		// 1 - Updates event of new data
 		doEventUpdate(con, oevtOrig, event, true, true, true, processAttachments, processTags, processCustomValues, validTags);
 
 		DbUtils.commitQuietly(con);
@@ -3887,7 +4159,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				event.setStartDate(event.getStartDate().withDate(oevtOrig.getStartDate().toLocalDate()));
 				event.setEndDate(event.getEndDate().withDate(oevtOrig.getEndDate().toLocalDate()));
 				
-				// 1 - Updates event with new data
+				// 1 - Updates event of new data
 				doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, processCustomValues, validTags);
 
 				DbUtils.commitQuietly(con);
@@ -3899,7 +4171,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 		} else if (originalEventInfo.isBroken()) {
-			// 1 - Updates broken event (follow eventId) with new data
+			// 1 - Updates broken event (follow eventId) of new data
 			doEventUpdate(con, oevtOrig, event, false, false, true, processAttachments, processTags, processCustomValues, validTags);
 			
 			DbUtils.commitQuietly(con);
@@ -3913,7 +4185,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			eventDump = getEvent(originalEventInfo.getEventId());
 			
 		} else {
-			// 1 - Updates this event with new data
+			// 1 - Updates this event of new data
 			doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, processCustomValues, validTags);
 			
 			DbUtils.commitQuietly(con);
@@ -3944,7 +4216,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void doEventInstanceDeleteAndCommit(Connection con, UpdateEventTarget target, EventKey eventKey, boolean notifyAttendees) throws WTException {
+	private void doEventInstanceDeleteAndCommit(Connection con, UpdateEventTarget target, EventKey eventKey, boolean notifyAttendees, boolean notifyResourceOrganizer) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 		
@@ -4051,6 +4323,29 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (notifyAttendees) {
 			List<RecipientTuple> attRcpts = getInvitationRecipients(getTargetProfileId(), eventDump, Crud.DELETE);
 			if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.DELETE);
+		}
+		
+		// For resources, notify the organizer (with a DECLINE) that the reservation is no longer available
+		if (notifyResourceOrganizer) {
+			CalendarFSOrigin origin = shareCache.getOriginByFolderId(eventDump.getCalendarId());
+			if (origin != null && origin.isResource() && eventDump.getAttendees().size() == 1) {
+				final String resourceAttendeeId = eventDump.getAttendees().get(0).getAttendeeId();
+				try {
+					replyToOrganizer(origin.getProfileId(), eventDump, resourceAttendeeId, net.fortuna.ical4j.model.parameter.PartStat.DECLINED);
+				} catch (WTException ex) {
+					logger.error("Error generating organizer reply", ex);
+				}
+				UserProfileId organizerProfile = WT.guessProfileIdByPersonalAddress(eventDump.getOrganizerAddress());
+				if (organizerProfile != null) {
+					try {
+						CoreManager coreMgr = WT.getCoreManager(origin.getProfileId());
+						Resource resource = coreMgr.getResource(origin.getProfileId().getUserId(), BitFlags.noneOf(ResourceGetOption.class));
+						WT.notify(organizerProfile, new ResourceReservationReplySM("com.sonicle.webtop.calendar", resource, eventDump.getPublicUid(), eventDump.getTitle(), net.fortuna.ical4j.model.parameter.PartStat.DECLINED));
+					} catch (WTException ex) {
+						logger.error("Error generating organizer notification", ex);
+					}
+				}
+			}
 		}
 	}
 	
@@ -4466,7 +4761,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		for (VExpEvent vee : evtDao.viewRecurringExpiredForUpdateByFromTo(con, fromDate, toDate)) {
 			// Returns 15 instances only, this should be enough for serving max day range from underlying reminder
-			instances.addAll(calculateRecurringInstances(con, new VExpEventInstanceMapper(vee), fromDate, toDate, DateTimeZone.UTC, 14+1));
+			instances.addAll(calculateRecurringInstances_OLD(con, new VExpEventInstanceMapper(vee), fromDate, toDate, DateTimeZone.UTC, 14+1));
 		}
 		
 		return instances;
@@ -4525,7 +4820,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (StringUtils.isBlank(tgt.getSync())) tgt.setSync(EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 			if (tgt.getIsDefault() == null) tgt.setIsDefault(false);
 			if (tgt.getIsPrivate() == null) tgt.setIsPrivate(false);
-			if (tgt.getBusy() == null) tgt.setBusy(false);
+			if (tgt.getBusy() == null) tgt.setBusy(true);
 			if (tgt.getInvitation() == null) tgt.setInvitation(false);
 			//if (tgt.getNotifyOnSelfUpdate() == null) tgt.setNotifyOnSelfUpdate(false); // Not yet supported!
 			if (tgt.getNotifyOnExtUpdate() == null) tgt.setNotifyOnExtUpdate(false);
@@ -4645,7 +4940,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			Map<String, String> meetingProviders = css.getMeetingProviders();
 			IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail");
-			//FIXME: if mailMgr is not present, send with base SMTP
+			//FIXME: if mailMgr is not present, send of base SMTP
 			Session session = getMailSession();
 			for (RecipientTuple rcpt : recipients) {
 				if (!InternetAddressUtils.isAddressValid(rcpt.recipient)) {
@@ -4675,6 +4970,70 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} catch(IOException | MessagingException | WTException ex) {
 			logger.warn("Unable to prepare invite notification", ex);
 		}
+	}
+	
+	/*
+	private static enum ReplyingAttendeeType {
+		ID, ADDRESS;
+	}
+	
+	private void notifyOrganizer2(final UserProfileId sendingProfileId, final Event event, final ReplyingAttendeeType replyingType, final String replyingAttendee) throws WTException {
+		final String sentFolder = null;
+		
+		try {
+			// Find the attendee (in event) that has updated its response
+			EventAttendee targetAttendee = null;
+			for (EventAttendee attendee : event.getAttendees()) {
+				boolean match = false;
+				if (ReplyingAttendeeType.ID.equals(replyingType)) {
+					match = attendee.getAttendeeId().equals(replyingAttendee);
+					
+				} else if (ReplyingAttendeeType.ADDRESS.equals(replyingType)) {
+					final InternetAddress ia = InternetAddressUtils.toInternetAddress(replyingAttendee);
+					match = (ia != null && StringUtils.equals(ia.getAddress(), attendee.getRecipientAddress()));
+				}
+				
+				if (match) {
+					targetAttendee = attendee;
+					break;
+				}
+			}
+			if (targetAttendee == null) throw new WTException("Attendee not found [{0}]", updatedAttendeeId);
+			
+			
+		}
+		
+		WT.sendEmail(sendingProfileId, email, sentFolder);
+	}
+	*/
+	
+	private void replyToOrganizer(final UserProfileId sendingProfileId, final Event event, final String replyingAttendeeId, final net.fortuna.ical4j.model.parameter.PartStat response) throws WTParseException, WTException {
+		// Find the attendee (in event) that has updated its response
+		EventAttendee targetAttendee = null;
+		for (EventAttendee attendee : event.getAttendees()) {
+			if (attendee.getAttendeeId().equals(replyingAttendeeId)) {
+				targetAttendee = attendee;
+				break;
+			}
+		}
+		if (targetAttendee == null) throw new WTException("Attendee not found [{0}]", replyingAttendeeId);
+		
+		ICalendarOutput out = new ICalendarOutput(ICalendarUtils.buildProdId(ManagerUtils.getProductName()));
+		final net.fortuna.ical4j.model.Calendar icalRequest = out.toCalendar(net.fortuna.ical4j.model.property.Method.REQUEST, event);
+		replyToOrganizer(sendingProfileId, targetAttendee.getRecipientInternetAddress(), icalRequest, response);
+	}
+	
+	public void replyToOrganizer(final InternetAddress forAddress, final net.fortuna.ical4j.model.Calendar icalRequest, final net.fortuna.ical4j.model.parameter.PartStat response) throws WTParseException, WTException {
+		replyToOrganizer(getTargetProfileId(), forAddress, icalRequest, response);
+	}
+	
+	private void replyToOrganizer(final UserProfileId sendingProfileId, final InternetAddress forAddress, final net.fortuna.ical4j.model.Calendar icalRequest, final net.fortuna.ical4j.model.parameter.PartStat response) throws WTParseException, WTException {
+		final Locale locale = getProfileOrTargetLocale(sendingProfileId);
+		
+		final String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
+		final InternetAddress iaOrganizer = ICalendarUtils.getOrganizerAddress(ICalendarUtils.getVEvent(icalRequest));
+		final EmailMessage email = com.sonicle.webtop.core.util.ICalendarHelper.prepareICalendarReply(prodId, icalRequest, forAddress, iaOrganizer, response, locale);
+		WT.sendEmail(sendingProfileId, email, null);
 	}
 	
 	private void notifyOrganizer(UserProfileId senderProfileId, Event event, String updatedAttendeeId) {
@@ -4843,157 +5202,105 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (!owner.equals(getTargetProfileId())) shareCache.init();
 	}
 	
-	private void checkRightsOnCalendarRoot(UserProfileId owner, String action) throws WTException {
+	private void checkRightsOnCalendarOrigin(UserProfileId originPid, String action) throws WTException {
 		UserProfileId targetPid = getTargetProfileId();
 		
 		if (RunContext.isWebTopAdmin()) return;
-		if (owner.equals(targetPid)) return;
+		if (originPid.equals(targetPid)) return;
 		
-		String shareId = shareCache.getShareRootIdByOwner(owner);
-		if (shareId == null) throw new WTException("ownerToRootShareId({0}) -> null", owner);
-		CoreManager core = WT.getCoreManager(targetPid);
-		if (core.isShareRootPermitted(shareId, action)) return;
+		final CalendarFSOrigin origin = shareCache.getOrigin(originPid);
+		if (origin == null) throw new WTException("Origin not found [{}]", originPid);
+		CoreManager coreMgr = WT.getCoreManager(targetPid);
 		
+		boolean result = coreMgr.evaluateFolderSharePermission(SERVICE_ID, GROUPNAME_CALENDAR, origin.getProfileId(), FolderSharing.Scope.wildcard(), true, FolderShare.EvalTarget.FOLDER, action);
+		if (result) return;
 		UserProfileId runPid = RunContext.getRunProfileId();
-		throw new AuthException("Action '{}' not allowed for '{}' on root share '{}' [{}, {}]", action, runPid, shareId, GROUPNAME_CALENDAR, targetPid.toString());
+		throw new AuthException("Action '{}' not allowed for '{}' on origin '{}' [{}, {}]", action, runPid, origin.getProfileId(), GROUPNAME_CALENDAR, targetPid.toString());
 	}
 	
-	private boolean quietlyCheckRightsOnCalendar(int calendarId, CheckRightsTarget target, String action) {
+	private boolean quietlyCheckRightsOnCalendar(int calendarId, BitFlagsEnum<? extends Enum> right) {
 		try {
-			checkRightsOnCalendar(calendarId, target, action);
+			checkRightsOnCalendar(calendarId, right);
 			return true;
-		} catch(AuthException ex1) {
+		} catch (AuthException ex1) {
 			return false;
-		} catch(WTException ex1) {
-			logger.warn("Unable to check rights [{}]", calendarId);
+		} catch (WTException ex1) {
+			logger.warn("Unable to check rights [{}]", calendarId, ex1);
 			return false;
 		}
 	}
 	
-	private void checkRightsOnCalendar(Set<Integer> okCache, int calendarId, CheckRightsTarget target, String action) throws WTException {
+	private void checkRightsOnCalendar(Set<Integer> okCache, int calendarId, BitFlagsEnum<? extends Enum> right) throws WTException {
 		if (!okCache.contains(calendarId)) {
-			checkRightsOnCalendar(calendarId, target, action);
+			checkRightsOnCalendar(calendarId, right);
 			okCache.add(calendarId);
 		}
 	}
 	
-	private void checkRightsOnCalendar(int calendarId, CheckRightsTarget target, String action) throws WTException {
+	private void checkRightsOnCalendar(int calendarId, BitFlagsEnum<? extends Enum> right) throws WTException {
 		UserProfileId targetPid = getTargetProfileId();
 		Subject subject = RunContext.getSubject();
 		UserProfileId runPid = RunContext.getRunProfileId(subject);
-		UserProfileId owner = ownerCache.get(calendarId);
-		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
+		
+		FolderShare.EvalTarget target = null;
+		if (right instanceof FolderShare.FolderRight) {
+			target = FolderShare.EvalTarget.FOLDER;
+		} else if (right instanceof FolderShare.ItemsRight) {
+			target = FolderShare.EvalTarget.FOLDER_ITEMS;
+		} else {
+			throw new WTRuntimeException("Unsupported right");
+		}
+		
+		final UserProfileId ownerPid = ownerCache.get(calendarId);
+		if (ownerPid == null) throw new WTException("Owner not found [{}]", calendarId);
 		
 		if (RunContext.isWebTopAdmin(subject)) {
 			// Skip checks for running wtAdmin and sysAdmin target
 			if (targetPid.equals(RunContext.getSysAdminProfileId())) return;
-			
 			// Skip checks if target is the resource owner
-			if (owner.equals(targetPid)) return;
-			
+			if (ownerPid.equals(targetPid)) return;
 			// Skip checks if resource is a valid incoming folder
 			if (shareCache.getFolderIds().contains(calendarId)) return;
 			
 			String exMsg = null;
-			if (CheckRightsTarget.FOLDER.equals(target)) {
+			if (FolderShare.EvalTarget.FOLDER.equals(target)) {
 				exMsg = "Action '{}' not allowed for '{}' on folder '{}' [{}, {}]";
-			} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
+			} else if (FolderShare.EvalTarget.FOLDER_ITEMS.equals(target)) {
 				exMsg = "Action '{}' not allowed for '{}' on elements of folder '{}' [{}, {}]";
 			}
-			throw new AuthException(exMsg, action, runPid, calendarId, GROUPNAME_CALENDAR, targetPid.toString());
+			
+			throw new AuthException(exMsg, right.name(), runPid, calendarId, GROUPNAME_CALENDAR, targetPid.toString());
 			
 		} else {
 			// Skip checks if target is the resource owner and it's the running profile
-			if (owner.equals(targetPid) && targetPid.equals(runPid)) return;
+			if (ownerPid.equals(targetPid) && targetPid.equals(runPid)) return;
 			
-			// Checks rights on the wildcard instance (if present)
-			CoreManager core = WT.getCoreManager(targetPid);
-			String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
-			if (wildcardShareId != null) {
-				if (CheckRightsTarget.FOLDER.equals(target)) {
-					if (core.isShareFolderPermitted(wildcardShareId, action)) return;
-				} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
-					if (core.isShareElementsPermitted(wildcardShareId, action)) return;
-					//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
-				}
-			}
+			CalendarFSOrigin origin = shareCache.getOriginByFolderId(calendarId);
+			if (origin == null) throw new WTException("Origin not found [{}]", calendarId);
+			CoreManager coreMgr = WT.getCoreManager(targetPid);
 			
-			// Checks rights on calendar instance
-			String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
-			if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-			if (CheckRightsTarget.FOLDER.equals(target)) {
-				if (core.isShareFolderPermitted(shareId, action)) return;
-			} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
-				if (core.isShareElementsPermitted(shareId, action)) return;
-				//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
-			}
+			Boolean eval = null;
+			if (origin.isResource()) {
+				// Check right at wildcard scope
+				eval = coreMgr.evaluateFolderSharePermission(CoreManifest.ID, "RESOURCE", ownerPid, FolderSharing.Scope.wildcard(), false, target, right.name());
+				if (eval != null && eval == true) return;
+			} else {
+				// Check right at wildcard scope
+				eval = coreMgr.evaluateFolderSharePermission(SERVICE_ID, GROUPNAME_CALENDAR, ownerPid, FolderSharing.Scope.wildcard(), false, target, right.name());
+				if (eval != null && eval == true) return;
+				// Check right at folder scope
+				eval = coreMgr.evaluateFolderSharePermission(SERVICE_ID, GROUPNAME_CALENDAR, ownerPid, FolderSharing.Scope.folder(String.valueOf(calendarId)), false, target, right.name());
+				if (eval != null && eval == true) return;
+			}	
 			
 			String exMsg = null;
-			if (CheckRightsTarget.FOLDER.equals(target)) {
+			if (FolderShare.EvalTarget.FOLDER.equals(target)) {
 				exMsg = "Action '{}' not allowed for '{}' on folder '{}' [{}, {}, {}]";
-			} else if (CheckRightsTarget.ELEMENTS.equals(target)) {
+			} else if (FolderShare.EvalTarget.FOLDER_ITEMS.equals(target)) {
 				exMsg = "Action '{}' not allowed for '{}' on elements of folder '{}' [{}, {}, {}]";
 			}
-			throw new AuthException(exMsg, action, runPid, calendarId, shareId, GROUPNAME_CALENDAR, targetPid.toString());
+			throw new AuthException(exMsg, right.name(), runPid, calendarId, ownerPid, GROUPNAME_CALENDAR, targetPid.toString());
 		}
-	}
-	
-	/*
-	private void checkRightsOnCalendarFolder(int calendarId, String action) throws WTException {
-		UserProfileId targetPid = getTargetProfileId();
-		
-		if(RunContext.isWebTopAdmin()) return;
-		
-		// Skip rights check if running user is resource's owner
-		UserProfileId owner = ownerCache.get(calendarId);
-		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
-		if (owner.equals(targetPid)) return;
-		
-		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(targetPid);
-		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
-		if (wildcardShareId != null) {
-			if (core.isShareFolderPermitted(wildcardShareId, action)) return;
-		}
-		
-		// Checks rights on calendar instance
-		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
-		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if (core.isShareFolderPermitted(shareId, action)) return;
-		
-		throw new AuthException("Action not allowed on folder share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
-	}
-	
-	private void checkRightsOnCalendarElements(int calendarId, String action) throws WTException {
-		UserProfileId targetPid = getTargetProfileId();
-		
-		if(RunContext.isWebTopAdmin()) return;
-		
-		// Skip rights check if running user is resource's owner
-		UserProfileId owner = ownerCache.get(calendarId);
-		if (owner == null) throw new WTException("calendarToOwner({0}) -> null", calendarId);
-		if (owner.equals(targetPid)) return;
-		
-		// Checks rights on the wildcard instance (if present)
-		CoreManager core = WT.getCoreManager(targetPid);
-		String wildcardShareId = shareCache.getWildcardShareFolderIdByOwner(owner);
-		if (wildcardShareId != null) {
-			if (core.isShareElementsPermitted(wildcardShareId, action)) return;
-			//if(core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, wildcardShareId)) return;
-		}
-		
-		// Checks rights on calendar instance
-		String shareId = shareCache.getShareFolderIdByFolderId(calendarId);
-		if (shareId == null) throw new WTException("calendarToLeafShareId({0}) -> null", calendarId);
-		if (core.isShareElementsPermitted(shareId, action)) return;
-		//if (core.isShareElementsPermitted(SERVICE_ID, RESOURCE_CALENDAR, action, shareId)) return;
-		
-		throw new AuthException("Action not allowed on elements share [{0}, {1}, {2}, {3}]", shareId, action, GROUPNAME_CALENDAR, targetPid.toString());
-	}
-	*/
-	
-	private enum CheckRightsTarget {
-		FOLDER, ELEMENTS
 	}
 	
 	private ReminderInApp createEventReminderAlertWeb(VExpEventInstance instance) {
@@ -5241,6 +5548,177 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		public T createInstance(String key, DateTime startDate, DateTime endDate);
 	}
 	
+	private class EventBoundsRecurringContext implements RecurringInstanceContext<ComparableEventBounds> {
+		private final Event event;
+		
+		public EventBoundsRecurringContext(Event event) {
+			this.event = event;
+		}
+		
+		@Override
+		public DateTimeZone getTimezone() {
+			return event.getDateTimeZone();
+		}
+
+		@Override
+		public Integer getEventId() {
+			return event.getEventId();
+		}
+
+		@Override
+		public DateTime getEventStart() {
+			return event.getStartDate();
+		}
+
+		@Override
+		public DateTime getEventEnd() {
+			return event.getEndDate();
+		}
+		
+		@Override
+		public boolean isEventAllDay() {
+			return event.getAllDay();
+		}
+
+		@Override
+		public DateTime getRecurrenceStart() {
+			LocalDate localDate = event.getRecurrenceStartDate();
+			if (localDate != null) {
+				DateTimeZone timezone = event.getDateTimeZone();
+				return localDate.toDateTime(event.getStartDate().withZone(timezone).toLocalTime(), timezone);
+			} else {
+				return null;
+			}
+		}
+
+		@Override
+		public Recur getRecurrenceDefinition() {
+			return ICal4jUtils.parseRRule(event.getRecurrenceRule());
+		}
+
+		@Override
+		public Set<LocalDate> getRecurrenceExclDates() {
+			return event.getExcludedDates();
+		}
+		
+		@Override
+		public ComparableEventBounds createInstance(EventInstanceId id, DateTime start, DateTime end, String legacyKey) {
+			return new ComparableEventBounds(start, end, id);
+		}
+	}
+	
+	private class VEventFootprintBoundsRecurringContext implements RecurringInstanceContext<ComparableEventBounds> {
+		private final VEventFootprint event;
+		private final ORecurrence recurrence;
+		private final Set<LocalDate> recurrenceExclDates;
+		
+		public VEventFootprintBoundsRecurringContext(Connection con, VEventFootprint event) {
+			this.event = event;
+			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+			RecurrenceBrokenDAO recbDao = RecurrenceBrokenDAO.getInstance();
+			this.recurrence = recDao.selectByEvent(con, event.getEventId());
+			this.recurrenceExclDates = (recurrence != null) ? recbDao.selectDatesByEventRecurrence(con, event.getEventId(), recurrence.getRecurrenceId()) : null;
+		}
+		
+		@Override
+		public DateTimeZone getTimezone() {
+			return event.getTimezoneObject();
+		}
+
+		@Override
+		public Integer getEventId() {
+			return event.getEventId();
+		}
+
+		@Override
+		public DateTime getEventStart() {
+			return event.getStartDate();
+		}
+
+		@Override
+		public DateTime getEventEnd() {
+			return event.getEndDate();
+		}
+		
+		@Override
+		public boolean isEventAllDay() {
+			return event.getAllDay();
+		}
+
+		@Override
+		public DateTime getRecurrenceStart() {
+			return recurrence != null ? recurrence.getStartDate(): null;
+		}
+
+		@Override
+		public Recur getRecurrenceDefinition() {
+			return recurrence != null ? recurrence.getRecur() : null;
+		}	
+
+		@Override
+		public Set<LocalDate> getRecurrenceExclDates() {
+			return recurrenceExclDates;
+		}
+		
+		@Override
+		public ComparableEventBounds createInstance(EventInstanceId id, DateTime start, DateTime end, String legacyKey) {
+			return new ComparableEventBounds(start, end, id);
+		}
+	}
+	
+	private interface RecurringInstanceContext<T> {
+		public DateTimeZone getTimezone();
+		public Integer getEventId();
+		public DateTime getEventStart();
+		public DateTime getEventEnd();
+		public boolean isEventAllDay();
+		public DateTime getRecurrenceStart();
+		public Recur getRecurrenceDefinition();
+		public Set<LocalDate> getRecurrenceExclDates();
+		public T createInstance(EventInstanceId id, DateTime start, DateTime due, String legacyKey);
+	}
+	
+	private <T> List<T> calculateRecurringInstances(final RecurringInstanceContext<T> context, final DateTime spanFrom, final DateTime spanTo, final int limitNoOfInstances) throws WTException {
+		Check.notNull(context, "context");
+		ArrayList<T> instances = new ArrayList<>();
+		
+		final DateTimeZone timezone = context.getTimezone();
+		final Integer eventId = context.getEventId();
+		final DateTime eventStart = context.getEventStart();
+		final DateTime eventEnd = context.getEventEnd();
+		final DateTime recurStart = context.getRecurrenceStart();
+		final Recur recur = context.getRecurrenceDefinition();
+		
+		if (eventStart != null && eventEnd != null && recurStart != null && recur != null) {
+			LocalTime eventStartTime = eventStart.withZone(timezone).toLocalTime();
+			LocalTime eventEndTime = eventEnd.withZone(timezone).toLocalTime();
+			Integer dueDays = Math.abs(Days.daysBetween(eventStart.toLocalDate(), eventEnd.toLocalDate()).getDays());
+			
+			// Define initial computation range taken from parameters
+			DateTime rangeFrom = spanFrom;
+			DateTime rangeTo = spanTo;
+			
+			// No range specified, set a default window starting recurrence start
+			if (rangeFrom == null) rangeFrom = recurStart;
+			if (rangeTo == null) recurStart.plusYears(1);
+			
+			List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, recurStart, context.isEventAllDay(), context.getRecurrenceExclDates(), eventStart, eventEnd, timezone, rangeFrom, rangeTo, limitNoOfInstances);
+			for (LocalDate date : dates) {
+				final DateTime start = DateTimeUtils.toDateTime(date, eventStartTime, timezone);
+				final DateTime end = DateTimeUtils.toDateTime(date.plusDays(dueDays), eventEndTime, timezone);
+				final EventInstanceId id = EventInstanceId.build(String.valueOf(eventId), start, timezone);
+				final String legacyKey = EventKey.buildKey(eventId, eventId, date);
+				instances.add(context.createInstance(id, start, end, legacyKey));
+			}
+		} else {
+			if (eventStart == null) logger.warn("Event has NO valid start instant [{}]", eventId);
+			if (eventEnd == null) logger.warn("Event has NO valid end instant [{}]", eventId);
+			if (recurStart == null) logger.warn("Event has NO recurrence start instant", eventId);
+			if (recur == null) logger.warn("Event has NO recurrence rule [{}]", eventId);
+		}
+		return instances;
+	}
+	
 	public static class EventInsertResult {
 		public final OEvent oevent;
 		public final ORecurrence orecurrence;
@@ -5296,54 +5774,52 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private class ShareCache extends AbstractShareCache<Integer, ShareRootCalendar> {
-
+	private class ShareCache extends AbstractFolderShareCache<Integer, CalendarFSOrigin> {
 		@Override
-		protected void internalInitCache() {
+		protected void internalBuildCache() {
 			final CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
 			try {
-				for (ShareRootCalendar root : internalListIncomingCalendarShareRoots()) {
-					shareRoots.add(root);
-					ownerToShareRoot.put(root.getOwnerProfileId(), root);
+				for (CalendarFSOrigin origin : getOrigins(coreMgr)) {
+					origins.add(origin);
+					originByProfile.put(origin.getProfileId(), origin);
 					
-					// While getting folders, we need to keep implicit order defined
-					// in DB access layer. When dealing with wildcards, it's already
-					// ensured by the situation while with explicit share we have to
-					// use the internal query to ensure the correct semantic 
-					// ordering of folder IDs!
-					
-					boolean wildcardFound = false;
-					Map<Integer, OShare> explicitShares = new LinkedHashMap<>();
-					for (OShare folder : coreMgr.listIncomingShareFolders(root.getShareId(), GROUPNAME_CALENDAR)) {
-						if (folder.hasWildcard()) {
-							wildcardFound = true;
-							final UserProfileId ownerPid = coreMgr.userUidToProfileId(folder.getUserUid());
-							for (Integer calendarId : listCalendarIds(ownerPid)) {
-								folderTo.add(calendarId);
-								rootShareToFolderShare.put(root.getShareId(), calendarId);
-								folderToWildcardShareFolder.put(calendarId, folder.getShareId().toString());
-							}
-							ownerToWildcardShareFolder.put(ownerPid, folder.getShareId().toString());
-							break; // If we have wildcard, it's enought...skip other folders!
-							
-						} else {
-							explicitShares.put(Integer.valueOf(folder.getInstance()), folder);
-						}
+					FolderShareOriginFolders folders = null;
+					if (origin.isResource()) {
+						folders = coreMgr.getFolderShareOriginFolders(CoreManifest.ID, "RESOURCE", origin.getProfileId());
+					} else {
+						folders = coreMgr.getFolderShareOriginFolders(SERVICE_ID, GROUPNAME_CALENDAR, origin.getProfileId());
 					}
+					foldersByProfile.put(origin.getProfileId(), folders);
 					
-					if (!wildcardFound) {
-						for (Integer explicitCalendarId : listCalendarIdsIn(root.getOwnerProfileId(), explicitShares.keySet())) {
-							folderTo.add(explicitCalendarId);
-							rootShareToFolderShare.put(root.getShareId(), explicitCalendarId);
-							final OShare share = explicitShares.get(explicitCalendarId);
-							folderToShareFolder.put(explicitCalendarId, share.getShareId().toString());
-						}
+					final Set<Integer> calendarIds;
+					if (folders.wildcard()) {
+						calendarIds = listCalendarIds(origin.getProfileId());
+					} else {
+						Set<Integer> ids = folders.getFolderIds().stream()
+							.map(value -> Integer.valueOf(value))
+							.collect(Collectors.toSet());
+						calendarIds = listCalendarIdsIn(origin.getProfileId(), ids);
 					}
+					calendarIds.forEach(calendarId -> {originByFolderId.put(calendarId, origin);});
+					folderIdsByProfile.putAll(origin.getProfileId(), calendarIds);
+					folderIds.addAll(calendarIds);
 				}
-				ready = true;
-			} catch(WTException ex) {
-				throw new WTRuntimeException(ex.getMessage());
+			} catch (WTException ex) {
+				throw new WTRuntimeException("[ShareCache] Unable to load", ex);
 			}
+		}
+		
+		private List<CalendarFSOrigin> getOrigins(final CoreManager coreMgr) throws WTException {
+			List<CalendarFSOrigin> items = new ArrayList<>();
+			for (FolderShareOrigin origin : coreMgr.listFolderShareOrigins(SERVICE_ID, GROUPNAME_CALENDAR)) {
+				final FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(SERVICE_ID, GROUPNAME_CALENDAR, origin.getProfileId(), FolderSharing.Scope.wildcard(), true);
+				items.add(new CalendarFSOrigin(origin, permissions, false));
+			}
+			for (FolderShareOrigin origin : coreMgr.listFolderShareOrigins(CoreManifest.ID, "RESOURCE")) {
+				final FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(CoreManifest.ID, "RESOURCE", origin.getProfileId(), FolderSharing.Scope.wildcard(), true);
+				items.add(new CalendarFSOrigin(origin, permissions, true));
+			}
+			return items;
 		}
 	}
 	

@@ -102,7 +102,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 			rootVisible: false,
 			store: {
 				autoLoad: true,
-				model: 'Sonicle.webtop.calendar.model.FolderNode',
+				model: 'Sonicle.webtop.calendar.model.FolderNode2',
 				proxy: WTF.apiProxy(me.mys.ID, 'ManageFoldersTree', 'children', {
 					extraParams: {
 						crud: 'read',
@@ -116,7 +116,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 			columns: [{
 				xtype: 'sotreecolumn',
 				dataIndex: 'text',
-				renderer: WTA.util.FoldersTree.coloredBoxTreeRenderer({
+				renderer: WTA.util.FoldersTree2.coloredBoxTreeRenderer({
 					defaultText: me.res('trfolders.default')
 				}),
 				flex: 1
@@ -129,11 +129,11 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 				},
 				selectionchange: function(s, sel) {
 					var me = this,
-							rec = sel[0];
-					if (rec) {
+							node = sel[0];
+					if (node) {
 						me.getVM().set({
-							calendarId: rec.get('_calId'),
-							profileId: rec.get('_pid')
+							calendarId: node.getFolderId(),
+							profileId: node.getOwnerId()
 						});
 					}
 				},

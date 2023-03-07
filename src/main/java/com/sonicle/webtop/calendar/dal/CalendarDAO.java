@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.dal;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OCalendarOwnerInfo;
+import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
@@ -89,6 +90,21 @@ public class CalendarDAO extends BaseDAO {
 				.and(CALENDARS.USER_ID.equal(userId))
 			)
 			.fetchOne(0, Integer.class) == 1;
+	}
+	
+	public VCalendarDefaults selectDefaultsById(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				CALENDARS.IS_PRIVATE.as("defaults_private"),
+				CALENDARS.BUSY.as("defaults_busy"),
+				CALENDARS.REMINDER.as("defaults_reminder")
+			)
+			.from(CALENDARS)
+			.where(
+				CALENDARS.CALENDAR_ID.equal(calendarId)
+			)
+			.fetchOneInto(VCalendarDefaults.class);
 	}
 	
 	public OCalendarOwnerInfo selectOwnerInfoById(Connection con, int calendarId) throws DAOException {

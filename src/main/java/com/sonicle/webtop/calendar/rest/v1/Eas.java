@@ -38,15 +38,14 @@ import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.EventObjectOutputType;
-import com.sonicle.webtop.calendar.NotFoundException;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarFSFolder;
+import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
-import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
-import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.swagger.v1.api.EasApi;
 import com.sonicle.webtop.calendar.swagger.v1.model.ApiError;
 import com.sonicle.webtop.calendar.swagger.v1.model.SyncEvent;
@@ -57,9 +56,8 @@ import com.sonicle.webtop.calendar.swagger.v1.model.SyncEventUpdate;
 import com.sonicle.webtop.calendar.swagger.v1.model.SyncFolder;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
-import com.sonicle.webtop.core.model.SharePerms;
-import com.sonicle.webtop.core.model.SharePermsElements;
-import com.sonicle.webtop.core.model.SharePermsFolder;
+import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
+import com.sonicle.webtop.core.app.model.FolderShare;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import java.util.ArrayList;
@@ -101,38 +99,40 @@ public class Eas extends EasApi {
 		
 		try {
 			Integer defltCalendarId = manager.getDefaultCalendarId();
-			Map<Integer, Calendar> cals = manager.listCalendars();
-			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(cals.keySet());
-			for (Calendar cal : cals.values()) {
-				if (cal.isProviderRemote()) continue;
-				if (Calendar.Sync.OFF.equals(cal.getSync())) continue;
+			Map<Integer, Calendar> calendars = manager.listCalendars();
+			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(calendars.keySet());
+			for (Calendar calendar : calendars.values()) {
+				if (calendar.isProviderRemote()) continue;
+				if (Calendar.Sync.OFF.equals(calendar.getSync())) continue;
 				
-				final boolean isDefault = cal.getCalendarId().equals(defltCalendarId);
-				items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), null, ShareFolderCalendar.realElementsPerms(cal.getSync()), isDefault));
+				final boolean isDefault = calendar.getCalendarId().equals(defltCalendarId);
+				final FolderShare.Permissions permissions = Calendar.Sync.READ.equals(calendar.getSync()) ? FolderShare.Permissions.fullFolderOnly() : FolderShare.Permissions.full();
+				items.add(createSyncFolder(currentProfileId, calendar, revisions.get(calendar.getCalendarId()), permissions, isDefault));
 			}
 			
-			List<ShareRootCalendar> shareRoots = manager.listIncomingCalendarRoots();
-			for (ShareRootCalendar shareRoot : shareRoots) {
-				Map<Integer, ShareFolderCalendar> folders = manager.listIncomingCalendarFolders(shareRoot.getShareId());
-				revisions = manager.getCalendarsLastRevision(folders.keySet());
-				Map<Integer, CalendarPropSet> props = manager.getCalendarCustomProps(folders.keySet());
+			for (CalendarFSOrigin origin : manager.listIncomingCalendarOrigins().values()) {
+				if (origin.isResource()) continue;
 				
-				for (ShareFolderCalendar folder : folders.values()) {
-					Calendar cal = folder.getCalendar();
-					if (cal.isProviderRemote()) continue;
-					CalendarPropSet calProps = props.get(cal.getCalendarId());
-					if (Calendar.Sync.OFF.equals(calProps.getSyncOrDefault(Calendar.Sync.OFF))) continue;
+				Map<Integer, CalendarFSFolder> folders = manager.listIncomingCalendarFolders(origin);
+				Map<Integer, CalendarPropSet> folderProps = manager.getCalendarCustomProps(folders.keySet());
+				revisions = manager.getCalendarsLastRevision(folders.keySet());
+				for (CalendarFSFolder folder : folders.values()) {
+					Calendar calendar = folder.getCalendar();
+					if (calendar.isProviderRemote()) continue;
+					CalendarPropSet props = folderProps.get(calendar.getCalendarId());
+					if (Calendar.Sync.OFF.equals(props.getSyncOrDefault(Calendar.Sync.OFF))) continue;
 					
-					final boolean isDefault = cal.getCalendarId().equals(defltCalendarId);
-					items.add(createSyncFolder(currentProfileId, cal, revisions.get(cal.getCalendarId()), folder.getPerms(), folder.getRealElementsPerms(calProps.getSync()), isDefault));
+					final boolean isDefault = calendar.getCalendarId().equals(defltCalendarId);
+					final FolderShare.Permissions permissions = Calendar.Sync.READ.equals(props.getSync()) ? FolderShare.Permissions.withFolderPermissionsOnly(folder.getPermissions()) : folder.getPermissions();
+					items.add(createSyncFolder(currentProfileId, calendar, revisions.get(calendar.getCalendarId()), permissions, isDefault));
 				}
 			}
 			
 			return respOk(items);
 			
-		} catch(Throwable t) {
-			logger.error("[{}] getFolders()", currentProfileId, t);
-			return respError(t);
+		} catch(Exception ex) {
+			logger.error("[{}] getFolders()", ex, currentProfileId);
+			return respError(ex);
 		}
 	}
 
@@ -159,9 +159,9 @@ public class Eas extends EasApi {
 			}
 			return respOk(items);
 			
-		} catch(Throwable t) {
-			logger.error("[{}] getMessagesStats({})", RunContext.getRunProfileId(), folderId, t);
-			return respError(t);
+		} catch(Exception ex) {
+			logger.error("[{}] getMessagesStats({})", ex, RunContext.getRunProfileId(), folderId);
+			return respError(ex);
 		}
 	}
 	
@@ -185,9 +185,9 @@ public class Eas extends EasApi {
 				return respErrorNotFound();
 			}
 			
-		} catch(Throwable t) {
-			logger.error("[{}] getMessage({}, {})", RunContext.getRunProfileId(), folderId, id, t);
-			return respError(t);
+		} catch(Exception ex) {
+			logger.error("[{}] getMessage({}, {})", ex, RunContext.getRunProfileId(), folderId, id);
+			return respError(ex);
 		}
 	}
 
@@ -210,9 +210,9 @@ public class Eas extends EasApi {
 			
 			return respOkCreated(createSyncEventStat(evtobj));
 			
-		} catch(Throwable t) {
-			logger.error("[{}] addMessage({}, ...)", RunContext.getRunProfileId(), folderId, t);
-			return respError(t);
+		} catch(Exception ex) {
+			logger.error("[{}] addMessage({}, ...)", ex, RunContext.getRunProfileId(), folderId);
+			return respError(ex);
 		}
 	}
 
@@ -256,9 +256,9 @@ public class Eas extends EasApi {
 			
 			return respOk(createSyncEventStats(evtobjs));
 			
-		} catch(Throwable t) {
-			logger.error("[{}] updateMessage({}, {}, ...)", RunContext.getRunProfileId(), folderId, id, t);
-			return respError(t);
+		} catch(Exception ex) {
+			logger.error("[{}] updateMessage({}, {}, ...)", ex, RunContext.getRunProfileId(), folderId, id);
+			return respError(ex);
 		}
 	}
 
@@ -274,15 +274,15 @@ public class Eas extends EasApi {
 			manager.deleteEvent(id, true);
 			return respOkNoContent();
 			
-		} catch(NotFoundException ex) {
+		} catch (WTNotFoundException ex) {
 			return respErrorNotFound();
-		} catch(Throwable t) {
-			logger.error("[{}] deleteMessage({}, {})", RunContext.getRunProfileId(), folderId, id, t);
-			return respError(t);
+		} catch(Exception ex) {
+			logger.error("[{}] deleteMessage({}, {})", ex, RunContext.getRunProfileId(), folderId, id);
+			return respError(ex);
 		}
 	}
 	
-	private SyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, DateTime lastRevisionTimestamp, SharePerms folderPerms, SharePerms elementPerms, boolean isDefault) {
+	private SyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions, boolean isDefault) {
 		String displayName = cal.getName();
 		if (!currentProfileId.equals(cal.getProfileId())) {
 			UserProfile.Data owud = WT.getUserData(cal.getProfileId());
@@ -296,8 +296,8 @@ public class Eas extends EasApi {
 				.displayName(displayName)
 				.etag(buildEtag(lastRevisionTimestamp))
 				.deflt(isDefault)
-				.foAcl((folderPerms == null) ? SharePermsFolder.full().toString() : folderPerms.toString())
-				.elAcl((elementPerms == null) ? SharePermsElements.full().toString() : elementPerms.toString())
+				.foAcl(permissions.toString())
+				.elAcl(permissions.toString())
 				.ownerId(cal.getProfileId().toString());
 	}
 	

@@ -115,17 +115,10 @@ public class CalendarSettings {
 	
 	/**
 	 * [user]
-	 * [string]
-	 * Selected folder root node.
-	 */
-	public static final String SELECTED_CALENDAR_ROOTS = "calendar.roots.selected";
-	
-	/**
-	 * [user]
 	 * [string[]]
-	 * List of deactivated folder root nodes.
+	 * List of deactivated origin nodes.
 	 */
-	public static final String INACTIVE_CALENDAR_ROOTS = "calendar.roots.inactive";
+	public static final String INACTIVE_CALENDAR_ORIGINS = "calendar.origins.inactive";
 	
 	/**
 	 * [user]

@@ -50,9 +50,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'WTA.ux.field.SuggestCombo',
 		'WTA.ux.grid.Attachments',
 		'WTA.ux.panel.CustomFieldsEditor',
+		'WTA.model.SubjectLkp',
 		'WTA.model.ActivityLkp',
 		'WTA.model.CausalLkp',
 		'WTA.store.Timezone',
+		'Sonicle.webtop.calendar.ux.PlanningGrid',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.CalendarLkp',
 		'Sonicle.webtop.calendar.store.Reminder',
@@ -71,11 +73,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		width: 700
 		//height: see below...
 	},
+	actionsResPrefix: 'event',
 	confirm: 'yn',
 	autoToolbar: false,
 	fieldTitle: 'title',
 	modelName: 'Sonicle.webtop.calendar.model.Event',
 	
+	planningResolution: 30,
 	suspendCheckboxChange: true,
 	suspendPlanningRefresh: 0,
 	suspendEventsInRR: false,
@@ -305,6 +309,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			]
 		});
 		me.callParent(arguments);
+		
+		me.resourcesStore = Ext.create('Ext.data.Store', {
+			autoLoad: true,
+			model: 'WTA.model.SubjectLkp',
+			proxy: WTF.proxy(me.mys.ID, 'LookupResources', null)
+		});
 		
 		var main, appo, attends, recur, attachs;
 		main = {
@@ -536,13 +546,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					bind: '{isPrivate}',
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
-					boxLabel: me.mys.res('event.fld-private.lbl')
+					boxLabel: me.res('event.fld-private.lbl')
 				}, {
 					xtype: 'checkbox',
 					bind: '{busy}',
 					margin: '0 20 0 0',
 					hideEmptyLabel: true,
-					boxLabel: me.mys.res('event.fld-busy.lbl')
+					boxLabel: me.res('event.fld-busy.lbl')
 				}]
 			}, {
 				xtype: 'formseparator',
@@ -578,7 +588,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				triggers: {
 					clear: WTF.clearTrigger()
 				},
-				fieldLabel: me.mys.res('event.fld-activity.lbl'),
+				fieldLabel: me.res('event.fld-activity.lbl'),
 				anchor: '100%'
 			}),
 			WTF.remoteCombo('id', 'desc', {
@@ -605,7 +615,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						model.set('causalId', null);
 					}
 				},
-				fieldLabel: me.mys.res('event.fld-masterData.lbl'),
+				fieldLabel: me.res('event.fld-masterData.lbl'),
 				anchor: '100%'
 			}),
 			WTF.remoteCombo('id', 'desc', {
@@ -629,7 +639,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				triggers: {
 					clear: WTF.clearTrigger()
 				},
-				fieldLabel: me.mys.res('event.fld-statMasterData.lbl'),
+				fieldLabel: me.res('event.fld-statMasterData.lbl'),
 				anchor: '100%'
 			}),
 			WTF.remoteCombo('id', 'desc', {
@@ -665,7 +675,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				triggers: {
 					clear: WTF.clearTrigger()
 				},
-				fieldLabel: me.mys.res('event.fld-causal.lbl'),
+				fieldLabel: me.res('event.fld-causal.lbl'),
 				anchor: '100%'
 			})]
 		};
@@ -690,7 +700,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						editor: {
 							xtype: 'checkbox'
 						},
-						header: me.mys.res('event.gp-attendees.notify.lbl'),
+						header: me.res('event.gp-attendees.notify.lbl'),
 						width: 70
 					}, {
 						dataIndex: 'recipient',
@@ -703,7 +713,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							}
 						},
 						renderer: Ext.util.Format.htmlEncode,
-						header: me.mys.res('event.gp-attendees.recipient.lbl'),
+						header: me.res('event.gp-attendees.recipient.lbl'),
 						flex: 1
 					}, {
 						dataIndex: 'recipientType',
@@ -718,7 +728,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								type: 'wtcalattendeercpttype'
 							}
 						}),
-						header: me.mys.res('event.gp-attendees.recipientType.lbl'),
+						header: me.res('event.gp-attendees.recipientType.lbl'),
 						width: 110
 					}, {
 						dataIndex: 'recipientRole',
@@ -733,7 +743,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								type: 'wtcalattendeercptrole'
 							}
 						}),
-						header: me.mys.res('event.gp-attendees.recipientRole.lbl'),
+						header: me.res('event.gp-attendees.recipientRole.lbl'),
 						width: 110
 					}, {
 						dataIndex: 'responseStatus',
@@ -748,7 +758,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								type: 'wtcalattendeerespstatus'
 							}
 						}),
-						header: me.mys.res('event.gp-attendees.responseStatus.lbl'),
+						header: me.res('event.gp-attendees.responseStatus.lbl'),
 						width: 110
 					}, {
 						xtype: 'actioncolumn',
@@ -771,13 +781,25 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						ptype: 'cellediting',
 						clicksToEdit: 1
 					}],
+					listeners: {
+						beforeedit: function(s, loc) {
+							// Prevent changing field if attendee is a resource!
+							if (loc.record.get('recipientType') === 'RES') return false;
+						}
+					},
 					tbar: [
 						me.addAct('addAttendee', {
-							text: WT.res('act-add.lbl'),
 							tooltip: null,
-							iconCls: 'wt-icon-add',
+							iconCls: null,
 							handler: function() {
 								me.addAttendeeUI();
+							}
+						}),
+						me.addAct('addResource', {
+							tooltip: null,
+							iconCls: null,
+							handler: function() {
+								me.addResourceUI();
 							}
 						}),
 						{
@@ -795,8 +817,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									handler: function() {
 										me.pasteList();
 									}
-								},
-								{
+								}, {
 									text: me.res('act-pasteContactsList.lbl'),
 									iconCls: 'wt-icon-clipboard-paste',
 									handler: function() {
@@ -804,7 +825,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									}
 								}
 							]
-						},						
+						},
 						'->',
 						{
 							xtype: 'button',
@@ -816,130 +837,49 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					],
 					border: false
 				}, {
-					xtype: 'gridpanel',
+					xtype: 'wtcalplanninggrid',
 					reference: 'gpplanning',
 					itemId: 'planning',
-					enableLocking: true,
-					selModel: {
-						type: 'spreadsheet',
-						columnSelect: true,
-						checkboxSelect: false,
-						cellSelect: false,
-						rowSelect: false
+					bind: {
+						eventStart: '{record.startDate}',
+						eventEnd: '{record.endDate}',
+						eventAllDay: '{record.allDay}',
+						eventTimezone: '{record.timezone}',
+						eventOrganizerProfile: '{record._profileId}'
 					},
-					store: {
-						model: 'WTA.ux.data.EmptyModel',
-						proxy: WTF.proxy(me.mys.ID, 'GetPlanning', 'data'),
-						listeners: {
-							metachange: function(s, meta) {
-								if (meta.colsInfo) {
-									// In order to draw a better view we need to nest grid columns (hours) 
-									// belonging to same day date under the same master header.
-									// So we need to create a nested structure identifying useful columns.
-									
-									var colsInfo = [];
-									Ext.iterate(meta.colsInfo, function(col,i) {
-										if (col.dataIndex === 'recipient') {
-											col.header = me.mys.res('event.gp-planning.recipient.lbl');
-											col.lockable = false;
-											col.locked = true;
-											col.width = 200;
-											
-											// Add this column as is... skip nesting
-											colsInfo.push(col);
-											
-										} else {
-											col.renderer = WTF.clsColRenderer({
-												clsPrefix: 'wtcal-planning-',
-												moreCls: (col.overlaps) ? 'wtcal-planning-overlaps' : null
-											});
-											col.resizable = false;
-											col.lockable = false;
-											col.sortable = false;
-											col.hideable = false;
-											col.menuDisabled = true;
-											col.draggable = false;
-											col.flex = 1;
-											
-											// Nest this column under right day date
-											if (colsInfo[colsInfo.length-1].date !== col.date) {
-												colsInfo.push({
-													date: col.date,
-													text: col.date,
-													lockable: false,
-													columns: []
-												});
-											}
-											colsInfo[colsInfo.length-1].columns.push(col);
-										}
-									});
-									me.lref('tabinvitation.gpplanning').reconfigure(s, colsInfo);
-								}
-							}
-						}
-					},
-					columns: [],
-					tbar: [
-						me.addAct('reloadPlanning', {
-							text: WT.res('act-refresh.lbl'),
-							tooltip: null,
-							iconCls: 'wt-icon-refresh',
-							handler: function() {
-								me.reloadPlanning();
-							}
-						}),
-						'-',
-						{
-							xtype: 'tbitem',
-							width: 15,
-							height: 15,
-							cls: 'wtcal-planning-legend-free'
-						}, {
-							xtype: 'tbtext',
-							html: me.mys.res('event.gp-planning.free')
-						}, {
-							xtype: 'tbitem',
-							width: 15,
-							height: 15,
-							cls: 'wtcal-planning-legend-busy'
-						}, {
-							xtype: 'tbtext',
-							html: me.mys.res('event.gp-planning.busy')
-						}, {
-							xtype: 'tbitem',
-							width: 15,
-							height: 15,
-							cls: 'wtcal-planning-legend-unknown'
-						}, {
-							xtype: 'tbtext',
-							html: me.mys.res('event.gp-planning.unknown')
-						},
-						'->',
-						{
-							xtype: 'button',
-							text: me.mys.res('event.btn-attendees.lbl'),
-							handler: function() {
-								me.lref('tabinvitation').getLayout().setActiveItem('attendees');
-							}
-						}
-					],
-					border: false,
+					serviceId: me.mys.ID,
+					serviceAction: 'GeneratePlanningView',
+					dayHeaderFmt: WT.getLongDateFmt(),
+					legendFreeText: me.res('wtcalplanninggrid.legend.free.txt'),
+					legendFreeWorkdayOffText: me.res('wtcalplanninggrid.legend.freeWorkdayOff.txt'),
+					legendBusyText: me.res('wtcalplanninggrid.legend.busy.txt'),
+					legendUnknownText: me.res('wtcalplanninggrid.legend.unknown.txt'),
+					viewOptionsHideWorkdayOffText: me.res('wtcalplanninggrid.viewOptions.hideWorkdayOff.lbl'),
+					viewOptionsResolutionText: me.res('wtcalplanninggrid.viewOptions.resolution.lbl'),
+					viewOptionsResolution60Text: me.res('wtcalplanninggrid.viewOptions.resolution.60.lbl'),
+					viewOptionsResolution30Text: me.res('wtcalplanninggrid.viewOptions.resolution.30.lbl'),
+					viewOptionsResolution15Text: me.res('wtcalplanninggrid.viewOptions.resolution.15.lbl'),
+					hidePlanningButtonText: me.res('wtcalplanninggrid.btn-hidePlanning.lbl'),
+					attendeeHeaderText: me.res('wtcalplanninggrid.attendee.lbl'),
+					organizerText: me.res('wtcalplanninggrid.organizer'),
 					listeners: {
 						activate: function() {
 							me.reloadPlanning();
 						},
-						selectionchange: function(s, sel) {
-							var dates = me.getPlanningSelectionDates(sel);
-							if (dates) {
-								me.suspendPlanningRefresh++;
-								me.getModel().setStart(dates[0]);
-								me.getModel().setEnd(dates[1]);
-								Ext.defer(function(){
-									me.suspendPlanningRefresh--;
-								}, 100);
-							}
+						hideplanning: function() {
+							me.lref('tabinvitation').getLayout().setActiveItem('attendees');
+						},
+						planningchange: function(s, start, end) {
+							var mo = me.getModel();
+							me.suspendPlanningRefresh++;
+							mo.setStart(start);
+							mo.setEnd(end);
+							Ext.defer(function(){
+								me.suspendPlanningRefresh--;
+							}, 100);
 						}
-					}
+					},
+					border: false
 				}
 			]
 		};
@@ -1097,6 +1037,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		vm.bind('{record.startDate}', me.onDatesChanged, me);
 		vm.bind('{record.endDate}', me.onDatesChanged, me);
 		vm.bind('{record.timezone}', me.onDatesChanged, me);
+		vm.bind('{record._profileId}', me.onDatesChanged, me);
 		vm.bind('{record.masterDataId}', me.onMasterDataChanged, me);
 		vm.bind('{foTags}', me.onTagsChanged, me);
 	},
@@ -1111,21 +1052,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	refreshCausals: function() {
 		this.lref('fldcausal').getStore().load();
-	},
-	
-	getPlanningSelectionDates: function(sel) {
-		var min, max, fmt = 'Y-m-d H:i';
-		Ext.iterate(sel.selectedColumns, function(col) {
-			if (min === undefined) min = col.dataIndex;
-			if (max === undefined) max = col.dataIndex;
-			if (col.dataIndex < min) min = col.dataIndex;
-			if (col.dataIndex > max) max = col.dataIndex;
-		});
-		if (min && max) {
-			return [Ext.Date.parseDate(min, fmt), Ext.Date.add(Ext.Date.parseDate(max, fmt), Ext.Date.MINUTE, 60)];
-		} else {
-			return null;
-		}
 	},
 	
 	onDatesChanged: function() {
@@ -1286,9 +1212,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	addAttendeeUI: function() {
 		var me = this,
-				gp = me.lref('tabinvitation.gpattendees'),
-				sto = gp.getStore(),
-				ed = gp.getPlugin('cellediting');
+			gp = me.lref('tabinvitation.gpattendees'),
+			sto = gp.getStore(),
+			ed = gp.getPlugin('cellediting');
 		
 		ed.cancelEdit();
 		sto.add(sto.createModel({
@@ -1298,6 +1224,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			responseStatus: 'NA'
 		}));
 		ed.startEditByPosition({row: sto.getCount()-1, column: 1});
+	},
+	
+	addResourceUI: function() {
+		var me = this;
+		me.showResourcePicker();
 	},
 	
 	deleteAttendeeUI: function(rec) {
@@ -1338,17 +1269,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	reloadPlanning: function() {
 		var me = this,
-				sto = me.lref('tabinvitation.gpplanning').getStore(),
-				model = me.getModel(),
-				serData = model.getData({serialize: true, associated: true});
-
-		WTA.Util.applyExtraParams(sto.getProxy(), {
-			startDate: serData['startDate'],
-			endDate: serData['endDate'],
-			timezone: serData['timezone'],
-			attendees: Ext.JSON.encode(serData['attendees'])
-		});
-		sto.load();
+			SoS = Sonicle.String,
+			gp = me.lref('tabinvitation.gpplanning'),
+			mo = me.getModel(),
+			recipients = Sonicle.Data.collectValues(mo.attendees(), 'recipient', null, function(value) {
+				return SoS.regexpExecAll(value, SoS.reMatchAnyRFC5322Addresses)[0];
+			});
+		
+		gp.refresh(recipients);
 	},
 	
 	printEvent: function(eventKey) {
@@ -1382,22 +1310,21 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		WT.confirm(me.mys.res('confirmBox.listChoose.lbl'), function(bid, value) {
 			if (bid === 'ok') {
 				var conSvc = WT.getServiceApi('com.sonicle.webtop.contacts');
-					conSvc.expandRecipientsList({
-							address: value
-						}, {
-							callback: function(success, json) {
-								if (success) {
-									var data = json.data,
-											emails = '', i;
-									for (i=0; i<data.length; i++) {
-										emails += data[i] + '\n';
-									}
-									this.loadValues(emails);
+				conSvc.expandRecipientsList({
+						address: value
+					}, {
+						callback: function(success, json) {
+							if (success) {
+								var data = json.data,
+										emails = '', i;
+								for (i=0; i<data.length; i++) {
+									emails += data[i] + '\n';
 								}
-							},
-							scope: me
-					});
-				
+								this.loadValues(emails);
+							}
+						},
+						scope: me
+				});
 			}
 		}, me, {
 			buttons: Ext.Msg.OKCANCEL,
@@ -1424,7 +1351,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}));					
             }
         }
-        
     },
 	
 	privates: {
@@ -1516,6 +1442,81 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					cfPanel: me.lref('tabcfields')
 				});
 			}
+		},
+		
+		showResourcePicker: function() {
+			var me = this,
+				SoS = Sonicle.String,
+				gp = me.lref('tabinvitation.gpattendees'),
+				usedResources = Sonicle.Data.collectValues(gp.getStore(), 'recipient',
+					function(rec) {
+						return rec.get('recipientType') === 'RES';
+					},
+					function(value) {
+						return SoS.regexpExecAll(value, SoS.reMatchAnyRFC5322Addresses)[0];
+					}
+				);
+			me.resourcePicker = me.createResourcePicker();
+			me.resourcePicker.getComponent(0).setSkipValues(usedResources);
+			me.resourcePicker.show();
+		},
+		
+		createResourcePicker: function() {
+			var me = this;
+			return Ext.create({
+				xtype: 'wtpickerwindow',
+				title: WT.res(me.mys.ID, 'event.act-addResource.lbl'),
+				height: 350,
+				items: [
+					{
+						xtype: 'solistpicker',
+						store: {
+							xclass: 'Ext.data.ChainedStore',
+							source: me.resourcesStore
+						},
+						valueField: 'address',
+						displayField:'displayName',
+						searchField: 'search',
+						emptyText: WT.res('grid.emp'),
+						searchText: WT.res('textfield.search.emp'),
+						selectedText: WT.res('grid.selected.lbl'),
+						okText: WT.res('act-ok.lbl'),
+						cancelText: WT.res('act-cancel.lbl'),
+						allowMultiSelection: true,
+						listeners: {
+							cancelclick: function() {
+								if (me.resourcePicker) me.resourcePicker.close();
+							}
+						},
+						handler: me.onResourcePickerPick,
+						scope: me
+					}
+				]
+			});
+		},
+		
+		onResourcePickerPick: function(s, values, recs, button) {
+			var me = this,
+				gp = me.lref('tabinvitation.gpattendees'),
+				sto = gp.getStore(),
+				ed = gp.getPlugin('cellediting');
+
+			ed.cancelEdit();
+			Ext.iterate(recs, function(rec) {
+				var address = rec.get('address'),
+					dn = rec.get('displayName');
+				sto.add(sto.createModel({
+					notify: true,
+					recipient: Ext.isEmpty(address) ? dn : (dn + ' <' + address + '>'),
+					recipientType: 'RES',
+					recipientRole: 'REQ',
+					responseStatus: 'NA'
+				}));
+			});
+			//ed.startEditByPosition({row: sto.getCount()-1, column: 1});
+			
+			me.resourcePicker.close();
+			me.resourcePicker = null;
 		}
 	}
 });

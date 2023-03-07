@@ -39,6 +39,7 @@ import com.sonicle.webtop.calendar.bol.OEventInfo;
 import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
+import com.sonicle.webtop.calendar.bol.VEventFootprint;
 import com.sonicle.webtop.calendar.bol.VExpEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
@@ -661,6 +662,7 @@ public class EventDAO extends BaseDAO {
 	public List<VVEvent> viewDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
+		Condition rangeCndt = toRangeCondition(fromDate, toDate, false);
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
@@ -699,11 +701,7 @@ public class EventDAO extends BaseDAO {
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNull())
-				.and(
-					EVENTS.START_DATE.between(fromDate, toDate) // Events that start in current range
-					.or(EVENTS.END_DATE.between(fromDate, toDate)) // Events that end in current range
-					.or(EVENTS.START_DATE.lessThan(fromDate).and(EVENTS.END_DATE.greaterThan(toDate))) // Events that start before and end after
-				)
+				.and(rangeCndt)
 			)
 			.orderBy(
 				EVENTS.START_DATE
@@ -714,6 +712,7 @@ public class EventDAO extends BaseDAO {
 	public List<VVEvent> viewRecurringDatesByCalendarFromTo(Connection con, Integer calendarId, DateTime fromDate, DateTime toDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
+		Condition rangeCndt = toRangeCondition(fromDate, toDate, true);
 		// New field: targets the eventId of the original series event
 		// NB: recurring events cannot have a reference to a master series event
 		Field<Integer> seriesEventId = value(null, Integer.class).as("series_event_id");
@@ -746,11 +745,7 @@ public class EventDAO extends BaseDAO {
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(EVENTS.RECURRENCE_ID.isNotNull())
-				.and(
-					RECURRENCES.START_DATE.between(fromDate, toDate) // Recurrences that start in current range
-					.or(RECURRENCES.UNTIL_DATE.between(fromDate, toDate)) // Recurrences that end in current range
-					.or(RECURRENCES.START_DATE.lessThan(fromDate).and(RECURRENCES.UNTIL_DATE.greaterThan(toDate))) // Recurrences that start before and end after
-				)
+				.and(rangeCndt)
 			)
 			.orderBy(
 				EVENTS.START_DATE
@@ -758,14 +753,90 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VVEvent.class);
 	}
 	
+	
+	public List<VEventFootprint> viewRangesByCalendarRangeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		
+		Condition rangeCndt = toRangeCondition(rangeFrom, rangeTo, false);
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
+		
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.PUBLIC_UID,
+				EVENTS.CALENDAR_ID,
+				EVENTS.RECURRENCE_ID,
+				EVENTS.START_DATE,
+				EVENTS.END_DATE,
+				EVENTS.TIMEZONE,
+				EVENTS.ALL_DAY
+			)
+			.select(
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.CALENDAR_ID.in(calendarIds)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+				.and(EVENTS.RECURRENCE_ID.isNull())
+				.and(rangeCndt)
+				.and(filterCndt)
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VEventFootprint.class);
+	}
+	
+	public List<VEventFootprint> viewRecurringRangesByCalendarRangeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		
+		Condition rangeCndt = toRangeCondition(rangeFrom, rangeTo, true);
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
+		
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.PUBLIC_UID,
+				EVENTS.CALENDAR_ID,
+				EVENTS.RECURRENCE_ID,
+				EVENTS.START_DATE,
+				EVENTS.END_DATE,
+				EVENTS.TIMEZONE,
+				EVENTS.ALL_DAY
+			)
+			.select(
+				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
+				CALENDARS.USER_ID.as("calendar_user_id")
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.join(RECURRENCES).on(EVENTS.RECURRENCE_ID.equal(RECURRENCES.RECURRENCE_ID))
+			.where(
+				EVENTS.CALENDAR_ID.in(calendarIds)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+				.and(EVENTS.RECURRENCE_ID.isNotNull())
+				.and(rangeCndt)
+				.and(filterCndt)
+			)
+			.orderBy(
+				EVENTS.START_DATE
+			)
+			.fetchInto(VEventFootprint.class);
+	}
+	
 	public boolean existByCalendarTypeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		Condition rangeCndt = DSL.trueCondition();
-		if ((rangeFrom != null) && (rangeTo != null)) {
-			rangeCndt = EVENTS.START_DATE.between(rangeFrom, rangeTo) // Events that start in current range
-				.or(EVENTS.END_DATE.between(rangeFrom, rangeTo)) // Events that end in current range
-				.or(EVENTS.START_DATE.lessThan(rangeFrom).and(EVENTS.END_DATE.greaterThan(rangeTo))); // Events that start before and end after
-		}
+		
+		Condition rangeCndt = toRangeCondition(rangeFrom, rangeTo, false);
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		return dsl.fetchExists(
@@ -792,12 +863,7 @@ public class EventDAO extends BaseDAO {
 	public List<VVEvent> viewByCalendarRangeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
-		Condition rangeCndt = DSL.trueCondition();
-		if ((rangeFrom != null) && (rangeTo != null)) {
-			rangeCndt = EVENTS.START_DATE.between(rangeFrom, rangeTo) // Events that start in current range
-				.or(EVENTS.END_DATE.between(rangeFrom, rangeTo)) // Events that end in current range
-				.or(EVENTS.START_DATE.lessThan(rangeFrom).and(EVENTS.END_DATE.greaterThan(rangeTo))); // Events that start before and end after
-		}
+		Condition rangeCndt = toRangeCondition(rangeFrom, rangeTo, false);
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		// New field: tags list
@@ -875,12 +941,7 @@ public class EventDAO extends BaseDAO {
 	public List<VVEvent> viewRecurringByCalendarRangeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
-		Condition rangeCndt = DSL.trueCondition();
-		if ((rangeFrom != null) && (rangeTo != null)) {
-			rangeCndt = RECURRENCES.START_DATE.between(rangeFrom, rangeTo) // Recurrences that start in current range
-					.or(RECURRENCES.UNTIL_DATE.between(rangeFrom, rangeTo)) // Recurrences that end in current range
-					.or(RECURRENCES.START_DATE.lessThan(rangeFrom).and(RECURRENCES.UNTIL_DATE.greaterThan(rangeTo))); // Recurrences that start before and end after
-		}
+		Condition rangeCndt = toRangeCondition(rangeFrom, rangeTo, true);
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		// New field: tags list
@@ -1243,5 +1304,25 @@ public class EventDAO extends BaseDAO {
 				)
 			)
 			.fetchMap(EVENTS.HREF, VEventHrefSync.class);
+	}
+	
+	public static Condition toBusyCondition() {
+		return EVENTS.BUSY.equal(true);
+	}
+	
+	private static Condition toRangeCondition(DateTime rangeFrom, DateTime rangeTo, boolean recurring) {
+		Condition cndt = DSL.trueCondition();
+		if ((rangeFrom != null) && (rangeTo != null)) {
+			if (recurring) {
+				cndt = RECURRENCES.START_DATE.between(rangeFrom, rangeTo) // Recurrences that start in current range
+					.or(RECURRENCES.UNTIL_DATE.between(rangeFrom, rangeTo)) // Recurrences that end in current range
+					.or(RECURRENCES.START_DATE.lessThan(rangeFrom).and(RECURRENCES.UNTIL_DATE.greaterThan(rangeTo))); // Recurrences that start before and end after
+			} else {
+				cndt = EVENTS.START_DATE.between(rangeFrom, rangeTo) // Events that start in current range
+					.or(EVENTS.END_DATE.between(rangeFrom, rangeTo)) // Events that end in current range
+					.or(EVENTS.START_DATE.lessThan(rangeFrom).and(EVENTS.END_DATE.greaterThan(rangeTo))); // Events that start before and end after
+			}
+		}
+		return cndt;
 	}
 }

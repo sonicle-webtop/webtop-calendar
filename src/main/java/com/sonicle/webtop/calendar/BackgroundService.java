@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sonicle S.r.l.
+ * Copyright (C) 2023 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,39 +28,38 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2018 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2023 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.webtop.calendar.job.RemoteCalendarSyncJob;
-import com.sonicle.webtop.core.sdk.BaseJobService;
+import com.sonicle.webtop.calendar.bg.RemoteCalendarSyncTask;
+import com.sonicle.webtop.core.sdk.BaseBackgroundService;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import org.quartz.SimpleScheduleBuilder;
-import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 
 /**
  *
  * @author malbinola
  */
-public class JobService extends BaseJobService {
-	
+public class BackgroundService extends BaseBackgroundService {
+
 	@Override
 	public void initialize() throws Exception {}
 
 	@Override
 	public void cleanup() throws Exception {}
-
+	
 	@Override
-	public List<BaseJobService.TaskDefinition> returnTasks() {
-		Trigger rcsTrigger = TriggerBuilder.newTrigger()
-				.withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(5))
-				.build();
-		
+	protected Collection<TaskDefinition> createTasks() {
 		return Arrays.asList(
-				new BaseJobService.TaskDefinition(RemoteCalendarSyncJob.class, rcsTrigger)
+			new TaskDefinition(
+				RemoteCalendarSyncTask.class,
+				TriggerBuilder.newTrigger()
+					.withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(5))
+					.build()
+			)
 		);
 	}
-	
 }

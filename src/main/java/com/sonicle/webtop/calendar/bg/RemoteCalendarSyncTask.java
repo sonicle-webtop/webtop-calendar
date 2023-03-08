@@ -63,7 +63,7 @@ public class RemoteCalendarSyncTask extends BaseBackgroundServiceTask {
 	}
 
 	@Override
-	public void executeWork(JobExecutionContext jec, DateTime now) throws Exception {
+	public void executeWork(JobExecutionContext jec, TaskContext context) throws Exception {
 		BackgroundService bs = ((BackgroundService)getBackgroundService(jec));
 		SessionManager sesMgr = WebTopApp.getInstance().getSessionManager();
 		CalendarManager calMgr = (CalendarManager)WT.getServiceManager(bs.SERVICE_ID);
@@ -77,7 +77,7 @@ public class RemoteCalendarSyncTask extends BaseBackgroundServiceTask {
 			if (isRemoteSyncOnlyWhenOnline(bs.SERVICE_ID, rsowoCache, cal.getDomainId()) && !sesMgr.isOnline(cal.getProfileId())) continue; // Skip offline profiles!
 
 			LOGGER.debug("Checking calendar [{}, {}]", cal.getCalendarId(), cal.getName());
-			if (isSyncNeeded(cal, now)) {
+			if (isSyncNeeded(cal, context.getExecuteInstant())) {
 				LOGGER.debug("Sync required. Last sync at: {}", cal.getRemoteSyncTimestamp());
 				try {
 					CalendarManager manager = (CalendarManager)WT.getServiceManager(bs.SERVICE_ID, true, cal.getProfileId());

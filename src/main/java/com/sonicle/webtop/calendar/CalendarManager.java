@@ -5033,7 +5033,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		final String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
 		final InternetAddress iaOrganizer = ICalendarUtils.getOrganizerAddress(ICalendarUtils.getVEvent(icalRequest));
 		final EmailMessage email = com.sonicle.webtop.core.util.ICalendarHelper.prepareICalendarReply(prodId, icalRequest, forAddress, iaOrganizer, response, locale);
-		WT.sendEmail(sendingProfileId, email, null);
+		WT.sendEmailMessage(sendingProfileId, email);
 	}
 	
 	private void notifyOrganizer(UserProfileId senderProfileId, Event event, String updatedAttendeeId) {

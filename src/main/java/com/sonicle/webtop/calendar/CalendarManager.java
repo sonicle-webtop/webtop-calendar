@@ -4836,9 +4836,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	private OEvent fillOEventWithDefaults(OEvent tgt) {
 		if (tgt != null) {
 			if (StringUtils.isBlank(tgt.getPublicUid())) {
-				tgt.setPublicUid(ManagerUtils.buildEventUid(tgt.getEventId(), WT.getDomainInternetName(getTargetProfileId().getDomainId())));
+				tgt.setPublicUid(ManagerUtils.buildEventUid(tgt.getEventId(), WT.getPrimaryDomainName(getTargetProfileId().getDomainId())));
 			}
-			if (StringUtils.isBlank(tgt.getHref())) tgt.setHref(ManagerUtils.buildHref(tgt.getEventId(), WT.getDomainInternetName(getTargetProfileId().getDomainId())));
+			if (StringUtils.isBlank(tgt.getHref())) tgt.setHref(ManagerUtils.buildHref(tgt.getEventId(), WT.getPrimaryDomainName(getTargetProfileId().getDomainId())));
 			if (tgt.getReadOnly() == null) tgt.setReadOnly(false);
 			if (StringUtils.isBlank(tgt.getOrganizer())) tgt.setOrganizer(ManagerUtils.buildOrganizer(getTargetProfileId()));
 		}

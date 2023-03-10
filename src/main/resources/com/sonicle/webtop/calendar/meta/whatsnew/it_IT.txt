@@ -1,3 +1,11 @@
+$	5.16.0
+	%	Versione 5.16.0
+	*	<h1>Gestione risorse</h1>
+		<p>Le prenotazioni sono visualizzate in un calendario risorsa dedicato, in modo che qualsiasi utente coinvolto possa controllare l'occupazione in tempo reale.</p>
+		<img src="5.16.0_resourcesnode.png"/>
+	*	<h1>Interfaccia di pianificazione migliorata</h1>
+		<p>Gli intervalli orari possono essere mostrati con diverse risoluzioni e sono ora evidenziati con uno schema colori più chiaro.</p>
+		<img src="5.16.0_newplanning.png"/>
 $	5.15.0
 	%	Versione 5.15.0
 	*	<h1>Incolla invitati da elenco o lista di contatti</h1>

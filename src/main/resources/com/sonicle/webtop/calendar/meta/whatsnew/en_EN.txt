@@ -1,3 +1,11 @@
+$	5.16.0
+	%	Versione 5.16.0
+	*	<h1>Resources management</h1>
+		<p>Bookings are shown under a dedicated resource calendar, so any involved user can check realtime occupation.</p>
+		<img src="5.16.0_resourcesnode.png"/>
+	*	<h1>Improved planning view</h1>
+		<p>Time slots support different time-resolutions and they are now displayed using a clearer color scheme.</p>
+		<img src="5.16.0_newplanning.png"/>
 $	5.15.0
 	%	Version 5.15.0
 	*	<h1>Paste attendees from text list or contacts list</h1>

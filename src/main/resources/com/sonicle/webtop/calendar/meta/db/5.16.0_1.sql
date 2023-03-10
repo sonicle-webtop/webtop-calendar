@@ -1,4 +1,4 @@
-@DataSource[default@com.sonicle.webtop.calendar]
+@DataSource[default@com.sonicle.webtop.core]
 
 -- ----------------------------
 -- Cleanup any migrated data for testing purposes
@@ -87,5 +87,4 @@ ALTER TABLE "core"."shares" DROP COLUMN "old_share_id", DROP COLUMN "old_wildcar
 -- ----------------------------
 -- Cleanup old settings
 -- ----------------------------
-@DataSource[default@com.sonicle.webtop.core]
 DELETE FROM "core"."user_settings" WHERE ("user_settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("user_settings"."key" = 'calendar.roots.inactive');

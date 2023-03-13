@@ -84,6 +84,7 @@ public class JsSchedulerEvent {
 	public Boolean hasCmts;
 	public String tags;
 	public String folderName;
+	public String org;
 	public String _owner;
 	public String _rights;
 	public String _profileId;
@@ -139,6 +140,7 @@ public class JsSchedulerEvent {
 		}
 		
 		folderName = calendar.getName();
+		org = event.getOrganizerCN();
 		_owner = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
 		_rights = event.isCensorized() ? "" : ("m" + folder.getPermissions().getItemsPermissions().toString());
 		_profileId = calendar.getProfileId().toString();

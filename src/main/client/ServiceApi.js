@@ -43,6 +43,14 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 		this.openEvent(data.ekey, opts);
 	},
 	
+	openReminder: function(type, id) {
+		if (Sonicle.String.isIn(type, ['event', 'event-recurring'])) {
+			this.service.openEvent(true, id);
+		} else {
+			Ext.raise('Reminder type not supported [' + type + ']');
+		}
+	},
+	
 	/**
 	 * Force a reload for the current view.
 	 */

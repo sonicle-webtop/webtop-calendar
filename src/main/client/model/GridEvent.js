@@ -33,6 +33,9 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 	extend: 'WTA.ux.data.BaseModel',
+	requires: [
+		'Sonicle.Date'
+	],
 	
 	fields: [
 		WTF.roField('id', 'string'),
@@ -46,8 +49,21 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 		WTF.roField('color', 'string'),
 		WTF.roField('tags', 'string'),
 		WTF.roField('folderName', 'string'),
+		WTF.roField('isAllDay', 'boolean'),
 		WTF.roField('isRecurring', 'boolean'),
-		WTF.roField('isBroken', 'boolean')
+		WTF.roField('isBroken', 'boolean'),
+		WTF.calcField('duration', 'int', ['startDate', 'endDate', 'isAllDay'], function(v, rec, start, end, ad) {
+			var SoD = Sonicle.Date, diff;
+			if (ad === true) {
+				if (end.getHours() === 23 && end.getMinutes() === 59) {
+					end = SoD.setTime(SoD.add(end, {days: 1}, true), 0, 0, 0);
+				}
+				diff = SoD.diffDays(end, start) * 86400;
+			} else {
+				diff = SoD.diff(start, end, Ext.Date.SECOND, true);
+			}
+			return diff ? Math.abs(diff) : 0;
+		})
 		//TODO: unire i campi isRecurring e isBroken nel campo recurringInfo... vedi JsEvent
 	]
 });

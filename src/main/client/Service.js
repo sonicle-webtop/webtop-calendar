@@ -527,23 +527,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						header: me.res('event.fld-endDate.lbl'),
 						width: 150
 					}, {
-						dataIndex: 'startDate',
+						dataIndex: 'duration',
 						header: me.res('gpevents.duration.lbl'),
 						renderer : function(v, meta, rec) {
-							var SoD = Sonicle.Date,
-									end = rec.get('endDate'),
-									diff;
-							if (rec.get('isAllDay') === true) {
-								if (end.getHours() === 23 && end.getMinutes() === 59) {
-									end = SoD.setTime(SoD.add(end, {days: 1}, true), 0, 0, 0);
-								}
-								diff = SoD.diffDays(end, v) * 86400;
-							} else {
-								diff = SoD.diff(v, end, Ext.Date.SECOND, true);
-							}
-							return diff ? SoD.humanReadableDuration(Math.abs(diff), true, durSym) : '';
+							return (v > 0) ? Sonicle.Date.humanReadableDuration(v, true, durSym) : '';
 						},
-						hidden: true,
+						summaryType: 'sum',
+						summaryRenderer: function(v) {
+							return '<strong>Σ: ' + ((v > 0) ? Sonicle.Date.humanReadableDuration(v, true, durSym) : '') + '</strong>';
+						},
 						width: 80
 					}, {
 						xtype: 'sotagcolumn',
@@ -554,6 +546,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					}, {
 						dataIndex: 'title',
 						header: me.res('event.fld-title.lbl'),
+						summaryType: 'count',
+						summaryRenderer: function(v) {
+							return '<strong>#: ' + v + '</strong>';
+						},
 						flex: 1
 					}, {
 						dataIndex: 'location',
@@ -561,6 +557,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						flex: 1
 					}
 				],
+				features: [{
+					ftype: 'summary'
+				}],
 				plugins: [
 					{
 						ptype: 'so-gridstateresetmenu',

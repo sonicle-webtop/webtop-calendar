@@ -35,7 +35,7 @@ package com.sonicle.webtop.calendar.bol.model;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.model.FolderShare;
-import com.sonicle.webtop.core.app.model.FolderShareOrigin;
+import com.sonicle.webtop.core.app.model.ShareOrigin;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 
 /**
@@ -45,6 +45,6 @@ import com.sonicle.webtop.core.sdk.UserProfileId;
 public class MyCalendarFSOrigin extends CalendarFSOrigin {
 	
 	public MyCalendarFSOrigin(UserProfileId originProfileId) {
-		super(new FolderShareOrigin(originProfileId, WT.getUserData(originProfileId).getDisplayName()), FolderShare.Permissions.full(), false);
+		super(new ShareOrigin(originProfileId, WT.getUserData(originProfileId).getDisplayName()), FolderShare.Permissions.full(), false);
 	}
 }

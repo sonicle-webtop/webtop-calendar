@@ -188,7 +188,6 @@ import com.sonicle.webtop.core.dal.DAOIntegrityViolationException;
 import com.sonicle.webtop.core.model.CustomFieldValue;
 import com.sonicle.webtop.core.app.model.FolderShare;
 import com.sonicle.webtop.core.app.model.FolderShareOriginFolders;
-import com.sonicle.webtop.core.app.model.FolderShareOrigin;
 import com.sonicle.webtop.core.app.model.FolderSharing;
 import com.sonicle.webtop.core.model.MasterData;
 import com.sonicle.webtop.core.sdk.AbstractMapCache;
@@ -236,6 +235,7 @@ import com.sonicle.mail.email.EmailMessage;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
 import com.sonicle.webtop.core.app.model.Resource;
 import com.sonicle.webtop.core.app.model.ResourceGetOption;
+import com.sonicle.webtop.core.app.model.ShareOrigin;
 import com.sonicle.webtop.core.msg.ResourceReservationReplySM;
 
 /**
@@ -301,13 +301,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	@Override
 	public List<FolderSharing.SubjectRights> getFolderShareConfiguration(final UserProfileId originProfileId, final FolderSharing.Scope scope) throws WTException {
 		CoreManager coreMgr = getCoreManager();
-		return coreMgr.getFolderShareSharingRights(originProfileId, SERVICE_ID, GROUPNAME_CALENDAR, scope);
+		return coreMgr.getFolderShareRights(SERVICE_ID, GROUPNAME_CALENDAR, originProfileId, scope);
 	}
 	
 	@Override
 	public void updateFolderShareConfiguration(final UserProfileId originProfileId, final FolderSharing.Scope scope, final List<FolderSharing.SubjectRights> rights) throws WTException {
 		CoreManager coreMgr = getCoreManager();
-		coreMgr.updateFolderShareSharingRights(originProfileId, SERVICE_ID, GROUPNAME_CALENDAR, scope, rights);
+		coreMgr.updateFolderShareRights(SERVICE_ID, GROUPNAME_CALENDAR, originProfileId, scope, rights);
 	}
 	
 	@Override
@@ -5811,11 +5811,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		private List<CalendarFSOrigin> getOrigins(final CoreManager coreMgr) throws WTException {
 			List<CalendarFSOrigin> items = new ArrayList<>();
-			for (FolderShareOrigin origin : coreMgr.listFolderShareOrigins(SERVICE_ID, GROUPNAME_CALENDAR)) {
+			for (ShareOrigin origin : coreMgr.listFolderShareOrigins(SERVICE_ID, GROUPNAME_CALENDAR)) {
 				final FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(SERVICE_ID, GROUPNAME_CALENDAR, origin.getProfileId(), FolderSharing.Scope.wildcard(), true);
 				items.add(new CalendarFSOrigin(origin, permissions, false));
 			}
-			for (FolderShareOrigin origin : coreMgr.listFolderShareOrigins(CoreManifest.ID, "RESOURCE")) {
+			for (ShareOrigin origin : coreMgr.listFolderShareOrigins(CoreManifest.ID, "RESOURCE")) {
 				final FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(CoreManifest.ID, "RESOURCE", origin.getProfileId(), FolderSharing.Scope.wildcard(), true);
 				items.add(new CalendarFSOrigin(origin, permissions, true));
 			}

@@ -37,7 +37,7 @@ import com.sonicle.webtop.calendar.CalendarNodeId;
 import com.sonicle.webtop.core.app.sdk.bol.js.JsFolderSharing;
 import com.sonicle.webtop.core.app.model.FolderSharing;
 import com.sonicle.webtop.core.sdk.WTException;
-import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -45,8 +45,8 @@ import java.util.List;
  */
 public class JsCalendarSharing extends JsFolderSharing {
 	
-	public JsCalendarSharing(CalendarNodeId nodeId, String originName, String folderName, List<FolderSharing.SubjectRights> rightsCollection) {
-		super(nodeId.toString(), toType(nodeId), nodeId.getOrigin(), String.valueOf(nodeId.getFolderId()), originName, folderName, rightsCollection);
+	public JsCalendarSharing(CalendarNodeId nodeId, String originName, String folderName, Set<FolderSharing.SubjectConfiguration> configurations) {
+		super(nodeId.toString(), toType(nodeId), nodeId.getOrigin(), String.valueOf(nodeId.getFolderId()), originName, folderName, configurations);
 	}
 	
 	public static Type toType(CalendarNodeId nodeId) {

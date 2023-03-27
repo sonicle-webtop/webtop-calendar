@@ -299,15 +299,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public List<FolderSharing.SubjectRights> getFolderShareConfiguration(final UserProfileId originProfileId, final FolderSharing.Scope scope) throws WTException {
+	public Set<FolderSharing.SubjectConfiguration> getFolderShareConfigurations(final UserProfileId originProfileId, final FolderSharing.Scope scope) throws WTException {
 		CoreManager coreMgr = getCoreManager();
-		return coreMgr.getFolderShareRights(SERVICE_ID, GROUPNAME_CALENDAR, originProfileId, scope);
+		return coreMgr.getFolderShareConfigurations(SERVICE_ID, GROUPNAME_CALENDAR, originProfileId, scope);
 	}
 	
 	@Override
-	public void updateFolderShareConfiguration(final UserProfileId originProfileId, final FolderSharing.Scope scope, final List<FolderSharing.SubjectRights> rights) throws WTException {
+	public void updateFolderShareConfigurations(final UserProfileId originProfileId, final FolderSharing.Scope scope, final Set<FolderSharing.SubjectConfiguration> configurations) throws WTException {
 		CoreManager coreMgr = getCoreManager();
-		coreMgr.updateFolderShareRights(SERVICE_ID, GROUPNAME_CALENDAR, originProfileId, scope, rights);
+		coreMgr.updateFolderShareConfigurations(SERVICE_ID, GROUPNAME_CALENDAR, originProfileId, scope, configurations);
 	}
 	
 	@Override
@@ -737,7 +737,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// Retrieve sharing configuration (for later)
 			final UserProfileId sharingOwnerPid = getCalendarOwner(calendarId);
 			final FolderSharing.Scope sharingScope = FolderSharing.Scope.folder(String.valueOf(calendarId));
-			List<FolderSharing.SubjectRights> sharingRights = getFolderShareConfiguration(sharingOwnerPid, sharingScope);
+			Set<FolderSharing.SubjectConfiguration> configurations = getFolderShareConfigurations(sharingOwnerPid, sharingScope);
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			Calendar cal = ManagerUtils.createCalendar(calDao.selectById(con, calendarId));
@@ -748,10 +748,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			doEventsDeleteByCalendar(con, calendarId, !cal.isProviderRemote());
 			
 			// Cleanup sharing, if necessary
-			if ((sharingRights != null) && !sharingRights.isEmpty()) {
-				logger.debug("Removing {} active sharing [{}]", sharingRights.size(), sharingOwnerPid);
-				sharingRights.clear();
-				updateFolderShareConfiguration(sharingOwnerPid, sharingScope, sharingRights);
+			if ((configurations != null) && !configurations.isEmpty()) {
+				logger.debug("Removing {} active sharing [{}]", configurations.size(), sharingOwnerPid);
+				configurations.clear();
+				updateFolderShareConfigurations(sharingOwnerPid, sharingScope, configurations);
 			}
 			
 			DbUtils.commitQuietly(con);

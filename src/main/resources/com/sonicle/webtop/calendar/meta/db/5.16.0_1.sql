@@ -109,7 +109,7 @@ UNNEST(string_to_array(REPLACE(SUBSTRING(cus."value" FROM 2 FOR (LENGTH( cus."va
 FROM "core"."user_settings" cus 
 WHERE cus."service_id" = 'com.sonicle.webtop.calendar' AND cus."key" = 'calendar.roots.inactive'
 ) cus_right ON cs."share_id" = cus_right."setting_share_id" AND cs."service_id" = 'com.sonicle.webtop.calendar' AND cs."key" = 'CALENDAR@ROOT'
-INNER JOIN "core"."users" cu ON cu."user_uid" = cs."user_uid"
+LEFT JOIN "core"."users" cu ON cs."user_uid" = cu."user_uid"
 ) aggr
 WHERE aggr."origin_user_id" IS NOT NULL
 GROUP BY aggr."setting_domain_id", aggr."setting_user_id";

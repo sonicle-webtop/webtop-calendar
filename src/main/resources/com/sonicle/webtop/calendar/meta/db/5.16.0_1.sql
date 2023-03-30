@@ -94,7 +94,7 @@ aggr."setting_domain_id",
 aggr."setting_user_id",
 'com.sonicle.webtop.calendar' as service_id,
 'calendar.origins.inactive' as "key",
-'[' || string_agg('"' || aggr."origin_user_id" || '"',',') || ']' AS "value"
+'[' || string_agg('"' || aggr."origin_user_id" || '@' || aggr."setting_domain_id" || '"', ',') || ']' AS "value"
 FROM (
 SELECT
 cus_right."setting_domain_id",

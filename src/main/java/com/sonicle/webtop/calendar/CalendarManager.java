@@ -5805,14 +5805,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					folderIds.addAll(calendarIds);
 				}
 			} catch (WTException ex) {
-				throw new WTRuntimeException("[ShareCache] Unable to load", ex);
+				throw new WTRuntimeException(ex, "[ShareCache] Unable to build cache for '{}'", getTargetProfileId());
 			}
 		}
 		
 		private List<CalendarFSOrigin> getOrigins(final CoreManager coreMgr) throws WTException {
 			List<CalendarFSOrigin> items = new ArrayList<>();
 			for (FolderShareOrigin origin : coreMgr.listFolderShareOrigins(SERVICE_ID, GROUPNAME_CALENDAR)) {
-				final FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(SERVICE_ID, GROUPNAME_CALENDAR, origin.getProfileId(), FolderSharing.Scope.wildcard(), true);
+				// Do permissions evaluation returning NULL in case of missing share: a root origin may not be shared!
+				FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(SERVICE_ID, GROUPNAME_CALENDAR, origin.getProfileId(), FolderSharing.Scope.wildcard(), false);
+				if (permissions == null) {
+					// If missing, simply treat it as NONE permission.
+					permissions = FolderShare.Permissions.none();
+				}
 				items.add(new CalendarFSOrigin(origin, permissions, false));
 			}
 			for (FolderShareOrigin origin : coreMgr.listFolderShareOrigins(CoreManifest.ID, "RESOURCE")) {

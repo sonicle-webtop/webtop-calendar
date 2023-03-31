@@ -85,6 +85,31 @@ WHERE rp."service_id" = 'com.sonicle.webtop.calendar' AND rp."key" = 'CALENDAR@S
 ALTER TABLE "core"."shares" DROP COLUMN "old_share_id", DROP COLUMN "old_wildcard_share_id";
 
 -- ----------------------------
--- Cleanup old settings
+-- Migrate settings (drop old settings in upcoming release)
 -- ----------------------------
-DELETE FROM "core"."user_settings" WHERE ("user_settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("user_settings"."key" = 'calendar.roots.inactive');
+DELETE FROM "core"."user_settings" WHERE ("user_settings"."service_id" = 'com.sonicle.webtop.calendar') AND ("user_settings"."key" = 'calendar.origins.inactive');
+INSERT INTO "core"."user_settings" ("domain_id", "user_id", "service_id", "key", "value")
+SELECT
+aggr."setting_domain_id",
+aggr."setting_user_id",
+'com.sonicle.webtop.calendar' as service_id,
+'calendar.origins.inactive' as "key",
+'[' || string_agg('"' || aggr."origin_user_id" || '@' || aggr."setting_domain_id" || '"', ',') || ']' AS "value"
+FROM (
+SELECT
+cus_right."setting_domain_id",
+cus_right."setting_user_id",
+(CASE cus_right."setting_share_id" WHEN 0 THEN cus_right."setting_user_id" ELSE cu."user_id" END) AS origin_user_id
+FROM "core"."shares" cs
+RIGHT JOIN (
+SELECT
+cus."domain_id" as setting_domain_id,
+cus."user_id" as setting_user_id,
+UNNEST(string_to_array(REPLACE(SUBSTRING(cus."value" FROM 2 FOR (LENGTH( cus."value" ) -2)), '"', ''), ','))::int AS setting_share_id 
+FROM "core"."user_settings" cus 
+WHERE cus."service_id" = 'com.sonicle.webtop.calendar' AND cus."key" = 'calendar.roots.inactive'
+) cus_right ON cs."share_id" = cus_right."setting_share_id" AND cs."service_id" = 'com.sonicle.webtop.calendar' AND cs."key" = 'CALENDAR@ROOT'
+LEFT JOIN "core"."users" cu ON cs."user_uid" = cu."user_uid"
+) aggr
+WHERE aggr."origin_user_id" IS NOT NULL
+GROUP BY aggr."setting_domain_id", aggr."setting_user_id";

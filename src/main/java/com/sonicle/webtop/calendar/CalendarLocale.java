@@ -40,7 +40,7 @@ public class CalendarLocale {
 	public static final String SERVICE_NAME = "service.name";
 	public static final String SERVICE_DESCRIPTION = "service.description";
 	public static final String CALENDARS_MY = "calendars.my";
-	public static final String CALENDARS_RESOURCES = "calendars.recources";
+	public static final String CALENDAR_TYPE_RESOURCE = "calendar.type.resource";
     public static final String REMINDER_MINUTES = "reminder.minutes";
     public static final String REMINDER_HOURS = "reminder.hours";
 	

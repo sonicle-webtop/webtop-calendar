@@ -35,6 +35,7 @@ package com.sonicle.webtop.calendar.rest.v1;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.webtop.calendar.CalendarLocale;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.EventObjectOutputType;
@@ -67,6 +68,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import jakarta.mail.internet.InternetAddress;
+import java.util.Locale;
 import javax.ws.rs.core.Response;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -107,12 +109,10 @@ public class Eas extends EasApi {
 				
 				final boolean isDefault = calendar.getCalendarId().equals(defltCalendarId);
 				final FolderShare.Permissions permissions = Calendar.Sync.READ.equals(calendar.getSync()) ? FolderShare.Permissions.fullFolderOnly() : FolderShare.Permissions.full();
-				items.add(createSyncFolder(currentProfileId, calendar, revisions.get(calendar.getCalendarId()), permissions, isDefault));
+				items.add(createSyncFolder(currentProfileId, calendar, false, revisions.get(calendar.getCalendarId()), permissions, isDefault));
 			}
 			
 			for (CalendarFSOrigin origin : manager.listIncomingCalendarOrigins().values()) {
-				if (origin.isResource()) continue;
-				
 				Map<Integer, CalendarFSFolder> folders = manager.listIncomingCalendarFolders(origin);
 				Map<Integer, CalendarPropSet> folderProps = manager.getCalendarCustomProps(folders.keySet());
 				revisions = manager.getCalendarsLastRevision(folders.keySet());
@@ -124,7 +124,7 @@ public class Eas extends EasApi {
 					
 					final boolean isDefault = calendar.getCalendarId().equals(defltCalendarId);
 					final FolderShare.Permissions permissions = Calendar.Sync.READ.equals(props.getSync()) ? FolderShare.Permissions.withFolderPermissionsOnly(folder.getPermissions()) : folder.getPermissions();
-					items.add(createSyncFolder(currentProfileId, calendar, revisions.get(calendar.getCalendarId()), permissions, isDefault));
+					items.add(createSyncFolder(currentProfileId, calendar, origin.isResource(), revisions.get(calendar.getCalendarId()), permissions, isDefault));
 				}
 			}
 			
@@ -282,9 +282,12 @@ public class Eas extends EasApi {
 		}
 	}
 	
-	private SyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions, boolean isDefault) {
+	private SyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, boolean isResource, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions, boolean isDefault) {
 		String displayName = cal.getName();
-		if (!currentProfileId.equals(cal.getProfileId())) {
+		if (isResource) {
+			UserProfile.Data owud = WT.getUserData(cal.getProfileId());
+			displayName = "[" + WT.lookupResource(SERVICE_ID, getLocale(currentProfileId), CalendarLocale.CALENDAR_TYPE_RESOURCE) + "] " + owud.getDisplayName();
+		} else if (!currentProfileId.equals(cal.getProfileId())) {
 			UserProfile.Data owud = WT.getUserData(cal.getProfileId());
 			//String apn = LangUtils.abbreviatePersonalName(false, owud.getDisplayName());
 			displayName = "[" + owud.getDisplayName() + "] " + displayName;
@@ -454,6 +457,11 @@ public class Eas extends EasApi {
 		CalendarManager manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
 		manager.setSoftwareName("rest-eas");
 		return manager;
+	}
+	
+	private Locale getLocale(UserProfileId profileId) {
+		UserProfile.Data ud = WT.getProfileData(profileId);
+		return (ud != null) ? ud.getLocale() : WT.LOCALE_ENGLISH;
 	}
 	
 	@Override

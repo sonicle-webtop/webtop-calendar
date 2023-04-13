@@ -174,6 +174,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				{
 					xtype: 'wtsearchfield',
 					reference: 'fldsearch',
+					suggestionServiceId: me.ID,
+					suggestionContext: 'mainsearch',
+					enableQuerySaving: true,
 					highlightKeywords: ['title', 'location'],
 					fields: Ext.Array.push([
 						{
@@ -250,7 +253,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							}
 						}
 					}
-				},
+			},
 				'->'
 			]
 		}));
@@ -2061,7 +2064,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), value));
 		me._activateMain(gp);
 		WTU.loadWithExtraParams(gp.getStore(), {
-			query: Ext.JSON.encode(obj)
+			query: Ext.JSON.encode(obj),
+			queryText: value
 		});
 	},
 	

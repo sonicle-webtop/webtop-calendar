@@ -118,7 +118,6 @@ import com.sonicle.webtop.core.model.CustomPanel;
 import com.sonicle.webtop.core.app.model.FolderShare;
 import com.sonicle.webtop.core.app.model.FolderSharing;
 import com.sonicle.webtop.core.app.model.GenericSubject;
-import com.sonicle.webtop.core.bol.OServiceStoreEntry;
 import com.sonicle.webtop.core.bol.js.JsSubjectLkp;
 import com.sonicle.webtop.core.sdk.AsyncActionCollection;
 import com.sonicle.webtop.core.sdk.BaseService;
@@ -177,6 +176,7 @@ public class Service extends BaseService {
 	private CalendarServiceSettings ss;
 	private CalendarUserSettings us;
 	
+	public static final String META_CONTEXT_SEARCH = "mainsearch";
 	public static final String ERP_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
 	
 	private final KeyedReentrantLocks<String> locks = new KeyedReentrantLocks<>();
@@ -1069,6 +1069,11 @@ public class Service extends BaseService {
 			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if (crud.equals(Crud.READ)) {
+				String queryText = ServletUtils.getStringParameter(request, "queryText", null);
+				if (!StringUtils.isBlank(queryText)) {
+					CoreManager core = WT.getCoreManager();
+					core.saveMetaEntry(SERVICE_ID, META_CONTEXT_SEARCH, queryText, queryText, false);
+				}
 				QueryObj queryObj = ServletUtils.getObjectParameter(request, "query", new QueryObj(), QueryObj.class);
 				
 				Map<String, CustomField.Type> map = cacheSearchableCustomFieldType.shallowCopy();

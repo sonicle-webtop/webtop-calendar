@@ -35,6 +35,9 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 	requires: [
 		'Sonicle.webtop.calendar.model.PletEvents'
 	],
+	uses: [
+		'Sonicle.Data'
+	],
 	
 	isSearch: false,
 	
@@ -135,7 +138,7 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 		var me = this;
 		me.isSearch = false;
 		me.lref('sbar').hide();
-		WTU.loadWithExtraParams(me.lref('gp').getStore(), {query: null});
+		Sonicle.Data.loadWithExtraParams(me.lref('gp').getStore(), {query: null});
 	},
 	
 	search: function(s) {
@@ -144,7 +147,7 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 		me.isSearch = true;
 		sbar.setStatus(me.buildSearchStatus(-1));
 		sbar.show();
-		WTU.loadWithExtraParams(me.lref('gp').getStore(), {query: s});
+		Sonicle.Data.loadWithExtraParams(me.lref('gp').getStore(), {query: s});
 	},
 	
 	buildSearchStatus: function(count) {

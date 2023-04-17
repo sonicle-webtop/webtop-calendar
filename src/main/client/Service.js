@@ -2055,17 +2055,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this,
 			gp = me.gpResults(),
 			isString = Ext.isString(query),
-			value = isString ? query : query.value,
+			queryText = isString ? query : query.value,
 			obj = {
 				allText: isString ? query : query.anyText,
 				conditions: isString ? [] : query.conditionArray
 			};
 		
-		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), value));
+		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), queryText));
 		me._activateMain(gp);
-		WTU.loadWithExtraParams(gp.getStore(), {
+		Sonicle.Data.loadWithExtraParams(gp.getStore(), {
 			query: Ext.JSON.encode(obj),
-			queryText: value
+			queryText: queryText
 		});
 	},
 	

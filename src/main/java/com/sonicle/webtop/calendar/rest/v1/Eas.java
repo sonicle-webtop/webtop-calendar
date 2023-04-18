@@ -299,8 +299,8 @@ public class Eas extends EasApi {
 				.displayName(displayName)
 				.etag(buildEtag(lastRevisionTimestamp))
 				.deflt(isDefault)
-				.foAcl(permissions.toString())
-				.elAcl(permissions.toString())
+				.foAcl(permissions.getFolderPermissions().toString())
+				.elAcl(permissions.getItemsPermissions().toString())
 				.ownerId(cal.getProfileId().toString());
 	}
 	

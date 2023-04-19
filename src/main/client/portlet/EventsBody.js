@@ -112,7 +112,7 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 					ftype: 'rowbody',
 					getAdditionalData: function(data, idx, rec, orig) {
 						var info = me.buildDateTimeInfo(rec.get('startDate'), rec.get('endDate')),
-								loc = Ext.String.ellipsis(rec.get('location'), 150);
+							loc = Ext.String.ellipsis(rec.get('location'), 150);
 						return {
 							rowBody: info + (!Ext.isEmpty(loc) ? (' <span style="color:grey;">' + Ext.String.htmlEncode('@'+loc) + '</span>') : '')
 						};
@@ -121,8 +121,7 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 			],
 			listeners: {
 				rowdblclick: function(s, rec) {
-					var er = WTA.util.FoldersTree2.toRightsObj(rec.get('_erights'));
-					me.mys.openEventUI(er.UPDATE, rec.get('id'));
+					me.mys.openEventUI(rec.getItemsRights().UPDATE, rec.get('id'));
 				}
 			}
 		});

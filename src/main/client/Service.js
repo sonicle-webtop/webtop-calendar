@@ -44,7 +44,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.tree.Column',
 		'WTA.ux.field.Search',
 		'WTA.ux.menu.TagMenu',
-		'Sonicle.webtop.calendar.model.FolderNode2',
+		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
 		'Sonicle.webtop.calendar.model.GridEvent'
@@ -300,7 +300,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				store: {
 					autoLoad: true,
 					autoSync: true,
-					model: 'Sonicle.webtop.calendar.model.FolderNode2',
+					model: 'Sonicle.webtop.calendar.model.FolderNode',
 					proxy: WTF.apiProxy(me.ID, 'ManageFoldersTree', 'children', {
 						writer: {
 							allowSingle: false // Make update/delete using array payload
@@ -766,7 +766,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			tooltip: null,
 			handler: function(s, e) {
 				var node = e.menuData.node;
-				if (node) me.addRemoteCalendarUI(node.getOwnerId());
+				if (node) me.addRemoteCalendarUI(node.getOwnerPid());
 			}
 		});
 		me.addAct('viewCalendarLinks', {
@@ -979,10 +979,10 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			text: WT.res('act-open.lbl'),
 			tooltip: null,
 			handler: function(s, e) {
-				var rec = WTU.itselfOrFirst(e.menuData.event), er;
+				var rec = WTU.itselfOrFirst(e.menuData.event), ir;
 				if (rec) {
-					er = WTA.util.FoldersTree2.toRightsObj(rec.get('_rights'));
-					me.openEventUI(er.UPDATE, rec.get('id'));
+					ir = WTA.util.FoldersTree2.toRightsObj(rec.get('_rights'));
+					me.openEventUI(ir.UPDATE, rec.get('id'));
 				}
 			}
 		});
@@ -1095,7 +1095,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				beforeshow: function(s) {
 					var node = s.menuData.node,
 						mine = node.isPersonalNode(),
-						or = WTA.util.FoldersTree2.toRightsObj(node.getOriginRights());
+						or = node.getOriginRights();
 					me.getAct('addCalendar').setDisabled(!or.MANAGE);
 					me.getAct('addRemoteCalendar').setDisabled(!or.MANAGE);
 					me.getAct('editSharing').setDisabled(!or.MANAGE);
@@ -1156,12 +1156,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			],
 			listeners: {
 				beforeshow: function(s) {
-					var FT = WTA.util.FoldersTree2,
-						node = s.menuData.node,
+					var node = s.menuData.node,
 						mine = node.isPersonalNode(),
-						//rr = FT.toRightsObj(node.getOriginRights()),
-						fr = FT.toRightsObj(node.getFolderRights()),
-						ir = FT.toRightsObj(node.getItemsRights());
+						fr = node.getFolderRights(),
+						ir = node.getItemsRights();
+					
 					me.getAct('editCalendar').setDisabled(!fr.UPDATE);
 					me.getAct('deleteCalendar').setDisabled(!fr.DELETE || node.isBuiltInFolder());
 					me.getAct('editSharing').setDisabled(!fr.MANAGE);
@@ -1217,13 +1216,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var rec = s.menuData.event,
-							er = WTA.util.FoldersTree2.toRightsObj(rec.get('_rights')),
-							brk = (rec.get('isBroken') === true);
-					me.getAct('openEvent').setDisabled(!er.MANAGE);
-					me.getAct('moveEvent').setDisabled(!er.DELETE);
-					me.getAct('tags').setDisabled(!er.UPDATE);
-					me.getAct('deleteEvent').setDisabled(!er.DELETE);
-					me.getAct('restoreEvent').setDisabled(!brk || !er.UPDATE);
+						ir = WTA.util.FoldersTree2.toRightsObj(rec.get('_rights')),
+						brk = (rec.get('isBroken') === true);
+					
+					me.getAct('openEvent').setDisabled(!ir.MANAGE);
+					me.getAct('moveEvent').setDisabled(!ir.DELETE);
+					me.getAct('tags').setDisabled(!ir.UPDATE);
+					me.getAct('deleteEvent').setDisabled(!ir.DELETE);
+					me.getAct('restoreEvent').setDisabled(!brk || !ir.UPDATE);
 				}
 			}
 		}));
@@ -1244,18 +1244,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}
 	},
 	
-	loadOriginNode: function(originProfileId, reloadItemsIf) {
+	loadOriginNode: function(originPid, reloadItemsIf) {
 		var me = this,
 			WFT = WTA.util.FoldersTree2,
 			tree = me.trFolders(),
-			node = WFT.getOrigin(tree, originProfileId),
+			node = WFT.getOrigin(tree, originPid),
 			fnode;
 		
 		// If node was not found, passed profileId may be the owner 
 		// of a Resource: get the first match and check if it was found 
 		// from a resource grouper parent.
 		if (!node) {
-			fnode = WFT.getFolderByOwnerProfile(tree, originProfileId);
+			fnode = WFT.getFolderByOwnerProfile(tree, originPid);
 			if (fnode && fnode.isResource() && fnode.parentNode.isGrouper()) node = fnode.parentNode;
 		}
 		if (node) {
@@ -1400,7 +1400,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.updateCalendarVisibility(node.getFolderId(), true, {
 					callback: function(success) {
 						if (success) {
-							me.loadOriginNode(node.getOwnerId());
+							me.loadOriginNode(node.getOwnerPid());
 							node.setActive(false);
 						}
 					}
@@ -1414,7 +1414,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.updateCalendarColor(node.getFolderId(), color, {
 			callback: function(success) {
 				if (success) {
-					me.loadOriginNode(node.getOwnerId());
+					me.loadOriginNode(node.getOwnerPid());
 					if (node.isActive()) me.reloadEvents();
 				}
 			}
@@ -1426,7 +1426,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		me.updateCalendarSync(node.getFolderId(), sync, {
 			callback: function(success) {
 				if (success) {
-					me.loadOriginNode(node.getOwnerId());
+					me.loadOriginNode(node.getOwnerPid());
 				}
 			}
 		});
@@ -1844,7 +1844,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			});	
 		
 		//TODO: delete _profileId when is not required anymore in Event view
-		ret[0]['_profileId'] = WTA.util.FoldersTree2.getFolderById(me.trFolders(), ret[0].calendarId).getOwnerId();
+		ret[0]['_profileId'] = WTA.util.FoldersTree2.getFolderById(me.trFolders(), ret[0].calendarId).getOwnerPid();
 		
 		vw.on('viewsave', function(s, success, model) {
 			Ext.callback(opts.callback, opts.scope || me, [success, model]);
@@ -1891,7 +1891,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					allDay: allDay,
 					rstart: start,
 					//TODO: delete _profileId when is not required anymore in Event view
-					_profileId: WTA.util.FoldersTree2.getFolderById(me.trFolders(), calendarId).getOwnerId()
+					_profileId: WTA.util.FoldersTree2.getFolderById(me.trFolders(), calendarId).getOwnerPid()
 				}
 			});
 		});

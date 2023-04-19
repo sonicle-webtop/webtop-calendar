@@ -34,6 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.view.Event', {
 	extend: 'WTA.sdk.ModelView',
 	requires: [
+		'Sonicle.Data',
 		'Sonicle.String',
 		'Sonicle.form.RadioGroup',
 		'Sonicle.form.field.Palette',
@@ -579,7 +580,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					listeners: {
 						beforeload: {
 							fn: function(s) {
-								WTU.applyExtraParams(s, {
+								Sonicle.Data.applyExtraParams(s, {
 									profileId: me.getModel().get('_profileId')
 								});
 							}
@@ -630,7 +631,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					listeners: {
 						beforeload: {
 							fn: function(s) {
-								WTU.applyExtraParams(s, {
+								Sonicle.Data.applyExtraParams(s, {
 									parentMasterDataId: me.getModel().get('masterDataId')
 								});
 							}
@@ -665,7 +666,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						beforeload: {
 							fn: function(s) {
 								var mo = me.getModel();
-								WTU.applyExtraParams(s, {
+								Sonicle.Data.applyExtraParams(s, {
 									profileId: mo.get('_profileId'),
 									masterDataId: mo.get('masterDataId')
 								});

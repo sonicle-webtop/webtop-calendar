@@ -33,38 +33,43 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.FolderNode', {
 	extend: 'Ext.data.Model',
-		mixins: [
-		'WTA.mixin.FolderNodeInterface'
+	mixins: [
+		'WTA.sdk.mixin.FolderNodeInterface'
 	],
 	
-	typeField: '_type',
-	folderIdField: '_calId',
-	profileIdField: '_pid',
+	newRights: true,
+	colorField: '_color',
 	defaultField: '_default',
 	builtInField: '_builtIn',
 	activeField: '_active',
+	originPermsField: '_orPerms',
+	folderPermsField: '_foPerms',
+	itemsPermsField: '_itPerms',
 	
 	fields: [
-		WTF.field('_type', 'string', false),
-		WTF.field('_pid', 'string', false),
-		WTF.roField('_rperms', 'string'),
-		WTF.roField('_fperms', 'string'),
-		WTF.roField('_eperms', 'string'),
-		WTF.roField('_calId', 'string'),
+		WTF.field('_active', 'boolean', true), // Same as checked
+		WTF.roField('_default', 'boolean'),
 		WTF.roField('_builtIn', 'boolean'),
 		WTF.roField('_provider', 'string'),
 		WTF.roField('_color', 'string'),
 		WTF.roField('_sync', 'string'),
-		WTF.roField('_default', 'boolean'),
-		WTF.field('_active', 'boolean', true), // Same as checked
 		WTF.roField('_isPrivate', 'boolean'),
 		WTF.roField('_defBusy', 'boolean'),
 		WTF.roField('_defReminder', 'int'),
-		WTF.calcField('_domainId', 'string', '_pid', function(v, rec) {
-			return (rec.get('_pid')) ? rec.get('_pid').split('@')[1] : null;
-		}),
-		WTF.calcField('_userId', 'string', '_pid', function(v, rec) {
-			return (rec.get('_pid')) ? rec.get('_pid').split('@')[0] : null;
-		})
-	]
+		WTF.roField('_resourceAvail', 'boolean'),
+		WTF.roField('_orPerms', 'string'),
+		WTF.roField('_foPerms', 'string'),
+		WTF.roField('_itPerms', 'string')
+	],
+	
+	isFolder: function() {
+		// Overrides mixed isFolder to support resources!
+		var type = this.parseId().type;
+		return 'F' === type || 'R' === type;
+	},
+	
+	isResource: function() {
+		var type = this.parseId().type;
+		return 'R' === type;
+	}
 });

@@ -32,6 +32,9 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.PletEvents', {
 	extend: 'WTA.ux.data.BaseModel',
+	mixins: [
+		'WTA.sdk.mixin.ItemWithinFolder'	
+	],
 	
 	idProperty: 'id',
 	fields: [
@@ -45,9 +48,9 @@ Ext.define('Sonicle.webtop.calendar.model.PletEvents', {
 		WTF.roField('title', 'string'),
 		WTF.roField('location', 'string'),
 		WTF.roField('meeting', 'string'),
-		WTF.roField('_owner', 'string'),
-		WTF.roField('_frights', 'string'),
-		WTF.roField('_erights', 'string')
+		WTF.roField('_orDN', 'string'),
+		WTF.roField('_foPerms', 'string'),
+		WTF.roField('_itPerms', 'string')
 	],
 	
 	hasMeeting: function() {

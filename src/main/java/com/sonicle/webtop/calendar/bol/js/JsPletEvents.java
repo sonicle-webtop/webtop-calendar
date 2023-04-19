@@ -60,9 +60,9 @@ public class JsPletEvents {
 	public String title;
 	public String location;
 	public String meeting;
-	public String _owner;
-	public String _frights;
-	public String _erights;
+	public String _orDN;
+	public String _foPerms;
+	public String _itPerms;
 	
 	public JsPletEvents(CalendarFSOrigin origin, CalendarFSFolder folder, SchedEventInstance event, DateTimeZone profileTz, Pattern meetingUrlPattern) {
 		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
@@ -86,8 +86,8 @@ public class JsPletEvents {
 		location = event.getLocation();
 		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		
-		_owner = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
-		_frights = folder.getPermissions().getFolderPermissions().toString();
-		_erights = folder.getPermissions().getItemsPermissions().toString();
+		_orDN = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
+		_foPerms = folder.getPermissions().getFolderPermissions().toString();
+		_itPerms = folder.getPermissions().getItemsPermissions().toString();
 	}
 }

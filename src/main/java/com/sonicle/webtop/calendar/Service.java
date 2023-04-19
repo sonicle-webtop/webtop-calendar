@@ -388,7 +388,7 @@ public class Service extends BaseService {
 	
 	private ExtTreeNode createFolderNodeLevel0(boolean chooser, CalendarNodeId nodeId, String text, String iconClass, FolderShare.Permissions originPermissions, boolean isActive) {
 		ExtTreeNode node = new ExtTreeNode(nodeId.toString(), text, false);
-		node.put("_orights", originPermissions.getFolderPermissions().toString(true));
+		node.put("_orPerms", originPermissions.getFolderPermissions().toString(true));
 		node.put("_active", isActive);
 		node.setIconClass(iconClass);
 		if (!chooser) node.setChecked(isActive);
@@ -419,10 +419,8 @@ public class Service extends BaseService {
 		}
 		
 		ExtTreeNode node = new ExtTreeNode(nodeId.toString(), name, true);
-		//node.put("_ownerId", nodeId.getOriginAsProfileId().toString());
-		node.put("_frights", folderPermissions.getFolderPermissions().toString());
-		node.put("_irights", folderPermissions.getItemsPermissions().toString());
-		//node.put("_calId", nodeId.getFolderId());
+		node.put("_foPerms", folderPermissions.getFolderPermissions().toString());
+		node.put("_itPerms", folderPermissions.getItemsPermissions().toString());
 		node.put("_builtIn", calendar.getBuiltIn());
 		node.put("_provider", EnumUtils.toSerializedName(calendar.getProvider()));
 		node.put("_color", Calendar.getHexColor(color));

@@ -129,7 +129,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 				},
 				selectionchange: function(s, sel) {
 					var me = this,
-							node = sel[0];
+						node = sel[0];
 					if (node) {
 						me.getVM().set({
 							calendarId: node.getFolderId(),

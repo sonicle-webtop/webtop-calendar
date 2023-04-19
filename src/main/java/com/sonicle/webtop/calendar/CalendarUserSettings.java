@@ -124,38 +124,4 @@ public class CalendarUserSettings extends BaseUserSettings {
 	public boolean setDefaultCalendarFolder(Integer calendarId) {
 		return setInteger(DEFAULT_CALENDAR_FOLDER, calendarId);
 	}
-	
-	/**
-	 * @deprecated Remove when transition (CheckedCalendarRoots -> InactiveCalendarRoots) is completed
-	 * @return
-	 */
-	@Deprecated
-	public StringSet getCheckedCalendarRoots() {
-		return getObject(CHECKED_CALENDAR_ROOTS, null, StringSet.class);
-	}
-	
-	/**
-	 * @deprecated Remove when transition (CheckedCalendarRoots -> InactiveCalendarRoots) is completed
-	 */
-	@Deprecated
-	public void clearCheckedCalendarRoots() {
-		clear(CHECKED_CALENDAR_ROOTS);
-	}
-	
-	/**
-	 * @deprecated Remove when transition (CheckedCalendarFolders -> InactiveCalendarFolders) is completed
-	 * @return
-	 */
-	@Deprecated
-	public IntegerSet getCheckedCalendarFolders() {
-		return getObject(CHECKED_CALENDAR_FOLDERS, null, IntegerSet.class);
-	}
-	
-	/**
-	 * @deprecated Remove when transition (CheckedCalendarFolders -> InactiveCalendarFolders) is completed
-	 */
-	@Deprecated
-	public void clearCheckedCalendarFolders() {
-		clear(CHECKED_CALENDAR_FOLDERS);
-	}
 }

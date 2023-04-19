@@ -431,8 +431,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					rangeselect: function(s,dates,onComplete) {
 						onComplete();
 						var soDate = Sonicle.Date,
-								node = WTA.util.FoldersTree2.getDefaultOrBuiltInFolder(me.trFolders()),
-								ad;
+							node = WTA.util.FoldersTree2.getDefaultOrBuiltInFolder(me.trFolders()),
+							ad;
 						if (node) {
 							ad = soDate.isMidnight(dates.startDate) && soDate.isMidnight(dates.endDate);
 							me.addEventUI(node.getFolderId(), node.get('_isPrivate'), node.get('_defBusy'), node.get('_defReminder'), dates.startDate, dates.endDate, ad);
@@ -446,9 +446,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					},
 					daydblclick: function(s, dt, allDay) {
 						var soDate = Sonicle.Date,
-								node = WTA.util.FoldersTree2.getDefaultOrBuiltInFolder(me.trFolders()),
-								start = allDay ? soDate.copyTime(me.getVar('workdayStart'), dt) : dt,
-								end = allDay ? soDate.copyTime(me.getVar('workdayEnd'), dt) : soDate.add(dt, {minutes: 30});
+							node = WTA.util.FoldersTree2.getDefaultOrBuiltInFolder(me.trFolders()),
+							start = allDay ? soDate.copyTime(me.getVar('workdayStart'), dt) : dt,
+							end = allDay ? soDate.copyTime(me.getVar('workdayEnd'), dt) : soDate.add(dt, {minutes: 30});
 						if (node) {
 							me.addEventUI(node.getFolderId(), node.get('_isPrivate'), node.get('_defBusy'), node.get('_defReminder'), start, end, allDay);
 						}
@@ -955,7 +955,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			iconCls: 'wtcal-icon-addEvent',
 			handler: function(s, e) {
 				var node = WTA.util.FoldersTree2.getDefaultOrBuiltInFolder(me.trFolders()),
-						mdata = e.menuData;
+					mdata = e.menuData;
 				if (node) {
 					if (mdata.start && mdata.end) {
 						me.addEventUI(node.getFolderId(), node.get('_isPrivate'), node.get('_defBusy'), node.get('_defReminder'), mdata.start, mdata.end, mdata.allDay);
@@ -1094,8 +1094,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			listeners: {
 				beforeshow: function(s) {
 					var node = s.menuData.node,
-							mine = node.isPersonalNode(),
-							or = WTA.util.FoldersTree2.toRightsObj(node.getOriginRights());
+						mine = node.isPersonalNode(),
+						or = WTA.util.FoldersTree2.toRightsObj(node.getOriginRights());
 					me.getAct('addCalendar').setDisabled(!or.MANAGE);
 					me.getAct('addRemoteCalendar').setDisabled(!or.MANAGE);
 					me.getAct('editSharing').setDisabled(!or.MANAGE);
@@ -1337,7 +1337,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		me.addCalendar(domainId, userId, {
 			callback: function(success, model) {
-				if(success) me.loadOriginNode(model.get('_profileId'));
+				if (success) me.loadOriginNode(model.get('_profileId'));
 			}
 		});
 	},
@@ -1346,7 +1346,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		me.setupRemoteCalendar(profileId, {
 			callback: function(success, mo) {
-				if(success) me.loadOriginNode(profileId);
+				if (success) me.loadOriginNode(profileId);
 			}
 		});
 	},
@@ -1438,9 +1438,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			callback: function(success, data) {
 				if (success) {
 					var FT = WTA.util.FoldersTree2,
-							tree = me.trFolders(),
-							nn = FT.getFolderById(tree, data);
-					if (nn) FT.setFolderAsDefault(tree, nn.getId());
+						tree = me.trFolders(),
+						node = FT.getFolderById(tree, data);
+					if (node) FT.setFolderAsDefault(tree, node.getId());
 				}
 			}
 		});
@@ -2063,7 +2063,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		gp.setTitle(Ext.String.format('{0}: {1}', WT.res('word.search'), queryText));
 		me._activateMain(gp);
-		Sonicle.Data.loadWithExtraParams(gp.getStore(), {
+			Sonicle.Data.loadWithExtraParams(gp.getStore(), {
 			query: Ext.JSON.encode(obj),
 			queryText: queryText
 		});

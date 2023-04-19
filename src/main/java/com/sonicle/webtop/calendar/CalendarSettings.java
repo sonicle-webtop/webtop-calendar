@@ -38,16 +38,6 @@ package com.sonicle.webtop.calendar;
  */
 public class CalendarSettings {
 	
-	/**************************************************************************/
-	/**
-	 * @deprecated
-	 * Remove when transition (CheckedCalendarRoots -> InactiveCalendarRoots) is completed
-	 * Remove when transition (CheckedCalendarFolders -> InactiveCalendarFolders) is completed
-	 */
-	public static final String CHECKED_CALENDAR_ROOTS = "calendar.roots.checked";
-	public static final String CHECKED_CALENDAR_FOLDERS = "calendar.folders.checked";
-	/**************************************************************************/
-	
 	/**
 	 * [system+domain]
 	 * [boolean](false)

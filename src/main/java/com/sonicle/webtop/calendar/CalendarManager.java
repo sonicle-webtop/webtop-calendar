@@ -415,7 +415,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return listCalendars(getTargetProfileId(), true);
 	}
 	
-	private Map<Integer, Calendar> listCalendars(UserProfileId ownerPid, boolean checkRights) throws WTException {
+	private Map<Integer, Calendar> listCalendars(UserProfileId ownerPid, boolean evalRights) throws WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		LinkedHashMap<Integer, Calendar> items = new LinkedHashMap<>();
 		Connection con = null;
@@ -423,7 +423,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		try {
 			con = WT.getConnection(SERVICE_ID);
 			for (OCalendar ocal : calDao.selectByProfile(con, ownerPid.getDomainId(), ownerPid.getUserId())) {
-				if (checkRights && !quietlyCheckRightsOnCalendar(ocal.getCalendarId(), FolderShare.FolderRight.READ)) continue;
+				if (evalRights && !quietlyCheckRightsOnCalendar(ocal.getCalendarId(), FolderShare.FolderRight.READ)) continue;
 				items.put(ocal.getCalendarId(), ManagerUtils.createCalendar(ocal));
 			}
 			return items;
@@ -514,7 +514,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			Integer calendarId = catDao.selectBuiltInIdByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if (calendarId == null) return null;
-			
 			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			return calendarId;
@@ -557,7 +556,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
-			
 			con = WT.getConnection(SERVICE_ID);
 			return calDao.existsById(con, calendarId);
 			
@@ -573,12 +571,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return getCalendar(calendarId, true);
 	}
 	
-	private Calendar getCalendar(int calendarId, boolean checkRights) throws WTException {
+	private Calendar getCalendar(int calendarId, boolean evalRights) throws WTException {
 		Connection con = null;
 		
 		try {
-			if (checkRights) checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
-			
+			if (evalRights) checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			con = WT.getConnection(SERVICE_ID);
 			return doCalendarGet(con, calendarId);
 			
@@ -596,10 +593,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			con = WT.getConnection(SERVICE_ID);
-			
 			OCalendar ocal = calDao.selectBuiltInByProfile(con, getTargetProfileId().getDomainId(), getTargetProfileId().getUserId());
 			if (ocal == null) return null;
-			
 			checkRightsOnCalendar(ocal.getCalendarId(), FolderShare.FolderRight.READ);
 			
 			return ManagerUtils.createCalendar(ocal);

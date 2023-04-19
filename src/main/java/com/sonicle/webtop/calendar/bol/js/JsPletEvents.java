@@ -33,17 +33,12 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.DateTimeUtils;
-import com.sonicle.webtop.calendar.TplHelper;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
-import com.sonicle.webtop.calendar.bol.model.MyShareRootCalendar;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
-import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
-import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.core.model.Meeting;
-import java.util.Map;
 import java.util.regex.Pattern;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;

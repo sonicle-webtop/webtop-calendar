@@ -30,7 +30,7 @@
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
  * display the words "Copyright (C) 2022 Sonicle S.r.l.".
  */
-package com.sonicle.webtop.calendar;
+package com.sonicle.webtop.calendar.bol.model;
 
 import com.google.gson.annotations.SerializedName;
 import com.sonicle.commons.EnumUtils;

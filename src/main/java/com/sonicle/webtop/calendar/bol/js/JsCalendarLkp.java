@@ -36,8 +36,6 @@ import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
-import com.sonicle.webtop.calendar.model.ShareFolderCalendar;
-import com.sonicle.webtop.calendar.model.ShareRootCalendar;
 import com.sonicle.webtop.core.app.model.FolderShare;
 
 /**
@@ -57,15 +55,15 @@ public class JsCalendarLkp {
 	public Boolean _writable;
 	public Integer _order;
 	
-	public JsCalendarLkp(Calendar cal, boolean isDefault) {
-		this.calendarId = cal.getCalendarId();
-		this.name = cal.getName();
-		this.color = cal.getColor();
-		this.evtPrivate = cal.getIsPrivate();
-		this.evtBusy = cal.getDefaultBusy();
-		this.evtReminder = cal.getDefaultReminder();
+	public JsCalendarLkp(Calendar calendar, boolean isDefault) {
+		this.calendarId = calendar.getCalendarId();
+		this.name = calendar.getName();
+		this.color = calendar.getColor();
+		this.evtPrivate = calendar.getIsPrivate();
+		this.evtBusy = calendar.getDefaultBusy();
+		this.evtReminder = calendar.getDefaultReminder();
 		this._default = isDefault;
-		this._profileId = cal.getProfileId().toString();
+		this._profileId = calendar.getProfileId().toString();
 	}
 	
 	public JsCalendarLkp(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, boolean isDefault, int order) {

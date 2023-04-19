@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.EnumUtils;
-import com.sonicle.webtop.calendar.CalendarNodeId;
+import com.sonicle.webtop.calendar.bol.model.CalendarNodeId;
 import com.sonicle.webtop.core.app.sdk.bol.js.JsFolderSharing;
 import com.sonicle.webtop.core.app.model.FolderSharing;
 import com.sonicle.webtop.core.sdk.WTException;

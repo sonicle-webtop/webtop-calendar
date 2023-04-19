@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.webtop.calendar.bol.model.CalendarNodeId;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -904,9 +905,9 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 			}
 			
-		} catch(Exception ex) {
+		} catch (Exception ex) {
 			logger.error("Error in ManageEventsScheduler", ex);
-			new JsonResult(false, "Error").printTo(out);
+			new JsonResult(ex).printTo(out);
 		}
 	}
 	
@@ -1464,9 +1465,9 @@ public class Service extends BaseService {
 			}
 			new JsonResult(items).printTo(out);
 			
-		} catch(Exception ex) {
+		} catch (Exception ex) {
 			logger.error("Error in PortletEvents", ex);
-			new JsonResult(false, "Error").printTo(out);	
+			new JsonResult(ex).printTo(out);	
 		}
 	}
 	
@@ -1605,10 +1606,10 @@ public class Service extends BaseService {
 			foldersTreeCache.init(AbstractFolderTreeCache.Target.FOLDERS);
 			
 		} else if (origin instanceof CalendarFSOrigin) {
-			CalendarPropSet pset = manager.getCalendarCustomProps(calendarId);
-			pset.setColor(color);
-			manager.updateCalendarCustomProps(calendarId, pset);
-			foldersPropsCache.put(calendarId, Optional.of(pset));
+			CalendarPropSet props = manager.getCalendarCustomProps(calendarId);
+			props.setColor(color);
+			manager.updateCalendarCustomProps(calendarId, props);
+			foldersPropsCache.put(calendarId, Optional.of(props));
 		}
 	}
 	
@@ -1621,10 +1622,10 @@ public class Service extends BaseService {
 			foldersTreeCache.init(AbstractFolderTreeCache.Target.FOLDERS);
 			
 		} else if (origin instanceof CalendarFSOrigin) {
-			CalendarPropSet pset = manager.getCalendarCustomProps(calendarId);
-			pset.setSync(sync);
-			manager.updateCalendarCustomProps(calendarId, pset);
-			foldersPropsCache.put(calendarId, Optional.of(pset));
+			CalendarPropSet props = manager.getCalendarCustomProps(calendarId);
+			props.setSync(sync);
+			manager.updateCalendarCustomProps(calendarId, props);
+			foldersPropsCache.put(calendarId, Optional.of(props));
 		}
 	}
 	
@@ -1715,7 +1716,7 @@ public class Service extends BaseService {
 				return Optional.ofNullable(manager.getCalendarCustomProps(k));
 				
 			} catch (Exception ex) {
-				logger.error("[FoldersPropsCache] Unable to load [[{}]", k);
+				logger.error("[FoldersPropsCache] Unable to load [{}]", k);
 				return null;
 			}
 		}

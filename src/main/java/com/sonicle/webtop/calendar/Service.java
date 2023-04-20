@@ -265,7 +265,7 @@ public class Service extends BaseService {
 		foldersTreeCache.init();
 		// Retrieves inactive origins set
 		inactiveOrigins = us.getInactiveCalendarOrigins();
-		if (inactiveOrigins.removeIf(originPid -> !foldersTreeCache.existsOrigin(UserProfileId.parseQuielty(originPid)))) { // Clean-up orphans
+		if (inactiveOrigins.removeIf(key -> shouldCleanupInactiveOriginKey(key))) { // Clean-up orphans
 			us.setInactiveCalendarOrigins(inactiveOrigins);
 		}
 		// Retrieves inactive folders set
@@ -297,7 +297,7 @@ public class Service extends BaseService {
 					}
 					// Resources root node
 					if (!chooser && hasResources) {
-						final ExtTreeNode xnode = createFolderNodeLevel0Resources(chooser, true);
+						final ExtTreeNode xnode = createFolderNodeLevel0Resources(chooser);
 						if (xnode != null) children.add(xnode);
 					}
 					
@@ -365,8 +365,13 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private ExtTreeNode createFolderNodeLevel0Resources(boolean chooser, boolean isActive) {
+	private ExtTreeNode createFolderNodeLevel0Resources(boolean chooser) {
 		CalendarNodeId nodeId = CalendarNodeId.build(CalendarNodeId.Type.GROUPER, CalendarNodeId.GROUPER_RESOURCES_ORIGIN);
+		boolean checked = isOriginActive(toInactiveOriginKey(nodeId));
+		return createFolderNodeLevel0Resources(chooser, nodeId, checked);
+	}
+	
+	private ExtTreeNode createFolderNodeLevel0Resources(boolean chooser, CalendarNodeId nodeId, boolean isActive) {
 		ExtTreeNode node = new ExtTreeNode(nodeId.toString(), "{trfolders.origin.resources}", false);
 		node.put("_active", isActive);
 		if (!chooser) node.setChecked(isActive);
@@ -378,7 +383,7 @@ public class Service extends BaseService {
 	
 	private ExtTreeNode createFolderNodeLevel0(boolean chooser, CalendarFSOrigin origin) {
 		CalendarNodeId nodeId = CalendarNodeId.build(CalendarNodeId.Type.ORIGIN, origin.getProfileId());
-		boolean checked = !inactiveOrigins.contains(origin.getProfileId().toString());
+		boolean checked = isOriginActive(toInactiveOriginKey(origin));
 		if (origin instanceof MyCalendarFSOrigin) {
 			return createFolderNodeLevel0(chooser, nodeId, "{trfolders.origin.my}", "wtcal-icon-calendarMy", origin.getWildcardPermissions(), checked);
 		} else {
@@ -1522,6 +1527,19 @@ public class Service extends BaseService {
 		return foldersTreeCache.getOrigins().stream()
 			.filter(origin -> !inactiveOrigins.contains(toInactiveOriginKey(origin)))
 			.collect(Collectors.toList());
+	}
+	
+	private boolean shouldCleanupInactiveOriginKey(String originKey) {
+		if (CalendarNodeId.GROUPER_RESOURCES_ORIGIN.equals(originKey)) return false;
+		return !foldersTreeCache.existsOrigin(UserProfileId.parseQuielty(originKey));
+	}
+	
+	private boolean isOriginActive(String originKey) {
+		return !inactiveOrigins.contains(originKey);
+	}
+	
+	private String toInactiveOriginKey(CalendarNodeId nodeId) {
+		return nodeId.isGrouperResource() ? CalendarNodeId.GROUPER_RESOURCES_ORIGIN : nodeId.getOrigin();
 	}
 	
 	private String toInactiveOriginKey(CalendarFSOrigin origin) {

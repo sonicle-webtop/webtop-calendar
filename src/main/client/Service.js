@@ -359,9 +359,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					},
 					itemcontextmenu: function(s, node, itm, i, e) {
 						if (node.isOrigin() || node.isGrouper()) {
-							Sonicle.Utils.showContextMenu(e, me.getRef('cxmFolderRoot'), {node: node});
+							Sonicle.Utils.showContextMenu(e, me.getRef('cxmTreeOrigin'), {node: node});
 						} else {
-							Sonicle.Utils.showContextMenu(e, me.getRef('cxmFolder'), {node: node});
+							Sonicle.Utils.showContextMenu(e, me.getRef('cxmTreeFolder'), {node: node});
 						}
 					}
 				}
@@ -868,7 +868,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						listeners: {
 							select: function(s, color) {
 								var node = s.menuData.node;
-								me.getRef('cxmFolder').hide();
+								me.getRef('cxmTreeFolder').hide();
 								if (node) me.updateCalendarColorUI(node, Sonicle.String.prepend(color, '#', true));
 							}
 						}
@@ -1071,7 +1071,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	initCxm: function() {
 		var me = this;
 		
-		me.addRef('cxmFolderRoot', Ext.create({
+		me.addRef('cxmTreeOrigin', Ext.create({
 			xtype: 'menu',
 			items: [
 				me.getAct('addCalendar'),
@@ -1104,7 +1104,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		}));
 		
-		me.addRef('cxmFolder', Ext.create({
+		me.addRef('cxmTreeFolder', Ext.create({
 			xtype: 'menu',
 			items: [
 				me.getAct('editCalendar'),

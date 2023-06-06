@@ -37,9 +37,9 @@ import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventInfo;
 import com.sonicle.webtop.calendar.bol.VEventObject;
-import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
 import com.sonicle.webtop.calendar.bol.VEventFootprint;
+import com.sonicle.webtop.calendar.bol.VEventObjectChange;
 import com.sonicle.webtop.calendar.bol.VExpEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
@@ -49,6 +49,7 @@ import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ICALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
+import static com.sonicle.webtop.calendar.jooq.tables.CalendarsChanges.CALENDARS_CHANGES;
 import com.sonicle.webtop.calendar.jooq.tables.Events;
 import com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
@@ -60,11 +61,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.SelectLimitStep;
+import org.jooq.Table;
 import org.jooq.impl.DSL;
 import static org.jooq.impl.DSL.*;
 
@@ -253,17 +255,17 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
-				EVENTS.CALENDAR_ID,
-				DSL.max(EVENTS.REVISION_TIMESTAMP)
+				CALENDARS_CHANGES.CALENDAR_ID,
+				DSL.max(CALENDARS_CHANGES.TIMESTAMP)
 			)
-			.from(EVENTS)
+			.from(CALENDARS_CHANGES)
 			.where(
-				EVENTS.CALENDAR_ID.in(calendarIds)
+				CALENDARS_CHANGES.CALENDAR_ID.in(calendarIds)
 			)
 			.groupBy(
-				EVENTS.CALENDAR_ID
+				CALENDARS_CHANGES.CALENDAR_ID
 			)
-			.fetchMap(EVENTS.CALENDAR_ID, DSL.max(EVENTS.REVISION_TIMESTAMP));
+			.fetchMap(CALENDARS_CHANGES.CALENDAR_ID, DSL.max(CALENDARS_CHANGES.TIMESTAMP));
 	}
 	
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
@@ -1238,53 +1240,41 @@ public class EventDAO extends BaseDAO {
 		}
 	}
 	
-	public List<VEventObjectChanged> viewChangedLiveCalObjectsByCalendar(Connection con, int calendarId, int limit) throws DAOException {
+	public List<VEventObjectChange> viewChangedObjectsByCalendarSince(Connection con, int calendarId, DateTime since, int limit) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		Condition cndtSince = DSL.trueCondition();
+		if (since != null) {
+			cndtSince = CALENDARS_CHANGES.TIMESTAMP.greaterThan(since);
+		}
 		
-		return dsl
-			.select(
-				EVENTS.EVENT_ID,
-				EVENTS.REVISION_STATUS,
-				EVENTS.REVISION_TIMESTAMP,
-				EVENTS.CREATION_TIMESTAMP,
-				EVENTS.HREF
+		Table<?> t1 = DSL.select(
+				CALENDARS_CHANGES.EVENT_ID,
+				EVENTS.HREF,
+				CALENDARS_CHANGES.TIMESTAMP,
+				CALENDARS_CHANGES.OPERATION
 			)
-			.from(EVENTS)
+			.distinctOn(CALENDARS_CHANGES.EVENT_ID)
+			.from(CALENDARS_CHANGES)
+			.innerJoin(EVENTS).on(CALENDARS_CHANGES.EVENT_ID.equal(EVENTS.EVENT_ID))
 			.where(
-				EVENTS.CALENDAR_ID.equal(calendarId)
-				.and(
-					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
-					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
-				)
+				CALENDARS_CHANGES.CALENDAR_ID.equal(calendarId)
+				.and(cndtSince)
 			)
-			.orderBy(
-				EVENTS.EVENT_ID.asc()
-			)
-			.limit(limit)
-			.fetchInto(VEventObjectChanged.class);
-	}
-	
-	public List<VEventObjectChanged> viewChangedCalObjectsByCalendarSince(Connection con, int calendarId, DateTime since, int limit) throws DAOException {
-		DSLContext dsl = getDSL(con);
+			.orderBy(CALENDARS_CHANGES.EVENT_ID, CALENDARS_CHANGES.TIMESTAMP.desc()).asTable("t1");
 		
-		return dsl
-			.select(
-				EVENTS.EVENT_ID,
-				EVENTS.REVISION_STATUS,
-				EVENTS.REVISION_TIMESTAMP,
-				EVENTS.CREATION_TIMESTAMP,
-				EVENTS.HREF
-			)
-			.from(EVENTS)
-			.where(
-				EVENTS.CALENDAR_ID.equal(calendarId)
-				.and(EVENTS.REVISION_TIMESTAMP.greaterThan(since))
-			)
-			.orderBy(
-				EVENTS.CREATION_TIMESTAMP.asc()
-			)
-			.limit(limit)
-			.fetchInto(VEventObjectChanged.class);
+		SelectLimitStep step = dsl
+			.select()
+			.from(t1)
+			.orderBy(t1.field(CALENDARS_CHANGES.TIMESTAMP.getName()).desc());
+		
+		if (limit > -1) {
+			return step
+				.limit(limit)
+				.fetchInto(VEventObjectChange.class);
+		} else {
+			return step
+				.fetchInto(VEventObjectChange.class);
+		}
 	}
 	
 	public Map<String, VEventHrefSync> viewHrefSyncDataByCalendar(Connection con, int calendarId) throws DAOException {

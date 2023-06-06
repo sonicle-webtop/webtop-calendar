@@ -76,7 +76,6 @@ import com.sonicle.webtop.calendar.bol.OEventInfo;
 import com.sonicle.webtop.calendar.bol.ORecurrence;
 import com.sonicle.webtop.calendar.bol.ORecurrenceBroken;
 import com.sonicle.webtop.calendar.bol.VEventObject;
-import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
 import com.sonicle.webtop.calendar.bol.VEventFootprint;
 import com.sonicle.webtop.calendar.bol.VExpEvent;
@@ -233,6 +232,7 @@ import com.sonicle.commons.time.DateTimeRange2;
 import com.sonicle.commons.time.TimeRange;
 import com.sonicle.mail.email.EmailMessage;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
+import com.sonicle.webtop.calendar.bol.VEventObjectChange;
 import com.sonicle.webtop.core.app.model.Resource;
 import com.sonicle.webtop.core.app.model.ResourceGetOption;
 import com.sonicle.webtop.core.app.model.ShareOrigin;
@@ -943,36 +943,22 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con = null;
 		
 		try {
-			con = WT.getConnection(SERVICE_ID);
-			
 			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
+			con = WT.getConnection(SERVICE_ID);
 			ArrayList<EventObjectChanged> inserted = new ArrayList<>();
 			ArrayList<EventObjectChanged> updated = new ArrayList<>();
 			ArrayList<EventObjectChanged> deleted = new ArrayList<>();
-			
-			if (limit == null) limit = Integer.MAX_VALUE;
-			if (since == null) {
-				List<VEventObjectChanged> vevts = evtDao.viewChangedLiveCalObjectsByCalendar(con, calendarId, limit);
-				for (VEventObjectChanged vevt : vevts) {
-					inserted.add(new EventObjectChanged(vevt.getEventId(), vevt.getRevisionTimestamp(), vevt.getHref()));
-				}
-			} else {
-				List<VEventObjectChanged> vevts = evtDao.viewChangedCalObjectsByCalendarSince(con, calendarId, since, limit);
-				for (VEventObjectChanged vevt : vevts) {
-					Event.RevisionStatus revStatus = EnumUtils.forSerializedName(vevt.getRevisionStatus(), Event.RevisionStatus.class);
-					if (Event.RevisionStatus.DELETED.equals(revStatus)) {
-						deleted.add(new EventObjectChanged(vevt.getEventId(), vevt.getRevisionTimestamp(), vevt.getHref()));
-					} else {
-						if (Event.RevisionStatus.NEW.equals(revStatus) || (vevt.getCreationTimestamp().compareTo(since) >= 0)) {
-							inserted.add(new EventObjectChanged(vevt.getEventId(), vevt.getRevisionTimestamp(), vevt.getHref()));
-						} else {
-							updated.add(new EventObjectChanged(vevt.getEventId(), vevt.getRevisionTimestamp(), vevt.getHref()));
-						}
-					}
+			List<VEventObjectChange> changes = evtDao.viewChangedObjectsByCalendarSince(con, calendarId, since, limit == null ? -1 : limit);
+			for (VEventObjectChange change : changes) {
+				if (change.isInserted()) {
+					inserted.add(new EventObjectChanged(change.getEventId(), change.getTimestamp(), change.getHref()));
+				} else if (change.isUpdated()) {
+					updated.add(new EventObjectChanged(change.getEventId(), change.getTimestamp(), change.getHref()));
+				} else if (change.isDeleted()) {
+					deleted.add(new EventObjectChanged(change.getEventId(), change.getTimestamp(), change.getHref()));
 				}
 			}
-			
 			return new CollectionChangeSet<>(inserted, updated, deleted);
 			
 		} catch (Exception ex) {

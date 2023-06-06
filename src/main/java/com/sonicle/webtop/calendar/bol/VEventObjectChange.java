@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sonicle S.r.l.
+ * Copyright (C) 2023 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,7 +28,7 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2018 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2023 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.bol;
 
@@ -38,12 +38,11 @@ import org.joda.time.DateTime;
  *
  * @author malbinola
  */
-public class VEventObjectChanged {
+public class VEventObjectChange {
 	protected Integer eventId;
-	protected String revisionStatus;
-	protected DateTime revisionTimestamp;
-	protected DateTime creationTimestamp;
 	protected String href;
+	protected DateTime timestamp;
+	protected String operation;
 
 	public Integer getEventId() {
 		return eventId;
@@ -53,35 +52,39 @@ public class VEventObjectChanged {
 		this.eventId = eventId;
 	}
 
-	public String getRevisionStatus() {
-		return revisionStatus;
-	}
-
-	public void setRevisionStatus(String revisionStatus) {
-		this.revisionStatus = revisionStatus;
-	}
-
-	public DateTime getRevisionTimestamp() {
-		return revisionTimestamp;
-	}
-
-	public void setRevisionTimestamp(DateTime revisionTimestamp) {
-		this.revisionTimestamp = revisionTimestamp;
-	}
-	
-	public DateTime getCreationTimestamp() {
-		return creationTimestamp;
-	}
-
-	public void setCreationTimestamp(DateTime creationTimestamp) {
-		this.creationTimestamp = creationTimestamp;
-	}
-
 	public String getHref() {
 		return href;
 	}
 
 	public void setHref(String href) {
 		this.href = href;
+	}
+
+	public DateTime getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(DateTime timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	public String getOperation() {
+		return operation;
+	}
+
+	public void setOperation(String operation) {
+		this.operation = operation;
+	}
+	
+	public boolean isInserted() {
+		return "C".equals(getOperation());
+	}
+	
+	public boolean isUpdated() {
+		return "U".equals(getOperation());
+	}
+	
+	public boolean isDeleted() {
+		return "D".equals(getOperation());
 	}
 }

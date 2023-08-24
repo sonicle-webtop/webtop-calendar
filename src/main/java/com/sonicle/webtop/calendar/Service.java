@@ -355,8 +355,10 @@ public class Service extends BaseService {
 					CalendarNodeId nodeId = new CalendarNodeId(node.id);
 					if (CalendarNodeId.Type.FOLDER.equals(nodeId.getType()) || CalendarNodeId.Type.FOLDER_RESOURCE.equals(nodeId.getType())) {
 						manager.deleteCalendar(nodeId.getFolderId());
+						toggleActiveFolder(nodeId.getFolderId(), true); // forgets it by simply activating it
 					}
 				}
+				foldersTreeCache.init(AbstractFolderTreeCache.Target.FOLDERS);
 				new JsonResult().printTo(out);
 			}
 			

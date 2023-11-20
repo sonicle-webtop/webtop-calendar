@@ -19,10 +19,7 @@ CREATE TABLE "calendar"."events_attachments" (
 "filename" varchar(255) NOT NULL,
 "size" int8 NOT NULL,
 "media_type" varchar(255) NOT NULL
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 CREATE INDEX "events_attachments_ak1" ON "calendar"."events_attachments" USING btree ("event_id");
 ALTER TABLE "calendar"."events_attachments" ADD PRIMARY KEY ("event_attachment_id");
@@ -34,10 +31,7 @@ ALTER TABLE "calendar"."events_attachments" ADD FOREIGN KEY ("event_id") REFEREN
 CREATE TABLE "calendar"."events_attachments_data" (
 "event_attachment_id" varchar(36) NOT NULL,
 "bytes" bytea NOT NULL
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 ALTER TABLE "calendar"."events_attachments_data" ADD PRIMARY KEY ("event_attachment_id");
 ALTER TABLE "calendar"."events_attachments_data" ADD FOREIGN KEY ("event_attachment_id") REFERENCES "calendar"."events_attachments" ("event_attachment_id") ON DELETE CASCADE ON UPDATE CASCADE;

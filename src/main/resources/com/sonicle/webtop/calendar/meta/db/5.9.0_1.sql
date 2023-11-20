@@ -6,10 +6,7 @@
 CREATE TABLE "calendar"."events_tags" (
 "event_id" int4 NOT NULL,
 "tag_id" varchar(22) NOT NULL
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 CREATE INDEX "events_tags_ak1" ON "calendar"."events_tags" USING btree ("tag_id");
 ALTER TABLE "calendar"."events_tags" ADD PRIMARY KEY ("event_id", "tag_id");
@@ -26,10 +23,7 @@ CREATE TABLE "calendar"."events_custom_values" (
 "boolean_value" bool,
 "date_value" timestamptz(6),
 "text_value" text
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 ALTER TABLE "calendar"."events_custom_values" ADD PRIMARY KEY ("event_id", "custom_field_id");
 ALTER TABLE "calendar"."events_custom_values" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -37,10 +37,7 @@ ALTER COLUMN "creation_timestamp" SET NOT NULL;
 CREATE TABLE "calendar"."events_icalendars" (
 "event_id" int4 NOT NULL,
 "raw_data" text
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Primary Key structure for table events_icalendars

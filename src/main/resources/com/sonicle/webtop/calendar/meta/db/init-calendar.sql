@@ -44,10 +44,7 @@ CREATE TABLE "calendar"."calendars" (
 "remote_sync_frequency" int2,
 "remote_sync_timestamp" timestamptz,
 "remote_sync_tag" varchar(255)
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for calendar_props
@@ -60,10 +57,7 @@ CREATE TABLE "calendar"."calendar_props" (
 "hidden" bool,
 "color" varchar(20),
 "sync" varchar(1)
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for events
@@ -98,10 +92,7 @@ CREATE TABLE "calendar"."events" (
 "stat_master_data_id" varchar(36),
 "causal_id" int4,
 "handle_invitation" bool DEFAULT false
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for events_attachments
@@ -115,10 +106,7 @@ CREATE TABLE "calendar"."events_attachments" (
 "filename" varchar(255) NOT NULL,
 "size" int8 NOT NULL,
 "media_type" varchar(255) NOT NULL
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for events_attachments_data
@@ -127,10 +115,7 @@ DROP TABLE IF EXISTS "calendar"."events_attachments_data";
 CREATE TABLE "calendar"."events_attachments_data" (
 "event_attachment_id" varchar(36) NOT NULL,
 "bytes" bytea NOT NULL
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for events_attendees
@@ -144,10 +129,7 @@ CREATE TABLE "calendar"."events_attendees" (
 "recipient_role" varchar(3) NOT NULL,
 "response_status" varchar(2) NOT NULL,
 "notify" bool NOT NULL
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for events_icalendars
@@ -155,10 +137,7 @@ WITH (OIDS=FALSE)
 CREATE TABLE "calendar"."events_icalendars" (
 "event_id" int4 NOT NULL,
 "raw_data" text
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for recurrences
@@ -185,10 +164,7 @@ CREATE TABLE "calendar"."recurrences" (
 "yearly_freq" int4,
 "yearly_day" int4,
 "rule" varchar(255)
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Table structure for recurrences_broken
@@ -199,10 +175,7 @@ CREATE TABLE "calendar"."recurrences_broken" (
 "recurrence_id" int4 NOT NULL,
 "event_date" date NOT NULL,
 "new_event_id" int4
-)
-WITH (OIDS=FALSE)
-
-;
+);
 
 -- ----------------------------
 -- Alter Sequences Owned By 

@@ -32,66 +32,15 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.core.sdk.WTException;
-import java.sql.Connection;
-
 /**
  *
- * @author malbinola
+ * @author gbulfon
  */
-public class VEventObject extends OEvent {
-	protected String tags;
-	protected Boolean hasIcalendar;
-	protected Integer attendeesCount;
-	protected Boolean hasAttachments;
-	protected Boolean hasCustomValues;
-
-	public String getTags() {
-		return tags;
-	}
-
-	public void setTags(String tags) {
-		this.tags = tags;
-	}
+public class VEventAttachmentWithBytes extends OEventAttachment {
+	protected byte[] bytes;	
 	
-	public Boolean getHasIcalendar() {
-		return hasIcalendar;
-	}
-
-	public void setHasIcalendar(Boolean hasIcalendar) {
-		this.hasIcalendar = hasIcalendar;
-	}
-	
-	public Integer getAttendeesCount() {
-		return attendeesCount;
-	}
-
-	public void setAttendeesCount(Integer attendeesCount) {
-		this.attendeesCount = attendeesCount;
-	}
-
-	public boolean hasAttendees() {
-		return (attendeesCount != null) && (attendeesCount > 0);
-	}
-	
-	public Boolean getHasAttachments() {
-		return hasAttachments;
-	}
-
-	public void setHasAttachments(Boolean hasAttachments) {
-		this.hasAttachments = hasAttachments;
-	}
-	
-	public Boolean getHasCustomValues() {
-		return hasCustomValues;
-	}
-
-	public void setHasCustomValues(Boolean hasCustomValues) {
-		this.hasCustomValues = hasCustomValues;
-	}
-	
-	public interface Consumer {
-		public void consume(VEventObject vco, Connection con) throws WTException;
+	public byte[] getBytes() {
+		return bytes;
 	}
 	
 }

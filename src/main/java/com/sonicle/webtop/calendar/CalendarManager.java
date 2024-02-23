@@ -230,13 +230,18 @@ import org.joda.time.Duration;
 import com.sonicle.commons.flags.BitFlagsEnum;
 import com.sonicle.commons.time.DateTimeRange2;
 import com.sonicle.commons.time.TimeRange;
+import com.sonicle.commons.web.json.CId;
 import com.sonicle.mail.email.EmailMessage;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
+import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.bol.VEventObjectChange;
 import com.sonicle.webtop.core.app.model.Resource;
 import com.sonicle.webtop.core.app.model.ResourceGetOption;
 import com.sonicle.webtop.core.app.model.ShareOrigin;
 import com.sonicle.webtop.core.msg.ResourceReservationReplySM;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  *
@@ -3102,6 +3107,62 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return alerts;
 	}
 
+	public void outputICalEventsByCalendarId(Calendar calendar, OutputStream out) throws WTException, IOException {
+		CoreManager coreMgr = getCoreManager();
+		String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
+		ICalendarOutput icout = new ICalendarOutput(prodId);
+		Map<String, String> tagNamesByIdMap = coreMgr.listTagNamesById();
+		outputICalEvents(calendar.getCalendarId(), icout, out, tagNamesByIdMap);
+	}
+	
+	public void outputICalEventsAsZipEntries(List<Calendar> calendars, ZipOutputStream zos) throws WTException, IOException {
+		CoreManager coreMgr = getCoreManager();
+		String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
+		ICalendarOutput icout = new ICalendarOutput(prodId);
+		Map<String, String> tagNamesByIdMap = coreMgr.listTagNamesById();
+		for(Calendar calendar: calendars) {
+			ZipEntry ze=new ZipEntry("Events-"+calendar.getUserId()+"-"+calendar.getName()+".ics");
+			zos.putNextEntry(ze);
+			outputICalEvents(calendar.getCalendarId(), icout, zos, tagNamesByIdMap);
+			zos.closeEntry();
+			zos.flush();
+		}
+	}
+	
+	private void outputICalEvents(int calendarId, ICalendarOutput vout, OutputStream out, Map<String, String> tagNamesByIdMap) throws WTException, IOException {
+		EventDAO eventDao = EventDAO.getInstance();
+		Connection con = null;
+		try {
+			String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
+			String icalPre = "BEGIN:VCALENDAR\r\n"+ICalendarUtils.newCalendar(prodId, null).getProperties();
+			String icalEnd = "END:VCALENDAR\r\n";
+			IOUtils.copy(IOUtils.toInputStream(icalPre, StandardCharsets.UTF_8), out);
+			con = WT.getConnection(SERVICE_ID);
+			eventDao.lazy_viewOnlineEventObjects(con, calendarId,
+					new VEventObject.Consumer() {
+						@Override
+						public void consume(VEventObject vco, Connection con) throws WTException {
+							EventObjectWithBean eventObj = doEventObjectBeanPrepareComplete(con, vco, tagNamesByIdMap);
+							Event wte = eventObj.getEvent();
+							VEvent ve = vout.toVEvent(null, wte);
+							InputStream is = IOUtils.toInputStream(ve.toString(), StandardCharsets.UTF_8);
+							try {
+								IOUtils.copy(is, out);
+								is.close();
+							} catch(IOException exc) {
+								throw new WTException(exc);
+							}
+						}
+					}
+			);
+			IOUtils.copy(IOUtils.toInputStream(icalEnd, StandardCharsets.UTF_8), out);
+		} catch (Exception ex) {
+			throw ExceptionUtils.wrapThrowable(ex);
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+	}
+	
 	/*
 	private void sendInvitationForZPushEvents() {
 		EventDAO evtDao = EventDAO.getInstance();
@@ -3888,6 +3949,46 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				return eco;
 			}
 		}
+	}
+	
+	private EventObjectWithBean doEventObjectBeanPrepareComplete(Connection con, VEventObject vobj, Map<String, String> tagNamesByIdMap) throws WTException {
+			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
+			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+			EventAttachmentDAO eattDao = EventAttachmentDAO.getInstance();
+			EventCustomValueDAO ecvalDao = EventCustomValueDAO.getInstance();
+			
+			Event event = ManagerUtils.fillEvent(new Event(), vobj);
+
+			if (vobj.getRecurrenceId() != null) {
+				ORecurrence orec = recDao.select(con, vobj.getRecurrenceId());
+				if (orec == null) throw new WTException("Unable to get recurrence [{}]", vobj.getRecurrenceId());
+				
+				Set<LocalDate> excludedDates = doGetExcludedDates(con, event.getEventId(), vobj.getRecurrenceId());
+				event.setRecurrence(orec.getRule(), orec.getLocalStartDate(event.getDateTimeZone()), excludedDates);
+			}
+			if (vobj.hasAttendees()) {
+				List<OEventAttendee> oatts = attDao.selectByEvent(con, event.getEventId());
+				event.setAttendees(ManagerUtils.createEventAttendeeList(oatts));
+			}
+			
+			boolean keepPrivate = needsTreatAsPrivate(RunContext.getRunProfileId(), event.getIsPrivate(), event.getCalendarId());
+			if (keepPrivate) event.censorize();
+			
+			if (!StringUtils.isBlank(vobj.getTags())) {
+				event.setTags(new LinkedHashSet(new CId(vobj.getTags()).getTokens()));
+			}
+			if (vobj.getHasAttachments()) {
+				List<VEventAttachmentWithBytes> oatts = eattDao.selectByEventWithBytes(con, vobj.getEventId());
+				event.setAttachments(ManagerUtils.createEventAttachmentListWithBytes(oatts));
+			}
+			if (vobj.getHasCustomValues()) {
+				List<OEventCustomValue> ovals = ecvalDao.selectByEvent(con, vobj.getEventId());
+				event.setCustomValues(ManagerUtils.createCustomValuesMap(ovals));
+			}
+			
+			EventObjectWithBean eco = ManagerUtils.fillEventCalObject(new EventObjectWithBean(), vobj);
+			eco.setEvent(event);
+			return eco;
 	}
 	
 	private Integer doEventGetId(Connection con, String publicUid, Collection<Integer> calendarIdMustBeIn) throws WTException {

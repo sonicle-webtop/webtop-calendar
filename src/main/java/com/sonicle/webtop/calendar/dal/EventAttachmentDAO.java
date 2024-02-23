@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.OEventAttachment;
 import com.sonicle.webtop.calendar.bol.OEventAttachmentData;
+import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import static com.sonicle.webtop.calendar.jooq.tables.EventsAttachments.EVENTS_ATTACHMENTS;
 import static com.sonicle.webtop.calendar.jooq.tables.EventsAttachmentsData.EVENTS_ATTACHMENTS_DATA;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsAttachmentsRecord;
@@ -66,6 +67,31 @@ public class EventAttachmentDAO extends BaseDAO {
 				EVENTS_ATTACHMENTS.FILENAME.asc()
 			)
 			.fetchInto(OEventAttachment.class);
+	}
+	
+	public List<VEventAttachmentWithBytes> selectByEventWithBytes(Connection con, int eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS_ATTACHMENTS.EVENT_ATTACHMENT_ID,
+				EVENTS_ATTACHMENTS.EVENT_ID,
+				EVENTS_ATTACHMENTS.FILENAME,
+				EVENTS_ATTACHMENTS.MEDIA_TYPE,
+				EVENTS_ATTACHMENTS.REVISION_SEQUENCE,
+				EVENTS_ATTACHMENTS.REVISION_TIMESTAMP,
+				EVENTS_ATTACHMENTS.SIZE,
+				EVENTS_ATTACHMENTS_DATA.BYTES
+
+			)
+			.from(EVENTS_ATTACHMENTS)
+			.join(EVENTS_ATTACHMENTS_DATA).on(EVENTS_ATTACHMENTS.EVENT_ATTACHMENT_ID.equal(EVENTS_ATTACHMENTS_DATA.EVENT_ATTACHMENT_ID))
+			.where(
+				EVENTS_ATTACHMENTS.EVENT_ID.equal(eventId)
+			)
+			.orderBy(
+				EVENTS_ATTACHMENTS.FILENAME.asc()
+			)
+			.fetchInto(VEventAttachmentWithBytes.class);
 	}
 	
 	public OEventAttachment selectByIdEvent(Connection con, String attachmentId, int eventId) throws DAOException {

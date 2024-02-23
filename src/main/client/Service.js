@@ -47,7 +47,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		'Sonicle.webtop.calendar.model.FolderNode',
 		'Sonicle.webtop.calendar.model.MultiCalDate',
 		'Sonicle.webtop.calendar.model.Event',
-		'Sonicle.webtop.calendar.model.GridEvent'
+		'Sonicle.webtop.calendar.model.GridEvent',
+		'Sonicle.webtop.calendar.view.ImportEvents',
+		'Sonicle.webtop.calendar.view.ExportEvents'
 	],
 	uses: [
 		'Sonicle.Data',
@@ -816,6 +818,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (node) me.importEventsUI(node.getFolderId());
 			}
 		});
+		me.addAct('exportEvents', {
+			tooltip: null,
+			handler: function(s, e) {
+				var node = e.menuData.node;
+				if (node) me.exportEventsUI(node.getId());
+			}
+		});
 		me.addAct('applyTags', {
 			tooltip: null,
 			handler: function(s, e) {
@@ -1088,7 +1097,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				},
 				'-',
 				me.getAct('editSharing'),
-				me.getAct('manageHiddenCalendars')
+				me.getAct('manageHiddenCalendars'),
+				'-',
+				me.getAct('exportEvents')
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
@@ -1151,7 +1162,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.hasAuditUI() ? me.getAct('calendarAuditLog'): null,
 				'-',
 				me.getAct('addEvent'),
-				me.getAct('importEvents')
+				me.getAct('importEvents'),
+				me.getAct('exportEvents')
 				//TODO: azioni altri servizi?
 			],
 			listeners: {
@@ -1166,6 +1178,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					me.getAct('editSharing').setDisabled(!fr.MANAGE);
 					me.getAct('addEvent').setDisabled(!ir.CREATE);
 					me.getAct('importEvents').setDisabled(!ir.CREATE);
+					me.getAct('exportEvents').setDisabled(!ir.CREATE);
 					me.getAct('hideCalendar').setDisabled(mine);
 					me.getAct('restoreCalendarColor').setDisabled(mine);
 					me.getAct('syncRemoteCalendar').setDisabled(!Sonicle.webtop.calendar.view.Calendar.isRemote(node.get('_provider')));
@@ -1471,6 +1484,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if(success) me.reloadEvents();
 			}
 		});
+	},
+	
+	exportEventsUI: function(id) {
+		var me = this;
+		me.exportEvents(id);
 	},
 	
 	manageEventItemsTagsUI: function(recs) {
@@ -2019,6 +2037,18 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		vw.on('dosuccess', function() {
 			Ext.callback(opts.callback, opts.scope || me, [true]);
 		});
+		vw.showView();
+	},
+	
+	exportEvents: function(id) {
+		var me = this,
+				vw = WT.createView(me.ID, 'view.ExportEvents', {
+					swapReturn: true,
+					viewCfg: {
+						id: id
+					}
+				});
+		
 		vw.showView();
 	},
 	

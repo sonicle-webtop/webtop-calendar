@@ -44,7 +44,9 @@ import com.sonicle.webtop.calendar.bol.VExpEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTACHMENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_CUSTOM_VALUES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ICALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
@@ -56,6 +58,7 @@ import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
+import com.sonicle.webtop.core.sdk.WTException;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,8 +66,10 @@ import java.util.List;
 import java.util.Map;
 import org.joda.time.DateTime;
 import org.jooq.Condition;
+import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Record;
 import org.jooq.SelectLimitStep;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
@@ -834,6 +839,68 @@ public class EventDAO extends BaseDAO {
 			)
 			.fetchInto(VEventFootprint.class);
 	}
+	
+	public void lazy_viewOnlineEventObjects(Connection con, int calendarId, VEventObject.Consumer consumer) throws DAOException, WTException {
+		DSLContext dsl = getDSL(con);
+		
+		// New field: tags list
+		Field<String> tags = DSL
+			.select(DSL.groupConcat(EVENTS_TAGS.TAG_ID, "|"))
+			.from(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+			).asField("tags");
+		
+		// New field: has attachments
+		Field<Boolean> hasAttachments = DSL.field(DSL.exists(
+				DSL.selectOne()
+						.from(EVENTS_ATTACHMENTS)
+						.where(EVENTS_ATTACHMENTS.EVENT_ID.equal(EVENTS.EVENT_ID))
+				)).as("has_attachments");
+		
+		// New field: has custom values
+		Field<Boolean> hasCustomValues = DSL.field(DSL.exists(
+				DSL.selectOne()
+						.from(EVENTS_CUSTOM_VALUES)
+						.where(EVENTS_CUSTOM_VALUES.EVENT_ID.equal(EVENTS.EVENT_ID))
+				)).as("has_custom_values");
+		
+		Cursor<Record> cr = dsl
+			.select(
+				EVENTS.fields()
+			)
+			.select(
+				tags,
+				hasAttachments,
+				hasCustomValues
+			)
+			.from(EVENTS)
+			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+			)
+			.orderBy(
+				EVENTS.EVENT_ID.asc()
+			)
+			.fetchLazy();
+
+		try {
+			for(;;) {
+				VEventObject veo = cr.fetchNextInto(VEventObject.class);
+				if (veo == null) break;
+
+				consumer.consume(veo, con);
+			}
+		} finally {
+			cr.close();
+		}
+		
+	}
+	
 	
 	public boolean existByCalendarTypeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
 		DSLContext dsl = getDSL(con);

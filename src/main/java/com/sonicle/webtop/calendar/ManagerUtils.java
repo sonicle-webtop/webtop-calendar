@@ -41,12 +41,14 @@ import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventAttachment;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.OEventCustomValue;
+import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttachment;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.SchedEvent;
@@ -425,6 +427,21 @@ public class ManagerUtils {
 		}
 		return tgt;
 	}
+	
+	static List<EventAttachment> createEventAttachmentListWithBytes(List<VEventAttachmentWithBytes> items) {
+		ArrayList<EventAttachment> list = new ArrayList<>(items.size());
+		for (VEventAttachmentWithBytes item : items) {
+			list.add(createEventAttachmentWithBytes(item));
+		}
+		return list;
+	}
+	
+	static EventAttachment createEventAttachmentWithBytes(VEventAttachmentWithBytes src) {
+		if (src == null) return null;
+		return fillEventAttachment(new EventAttachmentWithBytes(src.getBytes()), src);
+	}
+	
+	
 	
 	static OEventAttachment createOEventAttachment(EventAttachment src) {
 		if (src == null) return null;

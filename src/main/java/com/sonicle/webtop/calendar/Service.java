@@ -77,6 +77,7 @@ import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
 import com.sonicle.webtop.calendar.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.SetupDataCalendarRemote;
+import com.sonicle.webtop.calendar.io.CSVOutput;
 import com.sonicle.webtop.calendar.io.EventICalFileReader;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
@@ -85,6 +86,8 @@ import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
+import com.sonicle.webtop.calendar.model.EventObject;
+import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
@@ -153,8 +156,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import jakarta.mail.internet.InternetAddress;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.zip.ZipOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
@@ -165,6 +171,8 @@ import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
+import org.supercsv.io.CsvListWriter;
+import org.supercsv.prefs.CsvPreference;
 
 /**
  *
@@ -1475,6 +1483,76 @@ public class Service extends BaseService {
 			new JsonResult(ex).printTo(out);	
 		}
 	}
+	
+	public void processExportEventsToText(HttpServletRequest request, HttpServletResponse response) {
+		try {
+			String node = ServletUtils.getStringParameter(request, "id", true);
+			CalendarNodeId nodeId = new CalendarNodeId(node);
+			CSVOutput csvout = new CSVOutput();
+			
+			if (nodeId.getType().equals(CalendarNodeId.Type.FOLDER)) {
+				int calendarId = nodeId.getFolderId();
+				Calendar calendar = manager.getCalendar(nodeId.getFolderId());
+				ServletUtils.setFileStreamHeaders(response, "text/csv", DispositionType.INLINE, 
+						"Events-"+nodeId.getOriginAsProfileId().getUserId()+"-"+calendar.getName()+".csv");
+				CsvListWriter wr=new CsvListWriter(new PrintWriter(response.getOutputStream()), CsvPreference.STANDARD_PREFERENCE);
+				csvout.writeHeader(wr);
+				outputCSVEvents(calendarId, calendar.getName(), csvout, wr);
+				wr.close();
+			} 
+			else if (nodeId.getType().equals(CalendarNodeId.Type.ORIGIN)) {
+				ServletUtils.setFileStreamHeaders(response, "text/csv", DispositionType.INLINE, 
+						"Events-"+nodeId.getOriginAsProfileId().getUserId()+".csv");
+				CsvListWriter wr=new CsvListWriter(new PrintWriter(response.getOutputStream()), CsvPreference.STANDARD_PREFERENCE);
+				csvout.writeHeader(wr);
+				for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(nodeId.getOriginAsProfileId())) {
+					Calendar calendar = folder.getCalendar();
+					outputCSVEvents(calendar.getCalendarId(), calendar.getName(), csvout, wr);
+					wr.flush();
+				}
+				wr.close();
+			}
+		} catch (Exception exc) {
+			Service.logger.error("Exception",exc);
+			ServletUtils.writeErrorHandlingJs(response, exc.getMessage());
+		}
+	}
+	
+	public void processExportEventsToICal(HttpServletRequest request, HttpServletResponse response) {
+		try {
+			String node = ServletUtils.getStringParameter(request, "id", true);
+			CalendarNodeId nodeId = new CalendarNodeId(node);
+			if (nodeId.getType().equals(CalendarNodeId.Type.FOLDER)) {
+				OutputStream out = response.getOutputStream();
+				Calendar calendar = manager.getCalendar(nodeId.getFolderId());
+				ServletUtils.setFileStreamHeaders(response, "text/calendar", DispositionType.INLINE, 
+						"Events-"+nodeId.getOriginAsProfileId().getUserId()+"-"+calendar.getName()+".ics");
+				manager.outputICalEventsByCalendarId(calendar, out);
+				out.close();
+			} 
+			else if (nodeId.getType().equals(CalendarNodeId.Type.ORIGIN)) {
+				ServletUtils.setFileStreamHeaders(response, "application/x-zip-compressed", DispositionType.INLINE, 
+						"Events-"+nodeId.getOriginAsProfileId().getUserId()+".zip");
+				ZipOutputStream zos = new ZipOutputStream(response.getOutputStream());
+				ArrayList<Calendar> calendars=new ArrayList<>();
+				for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(nodeId.getOriginAsProfileId()))
+					calendars.add(folder.getCalendar());
+				manager.outputICalEventsAsZipEntries(calendars, zos);
+				zos.close();
+			}
+		} catch (Exception exc) {
+			Service.logger.error("Exception",exc);
+			ServletUtils.writeErrorHandlingJs(response, exc.getMessage());
+		}
+	}	
+	
+	private void outputCSVEvents(int calendarId, String calendarName, CSVOutput csvout, CsvListWriter wr) throws WTException, IOException {
+		List<EventObject> events = manager.listEventObjects(calendarId, EventObjectOutputType.BEAN);
+		for (EventObject event : events) {
+			EventObjectWithBean contactObj = (EventObjectWithBean)event;
+			csvout.writeContact(contactObj.getEvent(), calendarName, wr);
+		}
+	}	
 	
 	private ReportConfig.Builder reportConfigBuilder() {
 		UserProfile.Data ud = getEnv().getProfile().getData();

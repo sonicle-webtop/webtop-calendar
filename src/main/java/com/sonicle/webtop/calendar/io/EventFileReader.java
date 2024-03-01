@@ -37,11 +37,16 @@ import com.sonicle.webtop.core.util.LogEntries;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import net.fortuna.ical4j.data.ParserException;
 
 /**
  *
  * @author malbinola
  */
 public interface EventFileReader {
+	
 	public ArrayList<EventInput> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException;
+	
+	public void listEvents(LogEntries log, File file, EventInputConsumer consumer) throws IOException, ParserException, UnsupportedOperationException, WTException;
+	
 }

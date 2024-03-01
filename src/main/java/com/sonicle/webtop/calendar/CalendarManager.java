@@ -230,18 +230,25 @@ import org.joda.time.Duration;
 import com.sonicle.commons.flags.BitFlagsEnum;
 import com.sonicle.commons.time.DateTimeRange2;
 import com.sonicle.commons.time.TimeRange;
+import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.CId;
 import com.sonicle.mail.email.EmailMessage;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
 import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.bol.VEventObjectChange;
+import com.sonicle.webtop.calendar.io.EventInputConsumer;
 import com.sonicle.webtop.core.app.model.Resource;
 import com.sonicle.webtop.core.app.model.ResourceGetOption;
 import com.sonicle.webtop.core.app.model.ShareOrigin;
 import com.sonicle.webtop.core.msg.ResourceReservationReplySM;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import net.fortuna.ical4j.model.Property;
+import net.fortuna.ical4j.model.PropertyList;
+import net.fortuna.ical4j.model.property.Attach;
+import net.fortuna.ical4j.model.property.XProperty;
 
 /**
  *
@@ -2857,15 +2864,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started at {0}", new DateTime()));
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Reading source file..."));
 			
-			ArrayList<EventInput> input = null;
-			try {
-				input = rea.listEvents(log, file);
-			} catch(IOException | UnsupportedOperationException ex) {
-				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
-				throw new WTException(ex);
-			}
-			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s found!", input.size()));
-			
 			con = WT.getConnection(SERVICE_ID, false);
 			
 			if(mode.equals("copy")) {
@@ -2876,19 +2874,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Importing..."));
-			int count = 0;
-			for(EventInput ei : input) {
-				ei.event.setCalendarId(calendarId);
-				try {
-					doEventInputInsert(con, uidMap, ei, ProcessReminder.DISARM_PAST);
-					DbUtils.commitQuietly(con);
-					count++;
-				} catch(Exception ex) {
-					logger.trace("Error inserting event", ex);
-					DbUtils.rollbackQuietly(con);
-					log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", ei.event.getTitle(), ei.event.getPublicUid(), ex.getMessage()));
-				}
+			EventInputConsumerImpl eici;
+			try {
+				rea.listEvents(log, file, eici = new EventInputConsumerImpl(con, calendarId, uidMap, log));
+			} catch(IOException | UnsupportedOperationException ex) {
+				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
+				throw new WTException(ex);
 			}
+			int count = eici.getCount();
+			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s found!", count));
+			
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "{0} event/s imported!", count));
 			
 		} catch (Exception ex) {
@@ -2899,6 +2894,104 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Ended at {0}", new DateTime()));
 		}
 		return log;
+	}
+	
+	class EventInputConsumerImpl implements EventInputConsumer {
+		
+		Connection con;
+		Integer calendarId;
+		HashMap<String, OEvent> uidMap;
+		LogEntries log;
+		int count = 0;
+		
+		EventInputConsumerImpl(Connection con, Integer calendarId, HashMap<String, OEvent> uidMap, LogEntries log) {
+			this.con = con;
+			this.calendarId = calendarId;
+			this.uidMap = uidMap;
+			this.log = log;
+		}
+		
+		@Override
+		public void consume(EventInput ei) {
+			ei.event.setCalendarId(calendarId);
+			
+			try {
+				
+				if (ei.sourceEvent!=null) {
+					
+					//add attachments
+					PropertyList atts = ei.sourceEvent.getProperties(Property.ATTACH);
+					if (atts!=null) {
+						ArrayList<EventAttachment> eatts = new ArrayList<>();
+						for(Property p: atts) {
+							Attach att = (Attach)p;
+							URI uri = att.getUri();
+							byte bytes[] = att.getBinary();
+							EventAttachment eatt = null;
+							String filename = null;
+							if (bytes != null) {
+								filename = att.getParameter("FILENAME").getValue();
+								eatt = new EventAttachmentWithBytes(att.getBinary());
+							} else if (uri != null) {
+								URL url = uri.toURL();
+								filename = url.getFile();
+								eatt = new EventAttachmentWithStream(url.openStream());
+							}
+							eatt.setFilename(filename);
+							eatt.setMediaType(ServletUtils.guessMediaType(filename));
+							eatts.add(eatt);
+						}
+						ei.event.setAttachments(eatts);
+					}
+					
+					//add tags
+					PropertyList tags = ei.sourceEvent.getProperties("X-WT-TAGS");
+					if (tags!=null) {
+						for(Property p: tags) {
+							XProperty etags = (XProperty)p;
+							String vtags[] = StringUtils.split(etags.getValue(), ",");
+							for(String tag: vtags) ei.event.addTag(tag);
+						}
+					}
+					
+					//add custom field values
+					PropertyList cfvprops = ei.sourceEvent.getProperties("X-WT-CUSTOMFIELDVALUE");
+					if (cfvprops!=null) {
+						HashMap<String, CustomFieldValue> ecfvMap = new HashMap<>();
+						for(Property p: cfvprops) {
+							XProperty ecfv = (XProperty)p;
+							String uid = ecfv.getParameter("UID").getValue();
+							String type = ecfv.getParameter("TYPE").getValue();
+							String value = ecfv.getValue();
+							CustomFieldValue cfv = new CustomFieldValue();
+							cfv.setFieldId(uid);
+							if ("boolean".equals(type)) cfv.setBooleanValue(Boolean.parseBoolean(value));
+							else if ("date".equals(type)) cfv.setDateValue(DateTimeUtils.createYmdHmsFormatter().parseDateTime(type));
+							else if ("number".equals(type)) cfv.setNumberValue(LangUtils.value(value, (Double)null));
+							else if ("string".equals(type)) cfv.setStringValue(value);
+							else if ("text".equals(type)) cfv.setTextValue(value);
+							ecfvMap.put(uid, cfv);
+						}
+						ei.event.setCustomValues(ecfvMap);
+					}
+					
+				}				
+				
+				
+				doEventInputInsert(con, uidMap, ei, ProcessReminder.DISARM_PAST);
+				DbUtils.commitQuietly(con);
+				count++;
+			} catch(Exception ex) {
+				logger.error("Error inserting event", ex);
+				DbUtils.rollbackQuietly(con);
+				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to import event [{0}, {1}]. Reason: {2}", ei.event.getTitle(), ei.event.getPublicUid(), ex.getMessage()));
+			}
+		}
+		
+		public int getCount() {
+			return count;
+		}
+
 	}
 	
 	public void exportEvents(LogEntries log, DateTime fromDate, DateTime toDate, OutputStream os) throws Exception {
@@ -4490,7 +4583,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private EventInsertResult doEventInputInsert(Connection con, HashMap<String, OEvent> cache, EventInput ei, ProcessReminder processReminder) throws DAOException, IOException {
-		EventInsertResult insert = doEventInsert(con, ei.event, null, true, true, true, false, false, false, processReminder, null);
+		EventInsertResult insert = doEventInsert(con, ei.event, null, true, true, true, true, true, true, processReminder, null);
 		if (insert.orecurrence != null) {
 			// Cache recurring event for future use within broken references 
 			cache.put(insert.oevent.getPublicUid(), insert.oevent);
@@ -4578,8 +4671,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (processAttachments && event.hasAttachments()) {
 			oattchs = new ArrayList<>();
 			for (EventAttachment att : event.getAttachments()) {
-				if (!(att instanceof EventAttachmentWithStream)) throw new IOException("Attachment stream not available [" + att.getAttachmentId() + "]");
-				oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithStream)att));
+				if (att instanceof EventAttachmentWithStream)
+					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithStream)att));
+				else if (att instanceof EventAttachmentWithBytes)
+					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithBytes)att));
+				else
+					throw new IOException("Attachment content not available [" + att.getAttachmentId() + "]");
 			}
 		}
 		
@@ -4864,14 +4961,31 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		OEventAttachment oattch = ManagerUtils.createOEventAttachment(attachment);
 		oattch.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
 		oattch.setEventId(eventId);
+		InputStream is = attachment.getStream();
+		byte bytes[] = IOUtils.toByteArray(is);
+		oattch.setSize(new Long(bytes.length));
 		attchDao.insert(con, oattch, BaseDAO.createRevisionTimestamp());
 		
-		InputStream is = attachment.getStream();
 		try {
-			attchDao.insertBytes(con, oattch.getEventAttachmentId(), IOUtils.toByteArray(is));
+			attchDao.insertBytes(con, oattch.getEventAttachmentId(), bytes);
 		} finally {
 			IOUtils.closeQuietly(is);
 		}
+		
+		return oattch;
+	}
+	
+	private OEventAttachment doEventAttachmentInsert(Connection con, int eventId, EventAttachmentWithBytes attachment) throws DAOException, IOException {
+		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
+		
+		OEventAttachment oattch = ManagerUtils.createOEventAttachment(attachment);
+		oattch.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
+		oattch.setEventId(eventId);
+		byte bytes[] = attachment.getBytes();
+		oattch.setSize(new Long(bytes.length));
+		attchDao.insert(con, oattch, BaseDAO.createRevisionTimestamp());
+		
+		attchDao.insertBytes(con, oattch.getEventAttachmentId(), bytes);
 		
 		return oattch;
 	}

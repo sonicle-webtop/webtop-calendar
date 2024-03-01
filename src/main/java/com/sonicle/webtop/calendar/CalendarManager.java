@@ -2876,7 +2876,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Importing..."));
 			EventInputConsumerImpl eici;
 			try {
-				rea.listEvents(log, file, eici = new EventInputConsumerImpl(con, calendarId, uidMap, log));
+				Map<String, String> tagNamesById = WT.getCoreManager().listTagNamesById();
+				Map<String, List<String>> tagIdsByName = WT.getCoreManager().listTagIdsByName();
+				rea.listEvents(log, file, eici = new EventInputConsumerImpl(con, calendarId, uidMap, tagNamesById, tagIdsByName, log));
 			} catch(IOException | UnsupportedOperationException ex) {
 				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
 				throw new WTException(ex);
@@ -2901,13 +2903,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		Connection con;
 		Integer calendarId;
 		HashMap<String, OEvent> uidMap;
+		Map<String, String> tagNamesById;
+		Map<String, List<String>> tagIdsByName;
 		LogEntries log;
 		int count = 0;
 		
-		EventInputConsumerImpl(Connection con, Integer calendarId, HashMap<String, OEvent> uidMap, LogEntries log) {
+		EventInputConsumerImpl(Connection con, Integer calendarId, HashMap<String, OEvent> uidMap, Map<String, String> tagNamesById, Map<String, List<String>> tagIdsByName, LogEntries log) {
 			this.con = con;
 			this.calendarId = calendarId;
 			this.uidMap = uidMap;
+			this.tagNamesById = tagNamesById;
+			this.tagIdsByName = tagIdsByName;
 			this.log = log;
 		}
 		
@@ -2945,12 +2951,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 					
 					//add tags
-					PropertyList tags = ei.sourceEvent.getProperties("X-WT-TAGS");
+					PropertyList tags = ei.sourceEvent.getProperties("X-WT-TAG");
 					if (tags!=null) {
 						for(Property p: tags) {
-							XProperty etags = (XProperty)p;
-							String vtags[] = StringUtils.split(etags.getValue(), ",");
-							for(String tag: vtags) ei.event.addTag(tag);
+							XProperty tag = (XProperty)p;
+							String uid = tag.getParameter("UID").getValue();
+							String name = tag.getValue();
+							if (tagNamesById.containsKey(uid)) ei.event.addTag(uid);
+							else {
+								List<String> ids = tagIdsByName.get(name);
+								if (ids != null && ids.size() > 0) ei.event.addTag(ids.get(0));
+							}
 						}
 					}
 					
@@ -3203,26 +3214,26 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public void outputICalEventsByCalendarId(Calendar calendar, OutputStream out) throws WTException, IOException {
 		CoreManager coreMgr = getCoreManager();
 		String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
-		ICalendarOutput icout = new ICalendarOutput(prodId);
 		Map<String, String> tagNamesByIdMap = coreMgr.listTagNamesById();
-		outputICalEvents(calendar.getCalendarId(), icout, out, tagNamesByIdMap);
+		ICalendarOutput icout = new ICalendarOutput(prodId, tagNamesByIdMap);
+		outputICalEvents(calendar.getCalendarId(), icout, out);
 	}
 	
 	public void outputICalEventsAsZipEntries(List<Calendar> calendars, ZipOutputStream zos) throws WTException, IOException {
 		CoreManager coreMgr = getCoreManager();
 		String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
-		ICalendarOutput icout = new ICalendarOutput(prodId);
 		Map<String, String> tagNamesByIdMap = coreMgr.listTagNamesById();
+		ICalendarOutput icout = new ICalendarOutput(prodId, tagNamesByIdMap);
 		for(Calendar calendar: calendars) {
 			ZipEntry ze=new ZipEntry("Events-"+calendar.getUserId()+"-"+calendar.getName()+".ics");
 			zos.putNextEntry(ze);
-			outputICalEvents(calendar.getCalendarId(), icout, zos, tagNamesByIdMap);
+			outputICalEvents(calendar.getCalendarId(), icout, zos);
 			zos.closeEntry();
 			zos.flush();
 		}
 	}
 	
-	private void outputICalEvents(int calendarId, ICalendarOutput vout, OutputStream out, Map<String, String> tagNamesByIdMap) throws WTException, IOException {
+	private void outputICalEvents(int calendarId, ICalendarOutput vout, OutputStream out) throws WTException, IOException {
 		EventDAO eventDao = EventDAO.getInstance();
 		Connection con = null;
 		try {
@@ -3235,7 +3246,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					new VEventObject.Consumer() {
 						@Override
 						public void consume(VEventObject vco, Connection con) throws WTException {
-							EventObjectWithBean eventObj = doEventObjectBeanPrepareComplete(con, vco, tagNamesByIdMap);
+							EventObjectWithBean eventObj = doEventObjectBeanPrepareComplete(con, vco);
 							Event wte = eventObj.getEvent();
 							VEvent ve = vout.toVEvent(null, wte);
 							InputStream is = IOUtils.toInputStream(ve.toString(), StandardCharsets.UTF_8);
@@ -4044,7 +4055,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private EventObjectWithBean doEventObjectBeanPrepareComplete(Connection con, VEventObject vobj, Map<String, String> tagNamesByIdMap) throws WTException {
+	private EventObjectWithBean doEventObjectBeanPrepareComplete(Connection con, VEventObject vobj) throws WTException {
 			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 			EventAttachmentDAO eattDao = EventAttachmentDAO.getInstance();

@@ -41,6 +41,12 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 		height: 380
 	},
 	
+	viewModel: {
+		data: {
+			url: null
+		}
+	},
+	
 	initComponent: function() {
 		var me = this,
 				ic = me.getInitialConfig();
@@ -51,19 +57,22 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 	
 	initPages: function() {
 		return {
-			ics: ['upload','mode','end']
+			ics: ['upload','mode','end'],
+			url: ['url','mode','end']
 		};
 	},
 	
 	initAction: function() {
 		return {
-			ics: 'ImportEventsFromICal'
+			ics: 'ImportEventsFromICal',
+			url: 'ImportEventsFromURL'
 		};
 	},
 	
 	initFiles: function() {
 		return {
-			ics: {label: this.mys.res('importEvents.path.fld-path.ics'), extensions: 'ical,ics,icalendar'}
+			ics: {label: this.mys.res('importEvents.path.fld-path.ics'), extensions: 'ical,ics,icalendar'},
+			url: {label: this.mys.res('importEvents.path.fld-path.url'), extensions: 'ical,ics,icalendar'}
 		};
 	},
 	
@@ -86,7 +95,51 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 				me.createEndPage(path)
 			];
 		}
+		else if(path === 'url') {
+			me.getVM().set('importmode', 'append');
+			
+			return [
+				me.createURLPage(path),
+				me.createModePage(path, [
+					{value: 'append', label: WT.res('importwiz.mode.fld-importmode.append')},
+					{value: 'copy', label: WT.res('importwiz.mode.fld-importmode.copy')}
+				]),
+				me.createEndPage(path)
+			];
+		}
 	},
+	
+	createURLPage: function(path) {
+		var me = this;
+		return {
+			itemId: 'url',
+			xtype: 'wtwizardpage',
+			items: [
+				{
+					xtype: 'label',
+					html: Sonicle.String.htmlLineBreaks(me.mys.res('importEvents.url.tit'))
+				}, {
+					xtype: 'sospacer'
+				}, {
+					xtype: 'wtform',
+					defaults: {
+						labelWidth: 120
+					},
+					items: [
+						{
+							xtype: 'textfield',
+							reference: 'fldurl',
+							bind: '{url}',
+							responseValueProperty: 'url',
+							width: 400,
+							fieldLabel: me.mys.res('importEvents.url.fld-url.lbl'),
+							allowBlank: false
+						}
+					]
+				}
+			]
+		};
+	},	
 	
 	onBeforeNavigate: function(s, dir, np, pp) {
 		if(dir === -1) return;
@@ -104,6 +157,13 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 			}
 			if(!ret) return false;
 		}
+		else if(path === 'url') {
+			if(pp === 'url') {
+				ret = ppcmp.down('wtform').isValid();
+			}
+			if(!ret) return false;
+		}
+		
 		return;
 	},
 	
@@ -113,6 +173,14 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 			return {
 				path: path,
 				uploadId: vm.get('file'),
+				importMode: vm.get('importmode'),
+				calendarId: vm.get('calendarId')
+			};
+		}
+		else if(path === 'url') {
+			return {
+				path: path,
+				url: vm.get('url'),
 				importMode: vm.get('importmode'),
 				calendarId: vm.get('calendarId')
 			};

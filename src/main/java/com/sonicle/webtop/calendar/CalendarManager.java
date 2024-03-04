@@ -2852,7 +2852,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return ManagerUtils.createEventAttendeeList(attendees);
 	}
 	
-	public LogEntries importEvents(int calendarId, EventFileReader rea, File file, String mode) throws WTException {
+	public LogEntries importEvents(int calendarId, EventFileReader rea, InputStream is, String mode) throws WTException {
 		LogEntries log = new LogEntries();
 		HashMap<String, OEvent> uidMap = new HashMap<>();
 		Connection con = null;
@@ -2878,7 +2878,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			try {
 				Map<String, String> tagNamesById = WT.getCoreManager().listTagNamesById();
 				Map<String, List<String>> tagIdsByName = WT.getCoreManager().listTagIdsByName();
-				rea.listEvents(log, file, eici = new EventInputConsumerImpl(con, calendarId, uidMap, tagNamesById, tagIdsByName, log));
+				rea.listEvents(log, is, eici = new EventInputConsumerImpl(con, calendarId, uidMap, tagNamesById, tagIdsByName, log));
 			} catch(IOException | UnsupportedOperationException ex) {
 				log.addMaster(new MessageLogEntry(LogEntry.Level.ERROR, "Unable to complete reading. Reason: {0}", ex.getMessage()));
 				throw new WTException(ex);

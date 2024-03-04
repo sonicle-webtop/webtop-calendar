@@ -158,6 +158,7 @@ import java.util.stream.Collectors;
 import jakarta.mail.internet.InternetAddress;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.zip.ZipOutputStream;
@@ -1307,7 +1308,7 @@ public class Service extends BaseService {
 	
 	public void processImportEventsFromICal(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		UserProfile up = getEnv().getProfile();
-		
+		FileInputStream fis = null;
 		try {
 			String uploadId = ServletUtils.getStringParameter(request, "uploadId", true);
 			String op = ServletUtils.getStringParameter(request, "op", true);
@@ -1315,6 +1316,7 @@ public class Service extends BaseService {
 			UploadedFile upl = getUploadedFile(uploadId);
 			if(upl == null) throw new WTException("Uploaded file not found [{0}]", uploadId);
 			File file = new File(WT.getTempFolder(), upl.getUploadId());
+			fis = new FileInputStream(file);
 			
 			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
 			
@@ -1322,7 +1324,8 @@ public class Service extends BaseService {
 				Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
 				String mode = ServletUtils.getStringParameter(request, "importMode", true);
 				
-				LogEntries log = manager.importEvents(calendarId, rea, file, mode);
+				LogEntries log = manager.importEvents(calendarId, rea, fis, mode);
+				fis.close();
 				removeUploadedFile(uploadId);
 				new JsonResult(new JsWizardData(log.print())).printTo(out);
 			}
@@ -1330,6 +1333,34 @@ public class Service extends BaseService {
 		} catch(Exception ex) {
 			logger.error("Error in ImportContactsFromICal", ex);
 			new JsonResult(false, ex.getMessage()).printTo(out);
+		} finally {
+			IOUtils.closeQuietly(fis);
+		}
+	}
+	
+	public void processImportEventsFromURL(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+		UserProfile up = getEnv().getProfile();
+		InputStream is = null;
+		try {
+			String surl = ServletUtils.getStringParameter(request, "url", true);
+			String op = ServletUtils.getStringParameter(request, "op", true);
+			
+			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
+			
+			if(op.equals("do")) {
+				Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
+				String mode = ServletUtils.getStringParameter(request, "importMode", true);
+				URL url = new URL(surl);
+				is = url.openStream();
+				LogEntries log = manager.importEvents(calendarId, rea, is, mode);
+				new JsonResult(new JsWizardData(log.print())).printTo(out);
+			}
+			
+		} catch(Exception ex) {
+			logger.error("Error in ImportContactsFromICal", ex);
+			new JsonResult(false, ex.getMessage()).printTo(out);
+		} finally {
+			IOUtils.closeQuietly(is);
 		}
 	}
 	

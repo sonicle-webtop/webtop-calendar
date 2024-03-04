@@ -34,8 +34,8 @@ package com.sonicle.webtop.calendar.io;
 
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.LogEntries;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import net.fortuna.ical4j.data.ParserException;
 
@@ -45,8 +45,8 @@ import net.fortuna.ical4j.data.ParserException;
  */
 public interface EventFileReader {
 	
-	public ArrayList<EventInput> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException;
+	public ArrayList<EventInput> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException, WTException;
 	
-	public void listEvents(LogEntries log, File file, EventInputConsumer consumer) throws IOException, ParserException, UnsupportedOperationException, WTException;
+	public void listEvents(LogEntries log, InputStream is, EventInputConsumer consumer) throws IOException, ParserException, UnsupportedOperationException, WTException;
 	
 }

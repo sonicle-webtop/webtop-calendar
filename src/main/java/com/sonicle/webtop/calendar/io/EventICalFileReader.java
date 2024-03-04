@@ -32,7 +32,6 @@
  */
 package com.sonicle.webtop.calendar.io;
 
-import com.sonicle.webtop.core.app.ical4j.LazyCalendarComponentConsumer;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.util.ICalendarUtils;
 import com.sonicle.webtop.core.util.LogEntries;
@@ -41,11 +40,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.component.CalendarComponent;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTimeZone;
 
@@ -61,27 +57,6 @@ public class EventICalFileReader implements EventFileReader {
 	}
 	
 	@Override
-	public ArrayList<EventInput> listEvents(LogEntries log, File file) throws IOException, UnsupportedOperationException, WTException {
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(file);
-			return listEvents(log, fis);
-		} finally {
-			IOUtils.closeQuietly(fis);
-		}
-	}
-	
-	@Override
-	public void listEvents(LogEntries log, File file, EventInputConsumer consumer) throws IOException, ParserException, UnsupportedOperationException, WTException {
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(file);
-			listEvents(log, fis, consumer);
-		} finally {
-			IOUtils.closeQuietly(fis);
-		}
-	}
-	
 	public ArrayList<EventInput> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException, WTException {
 		Calendar cal = null;
 		try {
@@ -92,6 +67,7 @@ public class EventICalFileReader implements EventFileReader {
 		return new ICalendarInput(defaultTz).fromICalendarFile(cal, log);
 	}
 	
+	@Override
 	public void listEvents(LogEntries log, InputStream is, EventInputConsumer consumer) throws IOException, ParserException, UnsupportedOperationException, WTException {
 		new ICalendarInput(defaultTz)
 				.withIncludeVEventSourceInOutput(true)

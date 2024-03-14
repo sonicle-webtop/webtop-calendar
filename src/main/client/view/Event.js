@@ -1357,13 +1357,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	privates: {
 		setCalendarDefaults: function(cal) {
-			var mo = this.getModel();
+			var me = this, mo = this.getModel(), od = me.opts.data;
 			if (mo) {
-				mo.set({
-					isPrivate: cal.get('evtPrivate'),
-					busy: cal.get('evtBusy'),
-					reminder: cal.get('evtReminder')
-				});
+				//set defaults only on non prepared fields
+				if (!Ext.isDefined(od.isPrivate)) mo.set('isPrivate', cal.get('evtPrivate'));
+				if (!Ext.isDefined(od.busy)) mo.set('busy', cal.get('evtBusy'));
+				if (!Ext.isDefined(od.reminder)) mo.set('reminder', cal.get('evtReminder'));
 			}
 		},
 		

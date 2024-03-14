@@ -2228,6 +2228,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			if (Ext.isDefined(data.statMasterDataId)) obj.statMasterDataId = data.statMasterDataId;
 			if (Ext.isDefined(data.activityId)) obj.activityId = data.activityId;
 			if (Ext.isDefined(data.causalId)) obj.causalId = data.causalId;
+			if (Ext.isDefined(data.attendees)) obj.attendees = data.attendees;
 			if (Ext.isDefined(data.tags)) {
 				if (Ext.isArray(data.tags)) {
 					obj.tags = Sonicle.String.join('|', data.tags);

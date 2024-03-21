@@ -8,7 +8,7 @@ $	5.18.0
 		di WebTop, semplificando la migrazione dei dati da un utente all'altro,
 		sia sulla stessa istanza che su istanze diverse.</p>
 	*	<h1>Importazione calendari da URL</h1>
-		<p>Un menu specifico di un calnedario permette l'importazione di eventi da una URL iCalendar.</p>
+		<p>Un menu specifico di un calendario permette l'importazione di eventi da una URL iCalendar.</p>
 	*	<h1>Creazione promemoria da email con invitati</h1>
 		<p>Durante la creazione di un promemoria da email, sarà richiesto se si vuole
 		importare il mittente e i destinatari come invitati all'evento.</p>

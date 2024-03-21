@@ -1,3 +1,17 @@
+$	5.18.0
+	%	Version 5.18.0
+	*	<h1>Calendar export</h1>
+		<p>New function to export calendars with support fo WebTop extended
+		properties (tags, attachments, custom fields).</p>
+	*	<h1>Calendar import</h1>
+		<p>The calendar import function now support WebTop extended properties,
+		making it much simpler to migrate data from a user to another, both
+		on the same instance and on different instances.</p>
+	*	<h1>Calendar import from URL</h1>
+		<p>A specific menu allows to import events from an iCalendar URL.</p>
+	*	<h1>Creating a reminder from an email with attendees</h1>
+		<p>During creation of a reminder from an email, you will be asked if you
+		want to import sender and recipients as attendees for the event.</p>
 $	5.16.0
 	%	Versione 5.16.0
 	*	<h1>Resources management</h1>

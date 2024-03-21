@@ -1,3 +1,17 @@
+$	5.18.0
+	%	Versione 5.18.0
+	*	<h1>Esportazione calendari</h1>
+		<p>Nova funzione di esportazione calendari con supporto delle proprietà 
+		estese di WebTop (tags, allegati, campi custom).</p>
+	*	<h1>Importazione calendari</h1>
+		<p>La funzione di importazione calendari ora supporta le proprietà estese 
+		di WebTop, semplificando la migrazione dei dati da un utente all'altro,
+		sia sulla stessa istanza che su istanze diverse.</p>
+	*	<h1>Importazione calendari da URL</h1>
+		<p>Un menu specifico di un calnedario permette l'importazione di eventi da una URL iCalendar.</p>
+	*	<h1>Creazione promemoria da email con invitati</h1>
+		<p>Durante la creazione di un promemoria da email, sarà richiesto se si vuole
+		importare il mittente e i destinatari come invitati all'evento.</p>
 $	5.16.0
 	%	Versione 5.16.0
 	*	<h1>Gestione risorse</h1>

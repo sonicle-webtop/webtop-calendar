@@ -1158,7 +1158,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				if (bid === 'ok') me._deleteEventUI(mo, value);
 			}, me);
 		} else {
-			WT.confirm(me.mys.res('event.confirm.delete', mo.get('title')), function(bid) {
+			WT.confirm(me.mys.res('event.confirm.delete', Ext.String.htmlEncode(mo.get('title'))), function(bid) {
 				if (bid === 'yes') me._deleteEventUI(mo, null);
 			}, me);
 		}

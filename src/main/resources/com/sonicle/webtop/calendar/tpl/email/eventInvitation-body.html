@@ -45,7 +45,7 @@
         </td>
         <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
             <span>${LangUtils.encodeForHTMLContent(event.location)}</span>
-            <span dir="ltr"> (<a href="${event.locationUrl}" style="color:#20c;white-space:nowrap" target="_blank" itemprop="map">${LangUtils.encodeForHTMLContent(i18n.whereMap)}</a>)</span>
+            <span dir="ltr"> (<a href="${LangUtils.encodeForHTMLAttribute(event.locationUrl)}" style="color:#20c;white-space:nowrap" target="_blank" itemprop="map">${LangUtils.encodeForHTMLContent(i18n.whereMap)}</a>)</span>
         </td>
     </tr>
     </#if>

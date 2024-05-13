@@ -2,18 +2,18 @@
 <table cellpadding="0" cellspacing="0" border="0" summary="">
     <tr>
         <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
-            <div><i style="font-style:normal">${i18n.whenStart}</i></div>
+            <div><i style="font-style:normal">${LangUtils.encodeForHTMLContent(i18n.whenStart)}</i></div>
         </td>
         <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
-            ${event.startDate} <span style="color:#888">${event.timezone}</span>
+            ${LangUtils.encodeForHTMLContent(event.startDate)} <span style="color:#888">${LangUtils.encodeForHTMLContent(event.timezone)}</span>
         </td>
     </tr>
     <tr>
         <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
-            <div><i style="font-style:normal">${i18n.whenEnd}</i></div>
+            <div><i style="font-style:normal">${LangUtils.encodeForHTMLContent(i18n.whenEnd)}</i></div>
         </td>
         <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
-            ${event.endDate} <span style="color:#888">${event.timezone}</span>
+            ${LangUtils.encodeForHTMLContent(event.endDate)} <span style="color:#888">${LangUtils.encodeForHTMLContent(event.timezone)}</span>
         </td>
     </tr>
     <#if event.occurs??>
@@ -21,18 +21,18 @@
         <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
         </td>
         <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
-            <span style="color:#888">${event.occurs}</span>
+            <span style="color:#888">${LangUtils.encodeForHTMLContent(event.occurs)}</span>
         </td>
     </tr>
     </#if>
     <#if event.location??>
     <tr>
         <td style="padding:0 1em 10px 0;font-family:Arial,Sans-serif;font-size:13px;color:#888;white-space:nowrap" valign="top">
-            <div><i style="font-style:normal">${i18n.where}</i></div>
+            <div><i style="font-style:normal">${LangUtils.encodeForHTMLContent(i18n.where)}</i></div>
         </td>
         <td style="padding-bottom:10px;font-family:Arial,Sans-serif;font-size:13px;color:#222" valign="top">
-            <span>${event.location}</span>
-            <span dir="ltr"> (<a href='${event.locationUrl}' style="color:#20c;white-space:nowrap" target="_blank" itemprop="map">${i18n.whereMap}</a>)</span>
+            <span>${LangUtils.encodeForHTMLContent(event.location)}</span>
+            <span dir="ltr"> (<a href="${LangUtils.encodeForHTMLAttribute(event.locationUrl)}" style="color:#20c;white-space:nowrap" target="_blank" itemprop="map">${LangUtils.encodeForHTMLContent(i18n.whereMap)}</a>)</span>
         </td>
     </tr>
     </#if>

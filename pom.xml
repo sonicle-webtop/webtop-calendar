@@ -70,5 +70,11 @@
 			<version>LATEST</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>webtop-contacts-api</artifactId>
+			<version>LATEST</version>
+			<scope>provided</scope>
+		</dependency>
 	</dependencies>
 </project>

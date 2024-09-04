@@ -68,6 +68,7 @@ import com.sonicle.webtop.calendar.bol.js.JsSchedulerEventDate;
 import com.sonicle.webtop.calendar.bol.js.JsEvent;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarLkp;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarSharing;
+import com.sonicle.webtop.calendar.bol.js.JsContact;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
 import com.sonicle.webtop.calendar.bol.js.JsPletEvents;
@@ -98,6 +99,12 @@ import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
 import com.sonicle.webtop.calendar.rpt.RptEventsDetail;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek5;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek7;
+import com.sonicle.webtop.contacts.IContactsManager;
+import com.sonicle.webtop.contacts.model.ContactLookup;
+import com.sonicle.webtop.contacts.model.ContactType;
+import com.sonicle.webtop.contacts.model.Grouping;
+import com.sonicle.webtop.contacts.model.ListContactsResult;
+import com.sonicle.webtop.contacts.model.ShowBy;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.app.CoreManifest;
@@ -1476,6 +1483,27 @@ public class Service extends BaseService {
 			now.withZone(timezone).minusMonths(6).withTimeAtStartOfDay(),
 			now.withZone(timezone).plusMonths(6).withTimeAtStartOfDay());
 	}
+	
+    public void processOpenContact(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
+			try {
+				String recipient=ServletUtils.getStringParameter(request, "recipient", true);
+				IContactsManager icm = (IContactsManager) WT.getServiceManager("com.sonicle.webtop.contacts");
+				if (icm==null) {
+					throw new WTException("Contacts service unavailable");
+				}
+				InternetAddress ia = InternetAddressUtils.toInternetAddress(recipient);
+				Set<Integer> catIds = icm.listAllCategoryIds();
+				ListContactsResult lcr = icm.listContacts(catIds, ContactType.CONTACT, Grouping.ALPHABETIC, ShowBy.DISPLAY, ia.getAddress());
+				ArrayList<JsContact> jsc = new ArrayList<>();
+				for(ContactLookup cl: lcr.items) {
+					jsc.add(new JsContact(cl.getContactId(), cl.getDisplayName()+ "<"+cl.getEmail1()+">", WT.getProfileData(cl.getCategoryProfileId()).getDisplayName()));
+				}
+				new JsonResult(jsc).printTo(out);
+			} catch(Exception ex) {
+				logger.error("Open contact failure", ex);
+				new JsonResult(ex).printTo(out);
+			}
+	}	
 	
 	public void processPortletEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		ArrayList<JsPletEvents> items = new ArrayList<>();

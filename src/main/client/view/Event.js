@@ -768,12 +768,20 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						hideable: false,
 						groupable: false,
 						align: 'center',
-						items: [{
-							iconCls: 'far fa-trash-alt',
-							tooltip: WT.res('act-remove.lbl'),
-							handler: function(g, ridx) {
-								var rec = g.getStore().getAt(ridx);
-								me.deleteAttendeeUI(rec);
+						items: [
+							{
+								iconCls: 'far fa-user',
+								tooltip: me.mys.res('openContact.tip'),
+								handler: function(g, ridx) {
+									var rec = g.getStore().getAt(ridx);
+									me.openContactUI(rec);
+								}
+							}, {
+								iconCls: 'far fa-trash-alt',
+								tooltip: WT.res('act-remove.lbl'),
+								handler: function(g, ridx) {
+									var rec = g.getStore().getAt(ridx);
+									me.deleteAttendeeUI(rec);
 							}
 						}],
 						width: 50
@@ -1263,6 +1271,80 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}
 			}
 		});
+	},
+	
+	openContactUI: function(rec) {
+		var me = this;
+		if (!Ext.isEmpty(rec.get("recipient"))) {
+			WT.ajaxReq(me.mys.ID, "OpenContact", {
+				params: {
+					recipient: rec.get("recipient")
+				},
+				callback: function(success,json) {
+					if (success) {
+						if (json.data.length>0) {
+							me.openContactFromResult(json.data);
+						}
+						else WT.error(me.mys.res('openContact.notfound'));
+					} else {
+						WT.error(json.message);
+					}
+				}
+			});
+		} else {
+			WT.error(me.mys.res('openContact.empty'))
+		}
+	},
+	
+	openContactFromResult: function(data) {
+		var me = this,
+			capi=WT.getServiceApi("com.sonicle.webtop.contacts");
+		if (!capi) return;
+
+		if (data.length == 1) {
+			capi.openContact(data[0].id);
+		} else {
+			var picker = Ext.create({
+				xtype: 'wtpickerwindow',
+				title: me.mys.res('openContactFromResult.tit'),
+				height: 350,
+				width: 600,
+				items: [
+					{
+						xtype: 'solistpicker',
+						store: {
+							type: 'json',
+							fields: [
+								{name: 'id', type: 'string'},
+								{name: 'recipient', type: 'string'},
+								{name: 'source', type: 'string'}
+							],
+							data: data
+						},
+						valueField: 'id',
+						columns: [
+							{ dataIndex: 'recipient', flex: 1 },
+							{ dataIndex: 'source', flex: 1 }
+						],
+						selectedText: WT.res('grid.selected.lbl'),
+						okText: WT.res('act-ok.lbl'),
+						cancelText: WT.res('act-cancel.lbl'),
+						allowMultiSelection: false,
+						listeners: {
+							cancelclick: function() {
+								if (picker) picker.close();
+							}
+						},
+						handler: function(s, values, recs, button) {
+							capi.openContact(values[0]);
+							if (picker) picker.close();
+						},
+						scope: me
+					}
+				]
+			});
+			picker.show();
+		}
 	},
 	
 	isPlanningActive: function() {

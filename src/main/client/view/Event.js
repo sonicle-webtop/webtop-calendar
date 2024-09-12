@@ -154,9 +154,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			foLocationIsMeeting: WTF.foGetFn('record', 'location', function(val) {
 				return WT.isMeetingUrl(val);
 			}),
-			foHasMeeting: WTF.foGetFn('record', 'extractedUrl', function(val) {
-				return WT.isMeetingUrl(val);
-			})
+			foHasMeeting: WTF.foIsEmpty('record', 'meetingUrl', true)
 		});
 	},
 	
@@ -328,7 +326,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			items: [{
 				xtype: 'wtmeetingurlfield',
 				bind: {
-					value: '{record.extractedUrl}',
+					value: '{record.meetingUrl}',
 					hidden: '{!foHasMeeting}'
 				},
 				linkText: me.res('event.meeting.info'),

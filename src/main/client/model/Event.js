@@ -79,16 +79,19 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		}),
 		WTF.field('rstart', 'date', true, {dateFormat: 'Y-m-d'}),
 		WTF.field('tags', 'string', true),
-		WTF.calcField('extractedUrl', 'string', ['location', 'description'], function(v, rec, loc, desc) {
+		WTF.calcField('meetingUrl', 'string', ['location', 'description'], function(v, rec, loc, desc) {
 			var reURL = Sonicle.String.reSimpleURLs,
-				groups = null;
-			Ext.iterate([loc, desc], function(value) {
-				if (!Ext.isEmpty(value)) {
-					groups = value.match(reURL);
-					if (groups) return false;
+				urls = [], groups, i;
+			Ext.iterate([loc, desc], function(s) {
+				if (!Ext.isEmpty(s)) {
+					groups = s.match(reURL);
+					if (groups) Ext.Array.push(urls, groups);
 				}
 			});
-			return Ext.isArray(groups) ? groups[0] : null;
+			for (i=0; i<urls.length; i++) {
+				if (WT.isMeetingUrl(urls[i])) return urls[i];
+			}
+			return null;
 		}),
 		// Read-only fields
 		WTF.roField('_profileId', 'string'),

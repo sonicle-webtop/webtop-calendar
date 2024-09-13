@@ -43,5 +43,9 @@ Ext.define('Sonicle.webtop.calendar.model.EventAttendee', {
 		WTF.field('recipientRole', 'string', false),
 		WTF.field('responseStatus', 'string', false),
 		WTF.field('notify', 'boolean', false)
-	]
+	],
+	
+	isResource: function() {
+		return this.get('recipientType') === 'RES';
+	}
 });

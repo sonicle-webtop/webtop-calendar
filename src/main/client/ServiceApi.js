@@ -120,5 +120,12 @@ Ext.define('Sonicle.webtop.calendar.ServiceApi', {
 	 */
 	createEventsPortletBody: function(cfg) {		
 		return Ext.create('Sonicle.webtop.calendar.portlet.EventsBody', Ext.apply(cfg||{},{ mys: this.service }));
+	},
+	
+	createEventsPortletBodyCfg: function(cfg) {
+		return Ext.apply(cfg || {}, {
+			xclass: 'Sonicle.webtop.calendar.portlet.EventsBody',
+			mys: this.service
+		});
 	}
 });

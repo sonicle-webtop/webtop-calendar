@@ -34,6 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.view.pub.Event', {
 	extend: 'WTA.ux.panel.Panel',
 	requires: [
+		'Sonicle.VMUtils',
 		'Sonicle.form.Spacer',
 		'Sonicle.form.field.Link',
 		'Sonicle.grid.column.Icon',
@@ -51,7 +52,7 @@ Ext.define('Sonicle.webtop.calendar.view.pub.Event', {
 		var me = this;
 		me.callParent([cfg]);
 		
-		WTU.applyFormulas(me.getVM(), {
+		Sonicle.VMUtils.applyFormulas(me.getVM(), {
 			foIsWhereEmpty: WTF.foIsEmpty('record', 'where')
 		});
 	},

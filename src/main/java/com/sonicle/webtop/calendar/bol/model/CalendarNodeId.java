@@ -44,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author malbinola
  */
 public class CalendarNodeId extends CId {
+	public static final String GROUPER_OTHERS_ORIGIN = "others";
 	public static final String GROUPER_RESOURCES_ORIGIN = "resources";
 	
 	// Node IDs are designed to be self-explanatory; obtained an ID you can 
@@ -84,6 +85,10 @@ public class CalendarNodeId extends CId {
 	public Integer getFolderId() {
 		final String folderId = getTokenOrNull(2);
 		return !StringUtils.isBlank(folderId) ? Integer.valueOf(folderId) : null;
+	}
+	
+	public boolean isGrouperOther() {
+		return Type.GROUPER.equals(getType()) && GROUPER_OTHERS_ORIGIN.equals(getOrigin());
 	}
 	
 	public boolean isGrouperResource() {

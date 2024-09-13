@@ -55,6 +55,8 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 			region: 'center',
 			xtype: 'gridpanel',
 			reference: 'gp',
+			cls: 'wtcal-portlet-grid',
+			border: false,
 			store: {
 				autoLoad: true,
 				model: 'Sonicle.webtop.calendar.model.PletEvents',
@@ -76,11 +78,10 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 			columns: [
 				{
 					xtype: 'socolorcolumn',
-					dataIndex: 'calendarName',
-					colorField: 'calendarColor',
-					width: 30
-				}, {
-					dataIndex: 'title',
+					dataIndex: 'calendarColor',
+					swatchGeometry: 'circle',
+					labelField: 'title',
+					labelCls: 'wt-text-sm-medium wtcal-portlet-event-title',
 					flex: 1
 				}, {
 					xtype: 'soactioncolumn',
@@ -111,10 +112,19 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 				{
 					ftype: 'rowbody',
 					getAdditionalData: function(data, idx, rec, orig) {
-						var info = me.buildDateTimeInfo(rec.get('startDate'), rec.get('endDate')),
-							loc = Ext.String.ellipsis(rec.get('location'), 150);
+						var SoS = Sonicle.String,
+							SoD = Sonicle.Date,
+							atDate = me.formatAtDate(rec.get('startDate')),
+							atTime = SoD.format(rec.get('startDate'), WT.getShortTimeFmt()),
+							loc = Ext.String.ellipsis(rec.get('location'), 50),
+							html = '';
+						
+						html += '<span class="wt-text-xs wt-text-regular wtcal-portlet-event-body-atdate">' + SoS.htmlEncode(atDate) + '</span>';
+						html += '<span class="wt-text-xs wt-text-bold wtcal-portlet-event-body-attime">' + SoS.htmlEncode(atTime) + '</span>';
+						if (!Ext.isEmpty(loc)) html += '<span class="wt-text-xs wt-text-regular wtcal-portlet-event-body-location">' + SoS.htmlEncode('@'+loc) + '</span>';
 						return {
-							rowBody: info + (!Ext.isEmpty(loc) ? (' <span style="color:grey;">' + Ext.String.htmlEncode('@'+loc) + '</span>') : '')
+							rowBody: html,
+							rowBodyCls: 'wtcal-portlet-event-body'
 						};
 					}
 				}
@@ -153,14 +163,29 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 		return Ext.String.format(this.mys.res('portlet.events.sbar.count'), (count > -1) ? count : '?');
 	},
 	
+	formatAtDate: function(start) {
+		var me = this,
+			SoD = Sonicle.Date,
+			XD = Ext.Date,
+			now = SoD.setTime(new Date(), 0, 0, 0);
+		
+		if (SoD.diffDays(now, start) === 0) {
+			return me.mys.res('portlet.events.gp.dateat.today');
+		} else if (SoD.diffDays(now, start) === 1) {
+			return me.mys.res('portlet.events.gp.dateat.tomorrow');
+		} else {
+			return XD.format(start, WT.getShortDateFmt());
+		}
+	},
+	
 	buildDateTimeInfo: function(start) {
 		var me = this,
-				soDate = Sonicle.Date,
-				eDate = Ext.Date,
-				startd = eDate.format(start, WT.getShortDateFmt()),
-				startt = eDate.format(start, WT.getShortTimeFmt()),
-				now = soDate.setTime(new Date(), 0, 0, 0),
-				str0;
+			soDate = Sonicle.Date,
+			eDate = Ext.Date,
+			startd = eDate.format(start, WT.getShortDateFmt()),
+			startt = eDate.format(start, WT.getShortTimeFmt()),
+			now = soDate.setTime(new Date(), 0, 0, 0),
+			str0;
 		
 		if (soDate.diffDays(now, start) === 0) {
 			str0 = me.mys.res('portlet.events.gp.dateat.today');

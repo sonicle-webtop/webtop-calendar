@@ -291,6 +291,28 @@ public class Service extends BaseService {
 		}
 	}
 	
+	private void appendOriginFolderNodes(final ArrayList<ExtTreeNode> children, final CalendarFSOrigin origin, final Integer defaultCalendarId, final boolean writableOnly, final boolean chooser) {
+		for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(origin)) {
+			if (writableOnly && !folder.getPermissions().getItemsPermissions().has(FolderShare.ItemsRight.CREATE)) continue;
+
+			final boolean isDefault = folder.getFolderId().equals(defaultCalendarId);
+			final ExtTreeNode xnode = createCalendarFolderNode(chooser, origin, folder, isDefault);
+			//if (xnode != null) children.add(xnode.setLoaded(true));
+			if (xnode != null) children.add(xnode);
+		}
+	}
+	
+	private void appendOriginResourceFolderNodes(final CoreManager coreMgr, final ArrayList<ExtTreeNode> children, final CalendarFSOrigin origin, final boolean chooser) throws WTException {
+		for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(origin)) {
+			final ExtTreeNode xnode = createCalendarFolderNode(chooser, origin, folder, false);
+			if (xnode != null) {
+				xnode.set("_resourceAvail", coreMgr.getResourceEnabled(origin.getProfileId().getUserId()));
+				//children.add(xnode.setLoaded(true));
+				children.add(xnode);
+			}
+		}
+	}
+	
 	public void processManageFoldersTree(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		ArrayList<ExtTreeNode> children = new ArrayList<>();
 			
@@ -299,57 +321,147 @@ public class Service extends BaseService {
 			if (Crud.READ.equals(crud)) {
 				String node = ServletUtils.getStringParameter(request, "node", true);
 				boolean chooser = ServletUtils.getBooleanParameter(request, "chooser", false);
+				boolean bulk = ServletUtils.getBooleanParameter(request, "bulk", false);
 				
-				if (node.equals("root")) { // Tree ROOT node -> list folder origins (resources origins will be grouped)
+				if (bulk && node.equals("root")) {
+					boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", false);
+					CoreManager coreMgr = WT.getCoreManager();
+					final Integer defaultCalendarId = manager.getDefaultCalendarId();
+					boolean hasOthers = false;
 					boolean hasResources = false;
+					
 					// Classic root nodes
 					for (CalendarFSOrigin origin : foldersTreeCache.getOrigins()) {
 						if (origin.isResource()) {
 							hasResources = true;
 							continue;
+						} else if (!chooser && !(origin instanceof MyCalendarFSOrigin)) {
+							hasOthers = true;
+							continue;
 						}
-						final ExtTreeNode xnode = createFolderNodeLevel0(chooser, origin);
-						if (xnode != null) children.add(xnode);
+						final ExtTreeNode onode = createOriginFolderNode(chooser, origin);
+						if (onode != null) {
+							ArrayList<ExtTreeNode> ochildren = new ArrayList<>();
+							// Tree node -> append folders of specified origin
+							appendOriginFolderNodes(ochildren, origin, defaultCalendarId, writableOnly, chooser);
+							if (!ochildren.isEmpty()) {
+								onode.setChildren(ochildren);
+								if (chooser) onode.setExpanded(true);
+								children.add(onode.setLoaded(true));
+							}	
+						}
 					}
-					// Resources root node
-					if (!chooser && hasResources) {
-						final ExtTreeNode xnode = createFolderNodeLevel0Resources(chooser);
-						if (xnode != null) children.add(xnode);
-					}
-					
-				} else {
-					boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", false);
-					CalendarNodeId nodeId = new CalendarNodeId(node);
-					if (nodeId.isGrouperResource() && !chooser) { // Tree node (resources grouper) -> list all resources folder only
-						CoreManager coreMgr = WT.getCoreManager();
-						for (CalendarFSOrigin origin : foldersTreeCache.getOrigins()) {
-							if (!origin.isResource()) continue;
-							
-							for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(origin)) {
-								final ExtTreeNode xnode = createFolderNodeLevel1(chooser, origin, folder, false);
-								if (xnode != null) {
-									xnode.set("_resourceAvail", coreMgr.getResourceEnabled(origin.getProfileId().getUserId()));
-									children.add(xnode);
+					// Others root node
+					if (!chooser && hasOthers) {
+						final ExtTreeNode gnode = createOthersFolderNode(chooser);
+						if (gnode != null) {
+							ArrayList<ExtTreeNode> gchildren = new ArrayList<>();
+							for (CalendarFSOrigin origin : foldersTreeCache.getOrigins()) {
+								if (origin.isResource()) continue;
+								if (origin instanceof MyCalendarFSOrigin) continue;
+
+								final ExtTreeNode onode = createOriginFolderNode(chooser, origin);
+								if (onode != null) {
+									ArrayList<ExtTreeNode> ochildren = new ArrayList<>();
+									// Tree node -> append folders of specified incoming origin
+									appendOriginFolderNodes(ochildren, origin, defaultCalendarId, writableOnly, chooser);
+									onode.setChildren(ochildren);
+									gchildren.add(onode.setLoaded(true));
 								}
 							}
-						}
-						
-					} else if (CalendarNodeId.Type.ORIGIN.equals(nodeId.getType())) { // Tree node -> list folder of specified origin
-						final Integer defaultCalendarId = manager.getDefaultCalendarId();
-						final CalendarFSOrigin origin = foldersTreeCache.getOriginByProfile(nodeId.getOriginAsProfileId());
-						for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(origin)) {
-							if (writableOnly && !folder.getPermissions().getItemsPermissions().has(FolderShare.ItemsRight.CREATE)) continue;
-							
-							final boolean isDefault = folder.getFolderId().equals(defaultCalendarId);
-							final ExtTreeNode xnode = createFolderNodeLevel1(chooser, origin, folder, isDefault);
-							if (xnode != null) children.add(xnode);
+							gnode.setChildren(gchildren);
+							children.add(gnode.setLoaded(true));
 						}	
-						
-					} else {
-						throw new WTParseException("Unable to parse '{}' as node ID", node);
 					}
+					// Resources root node
+					if (hasResources && !chooser) {
+						final ExtTreeNode gnode = createResourcesFolderNode(chooser);
+						if (gnode != null) {
+							ArrayList<ExtTreeNode> ochildren = new ArrayList<>();
+							// Tree node (resources grouper) -> append all resources folder only
+							for (CalendarFSOrigin origin : foldersTreeCache.getOrigins()) {
+								if (!origin.isResource()) continue;
+								
+								appendOriginResourceFolderNodes(coreMgr, ochildren, origin, chooser);
+							}
+							gnode.setChildren(ochildren);
+							children.add(gnode.setLoaded(true));
+						}
+					}
+					new JsonResult("children", children).printTo(out);
+					
+				} else {
+					if (node.equals("root")) { // Tree ROOT node -> list folder origins (incoming and resources origins will be grouped)
+						boolean hasOthers = false;
+						boolean hasResources = false;
+						// Classic root nodes
+						for (CalendarFSOrigin origin : foldersTreeCache.getOrigins()) {
+							if (origin.isResource()) {
+								hasResources = true;
+								continue;
+							} else if (!chooser && !(origin instanceof MyCalendarFSOrigin)) {
+								hasOthers = true;
+								continue;
+							}
+							final ExtTreeNode xnode = createOriginFolderNode(chooser, origin);
+							if (xnode != null) children.add(xnode);
+						}
+						// Others root node
+						if (hasOthers) {
+							final ExtTreeNode xnode = createOthersFolderNode(chooser);
+							if (xnode != null) children.add(xnode);
+						}
+						// Resources root node
+						if (hasResources && !chooser) {
+							final ExtTreeNode xnode = createResourcesFolderNode(chooser);
+							if (xnode != null) children.add(xnode);
+						}
+
+					} else {
+						boolean writableOnly = ServletUtils.getBooleanParameter(request, "writableOnly", false);
+						CalendarNodeId nodeId = new CalendarNodeId(node);
+						if (nodeId.isGrouperResource() && !chooser) { // Tree node (resources grouper) -> list all resources folder only
+							CoreManager coreMgr = WT.getCoreManager();
+							for (CalendarFSOrigin origin : foldersTreeCache.getOrigins()) {
+								if (!origin.isResource()) continue;
+
+								// Will pass here resources' origins only
+								for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(origin)) {
+									final ExtTreeNode xnode = createCalendarFolderNode(chooser, origin, folder, false);
+									if (xnode != null) {
+										xnode.set("_resourceAvail", coreMgr.getResourceEnabled(origin.getProfileId().getUserId()));
+										children.add(xnode);
+									}
+								}
+							}
+
+						} else if (nodeId.isGrouperOther() && !chooser) { // Tree node (others grouper) -> list all incoming origins
+							for (CalendarFSOrigin origin : foldersTreeCache.getOrigins()) {
+								if (origin.isResource()) continue;
+								if (origin instanceof MyCalendarFSOrigin) continue;
+
+								// Will pass here incoming origins only (resources' origins excluded)
+								final ExtTreeNode xnode = createOriginFolderNode(chooser, origin);
+								children.add(xnode);
+							}
+
+						} else if (CalendarNodeId.Type.ORIGIN.equals(nodeId.getType())) { // Tree node -> list folder of specified origin
+							final Integer defaultCalendarId = manager.getDefaultCalendarId();
+							final CalendarFSOrigin origin = foldersTreeCache.getOriginByProfile(nodeId.getOriginAsProfileId());
+							for (CalendarFSFolder folder : foldersTreeCache.getFoldersByOrigin(origin)) {
+								if (writableOnly && !folder.getPermissions().getItemsPermissions().has(FolderShare.ItemsRight.CREATE)) continue;
+
+								final boolean isDefault = folder.getFolderId().equals(defaultCalendarId);
+								final ExtTreeNode xnode = createCalendarFolderNode(chooser, origin, folder, isDefault);
+								if (xnode != null) children.add(xnode);
+							}	
+
+						} else {
+							throw new WTParseException("Unable to parse '{}' as node ID", node);
+						}
+					}
+					new JsonResult("children", children).printTo(out);
 				}
-				new JsonResult("children", children).printTo(out);
 				
 			} else if (Crud.UPDATE.equals(crud)) {
 				PayloadAsList<JsFolderNodeList> pl = ServletUtils.getPayloadAsList(request, JsFolderNodeList.class);
@@ -383,53 +495,69 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private ExtTreeNode createFolderNodeLevel0Resources(boolean chooser) {
-		CalendarNodeId nodeId = CalendarNodeId.build(CalendarNodeId.Type.GROUPER, CalendarNodeId.GROUPER_RESOURCES_ORIGIN);
+	private ExtTreeNode createOthersFolderNode(boolean chooser) {
+		CalendarNodeId nodeId = CalendarNodeId.build(CalendarNodeId.Type.GROUPER, CalendarNodeId.GROUPER_OTHERS_ORIGIN);
 		boolean checked = isOriginActive(toInactiveOriginKey(nodeId));
-		return createFolderNodeLevel0Resources(chooser, nodeId, checked);
+		return createOthersFolderNode(chooser, nodeId, checked);
 	}
 	
-	private ExtTreeNode createFolderNodeLevel0Resources(boolean chooser, CalendarNodeId nodeId, boolean isActive) {
-		ExtTreeNode node = new ExtTreeNode(nodeId.toString(), "{trfolders.origin.resources}", false);
+	private ExtTreeNode createOthersFolderNode(boolean chooser, CalendarNodeId nodeId, boolean isActive) {
+		ExtTreeNode node = new ExtTreeNode(nodeId.toString(), "{trfolders.origin.others}", false);
 		node.put("_active", isActive);
 		if (!chooser) node.setChecked(isActive);
-		node.put("expandable", false);
-		node.setIconClass("wtcal-icon-calendarResources");
-		node.setExpanded(true);
+		node.put("expandable", true);
+		node.setIconClass("wtcal-icon-calendarOthers");
+		//node.setExpanded(true);
 		return node;
 	}
 	
-	private ExtTreeNode createFolderNodeLevel0(boolean chooser, CalendarFSOrigin origin) {
+	private ExtTreeNode createResourcesFolderNode(boolean chooser) {
+		CalendarNodeId nodeId = CalendarNodeId.build(CalendarNodeId.Type.GROUPER, CalendarNodeId.GROUPER_RESOURCES_ORIGIN);
+		boolean checked = isOriginActive(toInactiveOriginKey(nodeId));
+		return createResourcesFolderNode(chooser, nodeId, checked);
+	}
+	
+	private ExtTreeNode createResourcesFolderNode(boolean chooser, CalendarNodeId nodeId, boolean isActive) {
+		ExtTreeNode node = new ExtTreeNode(nodeId.toString(), "{trfolders.origin.resources}", false);
+		node.put("_active", isActive);
+		if (!chooser) node.setChecked(isActive);
+		node.put("expandable", true);
+		node.setIconClass("wtcal-icon-calendarResources");
+		//node.setExpanded(true);
+		return node;
+	}
+	
+	private ExtTreeNode createOriginFolderNode(boolean chooser, CalendarFSOrigin origin) {
 		CalendarNodeId nodeId = CalendarNodeId.build(CalendarNodeId.Type.ORIGIN, origin.getProfileId());
 		boolean checked = isOriginActive(toInactiveOriginKey(origin));
 		if (origin instanceof MyCalendarFSOrigin) {
-			return createFolderNodeLevel0(chooser, nodeId, "{trfolders.origin.my}", "wtcal-icon-calendarMy", origin.getWildcardPermissions(), checked);
+			return createOriginFolderNode(chooser, nodeId, "{trfolders.origin.my}", "wtcal-icon-calendarMy", origin.getWildcardPermissions(), checked);
 		} else {
-			return createFolderNodeLevel0(chooser, nodeId, origin.getDisplayName(), "wtcal-icon-calendarIncoming", origin.getWildcardPermissions(), checked);
+			return createOriginFolderNode(chooser, nodeId, origin.getDisplayName(), "wtcal-icon-calendarIncoming", origin.getWildcardPermissions(), checked);
 		}
 	}
 	
-	private ExtTreeNode createFolderNodeLevel0(boolean chooser, CalendarNodeId nodeId, String text, String iconClass, FolderShare.Permissions originPermissions, boolean isActive) {
+	private ExtTreeNode createOriginFolderNode(boolean chooser, CalendarNodeId nodeId, String text, String iconClass, FolderShare.Permissions originPermissions, boolean isActive) {
 		ExtTreeNode node = new ExtTreeNode(nodeId.toString(), text, false);
 		node.put("_orPerms", originPermissions.getFolderPermissions().toString(true));
 		node.put("_active", isActive);
 		node.setIconClass(iconClass);
 		if (!chooser) node.setChecked(isActive);
-		node.put("expandable", false);
-		node.setExpanded(true);
+		node.put("expandable", true);
+		//node.setExpanded(true);
 		return node;
 	}
 	
-	private ExtTreeNode createFolderNodeLevel1(boolean chooser, CalendarFSOrigin origin, CalendarFSFolder folder, boolean isDefault) {
+	private ExtTreeNode createCalendarFolderNode(boolean chooser, CalendarFSOrigin origin, CalendarFSFolder folder, boolean isDefault) {
 		CalendarNodeId.Type type = origin.isResource() ? CalendarNodeId.Type.FOLDER_RESOURCE : CalendarNodeId.Type.FOLDER;
 		final CalendarNodeId nodeId = CalendarNodeId.build(type, origin.getProfileId(), folder.getFolderId());
 		final String name = origin.isResource() ? origin.getDisplayName() : folder.getDisplayName();
 		final CalendarPropSet props = foldersPropsCache.get(folder.getFolderId()).orElse(null);
 		final boolean active = !inactiveFolders.contains(folder.getFolderId());
-		return createFolderNodeLevel1(chooser, nodeId, name, folder.getPermissions(), folder.getCalendar(), props, isDefault, active);
+		return createCalendarFolderNode(chooser, nodeId, name, folder.getPermissions(), folder.getCalendar(), props, isDefault, active);
 	}
 	
-	private ExtTreeNode createFolderNodeLevel1(boolean chooser, CalendarNodeId nodeId, String name, FolderShare.Permissions folderPermissions, Calendar calendar, CalendarPropSet folderProps, boolean isDefault, boolean isActive) {
+	private ExtTreeNode createCalendarFolderNode(boolean chooser, CalendarNodeId nodeId, String name, FolderShare.Permissions folderPermissions, Calendar calendar, CalendarPropSet folderProps, boolean isDefault, boolean isActive) {
 		String color = calendar.getColor();
 		Calendar.Sync sync = Calendar.Sync.OFF;
 		
@@ -1074,7 +1202,7 @@ public class Service extends BaseService {
 					if (cfield != null) cfields.put(fieldId, cfield);
 				}
 			}
-			new JsonResult(new JsCustomFieldDefsData(cpanels.values(), cfields, cvalues, up.getLanguageTag(), up.getTimeZone())).printTo(out);
+			new JsonResult(new JsCustomFieldDefsData(cpanels.values(), cfields, cvalues, up.getLanguageTag(), up.getTimeZone())).setTotal(cfields.size()).printTo(out);
 			
 		} catch(Exception ex) {
 			logger.error("Error in GetCustomFieldsDefsData", ex);
@@ -1654,8 +1782,13 @@ public class Service extends BaseService {
 	private LinkedHashSet<Integer> getActiveFolderIds() {
 		LinkedHashSet<Integer> ids = new LinkedHashSet<>();
 		for (CalendarFSOrigin origin : getActiveOrigins()) {
+			boolean isOthersChildren = !origin.isResource() && !(origin instanceof MyCalendarFSOrigin);
+			boolean isResourcesChildren = origin.isResource();
 			for (CalendarFSFolder folder: foldersTreeCache.getFoldersByOrigin(origin)) {
-				if (inactiveFolders.contains(folder.getFolderId())) continue;
+				if ((isOthersChildren && inactiveOrigins.contains(CalendarNodeId.GROUPER_OTHERS_ORIGIN))
+					|| (isResourcesChildren && inactiveOrigins.contains(CalendarNodeId.GROUPER_RESOURCES_ORIGIN))
+					|| (inactiveFolders.contains(folder.getFolderId()))
+				) continue;
 				ids.add(folder.getFolderId());
 			}
 		}

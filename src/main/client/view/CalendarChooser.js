@@ -1,6 +1,5 @@
-/*
- * webtop-calendar is a WebTop Service developed by Sonicle S.r.l.
- * Copyright (C) 2014 Sonicle S.r.l.
+/* 
+ * Copyright (C) 2024 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -11,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
  * details.
  *
  * You should have received a copy of the GNU Affero General Public License
@@ -19,7 +18,7 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301 USA.
  *
- * You can contact Sonicle S.r.l. at email address sonicle@sonicle.com
+ * You can contact Sonicle S.r.l. at email address sonicle[at]sonicle[dot]com
  *
  * The interactive user interfaces in modified source and object code versions
  * of this program must display Appropriate Legal Notices, as required under
@@ -27,14 +26,15 @@
  *
  * In accordance with Section 7(b) of the GNU Affero General Public License
  * version 3, these Appropriate Legal Notices must retain the display of the
- * "Powered by Sonicle WebTop" logo. If the display of the logo is not reasonably
- * feasible for technical reasons, the Appropriate Legal Notices must display
- * the words "Powered by Sonicle WebTop".
+ * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
+ * reasonably feasible for technical reasons, the Appropriate Legal Notices must
+ * display the words "Copyright (C) 2024 Sonicle S.r.l.".
  */
 Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 	extend: 'WTA.sdk.UIView',
 	requires: [
-		'Sonicle.String'
+		'Sonicle.String',
+		'Sonicle.VMUtils'
 	],
 	
 	dockableConfig: {
@@ -49,24 +49,32 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 	
 	viewModel: {
 		data: {
-			result: 'cancel',
-			calendarId: null,
-			profileId: null
+			data: {
+				result: 'cancel',
+				profileId: null,
+				calendarId: null
+			}
 		}
 	},
 	defaultButton: 'btnok',
 	
 	/**
-	 * @cfg {Object} data
-	 * Initial data values: profileId, calendarId;
+	 * @cfg {Object} initialData
+	 * Initial data definition
+	 * @cfg {String} initialData.profileId
+	 * @cfg {String} initialData.calendarId
 	*/
 	
 	constructor: function(cfg) {
-		var me = this;
+		var me = this,
+			SoVMU = Sonicle.VMUtils,
+			vm;
 		me.callParent([cfg]);
 		
-		WTU.applyFormulas(me.getVM(), {
-			isValid: WTF.foGetFn(null, 'calendarId', function(v) {
+		vm = me.getVM();
+		SoVMU.setInitialData(vm, cfg.initialData);
+		SoVMU.applyFormulas(vm, {
+			isValid: WTF.foGetFn('data', 'calendarId', function(v) {
 				return v !== null;
 			})
 		});
@@ -76,21 +84,23 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 		var me = this;
 		
 		Ext.apply(me, {
-			buttons: [{
-				reference: 'btnok',
-				bind: {
-					disabled: '{!isValid}'
-				},
-				text: WT.res('act-ok.lbl'),
-				handler: function() {
-					me.okView();
+			buttons: [
+				{
+					reference: 'btnok',
+					bind: {
+						disabled: '{!isValid}'
+					},
+					text: WT.res('act-ok.lbl'),
+					handler: function() {
+						me.okView();
+					}
+				}, {
+					text: WT.res('act-cancel.lbl'),
+					handler: function() {
+						me.closeView(false);
+					}
 				}
-			}, {
-				text: WT.res('act-cancel.lbl'),
-				handler: function() {
-					me.closeView(false);
-				}
-			}]
+			]
 		});
 		me.callParent(arguments);
 		
@@ -102,10 +112,12 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 			rootVisible: false,
 			store: {
 				autoLoad: true,
+				hierarchyBulkLoad: true,
 				model: 'Sonicle.webtop.calendar.model.FolderNode',
 				proxy: WTF.apiProxy(me.mys.ID, 'ManageFoldersTree', 'children', {
 					extraParams: {
 						crud: 'read',
+						bulk: true,
 						chooser: true,
 						writableOnly: me.writableOnly
 					}
@@ -113,22 +125,24 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 				root: { id: 'root', expanded: true }
 			},
 			hideHeaders: true,
-			columns: [{
-				xtype: 'sotreecolumn',
-				dataIndex: 'text',
-				renderer: WTA.util.FoldersTree2.coloredBoxTreeRenderer({
-					defaultText: me.res('trfolders.default'),
-					getNodeText: function(node, val) {
-						val = Ext.String.htmlEncode(val);
-						if ((node.isOrigin() && node.isPersonalNode()) || node.isGrouper()) {
-							return me.mys.resTpl(val);
-						} else {
-							return val;
+			columns: [
+				{
+					xtype: 'sotreecolumn',
+					dataIndex: 'text',
+					renderer: WTA.util.FoldersTree2.coloredBoxTreeRenderer({
+						defaultText: me.res('trfolders.default'),
+						getNodeText: function(node, val) {
+							val = Ext.String.htmlEncode(val);
+							if ((node.isOrigin() && node.isPersonalNode()) || node.isGrouper()) {
+								return me.mys.resTpl(val);
+							} else {
+								return val;
+							}
 						}
-					}
-				}),
+					}),
 				flex: 1
-			}],
+				}
+			],
 			listeners: {
 				celldblclick: function(s, td, cidx, rec, tr, ridx, e) {
 					// ENTER key event is stolen by tree's nav model, so re-proxy it...
@@ -139,7 +153,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 					var me = this,
 						node = sel[0];
 					if (node) {
-						me.getVM().set({
+						Sonicle.VMUtils.setData(me.getVM(), {
 							calendarId: node.getFolderId(),
 							profileId: node.getOwnerPid()
 						});
@@ -152,9 +166,10 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarChooser', {
 	
 	okView: function() {
 		var me = this,
-				vm = me.getVM();
-		vm.set('result', 'ok');
-		me.fireEvent('viewok', me, vm.get('calendarId'), vm.get('profileId'));
+			SoVMU = Sonicle.VMUtils,
+			vm = me.getVM();
+		SoVMU.setData(vm, {result: 'ok'});
+		me.fireEvent('viewok', me, SoVMU.getData(vm));
 		me.closeView(false);
 	}
 });

@@ -34,6 +34,7 @@
 Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	extend: 'WTA.sdk.ModelView',
 	requires: [
+		'Sonicle.VMUtils',
 		'Sonicle.FakeInput',
 		'Sonicle.plugin.NoAutocomplete',
 		'Sonicle.form.RadioGroup',
@@ -62,7 +63,7 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		me.showmeName = Ext.id(null, 'showme-');
 		me.callParent([cfg]);
 		
-		WTU.applyFormulas(me.getVM(), {
+		Sonicle.VMUtils.applyFormulas(me.getVM(), {
 			visibility: WTF.radioGroupBind('record', 'isPrivate', me.visibilityName),
 			showme: WTF.radioGroupBind('record', 'busy', me.showmeName),
 			//invitation: WTF.checkboxBind('record', 'invitation'),
@@ -95,239 +96,254 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 		me.add({
 			region: 'center',
 			xtype: 'wttabpanel',
-			items: [{
-				xtype: 'wtform',
-				title: me.mys.res('calendar.main.tit'),
-				modelValidation: true,
-				defaults: {
-					labelWidth: 110
-				},
-				items: [
-					WTF.lookupCombo('id', 'desc', {
-						bind: '{record.provider}',
-						disabled: true,
-						store: Ext.create('Sonicle.webtop.calendar.store.Provider', {
-							autoLoad: true
+			items: [
+				{
+					xtype: 'wtfieldspanel',
+					title: me.res('calendar.main.tit'),
+					paddingTop: true,
+					paddingSides: true,
+					scrollable: true,
+					modelValidation: true,
+					defaults: {
+						labelAlign: 'top',
+						labelSeparator: ''
+					},
+					items: [
+						WTF.lookupCombo('id', 'desc', {
+							bind: '{record.provider}',
+							disabled: true,
+							store: Ext.create('Sonicle.webtop.calendar.store.Provider', {
+								autoLoad: true
+							}),
+							fieldLabel: me.res('calendar.fld-provider.lbl'),
+							width: 250
 						}),
-						fieldLabel: me.mys.res('calendar.fld-provider.lbl'),
-						width: 110+140
-					}), 
-					{
-						xtype: 'fieldcontainer',
-						layout: {
-							type: 'hbox',
-							padding: '0 0 1 0' // fixes classic-theme bottom border issue
+						{
+							xtype: 'sofieldhgroup',
+							items: [
+								{
+									xtype: 'textfield',
+									reference: 'fldname',
+									bind: '{record.name}',
+									fieldLabel: me.res('calendar.fld-name.lbl'),
+									flex: 1
+								}, {
+									xtype: 'sohspacer'
+								}, {
+									xtype: 'sopalettefield',
+									bind: '{record.color}',
+									colors: WT.getColorPalette('default'),
+									fieldLabel: me.res('calendar.fld-color.lbl'),
+									tilesPerRow: 11,
+									width: 64
+								}
+							]
+						}, {
+							xtype: 'textareafield',
+							bind: '{record.description}',
+							fieldLabel: me.res('calendar.fld-description.lbl'),
+							anchor: '100%'
 						},
-						items: [
-							{
-								xtype: 'textfield',
-								reference: 'fldname',
-								bind: '{record.name}',
-								margin: '0 5 0 0',
-								flex: 1
-							}, {
-								xtype: 'sopalettefield',
-								bind: '{record.color}',
-								hideTrigger: true,
-								colors: WT.getColorPalette('default'),
-								tilesPerRow: 11,
-								width: 24
+						WTF.lookupCombo('id', 'desc', {
+							reference: 'fldsync',
+							bind: '{record.sync}',
+							store: Ext.create('Sonicle.webtop.calendar.store.Sync', {
+								autoLoad: true
+							}),
+							fieldLabel: me.mys.res('calendar.fld-sync.lbl'),
+							width: 250
+						}), 
+						{
+							xtype: 'soformseparator',
+							bind: {
+								disabled: '{foIsRemote}'
+							},
+							title: me.res('calendar.main.defaults.tit')
+						}, {
+							xtype: 'radiogroup',
+							bind: {
+								value: '{visibility}',
+								disabled: '{foIsRemote}'
+							},
+							layout: 'hbox',
+							defaults: {
+								name: me.visibilityName,
+								margin: '0 20 0 0'
+							},
+							items: [
+								{
+									inputValue: false,
+									boxLabel: me.res('calendar.fld-visibility.default')
+								}, {
+									inputValue: true,
+									boxLabel: me.res('calendar.fld-visibility.private')
+								}
+							],
+							fieldLabel: me.res('calendar.fld-visibility.lbl')
+						}, {
+							xtype: 'radiogroup',
+							bind: {
+								value: '{showme}',
+								disabled: '{foIsRemote}'
+							},
+							layout: 'hbox',
+							defaults: {
+								name: me.showmeName,
+								margin: '0 20 0 0'
+							},
+							items: [
+								{
+									inputValue: false,
+									boxLabel: me.res('calendar.fld-showme.available')
+								}, {
+									inputValue: true,
+									boxLabel: me.res('calendar.fld-showme.busy')
+								}
+							],
+							fieldLabel: me.res('calendar.fld-showme.lbl')
+						}, {
+							xtype: 'combo',
+							bind: {
+								value: '{record.reminder}',
+								disabled: '{foIsRemote}'
+							},
+							editable: false,
+							store: Ext.create('Sonicle.webtop.calendar.store.Reminder', {
+								autoLoad: true
+							}),
+							valueField: 'id',
+							displayField: 'desc',
+							triggers: {
+								clear: WTF.clearTrigger()
+							},
+							emptyText: WT.res('word.none.male'),
+							fieldLabel: me.res('calendar.fld-reminder.lbl'),
+							width: 250
+						}/*, {
+							xtype: 'checkbox',
+							bind: {
+								value: '{invitation}',
+								disabled: '{foIsRemote}'
+							},
+							hideEmptyLabel: false,
+							boxLabel: me.res('calendar.fld-invitation.lbl')
+						}*/, {
+							xtype: 'soformseparator',
+							bind: {
+								disabled: '{foIsRemote}'
 							}
-						],
-						fieldLabel: me.mys.res('calendar.fld-name.lbl'),
-						anchor: '100%'
-					}, {
-						xtype: 'textareafield',
-						bind: '{record.description}',
-						fieldLabel: me.mys.res('calendar.fld-description.lbl'),
-						anchor: '100%'
-					},
-					WTF.lookupCombo('id', 'desc', {
-						reference: 'fldsync',
-						bind: '{record.sync}',
-						store: Ext.create('Sonicle.webtop.calendar.store.Sync', {
-							autoLoad: true
-						}),
-						fieldLabel: me.mys.res('calendar.fld-sync.lbl'),
-						width: 110+140
-					}), 
-					{
-						xtype: 'soformseparator',
-						bind: {
-							disabled: '{foIsRemote}'
-						},
-						title: me.mys.res('calendar.main.defaults.tit')
-					}, {
-						xtype: 'radiogroup',
-						bind: {
-							value: '{visibility}',
-							disabled: '{foIsRemote}'
-						},
-						layout: 'hbox',
-						defaults: {
-							name: me.visibilityName,
-							margin: '0 20 0 0'
-						},
-						items: [{
-							inputValue: false,
-							boxLabel: me.mys.res('calendar.fld-visibility.default')
 						}, {
-							inputValue: true,
-							boxLabel: me.mys.res('calendar.fld-visibility.private')
-						}],
-						fieldLabel: me.mys.res('calendar.fld-visibility.lbl')
-					}, {
-						xtype: 'radiogroup',
-						bind: {
-							value: '{showme}',
-							disabled: '{foIsRemote}'
-						},
-						layout: 'hbox',
-						defaults: {
-							name: me.showmeName,
-							margin: '0 20 0 0'
-						},
-						items: [{
-							inputValue: false,
-							boxLabel: me.mys.res('calendar.fld-showme.available')
+							xtype: 'checkbox',
+							bind: {
+								value: '{notifyOnExtUpdate}',
+								disabled: '{foIsRemote}'
+							},
+							hideEmptyLabel: false,
+							boxLabel: me.res('calendar.fld-notifyOnExtUpdate.lbl'),
+							labelWidth: 0
+						}
+					]
+				}, {
+					xtype: 'wtfieldspanel',
+					title: me.res('calendar.remote.tit'),
+					bind: {
+						disabled: '{!foIsRemote}'
+					},
+					paddingTop: true,
+					paddingSides: true,
+					scrollable: true,
+					modelValidation: true,
+					defaults: {
+						labelAlign: 'top',
+						labelSeparator: ''
+					},
+					items: [
+						{
+							xtype: 'textfield',
+							bind: '{record.remoteUrl}',
+							selectOnFocus: true,
+							fieldLabel: me.res('calendar.fld-remoteUrl.lbl'),
+							anchor: '100%'
 						}, {
-							inputValue: true,
-							boxLabel: me.mys.res('calendar.fld-showme.busy')
-						}],
-						fieldLabel: me.mys.res('calendar.fld-showme.lbl')
-					}, {
-						xtype: 'combo',
-						bind: {
-							value: '{record.reminder}',
-							disabled: '{foIsRemote}'
-						},
-						editable: false,
-						store: Ext.create('Sonicle.webtop.calendar.store.Reminder', {
-							autoLoad: true
-						}),
-						valueField: 'id',
-						displayField: 'desc',
-						triggers: {
-							clear: WTF.clearTrigger()
-						},
-						emptyText: WT.res('word.none.male'),
-						fieldLabel: me.mys.res('calendar.fld-reminder.lbl'),
-						width: 110+140
-					}/*, {
-						xtype: 'checkbox',
-						bind: {
-							value: '{invitation}',
-							disabled: '{foIsRemote}'
-						},
-						hideEmptyLabel: false,
-						boxLabel: me.mys.res('calendar.fld-invitation.lbl')
-					}*/, {
-						xtype: 'soformseparator',
-						bind: {
-							disabled: '{foIsRemote}'
+							xtype: 'sofakeinput' // Disable Chrome autofill
+						}, {
+							xtype: 'sofakeinput', // Disable Chrome autofill
+							type: 'password'
+						}, {
+							xtype: 'textfield',
+							bind: '{record.remoteUsername}',
+							plugins: 'sonoautocomplete',
+							fieldLabel: me.res('calendar.fld-remoteUsername.lbl'),
+							width: 280
+						}, {
+							xtype: 'textfield',
+							bind: '{record.remotePassword}',
+							inputType: 'password',
+							plugins: 'sonoautocomplete',
+							fieldLabel: me.res('calendar.fld-remotePassword.lbl'),
+							width: 280
+						}, {
+							xtype: 'combo',
+							bind: '{record.remoteSyncFrequency}',
+							editable: false,
+							store: Ext.create('Sonicle.webtop.calendar.store.RemoteSyncFreq', {
+								autoLoad: true
+							}),
+							valueField: 'id',
+							displayField: 'desc',
+							triggers: {
+								clear: WTF.clearTrigger()
+							},
+							hidden: !me.mys.getVar('calendarRemoteSyncEnabled', false),
+							fieldLabel: me.res('calendar.fld-remoteSyncFrequency.lbl'),
+							emptyText: me.res('calendar.fld-remoteSyncFrequency.emp'),
+							width: 230
 						}
-					}, {
-						xtype: 'checkbox',
-						bind: {
-							value: '{notifyOnExtUpdate}',
-							disabled: '{foIsRemote}'
+					],
+					tbar: [
+						{
+							xtype: 'tbtext',
+							cls: 'x-unselectable',
+							html: me.res('calendar.tbi-lastSync.lbl')
+						}, {
+							xtype: 'tbtext',
+							bind: {
+								html: '{foRemoteLastSync}'
+							}
 						},
-						hideEmptyLabel: false,
-						boxLabel: me.mys.res('calendar.fld-notifyOnExtUpdate.lbl'),
-						labelWidth: 0
-				}]
-			}, {
-				xtype: 'wtform',
-				title: me.mys.res('calendar.remote.tit'),
-				bind: {
-					disabled: '{!foIsRemote}'
-				},
-				modelValidation: true,
-				defaults: {
-					labelWidth: 90
-				},
-				items: [{
-					xtype: 'textfield',
-					bind: '{record.remoteUrl}',
-					selectOnFocus: true,
-					fieldLabel: me.mys.res('calendar.fld-remoteUrl.lbl'),
-					anchor: '100%'
-				}, {
-					xtype: 'sofakeinput' // Disable Chrome autofill
-				}, {
-					xtype: 'sofakeinput', // Disable Chrome autofill
-					type: 'password'
-				}, {
-					xtype: 'textfield',
-					bind: '{record.remoteUsername}',
-					plugins: 'sonoautocomplete',
-					fieldLabel: me.mys.res('calendar.fld-remoteUsername.lbl'),
-					width: 90+190
-				}, {
-					xtype: 'textfield',
-					bind: '{record.remotePassword}',
-					inputType: 'password',
-					plugins: 'sonoautocomplete',
-					fieldLabel: me.mys.res('calendar.fld-remotePassword.lbl'),
-					width: 90+190
-				}, {
-					xtype: 'combo',
-					bind: '{record.remoteSyncFrequency}',
-					editable: false,
-					store: Ext.create('Sonicle.webtop.calendar.store.RemoteSyncFreq', {
-						autoLoad: true
-					}),
-					valueField: 'id',
-					displayField: 'desc',
-					triggers: {
-						clear: WTF.clearTrigger()
-					},
-					hidden: !me.mys.getVar('calendarRemoteSyncEnabled', false),
-					fieldLabel: me.mys.res('calendar.fld-remoteSyncFrequency.lbl'),
-					emptyText: me.mys.res('calendar.fld-remoteSyncFrequency.emp'),
-					width: 90+140
-				}],
-				tbar: [{
-						xtype: 'tbtext',
-						cls: 'x-unselectable',
-						html: me.mys.res('calendar.tbi-lastSync.lbl')
-					}, {
-						xtype: 'tbtext',
-						bind: {
-							html: '{foRemoteLastSync}'
-						}
-					},
-					'->',
-					{
-						xtype: 'splitbutton',
-						tooltip: me.mys.res('calendar.btn-syncnow.tip'),
-						iconCls: 'wt-icon-refresh',
-						handler: function() {
-							me.syncRemoteCalendarUI(me.getModel().get('calendarId'), false);
-						},
-						menu: {
-							items: [{
-								itemId: 'partial',
-								text: me.mys.res('calendar.btn-syncnow.partial.lbl')
-							}, {
-								itemId: 'full',
-								text: me.mys.res('calendar.btn-syncnow.full.lbl')
-							}],
-							listeners: {
-								click: function(s, itm) {
-									me.syncRemoteCalendarUI(me.getModel().get('calendarId'), itm.getItemId() === 'full');
+						'->',
+						{
+							xtype: 'splitbutton',
+							tooltip: me.res('calendar.btn-syncnow.tip'),
+							iconCls: 'wt-icon-refresh',
+							handler: function() {
+								me.syncRemoteCalendarUI(me.getModel().get('calendarId'), false);
+							},
+							menu: {
+								items: [{
+									itemId: 'partial',
+									text: me.res('calendar.btn-syncnow.partial.lbl')
+								}, {
+									itemId: 'full',
+									text: me.res('calendar.btn-syncnow.full.lbl')
+								}],
+								listeners: {
+									click: function(s, itm) {
+										me.syncRemoteCalendarUI(me.getModel().get('calendarId'), itm.getItemId() === 'full');
+									}
 								}
 							}
 						}
-				}]
-			}]
+					]
+				}
+			]
 		});
 		
 		me.on('viewload', me.onViewLoad);
 	},
 	
 	onViewLoad: function(s, success) {
-		if(!success) return;
+		if (!success) return;
 		var me = this;
 		me.updateSyncFilters();
 		me.lref('fldname').focus(true);
@@ -335,8 +351,8 @@ Ext.define('Sonicle.webtop.calendar.view.Calendar', {
 	
 	updateSyncFilters: function() {
 		var me = this,
-				isRem = me.self.isRemote(me.getModel().get('provider')),
-				sto = me.lref('fldsync').getStore();
+			isRem = me.self.isRemote(me.getModel().get('provider')),
+			sto = me.lref('fldsync').getStore();
 		sto.clearFilter();
 		sto.addFilter([{
 			filterFn: function(rec) {

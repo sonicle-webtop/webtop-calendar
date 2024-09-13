@@ -283,10 +283,20 @@ Ext.define('Sonicle.webtop.calendar.ux.PlanningGrid', {
 					width: me.attendeeColumnWidth
 				}
 			],
-			tbar: [
+			tbar: Sonicle.Utils.mergeToolbarItems(me.tbar, [
+				'->',
 				{
 					xtype: 'button',
-					iconCls: 'wt-icon-viewOptions',
+					iconCls: 'wt-icon-refresh',
+					handler: function() {
+						me.refresh();
+					}
+				}
+			]),
+			bbar: [
+				{
+					xtype: 'button',
+					iconCls: 'wt-icon-options',
 					menu: {
 						items: [
 							{
@@ -335,7 +345,7 @@ Ext.define('Sonicle.webtop.calendar.ux.PlanningGrid', {
 						}
 					}
 				},
-				' ', ' ',
+				'->',
 				{
 					xtype: 'tbitem',
 					width: 8,
@@ -360,22 +370,6 @@ Ext.define('Sonicle.webtop.calendar.ux.PlanningGrid', {
 				}, {
 					xtype: 'tbtext',
 					html: me.legendFreeWorkdayOffText
-				},
-				'->',
-				{
-					xtype: 'button',
-					text: me.hidePlanningButtonText,
-					handler: function() {
-						me.fireEvent('hideplanning', me);
-					}
-				},
-				'-',
-				{
-					xtype: 'button',
-					iconCls: 'wt-icon-refresh',
-					handler: function() {
-						me.refresh();
-					}
 				}
 			]
 		});

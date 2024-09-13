@@ -78,6 +78,10 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 			}
 		}),
 		WTF.field('rstart', 'date', true, {dateFormat: 'Y-m-d'}),
+		WTF.calcField('rruleString', 'string', ['rrule', 'rstart'], function(v, rec, rrule, rstart) {
+			var date = !Ext.isEmpty(rrule) ? Sonicle.Date.idate(rstart, true) : null;
+			return Sonicle.form.field.rr.Recurrence.joinRRuleString(rrule, date);
+		}),
 		WTF.field('tags', 'string', true),
 		WTF.calcField('meetingUrl', 'string', ['location', 'description'], function(v, rec, loc, desc) {
 			var reURL = Sonicle.String.reSimpleURLs,
@@ -113,7 +117,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	},
 	
 	isRecurring: function() {
-		return !Ext.isEmpty(this.get('rrule'));
+		return !this.isFieldEmpty('rrule');
 	},
 	
 	isNotifyable: function() {
@@ -132,8 +136,8 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	
 	setStart: function(date) {
 		var me = this,
-				dt = Ext.isDate(date) ? date : new Date(),
-				dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true);
+			dt = Ext.isDate(date) ? date : new Date(),
+			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true);
 		
 		me.set('startDate', dt);
 		me.set('endDate', Ext.Date.add(dt, Ext.Date.MINUTE, dur, true));
@@ -142,9 +146,9 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	
 	setEnd: function(date) {
 		var me = this,
-				dt = Ext.isDate(date) ? date : new Date(),
-				dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
-				sta = me.get('startDate');
+			dt = Ext.isDate(date) ? date : new Date(),
+			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
+			sta = me.get('startDate');
 		
 		me.set('endDate', dt);
 		if (!Ext.isDate(sta)) return;
@@ -153,18 +157,18 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	
 	setStartDate: function(date) {
 		var me = this,
-				dt = Ext.isDate(date) ? date : new Date(),
-				dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
-				v;
+			dt = Ext.isDate(date) ? date : new Date(),
+			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
+			v;
 		
 		v = me.setDatePart('startDate', dt);
 		me.set('endDate', Ext.Date.add(v, Ext.Date.MINUTE, dur, true));
 		if (me.phantom) me.set('rstart', Ext.Date.clone(v));
 	},
 	
-	setRecurStart: function(date) {
+	setRecurStart: function(date, options) {
 		var me = this, sta;
-		me.setDatePart('rstart', date);
+		me.setDatePart('rstart', date, null, null, options);
 		if (me.phantom && Ext.isDate(date)) {
 			sta = me.get('startDate');
 			if (Ext.isDate(sta)) me.setStartDate(Ext.Date.clone(Sonicle.Date.min(date, sta)));
@@ -173,9 +177,9 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	
 	setStartTime: function(date) {
 		var me = this,
-				dt = Ext.isDate(date) ? date : new Date(),
-				dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
-				v;
+			dt = Ext.isDate(date) ? date : new Date(),
+			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
+			v;
 		
 		v = me.setTimePart('startDate', dt);
 		me.set('endDate', Ext.Date.add(v, Ext.Date.MINUTE, dur, true));
@@ -183,10 +187,10 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	
 	setEndDate: function(date) {
 		var me = this,
-				dt = Ext.isDate(date) ? date : new Date(),
-				sta = me.get('startDate'),
-				dur = Sonicle.Date.diff(sta, me.get('endDate'), Ext.Date.MINUTE, true),
-				v;
+			dt = Ext.isDate(date) ? date : new Date(),
+			sta = me.get('startDate'),
+			dur = Sonicle.Date.diff(sta, me.get('endDate'), Ext.Date.MINUTE, true),
+			v;
 		
 		v = me.setDatePart('endDate', dt);
 		if (!Ext.isDate(sta)) return;
@@ -195,9 +199,9 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	
 	setEndTime: function(date) {
 		var me = this,
-				dt = Ext.isDate(date) ? date : new Date(),
-				sta = me.get('startDate'),
-				v;
+			dt = Ext.isDate(date) ? date : new Date(),
+			sta = me.get('startDate'),
+			v;
 		
 		v = me.setTimePart('endDate', dt);
 		if (!Ext.isDate(sta)) return;

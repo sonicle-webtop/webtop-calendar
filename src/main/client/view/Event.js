@@ -86,7 +86,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	viewModel: {
 		data: {
 			hidden: {
-				flddescription: true
+				flddescription: false
 			}
 		}
 	},
@@ -772,7 +772,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								}, {
 									xtype: 'sotogglebutton',
 									bind: {
-										pressed: '{foHasDescription}'
+										pressed: '{!hidden.flddescription}'
 									},
 									ui: 'default-toolbar',
 									iconCls: 'wtcal-icon-showDescription',
@@ -796,14 +796,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						{
 							xtype: 'sofieldhgroup',
 							items: [
-								{
-									xtype: 'textareafield',
-									bind: '{record.description}',
-									fieldLabel: me.res('event.fld-description.lbl'),
-									resizable: true,
-									smartResize: true,
+								me.createDescriptionFieldCfg({
+									minHeight: 100,
 									flex: 1
-								}
+								})
 							]		
 						}
 					]
@@ -1205,7 +1201,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		createTagsFieldCfg: function(cfg) {
 			return Ext.apply({
-			xtype: 'sotagdisplayfield',
+				xtype: 'sotagdisplayfield',
 				bind: {
 					value: '{foTags}',
 					hidden: '{!foHasTags}'
@@ -1217,6 +1213,16 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				dummyIcon: 'loading',
 				hidden: true,
 				hideLabel: true
+			}, cfg);
+		},
+		
+		createDescriptionFieldCfg: function(cfg) {
+			return Ext.apply({
+				xtype: 'textareafield',
+				bind: '{record.description}',
+				fieldLabel: this.res('event.fld-description.lbl'),
+				resizable: true,
+				smartResize: true
 			}, cfg);
 		},
 		
@@ -1339,10 +1345,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		},
 		
 		initHiddenFields: function() {
+			// Description field is now visible by default
+			/*
 			var mo = this.getModel();
 			Sonicle.VMUtils.set(this.getVM(), 'hidden', {
 				flddescription: mo.isFieldEmpty('description')
 			});
+			*/
 		},
 		
 		onViewLoad: function(s, success) {

@@ -107,3 +107,7 @@
 }
 .wtcal-portlet-event-body-attime {}
 .wtcal-portlet-event-body-location { color: gray; /* FIXME */ }
+/* ---------- ToolPanel */
+.wtcal-tool-searchpanel-body {
+    padding: 10px 5px 10px 5px;
+}

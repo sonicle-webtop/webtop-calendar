@@ -608,14 +608,14 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			},
 			scrollTime: Ext.String.leftPad(Math.max(me.getVar('workdayStart').getHours()-1, 0), 2, '0') + ':00',
 			buttonConfigs: {
-				today: { ui: '{segmented}' },
-				previous: { ui: '{segmented}' },
-				next: { ui: '{segmented}' },
-				dayView: { ui: '{segmented}' },
-				week5View: { ui: '{segmented}' },
-				weekView: { ui: '{segmented}' },
-				biweekView: { ui: '{segmented}' },
-				monthView: { ui: '{segmented}' }
+				today: { ui: '{segmented|toolbar}' },
+				previous: { ui: '{segmented|toolbar}' },
+				next: { ui: '{segmented|toolbar}' },
+				dayView: { ui: '{segmented|toolbar}' },
+				week5View: { ui: '{segmented|toolbar}' },
+				weekView: { ui: '{segmented|toolbar}' },
+				biweekView: { ui: '{segmented|toolbar}' },
+				monthView: { ui: '{segmented|toolbar}' }
 			},
 			buttonTexts: {
 				reload: { tooltip: WT.res('act-refresh.lbl') },

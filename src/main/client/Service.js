@@ -362,7 +362,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 								defaultText: me.res('trfolders.default'),
 								showElbow: true,
 								getNodeText: function(node, val) {
-									val = Ext.String.htmlEncode(val);
 									if ((node.isOrigin() && node.isPersonalNode()) || node.isGrouper()) {
 										return me.resTpl(val);
 									} else {

@@ -598,7 +598,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					},
 					listConfig: {
 						displayField: 'name',
-						groupCls: 'wt-theme-text-lighter2'
+						groupCls: 'wt-text-off wt-theme-text-color-off'
 					},
 					swatchGeometry: 'circle',
 					autoLoadOnValue: true,

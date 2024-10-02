@@ -1609,20 +1609,21 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			this.doImportRecipientsAsAttendees(text.split(/\r\n|\r|\n/g), recordDefaults);
 		},
 
-		doImportRecipientsAsAttendees: function(emails, recordDefaults) {
+		doImportRecipientsAsAttendees: function(items, recordDefaults) {
 			var me = this,
 				store = me.getModel().attendees(),
-				data;
-			if (Ext.isArray(emails)) {
-				Ext.iterate(emails, function(email) {
-					if (!Ext.isEmpty(email)) {
+				data, rcpt;
+			if (Ext.isArray(items)) {
+				Ext.iterate(items, function(item) {
+					rcpt = Ext.isString(item) ? item : item.email;
+					if (!Ext.isEmpty(rcpt)) {
 						data = Ext.apply({}, recordDefaults, {
 							notify: true,
 							recipientType: 'IND',
 							recipientRole: 'REQ',
 							responseStatus: 'NA'
 						});
-						data['recipient'] = email;
+						data['recipient'] = rcpt;
 						store.add(store.createModel(data));
 					}
 				});

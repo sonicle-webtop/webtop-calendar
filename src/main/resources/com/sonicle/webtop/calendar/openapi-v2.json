@@ -1,0 +1,1204 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "WebTop Calendar",
+    "contact": {
+      "email": "dev-team@sonicle.com"
+    },
+    "version": "v2",
+    "description": "This is Calendar service API enpoint."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [
+    {
+      "auth-basic": []
+    },
+    {
+      "auth-bearer": []
+    }
+  ],
+  "paths": {
+    "/caldav/calendars": {
+      "get": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "List all calendars",
+        "operationId": "getCalendars",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Calendar"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "List available Calendars."
+      },
+      "post": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Adds a new calendar",
+        "operationId": "addCalendar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarNew"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Calendar"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Creates new Calendar."
+      }
+    },
+    "/caldav/calendars/{calendarUid}": {
+      "get": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Gets a single calendar",
+        "operationId": "getCalendar",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Calendar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Calendar not found",
+            "content": {}
+          }
+        },
+        "description": "Gets specified Calendar."
+      },
+      "put": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Updates a calendar",
+        "operationId": "updateCalendar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {}
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Calendar not found",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Updates specified Calendar."
+      },
+      "delete": {
+        "tags": [
+          "dav-calendars"
+        ],
+        "summary": "Deletes a calendar",
+        "operationId": "deleteCalendar",
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Calendar not found",
+            "content": {}
+          },
+          "405": {
+            "description": "Delete operation is not allowed",
+            "content": {}
+          }
+        },
+        "description": "Deletes specified Calendar."
+      },
+      "parameters": [
+        {
+          "name": "calendarUid",
+          "in": "path",
+          "description": "Calendar UID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "1234"
+        }
+      ]
+    },
+    "/caldav/calendars/{calendarUid}/objects": {
+      "get": {
+        "tags": [
+          "dav-calobjects"
+        ],
+        "summary": "List all calendar objects belonging to a specific calendar",
+        "operationId": "getCalObjects",
+        "parameters": [
+          {
+            "name": "hrefs",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalObject"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "List all CalendarObjects of specified Calendar."
+      },
+      "post": {
+        "tags": [
+          "dav-calobjects"
+        ],
+        "summary": "Adds a new calendar object",
+        "operationId": "addCalObject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalObjectNew"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Creates new CalendarObject into specified Calendar."
+      },
+      "parameters": [
+        {
+          "name": "calendarUid",
+          "in": "path",
+          "description": "Calendar UID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/caldav/calendars/{calendarUid}/objects/changes": {
+      "get": {
+        "tags": [
+          "dav-calobjects"
+        ],
+        "summary": "Get calendar object changes",
+        "description": "Returns changed CalendarObjects (added/modified/deleted) since the specified syncToken. If token is not provided, the initial sync configuration will be returned.",
+        "operationId": "getCalObjectsChanges",
+        "parameters": [
+          {
+            "name": "syncToken",
+            "in": "query",
+            "description": "Marks changes starting point",
+            "schema": {
+              "type": "string"
+            },
+            "example": "20180416130954"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limits the number of returned results",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 100
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalObjectsChanges"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "calendarUid",
+          "in": "path",
+          "description": "Calendar UID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/caldav/calendars/{calendarUid}/objects/{href}": {
+      "get": {
+        "tags": [
+          "dav-calobjects"
+        ],
+        "summary": "Get a single calendar object",
+        "operationId": "getCalObject",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalObject"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Object not found",
+            "content": {}
+          }
+        },
+        "description": "Gets specified CalendarObject."
+      },
+      "put": {
+        "tags": [
+          "dav-calobjects"
+        ],
+        "summary": "Updates a calendar object",
+        "operationId": "updateCalObject",
+        "requestBody": {
+          "content": {
+            "text/calendar": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {}
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Object not found",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Updates specified CalendarObject."
+      },
+      "delete": {
+        "tags": [
+          "dav-calobjects"
+        ],
+        "summary": "Deletes a calendar object",
+        "operationId": "deleteCalObject",
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Object not found",
+            "content": {}
+          }
+        },
+        "description": "Deletes specified CalendarObject."
+      },
+      "parameters": [
+        {
+          "name": "calendarUid",
+          "in": "path",
+          "description": "Calendar UID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "1234"
+        },
+        {
+          "name": "href",
+          "in": "path",
+          "description": "CalObject reference URI",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/eas/folders": {
+      "get": {
+        "tags": [
+          "eas-folders"
+        ],
+        "summary": "List all folders",
+        "operationId": "getFolders",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SyncFolder"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns a list of available Calendars with enabled synchronization."
+      }
+    },
+    "/eas/folders/{folderId}/messages-stats": {
+      "get": {
+        "tags": [
+          "eas-messages"
+        ],
+        "summary": "List all messages for a specific folder",
+        "operationId": "getMessagesStats",
+        "parameters": [
+          {
+            "name": "cutoffDate",
+            "in": "query",
+            "description": "Cut-off date (ISO date/time YYYYMMDD'T'HHMMSS'Z')",
+            "schema": {
+              "type": "string"
+            },
+            "example": "20150912T000000Z"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SyncEventStat"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          }
+        },
+        "description": "Returns sync informations for the specified Calendar."
+      },
+      "parameters": [
+        {
+          "name": "folderId",
+          "in": "path",
+          "description": "Folder ID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "1234"
+        }
+      ]
+    },
+    "/eas/folders/{folderId}/messages": {
+      "post": {
+        "tags": [
+          "eas-messages"
+        ],
+        "summary": "Adds a message",
+        "operationId": "addMessage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncEventUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncEventStat"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Add new Event into specified Calendar."
+      },
+      "parameters": [
+        {
+          "name": "folderId",
+          "in": "path",
+          "description": "Folder ID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "1234"
+        }
+      ]
+    },
+    "/eas/folders/{folderId}/messages/{id}": {
+      "get": {
+        "tags": [
+          "eas-messages"
+        ],
+        "summary": "Get a single message",
+        "operationId": "getMessage",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Message not found",
+            "content": {}
+          }
+        },
+        "description": "Gets specified Event."
+      },
+      "put": {
+        "tags": [
+          "eas-messages"
+        ],
+        "summary": "Updates a message",
+        "operationId": "updateMessage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncEventUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SyncEventStat"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Message not found",
+            "content": {}
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Updates specified Event."
+      },
+      "delete": {
+        "tags": [
+          "eas-messages"
+        ],
+        "summary": "Deletes a message",
+        "operationId": "deleteMessage",
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          },
+          "400": {
+            "description": "Invalid parameter",
+            "content": {}
+          },
+          "404": {
+            "description": "Message not found",
+            "content": {}
+          }
+        },
+        "description": "Deletes specified Event."
+      },
+      "parameters": [
+        {
+          "name": "folderId",
+          "in": "path",
+          "description": "Folder ID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "1234"
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Message ID",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "1234"
+        }
+      ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "required": [
+          "code"
+        ],
+        "x-stoplight": {
+          "id": "9a47d8da47d74"
+        },
+        "type": "object",
+        "properties": {
+          "code": {
+            "maximum": 599,
+            "minimum": 400,
+            "type": "integer"
+          },
+          "description": {
+            "type": "string",
+            "example": "Bad query parameter [$size]: Invalid integer value [abc]"
+          }
+        },
+        "description": "This general detailed error structure is used throughout this API.",
+        "x-examples": {
+          "Example 1": {
+            "code": 400,
+            "description": "Bad query parameter [$size]: Invalid integer value [abc]"
+          }
+        }
+      },
+      "Calendar": {
+        "type": "object",
+        "description": "Bean for carry calendar's fields",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Calendar ID (internal)"
+          },
+          "uid": {
+            "type": "string",
+            "description": "Calendar UID (public)"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          },
+          "color": {
+            "type": "string",
+            "description": "Assigned color"
+          },
+          "syncToken": {
+            "type": "string",
+            "description": "Current sync token"
+          },
+          "aclFol": {
+            "type": "string",
+            "description": "ACL info for folder itself"
+          },
+          "aclEle": {
+            "type": "string",
+            "description": "ACL info for folder elements"
+          },
+          "ownerUsername": {
+            "type": "string",
+            "description": "The owner profile's username"
+          }
+        },
+        "required": [
+          "id",
+          "uid",
+          "displayName",
+          "syncToken",
+          "aclFol",
+          "aclEle",
+          "ownerUsername"
+        ]
+      },
+      "CalendarNew": {
+        "required": [
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Display name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          },
+          "color": {
+            "type": "string",
+            "description": "Color"
+          }
+        },
+        "description": "Bean for carry addressbook's fields"
+      },
+      "CalObject": {
+        "type": "object",
+        "description": "Bean for carry calendar object's fields",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "CalObject ID (internal)"
+          },
+          "uid": {
+            "type": "string",
+            "description": "CalObject UID (public)"
+          },
+          "href": {
+            "type": "string",
+            "description": "Reference URI"
+          },
+          "lastModified": {
+            "type": "integer",
+            "description": "Last modification time (unix timestamp)",
+            "format": "int64"
+          },
+          "etag": {
+            "type": "string",
+            "description": "Revision tag"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Size (in bytes) of calendar data"
+          },
+          "icalendar": {
+            "type": "string",
+            "description": "Calendar data (iCalendar format)"
+          }
+        }
+      },
+      "CalendarUpdate": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "New value for displayName"
+          },
+          "description": {
+            "type": "string",
+            "description": "New value for description"
+          },
+          "color": {
+            "type": "string",
+            "description": "New value for color"
+          },
+          "updatedFields": {
+            "type": "array",
+            "description": "Specifies which of above fields have been updated",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Bean for carry calendar's updateable fields"
+      },
+      "CalObjectNew": {
+        "required": [
+          "href"
+        ],
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string",
+            "description": "Reference URI"
+          },
+          "icalendar": {
+            "type": "string",
+            "description": "Calendar data (iCalendar format)"
+          }
+        },
+        "description": "Bean for carry new calendar object's fields"
+      },
+      "CalObjectChanged": {
+        "type": "object",
+        "description": "Bean for carry fields of calendar object that have been changed",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "CalObject ID (internal)"
+          },
+          "href": {
+            "type": "string",
+            "description": "Reference URI"
+          },
+          "etag": {
+            "type": "string",
+            "description": "Revision tag"
+          }
+        },
+        "required": [
+          "id",
+          "href",
+          "etag"
+        ]
+      },
+      "CalObjectsChanges": {
+        "required": [
+          "deleted",
+          "inserted",
+          "syncToken",
+          "updated"
+        ],
+        "type": "object",
+        "properties": {
+          "syncToken": {
+            "type": "string",
+            "description": "Current sync token"
+          },
+          "inserted": {
+            "type": "array",
+            "description": "Items that have been inserted",
+            "items": {
+              "$ref": "#/components/schemas/CalObjectChanged"
+            }
+          },
+          "updated": {
+            "type": "array",
+            "description": "Items that have been updated",
+            "items": {
+              "$ref": "#/components/schemas/CalObjectChanged"
+            }
+          },
+          "deleted": {
+            "type": "array",
+            "description": "Items that have been deleted",
+            "items": {
+              "$ref": "#/components/schemas/CalObjectChanged"
+            }
+          }
+        },
+        "description": "Bean for carry calendar object collection changes"
+      },
+      "SyncFolder": {
+        "type": "object",
+        "description": "Bean for carry calendar’s fields",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Calendar ID (internal)"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name"
+          },
+          "etag": {
+            "type": "string",
+            "description": "Revision tag"
+          },
+          "deflt": {
+            "type": "boolean",
+            "description": "Specifies if marked as predefined folder"
+          },
+          "foAcl": {
+            "type": "string",
+            "description": "ACL info for folder itself"
+          },
+          "elAcl": {
+            "type": "string",
+            "description": "ACL info for folder elements"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "The owner profile ID"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "etag",
+          "deflt",
+          "foAcl",
+          "elAcl",
+          "ownerId"
+        ]
+      },
+      "SyncEventStat": {
+        "type": "object",
+        "description": "Bean for carry event's stat fields",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Event ID (internal)"
+          },
+          "etag": {
+            "type": "string",
+            "description": "Revision tag"
+          }
+        },
+        "required": [
+          "id",
+          "etag"
+        ]
+      },
+      "SyncEvent": {
+        "type": "object",
+        "description": "Bean for carry event's fields",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Event ID (internal)"
+          },
+          "etag": {
+            "type": "string",
+            "description": "Revision tag"
+          },
+          "start": {
+            "type": "string",
+            "description": "Start date/time (ISO format)"
+          },
+          "end": {
+            "type": "string",
+            "description": "End date/time (ISO format)"
+          },
+          "tz": {
+            "type": "string",
+            "description": "Timezone ID"
+          },
+          "allDay": {
+            "type": "boolean",
+            "description": "All day flag"
+          },
+          "organizer": {
+            "type": "string",
+            "description": "Organizer address (as RFC822)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          },
+          "location": {
+            "type": "string",
+            "description": "Location"
+          },
+          "prvt": {
+            "type": "boolean",
+            "description": "Private flag"
+          },
+          "busy": {
+            "type": "boolean",
+            "description": "Busy flag"
+          },
+          "reminder": {
+            "type": "integer",
+            "description": "Reminder"
+          },
+          "recRule": {
+            "type": "string",
+            "description": "Recurrence RULE string"
+          },
+          "recStart": {
+            "type": "string",
+            "description": "Recurrence start date (ISO date YYYYMMDD)"
+          },
+          "exDates": {
+            "type": "array",
+            "description": "Excluded dates (ISO date YYYYMMDD)",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attendees": {
+            "type": "array",
+            "description": "Appointment attendees",
+            "items": {
+              "$ref": "#/components/schemas/SyncEventDataAttendee"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "etag",
+          "start",
+          "end",
+          "tz",
+          "allDay",
+          "organizer",
+          "prvt",
+          "busy",
+          "attendees"
+        ]
+      },
+      "SyncEventUpdate": {
+        "required": [
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SyncEventData"
+          },
+          "exceptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncEventData"
+            }
+          }
+        },
+        "description": "Bean for carry event's updateable fields"
+      },
+      "SyncEventData": {
+        "required": [
+          "allDay",
+          "attendees",
+          "busy",
+          "end",
+          "organizer",
+          "prvt",
+          "start",
+          "tz"
+        ],
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "Start date/time (ISO date/time YYYYMMDD'T'HHMMSS'Z')"
+          },
+          "end": {
+            "type": "string",
+            "description": "End date/time (ISO date/time YYYYMMDD'T'HHMMSS'Z')"
+          },
+          "tz": {
+            "type": "string",
+            "description": "Timezone ID"
+          },
+          "allDay": {
+            "type": "boolean",
+            "description": "All day flag"
+          },
+          "organizer": {
+            "type": "string",
+            "description": "Organizer address (as RFC822)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          },
+          "location": {
+            "type": "string",
+            "description": "Location"
+          },
+          "prvt": {
+            "type": "boolean",
+            "description": "Private flag"
+          },
+          "busy": {
+            "type": "boolean",
+            "description": "Busy flag"
+          },
+          "reminder": {
+            "type": "integer",
+            "description": "Reminder"
+          },
+          "recRule": {
+            "type": "string",
+            "description": "Recurrence RULE string"
+          },
+          "recStart": {
+            "type": "string",
+            "description": "Recurrence start date (ISO date YYYYMMDD)"
+          },
+          "exDates": {
+            "type": "array",
+            "description": "Excluded dates (ISO date YYYYMMDD)",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attendees": {
+            "type": "array",
+            "description": "Appointment attendees",
+            "items": {
+              "$ref": "#/components/schemas/SyncEventDataAttendee"
+            }
+          }
+        },
+        "description": "Bean for carry event's updateable fields"
+      },
+      "SyncEventDataAttendee": {
+        "required": [
+          "address",
+          "role",
+          "status",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Address (as RFC822)"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type"
+          },
+          "role": {
+            "type": "string",
+            "description": "Role"
+          },
+          "status": {
+            "type": "string",
+            "description": "Response status"
+          }
+        },
+        "description": "Bean for carry attendee's fields"
+      }
+    },
+    "securitySchemes": {
+      "auth-basic": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "auth-bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "dav-calendars"
+    },
+    {
+      "name": "dav-calobjects"
+    },
+    {
+      "name": "eas-folders"
+    },
+    {
+      "name": "eas-messages"
+    }
+  ]
+}

@@ -17,9 +17,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Bean for carry attendee&#39;s fields
  **/
 @ApiModel(description = "Bean for carry attendee's fields")
-@JsonTypeName("SyncEventDataAttendee")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiSyncEventDataAttendee   {
+@JsonTypeName("EasSyncEventDataAttendee")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiEasSyncEventDataAttendee   {
   private @Valid String address;
   private @Valid String type;
   private @Valid String role;
@@ -28,7 +28,7 @@ public class ApiSyncEventDataAttendee   {
   /**
    * Address (as RFC822)
    **/
-  public ApiSyncEventDataAttendee address(String address) {
+  public ApiEasSyncEventDataAttendee address(String address) {
     this.address = address;
     return this;
   }
@@ -49,7 +49,7 @@ public class ApiSyncEventDataAttendee   {
   /**
    * Type
    **/
-  public ApiSyncEventDataAttendee type(String type) {
+  public ApiEasSyncEventDataAttendee type(String type) {
     this.type = type;
     return this;
   }
@@ -70,7 +70,7 @@ public class ApiSyncEventDataAttendee   {
   /**
    * Role
    **/
-  public ApiSyncEventDataAttendee role(String role) {
+  public ApiEasSyncEventDataAttendee role(String role) {
     this.role = role;
     return this;
   }
@@ -91,7 +91,7 @@ public class ApiSyncEventDataAttendee   {
   /**
    * Response status
    **/
-  public ApiSyncEventDataAttendee status(String status) {
+  public ApiEasSyncEventDataAttendee status(String status) {
     this.status = status;
     return this;
   }
@@ -118,11 +118,11 @@ public class ApiSyncEventDataAttendee   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiSyncEventDataAttendee syncEventDataAttendee = (ApiSyncEventDataAttendee) o;
-    return Objects.equals(this.address, syncEventDataAttendee.address) &&
-        Objects.equals(this.type, syncEventDataAttendee.type) &&
-        Objects.equals(this.role, syncEventDataAttendee.role) &&
-        Objects.equals(this.status, syncEventDataAttendee.status);
+    ApiEasSyncEventDataAttendee easSyncEventDataAttendee = (ApiEasSyncEventDataAttendee) o;
+    return Objects.equals(this.address, easSyncEventDataAttendee.address) &&
+        Objects.equals(this.type, easSyncEventDataAttendee.type) &&
+        Objects.equals(this.role, easSyncEventDataAttendee.role) &&
+        Objects.equals(this.status, easSyncEventDataAttendee.status);
   }
 
   @Override
@@ -133,7 +133,7 @@ public class ApiSyncEventDataAttendee   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiSyncEventDataAttendee {\n");
+    sb.append("class ApiEasSyncEventDataAttendee {\n");
     
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");

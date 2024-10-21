@@ -46,13 +46,13 @@ import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectChanged;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
 import com.sonicle.webtop.calendar.swagger.v2.api.CaldavApi;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalObject;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalObjectChanged;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalObjectNew;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalObjectsChanges;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendar;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarNew;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarUpdate;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObject;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObjectChanged;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObjectNew;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObjectsChanges;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalendar;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalendarNew;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalendarUpdate;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiError;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
@@ -90,7 +90,7 @@ public class CalDav extends CaldavApi {
 	public Response getCalendars() {
 		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
-		List<ApiCalendar> items = new ArrayList<>();
+		List<ApiDavCalendar> items = new ArrayList<>();
 		
 		if (logger.isDebugEnabled()) {
 			logger.debug("[{}] getCalendars()", currentProfileId);
@@ -153,7 +153,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response addCalendar(ApiCalendarNew body) {
+	public Response addCalendar(ApiDavCalendarNew body) {
 		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		
@@ -177,7 +177,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response updateCalendar(String calendarUid, ApiCalendarUpdate body) {
+	public Response updateCalendar(String calendarUid, ApiDavCalendarUpdate body) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -240,7 +240,7 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response getCalObjects(String calendarUid, List<String> hrefs) {
 		CalendarManager manager = getManager();
-		List<ApiCalObject> items = new ArrayList<>();
+		List<ApiDavCalObject> items = new ArrayList<>();
 		
 		if (logger.isDebugEnabled()) {
 			logger.debug("[{}] getCalObjects({})", RunContext.getRunProfileId(), calendarUid);
@@ -332,7 +332,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response addCalObject(String calendarUid, ApiCalObjectNew body) {
+	public Response addCalObject(String calendarUid, ApiDavCalObjectNew body) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -398,7 +398,7 @@ public class CalDav extends CaldavApi {
 		}
 	}
 	
-	private ApiCalendar createCalendar(UserProfileId currentProfileId, com.sonicle.webtop.calendar.model.Calendar cal, boolean isResource, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions) {
+	private ApiDavCalendar createCalendar(UserProfileId currentProfileId, com.sonicle.webtop.calendar.model.Calendar cal, boolean isResource, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions) {
 		UserProfile.Data owud = WT.getUserData(cal.getProfileId());
 		
 		String displayName = cal.getName();
@@ -410,7 +410,7 @@ public class CalDav extends CaldavApi {
 		}
 		String ownerUsername = owud.getProfileEmailAddress();
 		
-		return new ApiCalendar()
+		return new ApiDavCalendar()
 			.id(String.valueOf(cal.getCalendarId()))
 			.uid(ManagerUtils.encodeAsCalendarUid(cal.getCalendarId()))
 			.displayName(displayName)
@@ -422,8 +422,8 @@ public class CalDav extends CaldavApi {
 			.ownerUsername(ownerUsername);
 	}
 	
-	private ApiCalObject createCalObject(EventObjectWithICalendar calObject) {
-		return new ApiCalObject()
+	private ApiDavCalObject createCalObject(EventObjectWithICalendar calObject) {
+		return new ApiDavCalObject()
 			.id(String.valueOf(calObject.getEventId()))
 			.uid(calObject.getPublicUid())
 			.href(calObject.getHref())
@@ -432,35 +432,35 @@ public class CalDav extends CaldavApi {
 			.size(calObject.getSize());
 	}
 	
-	private ApiCalObject createCalObjectWithData(EventObjectWithICalendar calObject) {
+	private ApiDavCalObject createCalObjectWithData(EventObjectWithICalendar calObject) {
 		return createCalObject(calObject)
 			.icalendar(calObject.getIcalendar());
 	}
 	
-	private ApiCalObjectChanged createCalObjectChanged(EventObjectChanged calObject) {
-		return new ApiCalObjectChanged()
+	private ApiDavCalObjectChanged createCalObjectChanged(EventObjectChanged calObject) {
+		return new ApiDavCalObjectChanged()
 			.id(String.valueOf(calObject.getEventId()))
 			.href(calObject.getHref())
 			.etag(buildEtag(calObject.getRevisionTimestamp()));
 	}
 	
-	private ApiCalObjectsChanges createCalObjectsChanges(DateTime lastRevisionTimestamp, LangUtils.CollectionChangeSet<EventObjectChanged> changes) {
-		ArrayList<ApiCalObjectChanged> inserted = new ArrayList<>();
+	private ApiDavCalObjectsChanges createCalObjectsChanges(DateTime lastRevisionTimestamp, LangUtils.CollectionChangeSet<EventObjectChanged> changes) {
+		ArrayList<ApiDavCalObjectChanged> inserted = new ArrayList<>();
 		for (EventObjectChanged calObj : changes.inserted) {
 			inserted.add(createCalObjectChanged(calObj));
 		}
 		
-		ArrayList<ApiCalObjectChanged> updated = new ArrayList<>();
+		ArrayList<ApiDavCalObjectChanged> updated = new ArrayList<>();
 		for (EventObjectChanged calObj : changes.updated) {
 			updated.add(createCalObjectChanged(calObj));
 		}
 		
-		ArrayList<ApiCalObjectChanged> deleted = new ArrayList<>();
+		ArrayList<ApiDavCalObjectChanged> deleted = new ArrayList<>();
 		for (EventObjectChanged calObj : changes.deleted) {
 			deleted.add(createCalObjectChanged(calObj));
 		}
 		
-		return new ApiCalObjectsChanges()
+		return new ApiDavCalObjectsChanges()
 			.syncToken(buildEtag(lastRevisionTimestamp))
 			.inserted(inserted)
 			.updated(updated)

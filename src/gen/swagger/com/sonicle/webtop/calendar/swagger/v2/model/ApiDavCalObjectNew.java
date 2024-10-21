@@ -17,16 +17,16 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Bean for carry new calendar object&#39;s fields
  **/
 @ApiModel(description = "Bean for carry new calendar object's fields")
-@JsonTypeName("CalObjectNew")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiCalObjectNew   {
+@JsonTypeName("DavCalObjectNew")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiDavCalObjectNew   {
   private @Valid String href;
   private @Valid String icalendar;
 
   /**
    * Reference URI
    **/
-  public ApiCalObjectNew href(String href) {
+  public ApiDavCalObjectNew href(String href) {
     this.href = href;
     return this;
   }
@@ -47,7 +47,7 @@ public class ApiCalObjectNew   {
   /**
    * Calendar data (iCalendar format)
    **/
-  public ApiCalObjectNew icalendar(String icalendar) {
+  public ApiDavCalObjectNew icalendar(String icalendar) {
     this.icalendar = icalendar;
     return this;
   }
@@ -73,9 +73,9 @@ public class ApiCalObjectNew   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiCalObjectNew calObjectNew = (ApiCalObjectNew) o;
-    return Objects.equals(this.href, calObjectNew.href) &&
-        Objects.equals(this.icalendar, calObjectNew.icalendar);
+    ApiDavCalObjectNew davCalObjectNew = (ApiDavCalObjectNew) o;
+    return Objects.equals(this.href, davCalObjectNew.href) &&
+        Objects.equals(this.icalendar, davCalObjectNew.icalendar);
   }
 
   @Override
@@ -86,7 +86,7 @@ public class ApiCalObjectNew   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiCalObjectNew {\n");
+    sb.append("class ApiDavCalObjectNew {\n");
     
     sb.append("    href: ").append(toIndentedString(href)).append("\n");
     sb.append("    icalendar: ").append(toIndentedString(icalendar)).append("\n");

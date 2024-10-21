@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Bean for carry fields of calendar object that have been changed")
 @JsonTypeName("CalObjectChanged")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-18T16:52:35.694+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
 public class ApiCalObjectChanged   {
   private @Valid String id;
   private @Valid String href;

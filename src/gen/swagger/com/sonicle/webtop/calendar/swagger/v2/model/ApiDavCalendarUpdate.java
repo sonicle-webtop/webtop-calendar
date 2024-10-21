@@ -19,9 +19,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Bean for carry calendar&#39;s updateable fields
  **/
 @ApiModel(description = "Bean for carry calendar's updateable fields")
-@JsonTypeName("CalendarUpdate")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiCalendarUpdate   {
+@JsonTypeName("DavCalendarUpdate")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiDavCalendarUpdate   {
   private @Valid String displayName;
   private @Valid String description;
   private @Valid String color;
@@ -30,7 +30,7 @@ public class ApiCalendarUpdate   {
   /**
    * New value for displayName
    **/
-  public ApiCalendarUpdate displayName(String displayName) {
+  public ApiDavCalendarUpdate displayName(String displayName) {
     this.displayName = displayName;
     return this;
   }
@@ -50,7 +50,7 @@ public class ApiCalendarUpdate   {
   /**
    * New value for description
    **/
-  public ApiCalendarUpdate description(String description) {
+  public ApiDavCalendarUpdate description(String description) {
     this.description = description;
     return this;
   }
@@ -70,7 +70,7 @@ public class ApiCalendarUpdate   {
   /**
    * New value for color
    **/
-  public ApiCalendarUpdate color(String color) {
+  public ApiDavCalendarUpdate color(String color) {
     this.color = color;
     return this;
   }
@@ -90,7 +90,7 @@ public class ApiCalendarUpdate   {
   /**
    * Specifies which of above fields have been updated
    **/
-  public ApiCalendarUpdate updatedFields(List<String> updatedFields) {
+  public ApiDavCalendarUpdate updatedFields(List<String> updatedFields) {
     this.updatedFields = updatedFields;
     return this;
   }
@@ -107,7 +107,7 @@ public class ApiCalendarUpdate   {
     this.updatedFields = updatedFields;
   }
 
-  public ApiCalendarUpdate addUpdatedFieldsItem(String updatedFieldsItem) {
+  public ApiDavCalendarUpdate addUpdatedFieldsItem(String updatedFieldsItem) {
     if (this.updatedFields == null) {
       this.updatedFields = new ArrayList<>();
     }
@@ -116,7 +116,7 @@ public class ApiCalendarUpdate   {
     return this;
   }
 
-  public ApiCalendarUpdate removeUpdatedFieldsItem(String updatedFieldsItem) {
+  public ApiDavCalendarUpdate removeUpdatedFieldsItem(String updatedFieldsItem) {
     if (updatedFieldsItem != null && this.updatedFields != null) {
       this.updatedFields.remove(updatedFieldsItem);
     }
@@ -132,11 +132,11 @@ public class ApiCalendarUpdate   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiCalendarUpdate calendarUpdate = (ApiCalendarUpdate) o;
-    return Objects.equals(this.displayName, calendarUpdate.displayName) &&
-        Objects.equals(this.description, calendarUpdate.description) &&
-        Objects.equals(this.color, calendarUpdate.color) &&
-        Objects.equals(this.updatedFields, calendarUpdate.updatedFields);
+    ApiDavCalendarUpdate davCalendarUpdate = (ApiDavCalendarUpdate) o;
+    return Objects.equals(this.displayName, davCalendarUpdate.displayName) &&
+        Objects.equals(this.description, davCalendarUpdate.description) &&
+        Objects.equals(this.color, davCalendarUpdate.color) &&
+        Objects.equals(this.updatedFields, davCalendarUpdate.updatedFields);
   }
 
   @Override
@@ -147,7 +147,7 @@ public class ApiCalendarUpdate   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiCalendarUpdate {\n");
+    sb.append("class ApiDavCalendarUpdate {\n");
     
     sb.append("    displayName: ").append(toIndentedString(displayName)).append("\n");
     sb.append("    description: ").append(toIndentedString(description)).append("\n");

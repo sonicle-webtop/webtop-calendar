@@ -14,46 +14,47 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * This general detailed error structure is used throughout this API.
+ * Bean for carry addressbook&#39;s fields
  **/
-@ApiModel(description = "This general detailed error structure is used throughout this API.")
-@JsonTypeName("Error")
+@ApiModel(description = "Bean for carry addressbook's fields")
+@JsonTypeName("DavCalendarNew")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
-public class ApiError   {
-  private @Valid Integer code;
+public class ApiDavCalendarNew   {
+  private @Valid String displayName;
   private @Valid String description;
+  private @Valid String color;
 
   /**
-   * minimum: 400
-   * maximum: 599
+   * Display name
    **/
-  public ApiError code(Integer code) {
-    this.code = code;
+  public ApiDavCalendarNew displayName(String displayName) {
+    this.displayName = displayName;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty("code")
+  @ApiModelProperty(required = true, value = "Display name")
+  @JsonProperty("displayName")
   @NotNull
- @Min(400) @Max(599)  public Integer getCode() {
-    return code;
+  public String getDisplayName() {
+    return displayName;
   }
 
-  @JsonProperty("code")
-  public void setCode(Integer code) {
-    this.code = code;
+  @JsonProperty("displayName")
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
   }
 
   /**
+   * Description
    **/
-  public ApiError description(String description) {
+  public ApiDavCalendarNew description(String description) {
     this.description = description;
     return this;
   }
 
   
-  @ApiModelProperty(example = "Bad query parameter [$size]: Invalid integer value [abc]", value = "")
+  @ApiModelProperty(value = "Description")
   @JsonProperty("description")
   public String getDescription() {
     return description;
@@ -62,6 +63,26 @@ public class ApiError   {
   @JsonProperty("description")
   public void setDescription(String description) {
     this.description = description;
+  }
+
+  /**
+   * Color
+   **/
+  public ApiDavCalendarNew color(String color) {
+    this.color = color;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "Color")
+  @JsonProperty("color")
+  public String getColor() {
+    return color;
+  }
+
+  @JsonProperty("color")
+  public void setColor(String color) {
+    this.color = color;
   }
 
 
@@ -73,23 +94,25 @@ public class ApiError   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiError error = (ApiError) o;
-    return Objects.equals(this.code, error.code) &&
-        Objects.equals(this.description, error.description);
+    ApiDavCalendarNew davCalendarNew = (ApiDavCalendarNew) o;
+    return Objects.equals(this.displayName, davCalendarNew.displayName) &&
+        Objects.equals(this.description, davCalendarNew.description) &&
+        Objects.equals(this.color, davCalendarNew.color);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(code, description);
+    return Objects.hash(displayName, description, color);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiError {\n");
+    sb.append("class ApiDavCalendarNew {\n");
     
-    sb.append("    code: ").append(toIndentedString(code)).append("\n");
+    sb.append("    displayName: ").append(toIndentedString(displayName)).append("\n");
     sb.append("    description: ").append(toIndentedString(description)).append("\n");
+    sb.append("    color: ").append(toIndentedString(color)).append("\n");
     sb.append("}");
     return sb.toString();
   }

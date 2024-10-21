@@ -14,25 +14,26 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * Bean for carry event&#39;s stat fields
+ * Bean for carry fields of calendar object that have been changed
  **/
-@ApiModel(description = "Bean for carry event's stat fields")
-@JsonTypeName("SyncEventStat")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiSyncEventStat   {
+@ApiModel(description = "Bean for carry fields of calendar object that have been changed")
+@JsonTypeName("DavCalObjectChanged")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiDavCalObjectChanged   {
   private @Valid String id;
+  private @Valid String href;
   private @Valid String etag;
 
   /**
-   * Event ID (internal)
+   * CalObject ID (internal)
    **/
-  public ApiSyncEventStat id(String id) {
+  public ApiDavCalObjectChanged id(String id) {
     this.id = id;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "Event ID (internal)")
+  @ApiModelProperty(required = true, value = "CalObject ID (internal)")
   @JsonProperty("id")
   @NotNull
   public String getId() {
@@ -45,9 +46,30 @@ public class ApiSyncEventStat   {
   }
 
   /**
+   * Reference URI
+   **/
+  public ApiDavCalObjectChanged href(String href) {
+    this.href = href;
+    return this;
+  }
+
+  
+  @ApiModelProperty(required = true, value = "Reference URI")
+  @JsonProperty("href")
+  @NotNull
+  public String getHref() {
+    return href;
+  }
+
+  @JsonProperty("href")
+  public void setHref(String href) {
+    this.href = href;
+  }
+
+  /**
    * Revision tag
    **/
-  public ApiSyncEventStat etag(String etag) {
+  public ApiDavCalObjectChanged etag(String etag) {
     this.etag = etag;
     return this;
   }
@@ -74,22 +96,24 @@ public class ApiSyncEventStat   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiSyncEventStat syncEventStat = (ApiSyncEventStat) o;
-    return Objects.equals(this.id, syncEventStat.id) &&
-        Objects.equals(this.etag, syncEventStat.etag);
+    ApiDavCalObjectChanged davCalObjectChanged = (ApiDavCalObjectChanged) o;
+    return Objects.equals(this.id, davCalObjectChanged.id) &&
+        Objects.equals(this.href, davCalObjectChanged.href) &&
+        Objects.equals(this.etag, davCalObjectChanged.etag);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag);
+    return Objects.hash(id, href, etag);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiSyncEventStat {\n");
+    sb.append("class ApiDavCalObjectChanged {\n");
     
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    href: ").append(toIndentedString(href)).append("\n");
     sb.append("    etag: ").append(toIndentedString(etag)).append("\n");
     sb.append("}");
     return sb.toString();

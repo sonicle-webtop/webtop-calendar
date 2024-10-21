@@ -17,16 +17,16 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Bean for carry event&#39;s stat fields
  **/
 @ApiModel(description = "Bean for carry event's stat fields")
-@JsonTypeName("SyncEventStat")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiSyncEventStat   {
+@JsonTypeName("EasSyncEventStat")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiEasSyncEventStat   {
   private @Valid String id;
   private @Valid String etag;
 
   /**
    * Event ID (internal)
    **/
-  public ApiSyncEventStat id(String id) {
+  public ApiEasSyncEventStat id(String id) {
     this.id = id;
     return this;
   }
@@ -47,7 +47,7 @@ public class ApiSyncEventStat   {
   /**
    * Revision tag
    **/
-  public ApiSyncEventStat etag(String etag) {
+  public ApiEasSyncEventStat etag(String etag) {
     this.etag = etag;
     return this;
   }
@@ -74,9 +74,9 @@ public class ApiSyncEventStat   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiSyncEventStat syncEventStat = (ApiSyncEventStat) o;
-    return Objects.equals(this.id, syncEventStat.id) &&
-        Objects.equals(this.etag, syncEventStat.etag);
+    ApiEasSyncEventStat easSyncEventStat = (ApiEasSyncEventStat) o;
+    return Objects.equals(this.id, easSyncEventStat.id) &&
+        Objects.equals(this.etag, easSyncEventStat.etag);
   }
 
   @Override
@@ -87,7 +87,7 @@ public class ApiSyncEventStat   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiSyncEventStat {\n");
+    sb.append("class ApiEasSyncEventStat {\n");
     
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    etag: ").append(toIndentedString(etag)).append("\n");

@@ -48,13 +48,13 @@ import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.swagger.v2.api.EasApi;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEasSyncEvent;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEasSyncEventData;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEasSyncEventDataAttendee;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEasSyncEventStat;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEasSyncEventUpdate;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEasSyncFolder;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiError;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiSyncEvent;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiSyncEventData;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiSyncEventDataAttendee;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiSyncEventStat;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiSyncEventUpdate;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiSyncFolder;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
@@ -93,7 +93,7 @@ public class Eas extends EasApi {
 	public Response getFolders() {
 		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
-		List<ApiSyncFolder> items = new ArrayList<>();
+		List<ApiEasSyncFolder> items = new ArrayList<>();
 		
 		if (logger.isDebugEnabled()) {
 			logger.debug("[{}] getFolders()", currentProfileId);
@@ -152,7 +152,7 @@ public class Eas extends EasApi {
 			DateTime since = DateTimeUtils.parseDateTime(ISO_DATETIME_FMT, cutoffDate);
 			if (since == null) DateTimeUtils.now().minusDays(30).withTimeAtStartOfDay();
 			
-			List<ApiSyncEventStat> items = new ArrayList<>();
+			List<ApiEasSyncEventStat> items = new ArrayList<>();
 			List<EventObject> evtobjs = manager.listEventObjects(Integer.valueOf(folderId), since, EventObjectOutputType.STAT);
 			for (EventObject evtobj : evtobjs) {
 				items.add(createSyncEventStat(evtobj));
@@ -192,7 +192,7 @@ public class Eas extends EasApi {
 	}
 
 	@Override
-	public Response addMessage(String folderId, ApiSyncEventUpdate body) {
+	public Response addMessage(String folderId, ApiEasSyncEventUpdate body) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -217,7 +217,7 @@ public class Eas extends EasApi {
 	}
 
 	@Override
-	public Response updateMessage(String folderId, String id, ApiSyncEventUpdate body) {
+	public Response updateMessage(String folderId, String id, ApiEasSyncEventUpdate body) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -241,9 +241,9 @@ public class Eas extends EasApi {
 			// main event series (re-attach unavailable). Instance exceptions 
 			// should have been created above as date exception into the main
 			// event; so simply create exceptions as new events.
-			List<ApiSyncEventData> eventExceptions = body.getExceptions();
+			List<ApiEasSyncEventData> eventExceptions = body.getExceptions();
 			if ((eventExceptions != null) && !eventExceptions.isEmpty()) {
-				for (ApiSyncEventData eventException : eventExceptions) {
+				for (ApiEasSyncEventData eventException : eventExceptions) {
 					Event newEvent = mergeEvent(new Event(), eventException);
 					newEvent.setCalendarId(Integer.valueOf(folderId));
 					newEvent = manager.addEvent(newEvent);
@@ -282,7 +282,7 @@ public class Eas extends EasApi {
 		}
 	}
 	
-	private ApiSyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, boolean isResource, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions, boolean isDefault) {
+	private ApiEasSyncFolder createSyncFolder(UserProfileId currentProfileId, Calendar cal, boolean isResource, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions, boolean isDefault) {
 		String displayName = cal.getName();
 		if (isResource) {
 			UserProfile.Data owud = WT.getUserData(cal.getProfileId());
@@ -294,7 +294,7 @@ public class Eas extends EasApi {
 		}
 		//String ownerUsername = owud.getProfileEmailAddress();
 		
-		return new ApiSyncFolder()
+		return new ApiEasSyncFolder()
 			.id(String.valueOf(cal.getCalendarId()))
 			.displayName(displayName)
 			.etag(buildEtag(lastRevisionTimestamp))
@@ -304,19 +304,19 @@ public class Eas extends EasApi {
 			.ownerId(cal.getProfileId().toString());
 	}
 	
-	private List<ApiSyncEventStat> createSyncEventStats(Collection<EventObject> evtobjs) {
-		ArrayList<ApiSyncEventStat> stats = new ArrayList<>(evtobjs.size());
+	private List<ApiEasSyncEventStat> createSyncEventStats(Collection<EventObject> evtobjs) {
+		ArrayList<ApiEasSyncEventStat> stats = new ArrayList<>(evtobjs.size());
 		evtobjs.forEach(evtobj -> stats.add(createSyncEventStat(evtobj)));
 		return stats;
 	}
 	
-	private ApiSyncEventStat createSyncEventStat(EventObject evtobj) {
-		return new ApiSyncEventStat()
+	private ApiEasSyncEventStat createSyncEventStat(EventObject evtobj) {
+		return new ApiEasSyncEventStat()
 			.id(String.valueOf(evtobj.getEventId()))
 			.etag(buildEtag(evtobj.getRevisionTimestamp()));
 	}
 	
-	private ApiSyncEvent createSyncEvent(EventObjectWithBean evtobj) {
+	private ApiEasSyncEvent createSyncEvent(EventObjectWithBean evtobj) {
 		Event event = evtobj.getEvent();
 		
 		ArrayList<String> exDates = null;
@@ -327,13 +327,13 @@ public class Eas extends EasApi {
 			}
 		}
 		
-		ArrayList<ApiSyncEventDataAttendee> saas = new ArrayList<>();
+		ArrayList<ApiEasSyncEventDataAttendee> saas = new ArrayList<>();
 		for (EventAttendee attendee : event.getAttendees()) {
 			saas.add(createSyncEventDataAttendee(attendee));
 		}
 		
 		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.getEventBoundary(event);
-		return new ApiSyncEvent()
+		return new ApiEasSyncEvent()
 			.id(String.valueOf(evtobj.getEventId()))
 			.etag(buildEtag(evtobj.getRevisionTimestamp()))
 			.start(DateTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.start))
@@ -353,15 +353,15 @@ public class Eas extends EasApi {
 			.attendees(saas);
 	}
 	
-	private ApiSyncEventDataAttendee createSyncEventDataAttendee(EventAttendee attendee) {
-		return new ApiSyncEventDataAttendee()
+	private ApiEasSyncEventDataAttendee createSyncEventDataAttendee(EventAttendee attendee) {
+		return new ApiEasSyncEventDataAttendee()
 			.address(attendee.getRecipient())
 			.type(EnumUtils.toSerializedName(attendee.getRecipientType()))
 			.role(EnumUtils.toSerializedName(attendee.getRecipientRole()))
 			.status(EnumUtils.toSerializedName(attendee.getResponseStatus()));
 	}
 	
-	private <T extends Event> T mergeEvent(T tgt, ApiSyncEventData src) {
+	private <T extends Event> T mergeEvent(T tgt, ApiEasSyncEventData src) {
 		boolean isNew = tgt.getEventId() == null;
 		
 		tgt.setStartDate(DateTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getStart()));
@@ -389,7 +389,7 @@ public class Eas extends EasApi {
 		}
 		
 		if (isNew || tgt.getAttendees().isEmpty()) {
-			for (ApiSyncEventDataAttendee satt : src.getAttendees()) {
+			for (ApiEasSyncEventDataAttendee satt : src.getAttendees()) {
 				tgt.getAttendees().add(mergeEventAttendee(new EventAttendee(), satt));
 			}
 		} else {
@@ -399,7 +399,7 @@ public class Eas extends EasApi {
 			tgt.getAttendees().forEach(att -> oldAtts.put(att.getRecipientAddress(), att));
 			
 			// Then, evaluate added and updated elements by adding them to the collection
-			for (ApiSyncEventDataAttendee satt : src.getAttendees()) {
+			for (ApiEasSyncEventDataAttendee satt : src.getAttendees()) {
 				InternetAddress ia = InternetAddressUtils.toInternetAddress(satt.getAddress());
 				if (ia == null || ia.getAddress() == null) continue;
 				
@@ -418,7 +418,7 @@ public class Eas extends EasApi {
 		return tgt;
 	}
 	
-	private EventAttendee mergeEventAttendee(EventAttendee tgt, ApiSyncEventDataAttendee src) {
+	private EventAttendee mergeEventAttendee(EventAttendee tgt, ApiEasSyncEventDataAttendee src) {
 		boolean isNew = tgt.getAttendeeId()== null;
 		
 		if (isNew) {

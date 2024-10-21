@@ -1,7 +1,7 @@
 package com.sonicle.webtop.calendar.swagger.v2.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiSyncEventDataAttendee;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEasSyncEventDataAttendee;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -17,14 +17,12 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * Bean for carry event&#39;s fields
+ * Bean for carry event&#39;s updateable fields
  **/
-@ApiModel(description = "Bean for carry event's fields")
-@JsonTypeName("SyncEvent")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiSyncEvent   {
-  private @Valid String id;
-  private @Valid String etag;
+@ApiModel(description = "Bean for carry event's updateable fields")
+@JsonTypeName("EasSyncEventData")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiEasSyncEventData   {
   private @Valid String start;
   private @Valid String end;
   private @Valid String tz;
@@ -39,60 +37,18 @@ public class ApiSyncEvent   {
   private @Valid String recRule;
   private @Valid String recStart;
   private @Valid List<String> exDates = null;
-  private @Valid List<ApiSyncEventDataAttendee> attendees = new ArrayList<>();
+  private @Valid List<ApiEasSyncEventDataAttendee> attendees = new ArrayList<>();
 
   /**
-   * Event ID (internal)
+   * Start date/time (ISO date/time YYYYMMDD&#39;T&#39;HHMMSS&#39;Z&#39;)
    **/
-  public ApiSyncEvent id(String id) {
-    this.id = id;
-    return this;
-  }
-
-  
-  @ApiModelProperty(required = true, value = "Event ID (internal)")
-  @JsonProperty("id")
-  @NotNull
-  public String getId() {
-    return id;
-  }
-
-  @JsonProperty("id")
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  /**
-   * Revision tag
-   **/
-  public ApiSyncEvent etag(String etag) {
-    this.etag = etag;
-    return this;
-  }
-
-  
-  @ApiModelProperty(required = true, value = "Revision tag")
-  @JsonProperty("etag")
-  @NotNull
-  public String getEtag() {
-    return etag;
-  }
-
-  @JsonProperty("etag")
-  public void setEtag(String etag) {
-    this.etag = etag;
-  }
-
-  /**
-   * Start date/time (ISO format)
-   **/
-  public ApiSyncEvent start(String start) {
+  public ApiEasSyncEventData start(String start) {
     this.start = start;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "Start date/time (ISO format)")
+  @ApiModelProperty(required = true, value = "Start date/time (ISO date/time YYYYMMDD'T'HHMMSS'Z')")
   @JsonProperty("start")
   @NotNull
   public String getStart() {
@@ -105,15 +61,15 @@ public class ApiSyncEvent   {
   }
 
   /**
-   * End date/time (ISO format)
+   * End date/time (ISO date/time YYYYMMDD&#39;T&#39;HHMMSS&#39;Z&#39;)
    **/
-  public ApiSyncEvent end(String end) {
+  public ApiEasSyncEventData end(String end) {
     this.end = end;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "End date/time (ISO format)")
+  @ApiModelProperty(required = true, value = "End date/time (ISO date/time YYYYMMDD'T'HHMMSS'Z')")
   @JsonProperty("end")
   @NotNull
   public String getEnd() {
@@ -128,7 +84,7 @@ public class ApiSyncEvent   {
   /**
    * Timezone ID
    **/
-  public ApiSyncEvent tz(String tz) {
+  public ApiEasSyncEventData tz(String tz) {
     this.tz = tz;
     return this;
   }
@@ -149,7 +105,7 @@ public class ApiSyncEvent   {
   /**
    * All day flag
    **/
-  public ApiSyncEvent allDay(Boolean allDay) {
+  public ApiEasSyncEventData allDay(Boolean allDay) {
     this.allDay = allDay;
     return this;
   }
@@ -170,7 +126,7 @@ public class ApiSyncEvent   {
   /**
    * Organizer address (as RFC822)
    **/
-  public ApiSyncEvent organizer(String organizer) {
+  public ApiEasSyncEventData organizer(String organizer) {
     this.organizer = organizer;
     return this;
   }
@@ -191,7 +147,7 @@ public class ApiSyncEvent   {
   /**
    * Title
    **/
-  public ApiSyncEvent title(String title) {
+  public ApiEasSyncEventData title(String title) {
     this.title = title;
     return this;
   }
@@ -211,7 +167,7 @@ public class ApiSyncEvent   {
   /**
    * Description
    **/
-  public ApiSyncEvent description(String description) {
+  public ApiEasSyncEventData description(String description) {
     this.description = description;
     return this;
   }
@@ -231,7 +187,7 @@ public class ApiSyncEvent   {
   /**
    * Location
    **/
-  public ApiSyncEvent location(String location) {
+  public ApiEasSyncEventData location(String location) {
     this.location = location;
     return this;
   }
@@ -251,7 +207,7 @@ public class ApiSyncEvent   {
   /**
    * Private flag
    **/
-  public ApiSyncEvent prvt(Boolean prvt) {
+  public ApiEasSyncEventData prvt(Boolean prvt) {
     this.prvt = prvt;
     return this;
   }
@@ -272,7 +228,7 @@ public class ApiSyncEvent   {
   /**
    * Busy flag
    **/
-  public ApiSyncEvent busy(Boolean busy) {
+  public ApiEasSyncEventData busy(Boolean busy) {
     this.busy = busy;
     return this;
   }
@@ -293,7 +249,7 @@ public class ApiSyncEvent   {
   /**
    * Reminder
    **/
-  public ApiSyncEvent reminder(Integer reminder) {
+  public ApiEasSyncEventData reminder(Integer reminder) {
     this.reminder = reminder;
     return this;
   }
@@ -313,7 +269,7 @@ public class ApiSyncEvent   {
   /**
    * Recurrence RULE string
    **/
-  public ApiSyncEvent recRule(String recRule) {
+  public ApiEasSyncEventData recRule(String recRule) {
     this.recRule = recRule;
     return this;
   }
@@ -333,7 +289,7 @@ public class ApiSyncEvent   {
   /**
    * Recurrence start date (ISO date YYYYMMDD)
    **/
-  public ApiSyncEvent recStart(String recStart) {
+  public ApiEasSyncEventData recStart(String recStart) {
     this.recStart = recStart;
     return this;
   }
@@ -353,7 +309,7 @@ public class ApiSyncEvent   {
   /**
    * Excluded dates (ISO date YYYYMMDD)
    **/
-  public ApiSyncEvent exDates(List<String> exDates) {
+  public ApiEasSyncEventData exDates(List<String> exDates) {
     this.exDates = exDates;
     return this;
   }
@@ -370,7 +326,7 @@ public class ApiSyncEvent   {
     this.exDates = exDates;
   }
 
-  public ApiSyncEvent addExDatesItem(String exDatesItem) {
+  public ApiEasSyncEventData addExDatesItem(String exDatesItem) {
     if (this.exDates == null) {
       this.exDates = new ArrayList<>();
     }
@@ -379,7 +335,7 @@ public class ApiSyncEvent   {
     return this;
   }
 
-  public ApiSyncEvent removeExDatesItem(String exDatesItem) {
+  public ApiEasSyncEventData removeExDatesItem(String exDatesItem) {
     if (exDatesItem != null && this.exDates != null) {
       this.exDates.remove(exDatesItem);
     }
@@ -389,7 +345,7 @@ public class ApiSyncEvent   {
   /**
    * Appointment attendees
    **/
-  public ApiSyncEvent attendees(List<ApiSyncEventDataAttendee> attendees) {
+  public ApiEasSyncEventData attendees(List<ApiEasSyncEventDataAttendee> attendees) {
     this.attendees = attendees;
     return this;
   }
@@ -398,16 +354,16 @@ public class ApiSyncEvent   {
   @ApiModelProperty(required = true, value = "Appointment attendees")
   @JsonProperty("attendees")
   @NotNull
-  public List<ApiSyncEventDataAttendee> getAttendees() {
+  public List<ApiEasSyncEventDataAttendee> getAttendees() {
     return attendees;
   }
 
   @JsonProperty("attendees")
-  public void setAttendees(List<ApiSyncEventDataAttendee> attendees) {
+  public void setAttendees(List<ApiEasSyncEventDataAttendee> attendees) {
     this.attendees = attendees;
   }
 
-  public ApiSyncEvent addAttendeesItem(ApiSyncEventDataAttendee attendeesItem) {
+  public ApiEasSyncEventData addAttendeesItem(ApiEasSyncEventDataAttendee attendeesItem) {
     if (this.attendees == null) {
       this.attendees = new ArrayList<>();
     }
@@ -416,7 +372,7 @@ public class ApiSyncEvent   {
     return this;
   }
 
-  public ApiSyncEvent removeAttendeesItem(ApiSyncEventDataAttendee attendeesItem) {
+  public ApiEasSyncEventData removeAttendeesItem(ApiEasSyncEventDataAttendee attendeesItem) {
     if (attendeesItem != null && this.attendees != null) {
       this.attendees.remove(attendeesItem);
     }
@@ -432,38 +388,34 @@ public class ApiSyncEvent   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiSyncEvent syncEvent = (ApiSyncEvent) o;
-    return Objects.equals(this.id, syncEvent.id) &&
-        Objects.equals(this.etag, syncEvent.etag) &&
-        Objects.equals(this.start, syncEvent.start) &&
-        Objects.equals(this.end, syncEvent.end) &&
-        Objects.equals(this.tz, syncEvent.tz) &&
-        Objects.equals(this.allDay, syncEvent.allDay) &&
-        Objects.equals(this.organizer, syncEvent.organizer) &&
-        Objects.equals(this.title, syncEvent.title) &&
-        Objects.equals(this.description, syncEvent.description) &&
-        Objects.equals(this.location, syncEvent.location) &&
-        Objects.equals(this.prvt, syncEvent.prvt) &&
-        Objects.equals(this.busy, syncEvent.busy) &&
-        Objects.equals(this.reminder, syncEvent.reminder) &&
-        Objects.equals(this.recRule, syncEvent.recRule) &&
-        Objects.equals(this.recStart, syncEvent.recStart) &&
-        Objects.equals(this.exDates, syncEvent.exDates) &&
-        Objects.equals(this.attendees, syncEvent.attendees);
+    ApiEasSyncEventData easSyncEventData = (ApiEasSyncEventData) o;
+    return Objects.equals(this.start, easSyncEventData.start) &&
+        Objects.equals(this.end, easSyncEventData.end) &&
+        Objects.equals(this.tz, easSyncEventData.tz) &&
+        Objects.equals(this.allDay, easSyncEventData.allDay) &&
+        Objects.equals(this.organizer, easSyncEventData.organizer) &&
+        Objects.equals(this.title, easSyncEventData.title) &&
+        Objects.equals(this.description, easSyncEventData.description) &&
+        Objects.equals(this.location, easSyncEventData.location) &&
+        Objects.equals(this.prvt, easSyncEventData.prvt) &&
+        Objects.equals(this.busy, easSyncEventData.busy) &&
+        Objects.equals(this.reminder, easSyncEventData.reminder) &&
+        Objects.equals(this.recRule, easSyncEventData.recRule) &&
+        Objects.equals(this.recStart, easSyncEventData.recStart) &&
+        Objects.equals(this.exDates, easSyncEventData.exDates) &&
+        Objects.equals(this.attendees, easSyncEventData.attendees);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag, start, end, tz, allDay, organizer, title, description, location, prvt, busy, reminder, recRule, recStart, exDates, attendees);
+    return Objects.hash(start, end, tz, allDay, organizer, title, description, location, prvt, busy, reminder, recRule, recStart, exDates, attendees);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiSyncEvent {\n");
+    sb.append("class ApiEasSyncEventData {\n");
     
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    etag: ").append(toIndentedString(etag)).append("\n");
     sb.append("    start: ").append(toIndentedString(start)).append("\n");
     sb.append("    end: ").append(toIndentedString(end)).append("\n");
     sb.append("    tz: ").append(toIndentedString(tz)).append("\n");

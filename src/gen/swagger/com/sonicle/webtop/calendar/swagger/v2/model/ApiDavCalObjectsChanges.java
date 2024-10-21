@@ -1,7 +1,7 @@
 package com.sonicle.webtop.calendar.swagger.v2.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalObjectChanged;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObjectChanged;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -20,18 +20,18 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Bean for carry calendar object collection changes
  **/
 @ApiModel(description = "Bean for carry calendar object collection changes")
-@JsonTypeName("CalObjectsChanges")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiCalObjectsChanges   {
+@JsonTypeName("DavCalObjectsChanges")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiDavCalObjectsChanges   {
   private @Valid String syncToken;
-  private @Valid List<ApiCalObjectChanged> inserted = new ArrayList<>();
-  private @Valid List<ApiCalObjectChanged> updated = new ArrayList<>();
-  private @Valid List<ApiCalObjectChanged> deleted = new ArrayList<>();
+  private @Valid List<ApiDavCalObjectChanged> inserted = new ArrayList<>();
+  private @Valid List<ApiDavCalObjectChanged> updated = new ArrayList<>();
+  private @Valid List<ApiDavCalObjectChanged> deleted = new ArrayList<>();
 
   /**
    * Current sync token
    **/
-  public ApiCalObjectsChanges syncToken(String syncToken) {
+  public ApiDavCalObjectsChanges syncToken(String syncToken) {
     this.syncToken = syncToken;
     return this;
   }
@@ -52,7 +52,7 @@ public class ApiCalObjectsChanges   {
   /**
    * Items that have been inserted
    **/
-  public ApiCalObjectsChanges inserted(List<ApiCalObjectChanged> inserted) {
+  public ApiDavCalObjectsChanges inserted(List<ApiDavCalObjectChanged> inserted) {
     this.inserted = inserted;
     return this;
   }
@@ -61,16 +61,16 @@ public class ApiCalObjectsChanges   {
   @ApiModelProperty(required = true, value = "Items that have been inserted")
   @JsonProperty("inserted")
   @NotNull
-  public List<ApiCalObjectChanged> getInserted() {
+  public List<ApiDavCalObjectChanged> getInserted() {
     return inserted;
   }
 
   @JsonProperty("inserted")
-  public void setInserted(List<ApiCalObjectChanged> inserted) {
+  public void setInserted(List<ApiDavCalObjectChanged> inserted) {
     this.inserted = inserted;
   }
 
-  public ApiCalObjectsChanges addInsertedItem(ApiCalObjectChanged insertedItem) {
+  public ApiDavCalObjectsChanges addInsertedItem(ApiDavCalObjectChanged insertedItem) {
     if (this.inserted == null) {
       this.inserted = new ArrayList<>();
     }
@@ -79,7 +79,7 @@ public class ApiCalObjectsChanges   {
     return this;
   }
 
-  public ApiCalObjectsChanges removeInsertedItem(ApiCalObjectChanged insertedItem) {
+  public ApiDavCalObjectsChanges removeInsertedItem(ApiDavCalObjectChanged insertedItem) {
     if (insertedItem != null && this.inserted != null) {
       this.inserted.remove(insertedItem);
     }
@@ -89,7 +89,7 @@ public class ApiCalObjectsChanges   {
   /**
    * Items that have been updated
    **/
-  public ApiCalObjectsChanges updated(List<ApiCalObjectChanged> updated) {
+  public ApiDavCalObjectsChanges updated(List<ApiDavCalObjectChanged> updated) {
     this.updated = updated;
     return this;
   }
@@ -98,16 +98,16 @@ public class ApiCalObjectsChanges   {
   @ApiModelProperty(required = true, value = "Items that have been updated")
   @JsonProperty("updated")
   @NotNull
-  public List<ApiCalObjectChanged> getUpdated() {
+  public List<ApiDavCalObjectChanged> getUpdated() {
     return updated;
   }
 
   @JsonProperty("updated")
-  public void setUpdated(List<ApiCalObjectChanged> updated) {
+  public void setUpdated(List<ApiDavCalObjectChanged> updated) {
     this.updated = updated;
   }
 
-  public ApiCalObjectsChanges addUpdatedItem(ApiCalObjectChanged updatedItem) {
+  public ApiDavCalObjectsChanges addUpdatedItem(ApiDavCalObjectChanged updatedItem) {
     if (this.updated == null) {
       this.updated = new ArrayList<>();
     }
@@ -116,7 +116,7 @@ public class ApiCalObjectsChanges   {
     return this;
   }
 
-  public ApiCalObjectsChanges removeUpdatedItem(ApiCalObjectChanged updatedItem) {
+  public ApiDavCalObjectsChanges removeUpdatedItem(ApiDavCalObjectChanged updatedItem) {
     if (updatedItem != null && this.updated != null) {
       this.updated.remove(updatedItem);
     }
@@ -126,7 +126,7 @@ public class ApiCalObjectsChanges   {
   /**
    * Items that have been deleted
    **/
-  public ApiCalObjectsChanges deleted(List<ApiCalObjectChanged> deleted) {
+  public ApiDavCalObjectsChanges deleted(List<ApiDavCalObjectChanged> deleted) {
     this.deleted = deleted;
     return this;
   }
@@ -135,16 +135,16 @@ public class ApiCalObjectsChanges   {
   @ApiModelProperty(required = true, value = "Items that have been deleted")
   @JsonProperty("deleted")
   @NotNull
-  public List<ApiCalObjectChanged> getDeleted() {
+  public List<ApiDavCalObjectChanged> getDeleted() {
     return deleted;
   }
 
   @JsonProperty("deleted")
-  public void setDeleted(List<ApiCalObjectChanged> deleted) {
+  public void setDeleted(List<ApiDavCalObjectChanged> deleted) {
     this.deleted = deleted;
   }
 
-  public ApiCalObjectsChanges addDeletedItem(ApiCalObjectChanged deletedItem) {
+  public ApiDavCalObjectsChanges addDeletedItem(ApiDavCalObjectChanged deletedItem) {
     if (this.deleted == null) {
       this.deleted = new ArrayList<>();
     }
@@ -153,7 +153,7 @@ public class ApiCalObjectsChanges   {
     return this;
   }
 
-  public ApiCalObjectsChanges removeDeletedItem(ApiCalObjectChanged deletedItem) {
+  public ApiDavCalObjectsChanges removeDeletedItem(ApiDavCalObjectChanged deletedItem) {
     if (deletedItem != null && this.deleted != null) {
       this.deleted.remove(deletedItem);
     }
@@ -169,11 +169,11 @@ public class ApiCalObjectsChanges   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiCalObjectsChanges calObjectsChanges = (ApiCalObjectsChanges) o;
-    return Objects.equals(this.syncToken, calObjectsChanges.syncToken) &&
-        Objects.equals(this.inserted, calObjectsChanges.inserted) &&
-        Objects.equals(this.updated, calObjectsChanges.updated) &&
-        Objects.equals(this.deleted, calObjectsChanges.deleted);
+    ApiDavCalObjectsChanges davCalObjectsChanges = (ApiDavCalObjectsChanges) o;
+    return Objects.equals(this.syncToken, davCalObjectsChanges.syncToken) &&
+        Objects.equals(this.inserted, davCalObjectsChanges.inserted) &&
+        Objects.equals(this.updated, davCalObjectsChanges.updated) &&
+        Objects.equals(this.deleted, davCalObjectsChanges.deleted);
   }
 
   @Override
@@ -184,7 +184,7 @@ public class ApiCalObjectsChanges   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiCalObjectsChanges {\n");
+    sb.append("class ApiDavCalObjectsChanges {\n");
     
     sb.append("    syncToken: ").append(toIndentedString(syncToken)).append("\n");
     sb.append("    inserted: ").append(toIndentedString(inserted)).append("\n");

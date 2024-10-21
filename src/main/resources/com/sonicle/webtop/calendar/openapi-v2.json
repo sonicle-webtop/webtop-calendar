@@ -25,7 +25,7 @@
     "/caldav/calendars": {
       "get": {
         "tags": [
-          "dav-calendars"
+          "dav"
         ],
         "summary": "List all calendars",
         "operationId": "getCalendars",
@@ -37,7 +37,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Calendar"
+                    "$ref": "#/components/schemas/DavCalendar"
                   }
                 }
               }
@@ -48,7 +48,7 @@
       },
       "post": {
         "tags": [
-          "dav-calendars"
+          "dav"
         ],
         "summary": "Adds a new calendar",
         "operationId": "addCalendar",
@@ -56,7 +56,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CalendarNew"
+                "$ref": "#/components/schemas/DavCalendarNew"
               }
             }
           },
@@ -68,7 +68,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Calendar"
+                  "$ref": "#/components/schemas/DavCalendar"
                 }
               }
             }
@@ -81,7 +81,7 @@
     "/caldav/calendars/{calendarUid}": {
       "get": {
         "tags": [
-          "dav-calendars"
+          "dav"
         ],
         "summary": "Gets a single calendar",
         "operationId": "getCalendar",
@@ -91,7 +91,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Calendar"
+                  "$ref": "#/components/schemas/DavCalendar"
                 }
               }
             }
@@ -109,7 +109,7 @@
       },
       "put": {
         "tags": [
-          "dav-calendars"
+          "dav"
         ],
         "summary": "Updates a calendar",
         "operationId": "updateCalendar",
@@ -117,7 +117,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CalendarUpdate"
+                "$ref": "#/components/schemas/DavCalendarUpdate"
               }
             }
           },
@@ -142,7 +142,7 @@
       },
       "delete": {
         "tags": [
-          "dav-calendars"
+          "dav"
         ],
         "summary": "Deletes a calendar",
         "operationId": "deleteCalendar",
@@ -182,7 +182,7 @@
     "/caldav/calendars/{calendarUid}/objects": {
       "get": {
         "tags": [
-          "dav-calobjects"
+          "dav"
         ],
         "summary": "List all calendar objects belonging to a specific calendar",
         "operationId": "getCalObjects",
@@ -208,7 +208,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/CalObject"
+                    "$ref": "#/components/schemas/DavCalObject"
                   }
                 }
               }
@@ -219,7 +219,7 @@
       },
       "post": {
         "tags": [
-          "dav-calobjects"
+          "dav"
         ],
         "summary": "Adds a new calendar object",
         "operationId": "addCalObject",
@@ -227,7 +227,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CalObjectNew"
+                "$ref": "#/components/schemas/DavCalObjectNew"
               }
             }
           },
@@ -257,7 +257,7 @@
     "/caldav/calendars/{calendarUid}/objects/changes": {
       "get": {
         "tags": [
-          "dav-calobjects"
+          "dav"
         ],
         "summary": "Get calendar object changes",
         "description": "Returns changed CalendarObjects (added/modified/deleted) since the specified syncToken. If token is not provided, the initial sync configuration will be returned.",
@@ -288,7 +288,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CalObjectsChanges"
+                  "$ref": "#/components/schemas/DavCalObjectsChanges"
                 }
               }
             }
@@ -314,7 +314,7 @@
     "/caldav/calendars/{calendarUid}/objects/{href}": {
       "get": {
         "tags": [
-          "dav-calobjects"
+          "dav"
         ],
         "summary": "Get a single calendar object",
         "operationId": "getCalObject",
@@ -324,7 +324,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CalObject"
+                  "$ref": "#/components/schemas/DavCalObject"
                 }
               }
             }
@@ -342,7 +342,7 @@
       },
       "put": {
         "tags": [
-          "dav-calobjects"
+          "dav"
         ],
         "summary": "Updates a calendar object",
         "operationId": "updateCalObject",
@@ -375,7 +375,7 @@
       },
       "delete": {
         "tags": [
-          "dav-calobjects"
+          "dav"
         ],
         "summary": "Deletes a calendar object",
         "operationId": "deleteCalObject",
@@ -420,7 +420,7 @@
     "/eas/folders": {
       "get": {
         "tags": [
-          "eas-folders"
+          "eas"
         ],
         "summary": "List all folders",
         "operationId": "getFolders",
@@ -432,7 +432,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SyncFolder"
+                    "$ref": "#/components/schemas/EasSyncFolder"
                   }
                 }
               }
@@ -445,7 +445,7 @@
     "/eas/folders/{folderId}/messages-stats": {
       "get": {
         "tags": [
-          "eas-messages"
+          "eas"
         ],
         "summary": "List all messages for a specific folder",
         "operationId": "getMessagesStats",
@@ -468,7 +468,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SyncEventStat"
+                    "$ref": "#/components/schemas/EasSyncEventStat"
                   }
                 }
               }
@@ -497,7 +497,7 @@
     "/eas/folders/{folderId}/messages": {
       "post": {
         "tags": [
-          "eas-messages"
+          "eas"
         ],
         "summary": "Adds a message",
         "operationId": "addMessage",
@@ -505,7 +505,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SyncEventUpdate"
+                "$ref": "#/components/schemas/EasSyncEventUpdate"
               }
             }
           },
@@ -517,7 +517,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SyncEventStat"
+                  "$ref": "#/components/schemas/EasSyncEventStat"
                 }
               }
             }
@@ -542,7 +542,7 @@
     "/eas/folders/{folderId}/messages/{id}": {
       "get": {
         "tags": [
-          "eas-messages"
+          "eas"
         ],
         "summary": "Get a single message",
         "operationId": "getMessage",
@@ -552,7 +552,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SyncEvent"
+                  "$ref": "#/components/schemas/EasSyncEvent"
                 }
               }
             }
@@ -570,7 +570,7 @@
       },
       "put": {
         "tags": [
-          "eas-messages"
+          "eas"
         ],
         "summary": "Updates a message",
         "operationId": "updateMessage",
@@ -578,7 +578,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SyncEventUpdate"
+                "$ref": "#/components/schemas/EasSyncEventUpdate"
               }
             }
           },
@@ -592,7 +592,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SyncEventStat"
+                    "$ref": "#/components/schemas/EasSyncEventStat"
                   }
                 }
               }
@@ -612,7 +612,7 @@
       },
       "delete": {
         "tags": [
-          "eas-messages"
+          "eas"
         ],
         "summary": "Deletes a message",
         "operationId": "deleteMessage",
@@ -685,7 +685,7 @@
           }
         }
       },
-      "Calendar": {
+      "DavCalendar": {
         "type": "object",
         "description": "Bean for carry calendar's fields",
         "properties": {
@@ -736,7 +736,7 @@
           "ownerUsername"
         ]
       },
-      "CalendarNew": {
+      "DavCalendarNew": {
         "required": [
           "displayName"
         ],
@@ -757,7 +757,7 @@
         },
         "description": "Bean for carry addressbook's fields"
       },
-      "CalObject": {
+      "DavCalObject": {
         "type": "object",
         "description": "Bean for carry calendar object's fields",
         "properties": {
@@ -792,7 +792,7 @@
           }
         }
       },
-      "CalendarUpdate": {
+      "DavCalendarUpdate": {
         "type": "object",
         "properties": {
           "displayName": {
@@ -817,7 +817,7 @@
         },
         "description": "Bean for carry calendar's updateable fields"
       },
-      "CalObjectNew": {
+      "DavCalObjectNew": {
         "required": [
           "href"
         ],
@@ -834,7 +834,7 @@
         },
         "description": "Bean for carry new calendar object's fields"
       },
-      "CalObjectChanged": {
+      "DavCalObjectChanged": {
         "type": "object",
         "description": "Bean for carry fields of calendar object that have been changed",
         "properties": {
@@ -857,7 +857,7 @@
           "etag"
         ]
       },
-      "CalObjectsChanges": {
+      "DavCalObjectsChanges": {
         "required": [
           "deleted",
           "inserted",
@@ -874,27 +874,27 @@
             "type": "array",
             "description": "Items that have been inserted",
             "items": {
-              "$ref": "#/components/schemas/CalObjectChanged"
+              "$ref": "#/components/schemas/DavCalObjectChanged"
             }
           },
           "updated": {
             "type": "array",
             "description": "Items that have been updated",
             "items": {
-              "$ref": "#/components/schemas/CalObjectChanged"
+              "$ref": "#/components/schemas/DavCalObjectChanged"
             }
           },
           "deleted": {
             "type": "array",
             "description": "Items that have been deleted",
             "items": {
-              "$ref": "#/components/schemas/CalObjectChanged"
+              "$ref": "#/components/schemas/DavCalObjectChanged"
             }
           }
         },
         "description": "Bean for carry calendar object collection changes"
       },
-      "SyncFolder": {
+      "EasSyncFolder": {
         "type": "object",
         "description": "Bean for carry calendar’s fields",
         "properties": {
@@ -937,7 +937,7 @@
           "ownerId"
         ]
       },
-      "SyncEventStat": {
+      "EasSyncEventStat": {
         "type": "object",
         "description": "Bean for carry event's stat fields",
         "properties": {
@@ -955,7 +955,7 @@
           "etag"
         ]
       },
-      "SyncEvent": {
+      "EasSyncEvent": {
         "type": "object",
         "description": "Bean for carry event's fields",
         "properties": {
@@ -1030,7 +1030,7 @@
             "type": "array",
             "description": "Appointment attendees",
             "items": {
-              "$ref": "#/components/schemas/SyncEventDataAttendee"
+              "$ref": "#/components/schemas/EasSyncEventDataAttendee"
             }
           }
         },
@@ -1047,25 +1047,25 @@
           "attendees"
         ]
       },
-      "SyncEventUpdate": {
+      "EasSyncEventUpdate": {
         "required": [
           "data"
         ],
         "type": "object",
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/SyncEventData"
+            "$ref": "#/components/schemas/EasSyncEventData"
           },
           "exceptions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SyncEventData"
+              "$ref": "#/components/schemas/EasSyncEventData"
             }
           }
         },
         "description": "Bean for carry event's updateable fields"
       },
-      "SyncEventData": {
+      "EasSyncEventData": {
         "required": [
           "allDay",
           "attendees",
@@ -1141,13 +1141,13 @@
             "type": "array",
             "description": "Appointment attendees",
             "items": {
-              "$ref": "#/components/schemas/SyncEventDataAttendee"
+              "$ref": "#/components/schemas/EasSyncEventDataAttendee"
             }
           }
         },
         "description": "Bean for carry event's updateable fields"
       },
-      "SyncEventDataAttendee": {
+      "EasSyncEventDataAttendee": {
         "required": [
           "address",
           "role",
@@ -1189,16 +1189,10 @@
   },
   "tags": [
     {
-      "name": "dav-calendars"
+      "name": "dav"
     },
     {
-      "name": "dav-calobjects"
-    },
-    {
-      "name": "eas-folders"
-    },
-    {
-      "name": "eas-messages"
+      "name": "eas"
     }
   ]
 }

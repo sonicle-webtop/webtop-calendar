@@ -17,9 +17,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Bean for carry calendar&#39;s fields
  **/
 @ApiModel(description = "Bean for carry calendar's fields")
-@JsonTypeName("Calendar")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiCalendar   {
+@JsonTypeName("DavCalendar")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiDavCalendar   {
   private @Valid String id;
   private @Valid String uid;
   private @Valid String displayName;
@@ -33,7 +33,7 @@ public class ApiCalendar   {
   /**
    * Calendar ID (internal)
    **/
-  public ApiCalendar id(String id) {
+  public ApiDavCalendar id(String id) {
     this.id = id;
     return this;
   }
@@ -54,7 +54,7 @@ public class ApiCalendar   {
   /**
    * Calendar UID (public)
    **/
-  public ApiCalendar uid(String uid) {
+  public ApiDavCalendar uid(String uid) {
     this.uid = uid;
     return this;
   }
@@ -75,7 +75,7 @@ public class ApiCalendar   {
   /**
    * Display name
    **/
-  public ApiCalendar displayName(String displayName) {
+  public ApiDavCalendar displayName(String displayName) {
     this.displayName = displayName;
     return this;
   }
@@ -96,7 +96,7 @@ public class ApiCalendar   {
   /**
    * Description
    **/
-  public ApiCalendar description(String description) {
+  public ApiDavCalendar description(String description) {
     this.description = description;
     return this;
   }
@@ -116,7 +116,7 @@ public class ApiCalendar   {
   /**
    * Assigned color
    **/
-  public ApiCalendar color(String color) {
+  public ApiDavCalendar color(String color) {
     this.color = color;
     return this;
   }
@@ -136,7 +136,7 @@ public class ApiCalendar   {
   /**
    * Current sync token
    **/
-  public ApiCalendar syncToken(String syncToken) {
+  public ApiDavCalendar syncToken(String syncToken) {
     this.syncToken = syncToken;
     return this;
   }
@@ -157,7 +157,7 @@ public class ApiCalendar   {
   /**
    * ACL info for folder itself
    **/
-  public ApiCalendar aclFol(String aclFol) {
+  public ApiDavCalendar aclFol(String aclFol) {
     this.aclFol = aclFol;
     return this;
   }
@@ -178,7 +178,7 @@ public class ApiCalendar   {
   /**
    * ACL info for folder elements
    **/
-  public ApiCalendar aclEle(String aclEle) {
+  public ApiDavCalendar aclEle(String aclEle) {
     this.aclEle = aclEle;
     return this;
   }
@@ -199,7 +199,7 @@ public class ApiCalendar   {
   /**
    * The owner profile&#39;s username
    **/
-  public ApiCalendar ownerUsername(String ownerUsername) {
+  public ApiDavCalendar ownerUsername(String ownerUsername) {
     this.ownerUsername = ownerUsername;
     return this;
   }
@@ -226,16 +226,16 @@ public class ApiCalendar   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiCalendar calendar = (ApiCalendar) o;
-    return Objects.equals(this.id, calendar.id) &&
-        Objects.equals(this.uid, calendar.uid) &&
-        Objects.equals(this.displayName, calendar.displayName) &&
-        Objects.equals(this.description, calendar.description) &&
-        Objects.equals(this.color, calendar.color) &&
-        Objects.equals(this.syncToken, calendar.syncToken) &&
-        Objects.equals(this.aclFol, calendar.aclFol) &&
-        Objects.equals(this.aclEle, calendar.aclEle) &&
-        Objects.equals(this.ownerUsername, calendar.ownerUsername);
+    ApiDavCalendar davCalendar = (ApiDavCalendar) o;
+    return Objects.equals(this.id, davCalendar.id) &&
+        Objects.equals(this.uid, davCalendar.uid) &&
+        Objects.equals(this.displayName, davCalendar.displayName) &&
+        Objects.equals(this.description, davCalendar.description) &&
+        Objects.equals(this.color, davCalendar.color) &&
+        Objects.equals(this.syncToken, davCalendar.syncToken) &&
+        Objects.equals(this.aclFol, davCalendar.aclFol) &&
+        Objects.equals(this.aclEle, davCalendar.aclEle) &&
+        Objects.equals(this.ownerUsername, davCalendar.ownerUsername);
   }
 
   @Override
@@ -246,7 +246,7 @@ public class ApiCalendar   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiCalendar {\n");
+    sb.append("class ApiDavCalendar {\n");
     
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    uid: ").append(toIndentedString(uid)).append("\n");

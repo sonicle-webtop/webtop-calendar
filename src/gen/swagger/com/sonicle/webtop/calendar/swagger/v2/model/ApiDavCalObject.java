@@ -17,9 +17,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  * Bean for carry calendar object&#39;s fields
  **/
 @ApiModel(description = "Bean for carry calendar object's fields")
-@JsonTypeName("CalObject")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T11:12:32.162+02:00[Europe/Berlin]")
-public class ApiCalObject   {
+@JsonTypeName("DavCalObject")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-10-21T12:09:53.556+02:00[Europe/Berlin]")
+public class ApiDavCalObject   {
   private @Valid String id;
   private @Valid String uid;
   private @Valid String href;
@@ -31,7 +31,7 @@ public class ApiCalObject   {
   /**
    * CalObject ID (internal)
    **/
-  public ApiCalObject id(String id) {
+  public ApiDavCalObject id(String id) {
     this.id = id;
     return this;
   }
@@ -51,7 +51,7 @@ public class ApiCalObject   {
   /**
    * CalObject UID (public)
    **/
-  public ApiCalObject uid(String uid) {
+  public ApiDavCalObject uid(String uid) {
     this.uid = uid;
     return this;
   }
@@ -71,7 +71,7 @@ public class ApiCalObject   {
   /**
    * Reference URI
    **/
-  public ApiCalObject href(String href) {
+  public ApiDavCalObject href(String href) {
     this.href = href;
     return this;
   }
@@ -91,7 +91,7 @@ public class ApiCalObject   {
   /**
    * Last modification time (unix timestamp)
    **/
-  public ApiCalObject lastModified(Long lastModified) {
+  public ApiDavCalObject lastModified(Long lastModified) {
     this.lastModified = lastModified;
     return this;
   }
@@ -111,7 +111,7 @@ public class ApiCalObject   {
   /**
    * Revision tag
    **/
-  public ApiCalObject etag(String etag) {
+  public ApiDavCalObject etag(String etag) {
     this.etag = etag;
     return this;
   }
@@ -131,7 +131,7 @@ public class ApiCalObject   {
   /**
    * Size (in bytes) of calendar data
    **/
-  public ApiCalObject size(Integer size) {
+  public ApiDavCalObject size(Integer size) {
     this.size = size;
     return this;
   }
@@ -151,7 +151,7 @@ public class ApiCalObject   {
   /**
    * Calendar data (iCalendar format)
    **/
-  public ApiCalObject icalendar(String icalendar) {
+  public ApiDavCalObject icalendar(String icalendar) {
     this.icalendar = icalendar;
     return this;
   }
@@ -177,14 +177,14 @@ public class ApiCalObject   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiCalObject calObject = (ApiCalObject) o;
-    return Objects.equals(this.id, calObject.id) &&
-        Objects.equals(this.uid, calObject.uid) &&
-        Objects.equals(this.href, calObject.href) &&
-        Objects.equals(this.lastModified, calObject.lastModified) &&
-        Objects.equals(this.etag, calObject.etag) &&
-        Objects.equals(this.size, calObject.size) &&
-        Objects.equals(this.icalendar, calObject.icalendar);
+    ApiDavCalObject davCalObject = (ApiDavCalObject) o;
+    return Objects.equals(this.id, davCalObject.id) &&
+        Objects.equals(this.uid, davCalObject.uid) &&
+        Objects.equals(this.href, davCalObject.href) &&
+        Objects.equals(this.lastModified, davCalObject.lastModified) &&
+        Objects.equals(this.etag, davCalObject.etag) &&
+        Objects.equals(this.size, davCalObject.size) &&
+        Objects.equals(this.icalendar, davCalObject.icalendar);
   }
 
   @Override
@@ -195,7 +195,7 @@ public class ApiCalObject   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiCalObject {\n");
+    sb.append("class ApiDavCalObject {\n");
     
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    uid: ").append(toIndentedString(uid)).append("\n");

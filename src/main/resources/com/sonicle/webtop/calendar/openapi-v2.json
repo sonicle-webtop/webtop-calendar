@@ -191,7 +191,7 @@
             "name": "hrefs",
             "in": "query",
             "style": "form",
-            "explode": false,
+            "explode": true,
             "schema": {
               "type": "array",
               "items": {

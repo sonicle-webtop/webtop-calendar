@@ -37,15 +37,15 @@ package com.sonicle.webtop.calendar.bol;
  * @author malbinola
  */
 public class VEventHrefSync {
-	private Integer eventId;
+	private String eventId;
 	private String href;
 	private String etag;
 
-	public Integer getEventId() {
+	public String getEventId() {
 		return eventId;
 	}
 
-	public void setEventId(Integer eventId) {
+	public void setEventId(String eventId) {
 		this.eventId = eventId;
 	}
 

@@ -39,7 +39,7 @@ Ext.define('Sonicle.webtop.calendar.model.PletEvents', {
 	idProperty: 'id',
 	fields: [
 		WTF.roField('id', 'string'),
-		WTF.roField('eventId', 'int'),
+		WTF.roField('eventId', 'string'),
 		WTF.roField('calendarId', 'int'),
 		WTF.roField('calendarName', 'string'),
 		WTF.roField('calendarColor', 'string'),

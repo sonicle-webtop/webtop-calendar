@@ -52,7 +52,7 @@ public class EventCustomValueDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
-		public List<OEventCustomValue> selectByEvent(Connection con, int eventId) throws DAOException {
+		public List<OEventCustomValue> selectByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -87,7 +87,7 @@ public class EventCustomValueDAO extends BaseDAO {
 				EVENTS_CUSTOM_VALUES.DATE_VALUE,
 				EVENTS_CUSTOM_VALUES.TEXT_VALUE
 			)
-			.values((Integer)null, null, null, null, null, null, null)
+			.values((String)null, null, null, null, null, null, null)
 		);
 		for (OEventCustomValue value : values) {
 			batch.bind(
@@ -103,7 +103,7 @@ public class EventCustomValueDAO extends BaseDAO {
 		return batch.execute();
 	}
 	
-	public int deleteByEventFields(Connection con, int eventId, Collection<String> customFieldIds) throws DAOException {
+	public int deleteByEventFields(Connection con, String eventId, Collection<String> customFieldIds) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_CUSTOM_VALUES)

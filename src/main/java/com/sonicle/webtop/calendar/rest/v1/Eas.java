@@ -178,7 +178,7 @@ public class Eas extends EasApi {
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			EventObjectWithBean evtobj = (EventObjectWithBean)manager.getEventObject(folderId, id, EventObjectOutputType.BEAN);
+			EventObjectWithBean evtobj = (EventObjectWithBean)manager.getEventObject(folderId, String.valueOf(id), EventObjectOutputType.BEAN);
 			if (evtobj != null) {
 				return respOk(createSyncEvent(evtobj));
 			} else {
@@ -226,14 +226,14 @@ public class Eas extends EasApi {
 		}
 		
 		try {
-			Event event = manager.getEvent(id, false, false);
+			Event event = manager.getEvent(String.valueOf(id), false, false);
 			if (event == null) return respErrorNotFound();
 			
 			mergeEvent(event, body.getData());
 			manager.updateEvent(event, false, false, false, true);
 			
 			ArrayList<EventObject> evtobjs = new ArrayList<>();
-			EventObject evtobj = manager.getEventObject(folderId, id, EventObjectOutputType.STAT);
+			EventObject evtobj = manager.getEventObject(folderId, String.valueOf(id), EventObjectOutputType.STAT);
 			if (evtobj == null) return respErrorNotFound();
 			evtobjs.add(evtobj);
 			
@@ -271,7 +271,7 @@ public class Eas extends EasApi {
 		}
 		
 		try {
-			manager.deleteEvent(id, true);
+			manager.deleteEvent(String.valueOf(id), true);
 			return respOkNoContent();
 			
 		} catch (WTNotFoundException ex) {
@@ -312,7 +312,7 @@ public class Eas extends EasApi {
 	
 	private SyncEventStat createSyncEventStat(EventObject evtobj) {
 		return new SyncEventStat()
-				.id(evtobj.getEventId())
+				.id(Integer.valueOf(evtobj.getEventId()))
 				.etag(buildEtag(evtobj.getRevisionTimestamp()));
 	}
 	
@@ -334,7 +334,7 @@ public class Eas extends EasApi {
 		
 		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.getEventBoundary(event);
 		return new SyncEvent()
-				.id(evtobj.getEventId())
+				.id(Integer.valueOf(evtobj.getEventId()))
 				.etag(buildEtag(evtobj.getRevisionTimestamp()))
 				.start(DateTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.start))
 				.end(DateTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.end))

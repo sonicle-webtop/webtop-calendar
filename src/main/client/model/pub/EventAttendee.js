@@ -37,7 +37,6 @@ Ext.define('Sonicle.webtop.calendar.model.pub.EventAttendee', {
 	//identifier: 'negativestring',
 	//idProperty: 'attendeeId',
 	fields: [
-		WTF.fkField('int'),
 		//WTF.roField('attendeeId', 'string'),
 		WTF.roField('name', 'string'),
 		WTF.roField('type', 'string'),

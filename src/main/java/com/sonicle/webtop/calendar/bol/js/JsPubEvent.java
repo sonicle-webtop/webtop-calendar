@@ -55,7 +55,7 @@ public class JsPubEvent {
 	
 	public JsPubEvent() {}
 	
-	public static class Attendee extends JsFkModel {
+	public static class Attendee {
 		public String name;
 		public String type;
 		public String role;
@@ -63,8 +63,7 @@ public class JsPubEvent {
 		
 		public Attendee() {}
 		
-		public Attendee(int fk, EventAttendee attendee) {
-			super(fk);
+		public Attendee(EventAttendee attendee) {
 			//TODO: completare il campo email con l'indirizzo di posta
 			name = attendee.getRecipient();
 			type = EnumUtils.toSerializedName(attendee.getRecipientType());

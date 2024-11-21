@@ -41,7 +41,7 @@ import org.joda.time.DateTimeZone;
  * @author malbinola
  */
 public class VExpEvent {
-	protected Integer eventId;
+	protected String eventId;
 	protected Integer calendarId;
 	protected Integer recurrenceId;
 	protected DateTime startDate;
@@ -53,13 +53,13 @@ public class VExpEvent {
 	protected DateTime remindedOn;
 	protected String calendarDomainId;
 	protected String calendarUserId;
-	protected Integer seriesEventId;
+	protected String seriesEventId;
 
-	public Integer getEventId() {
+	public String getEventId() {
 		return eventId;
 	}
 
-	public void setEventId(Integer eventId) {
+	public void setEventId(String eventId) {
 		this.eventId = eventId;
 	}
 
@@ -151,11 +151,11 @@ public class VExpEvent {
 		this.calendarUserId = calendarUserId;
 	}
 
-	public Integer getSeriesEventId() {
+	public String getSeriesEventId() {
 		return seriesEventId;
 	}
 
-	public void setSeriesEventId(Integer seriesEventId) {
+	public void setSeriesEventId(String seriesEventId) {
 		this.seriesEventId = seriesEventId;
 	}
 	

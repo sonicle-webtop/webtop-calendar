@@ -685,14 +685,14 @@ public class Service extends BaseService {
 			} else if(crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				item = manager.addCalendar(JsCalendar.createCalendar(pl.data));
+				item = manager.addCalendar(pl.data.createCalendarForInsert());
 				foldersTreeCache.init(AbstractFolderTreeCache.Target.FOLDERS);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.UPDATE)) {
 				Payload<MapItem, JsCalendar> pl = ServletUtils.getPayload(request, JsCalendar.class);
 				
-				manager.updateCalendar(JsCalendar.createCalendar(pl.data));
+				manager.updateCalendar(pl.data.calendarId, pl.data.createCalendarForUpdate());
 				foldersTreeCache.init(AbstractFolderTreeCache.Target.FOLDERS);
 				new JsonResult().printTo(out);
 				
@@ -1156,7 +1156,7 @@ public class Service extends BaseService {
 			String attachmentId = ServletUtils.getStringParameter(request, "attachmentId", null);
 			
 			if (!StringUtils.isBlank(attachmentId)) {
-				Integer eventId = ServletUtils.getIntParameter(request, "eventId", true);
+				String eventId = ServletUtils.getStringParameter(request, "eventId", true);
 				
 				EventAttachmentWithBytes attch = manager.getEventAttachment(eventId, attachmentId);
 				InputStream is = null;
@@ -1191,7 +1191,7 @@ public class Service extends BaseService {
 		
 		try {
 			ServletUtils.StringArray tags = ServletUtils.getObjectParameter(request, "tags", ServletUtils.StringArray.class, true);
-			Integer eventId = ServletUtils.getIntParameter(request, "id", false);
+			String eventId = ServletUtils.getStringParameter(request, "id", false);
 			
 			Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, tags);
 			Map<String, CustomFieldValue> cvalues = (eventId != null) ? manager.getEventCustomValues(eventId) : null;
@@ -1246,7 +1246,7 @@ public class Service extends BaseService {
 				UpdateTagsOperation op = ServletUtils.getEnumParameter(request, "op", true, UpdateTagsOperation.class);
 				StringArray tags = ServletUtils.getObjectParameter(request, "tags", StringArray.class, true);
 				
-				LinkedHashSet<Integer> ids = new LinkedHashSet<>();
+				LinkedHashSet<String> ids = new LinkedHashSet<>();
 				for (String key : keys) {
 					ids.add(new EventKey(key).eventId);
 				}
@@ -1890,7 +1890,7 @@ public class Service extends BaseService {
 		if (origin instanceof MyCalendarFSOrigin) {
 			Calendar cal = manager.getCalendar(calendarId);
 			cal.setColor(color);
-			manager.updateCalendar(cal);
+			manager.updateCalendar(cal.getCalendarId(), cal);
 			foldersTreeCache.init(AbstractFolderTreeCache.Target.FOLDERS);
 			
 		} else if (origin instanceof CalendarFSOrigin) {
@@ -1906,7 +1906,7 @@ public class Service extends BaseService {
 		if (origin instanceof MyCalendarFSOrigin) {
 			Calendar cal = manager.getCalendar(calendarId);
 			cal.setSync(sync);
-			manager.updateCalendar(cal);
+			manager.updateCalendar(cal.getCalendarId(), cal);
 			foldersTreeCache.init(AbstractFolderTreeCache.Target.FOLDERS);
 			
 		} else if (origin instanceof CalendarFSOrigin) {

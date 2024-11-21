@@ -178,7 +178,7 @@ public class Eas extends EasApi {
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			EventObjectWithBean evtobj = (EventObjectWithBean)manager.getEventObject(Integer.valueOf(folderId), Integer.valueOf(id), EventObjectOutputType.BEAN);
+			EventObjectWithBean evtobj = (EventObjectWithBean)manager.getEventObject(Integer.valueOf(folderId), id, EventObjectOutputType.BEAN);
 			if (evtobj != null) {
 				return respOk(createSyncEvent(evtobj));
 			} else {
@@ -226,14 +226,14 @@ public class Eas extends EasApi {
 		}
 		
 		try {
-			Event event = manager.getEvent(Integer.valueOf(id), false, false);
+			Event event = manager.getEvent(id, false, false);
 			if (event == null) return respErrorNotFound();
 			
 			mergeEvent(event, body.getData());
 			manager.updateEvent(event, false, false, false, true);
 			
 			ArrayList<EventObject> evtobjs = new ArrayList<>();
-			EventObject evtobj = manager.getEventObject(Integer.valueOf(folderId), Integer.valueOf(id), EventObjectOutputType.STAT);
+			EventObject evtobj = manager.getEventObject(Integer.valueOf(folderId), id, EventObjectOutputType.STAT);
 			if (evtobj == null) return respErrorNotFound();
 			evtobjs.add(evtobj);
 			
@@ -271,7 +271,7 @@ public class Eas extends EasApi {
 		}
 		
 		try {
-			manager.deleteEvent(Integer.valueOf(id), true);
+			manager.deleteEvent(id, true);
 			return respOkNoContent();
 			
 		} catch (WTNotFoundException ex) {

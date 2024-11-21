@@ -41,7 +41,7 @@ import org.joda.time.DateTimeZone;
  * @author malbinola
  */
 public class VEventFootprint {
-	protected Integer eventId;
+	protected String eventId;
 	protected String publicId;
 	protected Integer calendarId;
 	protected Integer recurrenceId;
@@ -52,11 +52,11 @@ public class VEventFootprint {
 	protected String calendarDomainId;
 	protected String calendarUserId;
 	
-	public Integer getEventId() {
+	public String getEventId() {
 		return eventId;
 	}
 
-	public void setEventId(Integer eventId) {
+	public void setEventId(String eventId) {
 		this.eventId = eventId;
 	}
 

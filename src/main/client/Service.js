@@ -379,7 +379,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							showOnOver: true,
 							items: [
 								{
-									iconCls: 'fas fa-ellipsis-v',
+									iconCls: 'wt-glyph-menu-kebab',
 									handler: function(v, ridx, cidx, itm, e, node, row) {
 										if (node.isOrigin()) {
 											Sonicle.Utils.showContextMenu(e, me.getRef('cxmTreeOrigin'), {node: node});

@@ -200,7 +200,7 @@ public class CalDav extends CaldavApi {
 			if (body.getUpdatedFields().contains("color")) {
 				calendar.setColor(body.getColor());
 			}
-			manager.updateCalendar(calendar);
+			manager.updateCalendar(calendarId, calendar);
 			return respOk();
 			
 		} catch (WTNotFoundException ex) {
@@ -424,7 +424,7 @@ public class CalDav extends CaldavApi {
 	
 	private CalObject createCalObject(EventObjectWithICalendar calObject) {
 		return new CalObject()
-				.id(calObject.getEventId())
+				.id(Integer.valueOf(calObject.getEventId()))
 				.uid(calObject.getPublicUid())
 				.href(calObject.getHref())
 				.lastModified(calObject.getRevisionTimestamp().withZone(DateTimeZone.UTC).getMillis()/1000)
@@ -439,7 +439,7 @@ public class CalDav extends CaldavApi {
 	
 	private CalObjectChanged createCalObjectChanged(EventObjectChanged calObject) {
 		return new CalObjectChanged()
-				.id(calObject.getEventId())
+				.id(Integer.valueOf(calObject.getEventId()))
 				.href(calObject.getHref())
 				.etag(buildEtag(calObject.getRevisionTimestamp()));
 	}

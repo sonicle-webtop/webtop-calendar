@@ -91,7 +91,7 @@ public class EventDAO extends BaseDAO {
 		return nextID;
 	}
 	
-	public Integer selectCalendarId(Connection con, int eventId) throws DAOException {
+	public Integer selectCalendarId(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -104,7 +104,7 @@ public class EventDAO extends BaseDAO {
 			.fetchOne(0, Integer.class);
 	}
 	
-	public Map<Integer, Integer> selectCalendarsByIds(Connection con, Collection<Integer> eventIds) throws DAOException {
+	public Map<String, Integer> selectCalendarsByIds(Connection con, Collection<String> eventIds) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -118,7 +118,7 @@ public class EventDAO extends BaseDAO {
 			.fetchMap(EVENTS.EVENT_ID, EVENTS.CALENDAR_ID);
 	}
 	
-	public Integer selectRecurrenceId(Connection con, int eventId) throws DAOException {
+	public Integer selectRecurrenceId(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -131,7 +131,7 @@ public class EventDAO extends BaseDAO {
 			.fetchOne(0, Integer.class);
 	}
 	
-	public OEvent selectById(Connection con, int eventId) throws DAOException {
+	public OEvent selectById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -142,7 +142,7 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public OEvent selectAliveById(Connection con, int eventId) throws DAOException {
+	public OEvent selectAliveById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -157,7 +157,7 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEvent.class);
 	}
 	
-	public List<Integer> selectAliveIdsByPublicUid(Connection con, String publicUid) throws DAOException {
+	public List<String> selectAliveIdsByPublicUid(Connection con, String publicUid) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(EVENTS.EVENT_ID)
@@ -173,10 +173,10 @@ public class EventDAO extends BaseDAO {
 				EVENTS.CREATION_TIMESTAMP.asc(),
 				EVENTS.EVENT_ID.asc()
 			)
-			.fetchInto(Integer.class);
+			.fetchInto(String.class);
 	}
 	
-	public List<Integer> selectAliveIdsByCalendarsPublicUid(Connection con, Collection<Integer> calendarIds, String publicUid) throws DAOException {
+	public List<String> selectAliveIdsByCalendarsPublicUid(Connection con, Collection<Integer> calendarIds, String publicUid) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(EVENTS.EVENT_ID)
@@ -193,10 +193,10 @@ public class EventDAO extends BaseDAO {
 				EVENTS.CREATION_TIMESTAMP.asc(),
 				EVENTS.EVENT_ID.asc()
 			)
-			.fetchInto(Integer.class);
+			.fetchInto(String.class);
 	}
 	
-	public Integer selectAliveSeriesEventIdById(Connection con, int eventId) throws DAOException {
+	public String selectAliveSeriesEventIdById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		return dsl
@@ -210,10 +210,10 @@ public class EventDAO extends BaseDAO {
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
-			).fetchOneInto(Integer.class);
+			).fetchOneInto(String.class);
 	}
 	
-	public List<Integer> selectAliveIdsByCalendarHrefs(Connection con, int calendarId, String href) throws DAOException {
+	public List<String> selectAliveIdsByCalendarHrefs(Connection con, int calendarId, String href) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -232,10 +232,10 @@ public class EventDAO extends BaseDAO {
 			.orderBy(
 				EVENTS.EVENT_ID.asc()
 			)
-			.fetchInto(Integer.class);
+			.fetchInto(String.class);
 	}
 	
-	public Map<String, List<Integer>> selectHrefsByByCalendar(Connection con, int calendarId) throws DAOException {
+	public Map<String, List<String>> selectHrefsByByCalendar(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -351,7 +351,7 @@ public class EventDAO extends BaseDAO {
 		}
 	}
 	
-	public int updateCalendar(Connection con, int eventId, int calendarId, DateTime revisionTimestamp) throws DAOException {
+	public int updateCalendar(Connection con, String eventId, int calendarId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -364,7 +364,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateRevision(Connection con, int eventId, DateTime revisionTimestamp) throws DAOException {
+	public int updateRevision(Connection con, String eventId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -375,7 +375,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateRevisionStatus(Connection con, int eventId, String revisionStatus, DateTime revisionTimestamp) throws DAOException {
+	public int updateRevisionStatus(Connection con, String eventId, String revisionStatus, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -387,7 +387,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateRemindedOn(Connection con, int eventId, DateTime remindedOn) throws DAOException {
+	public int updateRemindedOn(Connection con, String eventId, DateTime remindedOn) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -398,7 +398,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateRemindedOnIfNull(Connection con, int eventId, DateTime remindedOn) throws DAOException {
+	public int updateRemindedOnIfNull(Connection con, String eventId, DateTime remindedOn) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -436,7 +436,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteById(Connection con, int eventId) throws DAOException {
+	public int deleteById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS)
@@ -456,7 +456,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int logicDeleteById(Connection con, int eventId, DateTime revisionTimestamp) throws DAOException {
+	public int logicDeleteById(Connection con, String eventId, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
@@ -480,7 +480,7 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteBrokenOrphansByEventId(Connection con, int eventId) throws DAOException {
+	public int deleteBrokenOrphansByEventId(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS)
@@ -498,13 +498,13 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public OEventInfo selectOEventInfoById(Connection con, int eventId) throws DAOException {
+	public OEventInfo selectOEventInfoById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
-		Field<Integer> seriesEventId = DSL
+		Field<String> seriesEventId = DSL
 			.select(eve1.EVENT_ID)
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
@@ -536,7 +536,7 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEventInfo.class);
 	}
 	
-	public VVEvent viewById(Connection con, int eventId) throws DAOException {
+	public VVEvent viewById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		// New field: tags list
@@ -550,7 +550,7 @@ public class EventDAO extends BaseDAO {
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
-		Field<Integer> seriesEventId = DSL
+		Field<String> seriesEventId = DSL
 			.select(eve1.EVENT_ID)
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
@@ -1175,7 +1175,7 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VExpEvent.class);
 	}
 	
-	public VEventObject viewCalObjectById(Connection con, int calendarId, int eventId) throws DAOException {
+	public VEventObject viewCalObjectById(Connection con, int calendarId, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		// New field: attendees count

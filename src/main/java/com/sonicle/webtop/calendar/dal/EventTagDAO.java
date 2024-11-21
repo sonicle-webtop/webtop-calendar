@@ -55,7 +55,7 @@ public class EventTagDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
-	public Set<String> selectTagsByEvent(Connection con, int eventId) throws DAOException {
+	public Set<String> selectTagsByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -71,7 +71,7 @@ public class EventTagDAO extends BaseDAO {
 			.fetchSet(EVENTS_TAGS.TAG_ID);
 	}
 	
-	public Map<Integer, List<String>> selectTagsByEvent(Connection con, Collection<Integer> eventIds) throws DAOException {
+	public Map<String, List<String>> selectTagsByEvent(Connection con, Collection<String> eventIds) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -88,7 +88,7 @@ public class EventTagDAO extends BaseDAO {
 			.fetchGroups(EVENTS_TAGS.EVENT_ID, EVENTS_TAGS.TAG_ID);
 	}
 	
-	public int insert(Connection con, int eventId, String tagId) throws DAOException {
+	public int insert(Connection con, String eventId, String tagId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.insertInto(EVENTS_TAGS)
@@ -125,7 +125,7 @@ public class EventTagDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int insertByCalendarsEvents(Connection con, Collection<Integer> calendarIds, Collection<Integer> eventIds, String tagId) throws DAOException {
+	public int insertByCalendarsEvents(Connection con, Collection<Integer> calendarIds, Collection<String> eventIds, String tagId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		EventsTags et1 = EVENTS_TAGS.as("et1");
 		return dsl
@@ -154,7 +154,7 @@ public class EventTagDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int delete(Connection con, int eventId, String tagId) throws DAOException {
+	public int delete(Connection con, String eventId, String tagId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_TAGS)
@@ -165,7 +165,7 @@ public class EventTagDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByTask(Connection con, int eventId) throws DAOException {
+	public int deleteByTask(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_TAGS)
@@ -212,7 +212,7 @@ public class EventTagDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByCalendarsEvents(Connection con, Collection<Integer> calendarIds, Collection<Integer> eventIds) throws DAOException {
+	public int deleteByCalendarsEvents(Connection con, Collection<Integer> calendarIds, Collection<String> eventIds) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_TAGS)
@@ -231,7 +231,7 @@ public class EventTagDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByCalendarsEventsTags(Connection con, Collection<Integer> calendarIds, Collection<Integer> eventIds, Collection<String> tagIds) throws DAOException {
+	public int deleteByCalendarsEventsTags(Connection con, Collection<Integer> calendarIds, Collection<String> eventIds, Collection<String> tagIds) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_TAGS)

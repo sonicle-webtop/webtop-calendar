@@ -39,7 +39,7 @@ Ext.define('Sonicle.webtop.calendar.model.pub.Event', {
 	
 	idProperty: 'id',
 	fields: [
-		WTF.roField('id', 'int'),
+		WTF.roField('id', 'string'),
 		WTF.roField('title', 'string'),
 		WTF.roField('description', 'string'),
 		WTF.roField('when', 'string'),

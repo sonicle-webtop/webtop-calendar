@@ -200,7 +200,7 @@ public class CalDav extends CaldavApi {
 			if (body.getUpdatedFields().contains("color")) {
 				calendar.setColor(body.getColor());
 			}
-			manager.updateCalendar(calendar);
+			manager.updateCalendar(calendarId, calendar);
 			return respOk();
 			
 		} catch (WTNotFoundException ex) {

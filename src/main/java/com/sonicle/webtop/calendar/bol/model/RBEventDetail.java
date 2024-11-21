@@ -58,7 +58,7 @@ public class RBEventDetail {
 	public String calendarColor;
 	public Image calendarColorImage;
 	public String eventKey;
-	public Integer eventId;
+	public String eventId;
 	public Date startDate;
 	public Date endDate;
 	public String timezone;
@@ -163,7 +163,7 @@ public class RBEventDetail {
 		return eventKey;
 	}
 
-	public Integer getEventId() {
+	public String getEventId() {
 		return eventId;
 	}
 

@@ -39,16 +39,16 @@ import org.joda.time.DateTime;
  * @author malbinola
  */
 public class VEventObjectChange {
-	protected Integer eventId;
+	protected String eventId;
 	protected String href;
 	protected DateTime timestamp;
 	protected String operation;
 
-	public Integer getEventId() {
+	public String getEventId() {
 		return eventId;
 	}
 
-	public void setEventId(Integer eventId) {
+	public void setEventId(String eventId) {
 		this.eventId = eventId;
 	}
 

@@ -58,7 +58,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
-	public ORecurrenceBroken select(Connection con, Integer recurrenceId, Integer eventId, LocalDate eventDate) throws DAOException {
+	public ORecurrenceBroken select(Connection con, Integer recurrenceId, String eventId, LocalDate eventDate) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -85,7 +85,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 	}
 	*/
 	
-	public Set<LocalDate> selectDatesByEventRecurrence(Connection con, Integer eventId, Integer recurrenceId) throws DAOException {
+	public Set<LocalDate> selectDatesByEventRecurrence(Connection con, String eventId, Integer recurrenceId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -99,7 +99,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 			.fetchSet(RECURRENCES_BROKEN.EVENT_DATE);
 	}
 	
-	public Map<LocalDate, ORecurrenceBroken> selectByEventRecurrence(Connection con, Integer eventId, Integer recurrenceId) throws DAOException {
+	public Map<LocalDate, ORecurrenceBroken> selectByEventRecurrence(Connection con, String eventId, Integer recurrenceId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -130,7 +130,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByEvent(Connection con, int eventId) throws DAOException {
+	public int deleteByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(RECURRENCES_BROKEN)
@@ -140,7 +140,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByNewEvent(Connection con, int newEventId) throws DAOException {
+	public int deleteByNewEvent(Connection con, String newEventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(RECURRENCES_BROKEN)

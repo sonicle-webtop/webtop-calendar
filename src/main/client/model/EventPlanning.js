@@ -37,7 +37,7 @@ Ext.define('Sonicle.webtop.calendar.model.EventPlanning', {
 	idProperty: 'planningUid',
 	fields: [
 		WTF.field('planningUid', 'string', false),
-		WTF.field('eventId', 'int', true),
+		WTF.field('eventId', 'string', true),
 		WTF.field('email', 'string', false),
 		WTF.field('recipientType', 'string', false),
 		WTF.field('answer', 'string', false),

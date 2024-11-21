@@ -108,13 +108,13 @@ public class PublicService extends BasePublicService {
 							EventAttendee.ResponseStatus responseStatus = toResponseStatus(resp);
 							if (responseStatus == null) throw new WTException("Invalid resp [{}]", resp);
 							
-							Integer eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
+							String eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
 							if (eventId != null) {
 								event = adminCalMgr.updateEvent(eventId, aid, responseStatus);
 							}
 							
 						} else {
-							Integer eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
+							String eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
 							if (eventId != null) {
 								event = adminCalMgr.getEvent(eventId);
 							}
@@ -187,7 +187,7 @@ public class PublicService extends BasePublicService {
 	private ArrayList<JsPubEvent.Attendee> buildAttendees(int id, Event event) {
 		ArrayList<JsPubEvent.Attendee> attendees = new ArrayList<>();
 		for(EventAttendee attendee : event.getAttendees()) {
-			attendees.add(new JsPubEvent.Attendee(id, attendee));
+			attendees.add(new JsPubEvent.Attendee(attendee));
 		}
 		return attendees;
 	}

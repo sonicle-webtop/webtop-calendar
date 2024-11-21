@@ -54,8 +54,8 @@ import org.joda.time.format.DateTimeFormatter;
  */
 public class JsSchedulerEvent {
 	public String id;
-	public Integer eventId;
-	public Integer originalEventId;
+	public String eventId;
+	public String originalEventId;
 	public Integer calendarId;
 	public String calendarName;
 	public String startDate;

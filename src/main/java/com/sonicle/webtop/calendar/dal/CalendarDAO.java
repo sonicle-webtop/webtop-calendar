@@ -39,7 +39,7 @@ import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
-import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
@@ -297,7 +297,7 @@ public class CalendarDAO extends BaseDAO {
 			.fetchOneInto(Integer.class);
 	}
 	
-	public List<OCalendar> selectByProvider(Connection con, Collection<Calendar.Provider> providers) throws DAOException {
+	public List<OCalendar> selectByProvider(Connection con, Collection<CalendarBase.Provider> providers) throws DAOException {
 		List<String> providerList = providers.stream().map(prov -> EnumUtils.toSerializedName(prov)).collect(Collectors.toList());
 		DSLContext dsl = getDSL(con);
 		return dsl

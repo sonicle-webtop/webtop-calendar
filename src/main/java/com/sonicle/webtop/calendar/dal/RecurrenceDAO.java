@@ -73,7 +73,7 @@ public class RecurrenceDAO extends BaseDAO {
 			.fetchOneInto(ORecurrence.class);
 	}
 	
-	public ORecurrence selectByEvent(Connection con, Integer eventId) throws DAOException {
+	public ORecurrence selectByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -149,7 +149,7 @@ public class RecurrenceDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByEvent(Connection con, int eventId) throws DAOException {
+	public int deleteByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(RECURRENCES)

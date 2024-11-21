@@ -45,6 +45,7 @@ import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttachment;
@@ -64,6 +65,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import jakarta.mail.internet.InternetAddress;
+import net.sf.qualitycheck.Check;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -95,12 +97,14 @@ public class ManagerUtils {
 		return Base58.encode(StringUtils.leftPad(String.valueOf(calendarId), 10, "0").getBytes());
 	}
 	
-	public static String buildEventUid(int eventId, String internetName) {
+	public static String buildEventUid(String eventId, String internetName) {
+		Check.notEmpty(eventId, "eventId");
 		String id = IdentifierUtils.getUUIDTimeBased(true) + "." + String.valueOf(eventId);
 		return ICalendarUtils.buildUid(DigestUtils.md5Hex(id), internetName);
 	}
 	
-	public static String buildHref(int eventId, String internetName) {
+	public static String buildHref(String eventId, String internetName) {
+		Check.notEmpty(eventId, "eventId");
 		String id = Base58.encode(StringUtils.leftPad(String.valueOf(eventId), 10, "0").getBytes());
 		return buildHref(ICalendarUtils.buildUid(id, internetName));
 	}
@@ -137,9 +141,16 @@ public class ManagerUtils {
 		return (src == null) ? null : fillCalendar(new Calendar(), src);
 	}
 	
-	static Calendar fillCalendar(Calendar tgt, OCalendar src) {
+	static <T extends Calendar> T fillCalendar(T tgt, OCalendar src) {
 		if ((tgt != null) && (src != null)) {
 			tgt.setCalendarId(src.getCalendarId());
+		}
+		fillCalendar((CalendarBase)tgt, src);
+		return tgt;
+	}
+	
+	static <T extends CalendarBase> T fillCalendar(T tgt, OCalendar src) {
+		if ((tgt != null) && (src != null)) {
 			tgt.setDomainId(src.getDomainId());
 			tgt.setUserId(src.getUserId());
 			tgt.setBuiltIn(src.getBuiltIn());
@@ -160,13 +171,12 @@ public class ManagerUtils {
 		return tgt;
 	}
 	
-	static OCalendar createOCalendar(Calendar src) {
+	static OCalendar createOCalendar(CalendarBase src) {
 		return (src == null) ? null : fillOCalendar(new OCalendar(), src);
 	}
 	
-	static OCalendar fillOCalendar(OCalendar tgt, Calendar src) {
+	static OCalendar fillOCalendar(OCalendar tgt, CalendarBase src) {
 		if ((tgt != null) && (src != null)) {
-			tgt.setCalendarId(src.getCalendarId());
 			tgt.setDomainId(src.getDomainId());
 			tgt.setUserId(src.getUserId());
 			tgt.setBuiltIn(src.getBuiltIn());

@@ -42,7 +42,7 @@ public class VVEvent extends OEvent {
 	protected String tags;
 	protected String calendarDomainId;
 	protected String calendarUserId;
-	protected Integer seriesEventId;
+	protected String seriesEventId;
 	protected Integer attendeesCount;
 	protected Integer notifyableAttendeesCount;
 	
@@ -78,11 +78,11 @@ public class VVEvent extends OEvent {
 		return new UserProfileId(calendarDomainId, calendarUserId);
 	}
 	
-	public Integer getSeriesEventId() {
+	public String getSeriesEventId() {
 		return seriesEventId;
 	}
 
-	public void setSeriesEventId(Integer seriesEventId) {
+	public void setSeriesEventId(String seriesEventId) {
 		this.seriesEventId = seriesEventId;
 	}
 	

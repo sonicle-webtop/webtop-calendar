@@ -37,11 +37,11 @@ package com.sonicle.webtop.calendar.bol.js;
  * @author gbulfon
  */
 public class JsContact {
-	public Integer id;
+	public String id;
 	public String recipient;
 	public String source;
 	
-	public JsContact(Integer id, String recipient, String source) {
+	public JsContact(String id, String recipient, String source) {
 		this.id = id;
 		this.recipient = recipient;
 		this.source = source;

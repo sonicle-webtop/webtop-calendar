@@ -53,7 +53,7 @@ public class EventAttendeeDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
-	public List<OEventAttendee> selectByEvent(Connection con, Integer eventId) throws DAOException {
+	public List<OEventAttendee> selectByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -68,7 +68,7 @@ public class EventAttendeeDAO extends BaseDAO {
 			.fetchInto(OEventAttendee.class);
 	}
 	
-	public List<OEventAttendee> selectByEventNotify(Connection con, Integer eventId, boolean notify) throws DAOException {
+	public List<OEventAttendee> selectByEventNotify(Connection con, String eventId, boolean notify) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -108,7 +108,7 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateAttendeeResponseByIdEvent(Connection con, String responseStatus, String attendeeId, int eventId) throws DAOException {
+	public int updateAttendeeResponseByIdEvent(Connection con, String responseStatus, String attendeeId, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS_ATTENDEES)
@@ -139,7 +139,7 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByEvent(Connection con, int eventId) throws DAOException {
+	public int deleteByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_ATTENDEES)

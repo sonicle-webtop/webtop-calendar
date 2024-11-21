@@ -67,7 +67,7 @@ public class JsCalendarLkp {
 	}
 	
 	public JsCalendarLkp(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, boolean isDefault, int order) {
-		this(folder.getCalendar().applyPropSet(folderProps), isDefault);
+		this(Calendar.cloneAndSetProps(folder.getCalendar(), folderProps), isDefault);
 		this._profileDescription = origin.getDisplayName();
 		this._writable = folder.getPermissions().getItemsPermissions().has(FolderShare.ItemsRight.CREATE);
 		this._order = order;

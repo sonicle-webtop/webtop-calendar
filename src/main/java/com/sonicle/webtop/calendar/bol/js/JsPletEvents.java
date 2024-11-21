@@ -49,7 +49,7 @@ import org.joda.time.format.DateTimeFormatter;
  */
 public class JsPletEvents {
 	public String id;
-	public Integer eventId;
+	public String eventId;
 	public Integer calendarId;
 	public String calendarName;
     public String calendarColor;

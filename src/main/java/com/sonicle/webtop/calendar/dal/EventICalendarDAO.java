@@ -52,7 +52,7 @@ public class EventICalendarDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
-	public boolean hasICalendarById(Connection con, int eventId) throws DAOException {
+	public boolean hasICalendarById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.selectCount()
@@ -63,7 +63,7 @@ public class EventICalendarDAO extends BaseDAO {
 			.fetchOne(0, Integer.class) == 1;
 	}
 	
-	public OEventICalendar selectById(Connection con, int eventId) throws DAOException {
+	public OEventICalendar selectById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -83,7 +83,7 @@ public class EventICalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteById(Connection con, int eventId) throws DAOException {
+	public int deleteById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_ICALENDARS)

@@ -55,7 +55,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	idProperty: 'id',
 	fields: [
 		WTF.field('id', 'string', false),
-		WTF.field('eventId', 'int', true),
+		WTF.field('eventId', 'string', true),
 		WTF.field('calendarId', 'int', false),
 		WTF.field('recurrenceId', 'int', true),
 		WTF.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),

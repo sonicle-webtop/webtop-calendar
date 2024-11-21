@@ -38,6 +38,7 @@ import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import org.joda.time.DateTimeZone;
 
@@ -92,31 +93,32 @@ public class JsCalendar {
 		}
 	}
 	
-	public static Calendar createCalendar(JsCalendar js) {
-		Calendar cal = new Calendar();
-		cal.setCalendarId(js.calendarId);
-		cal.setDomainId(js.domainId);
-		cal.setUserId(js.userId);
-		cal.setBuiltIn(js.builtIn);
-		cal.setProvider(EnumUtils.forSerializedName(js.provider, Calendar.Provider.class));
-		cal.setName(js.name);
-		cal.setDescription(js.description);
-		cal.setColor(js.color);
-		cal.setSync(EnumUtils.forSerializedName(js.sync, Calendar.Sync.class));
-		cal.setIsPrivate(js.isPrivate);
-		cal.setDefaultBusy(js.busy);
-		cal.setDefaultReminder(js.reminder);
-		cal.setNotifyOnExtUpdate(js.notifyOnExtUpdate);
-		
-		if (cal.isProviderRemote()) {
+	public CalendarBase createCalendarForInsert() {
+		return createCalendarForUpdate();
+	}
+	
+	public CalendarBase createCalendarForUpdate() {
+		CalendarBase item = new CalendarBase();
+		item.setDomainId(domainId);
+		item.setUserId(userId);
+		item.setBuiltIn(builtIn);
+		item.setProvider(EnumUtils.forSerializedName(provider, CalendarBase.Provider.class));
+		item.setName(name);
+		item.setDescription(description);
+		item.setColor(color);
+		item.setSync(EnumUtils.forSerializedName(sync, CalendarBase.Sync.class));
+		item.setIsPrivate(isPrivate);
+		item.setDefaultBusy(busy);
+		item.setDefaultReminder(reminder);
+		item.setNotifyOnExtUpdate(notifyOnExtUpdate);
+		if (item.isProviderRemote()) {
 			CalendarRemoteParameters params = new CalendarRemoteParameters();
-			params.url = URIUtils.createURIQuietly(js.remoteUrl);
-			params.username = js.remoteUsername;
-			params.password = js.remotePassword;
-			cal.setParameters(LangUtils.serialize(params, CalendarRemoteParameters.class));
-			cal.setRemoteSyncFrequency(js.remoteSyncFrequency);
+			params.url = URIUtils.createURIQuietly(remoteUrl);
+			params.username = remoteUsername;
+			params.password = remotePassword;
+			item.setParameters(LangUtils.serialize(params, CalendarRemoteParameters.class));
+			item.setRemoteSyncFrequency(remoteSyncFrequency);
 		}
-		
-		return cal;
+		return item;
 	}
 }

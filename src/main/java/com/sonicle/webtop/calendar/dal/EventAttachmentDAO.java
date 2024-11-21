@@ -55,7 +55,7 @@ public class EventAttachmentDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
-	public List<OEventAttachment> selectByEvent(Connection con, int eventId) throws DAOException {
+	public List<OEventAttachment> selectByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
@@ -69,7 +69,7 @@ public class EventAttachmentDAO extends BaseDAO {
 			.fetchInto(OEventAttachment.class);
 	}
 	
-	public List<VEventAttachmentWithBytes> selectByEventWithBytes(Connection con, int eventId) throws DAOException {
+	public List<VEventAttachmentWithBytes> selectByEventWithBytes(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -94,7 +94,7 @@ public class EventAttachmentDAO extends BaseDAO {
 			.fetchInto(VEventAttachmentWithBytes.class);
 	}
 	
-	public OEventAttachment selectByIdEvent(Connection con, String attachmentId, int eventId) throws DAOException {
+	public OEventAttachment selectByIdEvent(Connection con, String attachmentId, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()

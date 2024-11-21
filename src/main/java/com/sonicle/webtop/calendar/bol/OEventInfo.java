@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import net.sf.qualitycheck.Check;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -40,9 +41,9 @@ import org.joda.time.DateTimeZone;
  * @author malbinola
  */
 public class OEventInfo {
-	protected Integer eventId;
+	protected String eventId;
 	protected Integer calendarId;
-	protected Integer linkedEventId;
+	protected String linkedEventId;
 	protected Integer recurrenceId;
 	protected DateTime startDate;
 	protected String timezone;
@@ -51,17 +52,17 @@ public class OEventInfo {
 	
 	public OEventInfo() {}
 	
-	public OEventInfo(int eventId, Integer linkedEventId, Integer recurrenceId) {
-		this.eventId = eventId;
+	public OEventInfo(String eventId, String linkedEventId, Integer recurrenceId) {
+		this.eventId = Check.notNull(eventId, "eventId");
 		this.linkedEventId = linkedEventId;
 		this.recurrenceId = recurrenceId;
 	}
 	
-	public Integer getEventId() {
+	public String getEventId() {
 		return eventId;
 	}
 	
-	public void setEventId(Integer eventId) {
+	public void setEventId(String eventId) {
 		this.eventId = eventId;
 	}
 	
@@ -73,11 +74,11 @@ public class OEventInfo {
 		this.calendarId = calendarId;
 	}
 	
-	public Integer getLinkedEventId() {
+	public String getLinkedEventId() {
 		return linkedEventId;
 	}
 	
-	public void setLinkedEventId(Integer linkedEventId) {
+	public void setLinkedEventId(String linkedEventId) {
 		this.linkedEventId = linkedEventId;
 	}
 

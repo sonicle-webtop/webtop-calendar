@@ -969,6 +969,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							},
 							hidden: true,
 							enableClickEvents: true,
+							tooltip: me.res('event.btn-editRecurrence.tip'),
 							handler: function(s) {
 								me.editRecurrence();
 							}
@@ -1283,14 +1284,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						xtype: 'soactioncolumn',
 						items: [
 							{
-								iconCls: 'far fa-user',
+								iconCls: 'wt-glyph-contact',
 								tooltip: me.mys.res('openContact.tip'),
 								handler: function(g, ridx) {
 									var rec = g.getStore().getAt(ridx);
 									me.openContactUI(rec);
 								}
 							}, {
-								iconCls: 'fas fa-ellipsis-v',
+								iconCls: 'wt-glyph-menu-kebab',
 								handler: function(g, ridx, cidx, itm, e, node, row) {
 									var rec = g.getStore().getAt(ridx);
 									Sonicle.Utils.showContextMenu(e, me.getRef('cxmAttendee'), {rec: rec});

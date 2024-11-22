@@ -36,7 +36,6 @@ import com.sonicle.webtop.calendar.bol.model.CalendarNodeId;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.sonicle.commons.BitFlag;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.LangUtils;
@@ -44,6 +43,7 @@ import com.sonicle.commons.URIUtils;
 import com.sonicle.commons.cache.AbstractPassiveExpiringBulkMap;
 import com.sonicle.commons.concurrent.KeyedReentrantLocks;
 import com.sonicle.commons.db.DbUtils;
+import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.DateTimeRange;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.time.TimeRange;
@@ -251,7 +251,7 @@ public class Service extends BaseService {
 		
 		try {
 			ObjCustomFieldDefs.FieldsList scfields = new ObjCustomFieldDefs.FieldsList();
-			for (CustomFieldEx cfield : coreMgr.listCustomFields(SERVICE_ID, BitFlag.of(CoreManager.CustomFieldListOptions.SEARCHABLE)).values()) {
+			for (CustomFieldEx cfield : coreMgr.listCustomFields(SERVICE_ID, BitFlags.with(CoreManager.CustomFieldListOption.SEARCHABLE)).values()) {
 				scfields.add(new ObjCustomFieldDefs.Field(cfield, up.getLanguageTag()));
 			}
 			return scfields;
@@ -1927,7 +1927,7 @@ public class Service extends BaseService {
 		protected Map<String, CustomField.Type> internalGetMap() {
 			try {
 				CoreManager coreMgr = WT.getCoreManager();
-				return coreMgr.listCustomFieldTypesById(SERVICE_ID, BitFlag.of(CoreManager.CustomFieldListOptions.SEARCHABLE));
+				return coreMgr.listCustomFieldTypesById(SERVICE_ID, BitFlags.with(CoreManager.CustomFieldListOption.SEARCHABLE));
 				
 			} catch(Exception ex) {
 				logger.error("[SearchableCustomFieldTypeCache] Unable to build cache", ex);

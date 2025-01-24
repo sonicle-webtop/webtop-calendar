@@ -42,6 +42,7 @@ import com.sonicle.commons.IdentifierUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.http.HttpClientUtils;
 import com.sonicle.commons.LangUtils;
+import com.sonicle.commons.LangUtils.ChangeSet;
 import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.PathUtils;
 import com.sonicle.commons.URIUtils;
@@ -1614,16 +1615,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			
 			Event eventDump = getEvent(result.oevent.getEventId());
+			if (eventDump == null) throw new WTException("Missing eventDump");
 			
 			// Notify last modification
 			List<RecipientTuple> nmRcpts = getModificationRecipients(result.oevent.getCalendarId(), Crud.CREATE);
 			if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), Crud.CREATE);
 			
 			// Notify attendees
-			if (notifyAttendees) {
-				List<RecipientTuple> attRcpts = getInvitationRecipients(getTargetProfileId(), eventDump, Crud.CREATE);
-				if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.CREATE);
-			}
+			List<RecipientTuple> attRcpts = getNotifiableRecipients(Crud.CREATE, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), !notifyAttendees);
+			if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.CREATE);
 			
 			//TODO: IS THIS STILL NECESSARY????????????????????????????????????????????????????????????
 			
@@ -2435,41 +2435,72 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private void afterEventOperation(Event event, String crud, final boolean notifyAttendees) throws WTException {
-		afterEventOperation(Collections.singletonMap(event.getEventId(), crud), notifyAttendees, Collections.singletonMap(event.getEventId(), event));
+	private void afterEventOperation2(Event event, String crud, final boolean notifyIndividualAttendees) throws WTException {
+		afterEventOperation(Collections.singletonMap(event.getEventId(), crud), notifyIndividualAttendees, Collections.singletonMap(event.getEventId(), event));
 	}
 	
-	private void afterEventOperation(String eventId, String crud, final boolean notifyAttendees) throws WTException {
-		afterEventOperation(Collections.singletonMap(eventId, crud), notifyAttendees, null);
+	private void afterEventOperation2(String eventId, String crud, final boolean notifyIndividualAttendees) throws WTException {
+		afterEventOperation(Collections.singletonMap(eventId, crud), notifyIndividualAttendees, null);
 	}
 	
-	private void afterEventOperation(final Map<String, String> operations, final boolean notifyAttendees, final Map<String, Event> eventCache) throws WTException {
+	private void afterEventOperation(final Map<String, String> operations, final boolean notifyIndividualAttendees, final Map<String, Event> eventCache) throws WTException {
+		// Param operations is a linkedHashMap of performed operations, where key is the eventId and value is the CUD action
 		Map<String, Integer> eventCalendarMap = mapCalendarByEvent(operations.keySet());
 		
 		for (Map.Entry<String, String> entry : operations.entrySet()) {
 			String eventId = entry.getKey();
-			String crud = entry.getValue();
+			String cudAction = entry.getValue();
 			
 			int calendarId = eventCalendarMap.get(eventId);
 			Event eventDump = (eventCache != null) ? eventCache.get(eventId) : null;
+			if (eventDump == null) eventDump = getEvent(eventId);
 			
 			// Notify last modification
-			List<RecipientTuple> nmRcpts = getModificationRecipients(calendarId, crud);
+			List<RecipientTuple> nmRcpts = getModificationRecipients(calendarId, cudAction);
 			if (!nmRcpts.isEmpty()) {
-				if (eventDump == null) eventDump = getEvent(eventId);
-				notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), crud);
+				notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), cudAction);
 			}
 			
 			// Notify attendees
-			if (notifyAttendees) {
-				List<RecipientTuple> attRcpts = getInvitationRecipients(getTargetProfileId(), eventDump, crud);
-				if (!attRcpts.isEmpty()) {
-					if (eventDump == null) eventDump = getEvent(eventId);
-					notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, crud);
-				}
+			List<RecipientTuple> attRcpts = getNotifiableRecipients(cudAction, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), !notifyIndividualAttendees);
+			if (!attRcpts.isEmpty()) {
+				notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, cudAction);
 			}
 		}
 	}
+	
+	/*
+	private void afterEventOperation(final String cudAction, final Event event, final boolean notifyIndividualAttendees, final Map<String, Integer> eventIdToCalendarIdMap, final Map<String, Event> eventIdToEventMap) throws WTException {
+		Check.notEmpty(cudAction, "cudAction");
+		Check.notNull(event, "event");
+		afterEventOperation(Collections.singletonMap(event.getEventId(), cudAction), notifyIndividualAttendees, Collections.singletonMap(event.getEventId(), event));
+	}
+	
+	private void afterEventOperation(final Map<String, String> operations, final boolean notifyIndividualAttendees, final Map<String, Integer> eventIdToCalendarIdMap, final Map<String, Event> eventIdToEventMap) throws WTException {
+		Check.notNull(eventIdToCalendarIdMap, "eventIdToCalendarIdMap");
+		for (Map.Entry<String, String> entry : operations.entrySet()) {
+			String eventId = entry.getKey();
+			String cudAction = entry.getValue();
+			
+			Event eventDump = (eventIdToEventMap != null) ? eventIdToEventMap.get(eventId) : null;
+			if (eventDump == null) eventDump = getEvent(eventId);
+			Integer calendarId = eventIdToCalendarIdMap.get(eventId);
+			if (calendarId == null) calendarId = eventDump.getCalendarId();
+			
+			// Notify last modification
+			List<RecipientTuple> nmRcpts = getModificationRecipients(calendarId, cudAction);
+			if (!nmRcpts.isEmpty()) {
+				notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), cudAction);
+			}
+			
+			// Notify attendees
+			List<RecipientTuple> attRcpts = getNotifiableRecipients(cudAction, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), !notifyIndividualAttendees);
+			if (!attRcpts.isEmpty()) {
+				notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, cudAction);
+			}
+		}
+	}
+	*/
 	
 	public void moveEvent(boolean copy, Collection<String> eventIds, int targetCalendarId, boolean notifyAttendees) throws WTNotFoundException, WTException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
@@ -4193,10 +4224,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), Crud.UPDATE);
 
 		// Notify attendees
-		if (notifyAttendees) {
-			List<RecipientTuple> attRcpts = getInvitationRecipients(getTargetProfileId(), eventDump, Crud.UPDATE);
-			if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.UPDATE);
-		}
+		List<RecipientTuple> attRcpts = getNotifiableRecipients(Crud.UPDATE, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), !notifyAttendees);
+		if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.UPDATE);
 	}
 	
 	private EventInstance doEventInstanceGet(Connection con, String eventId, LocalDate date, boolean processAttachments, boolean processTags, boolean processCustomValues) throws WTException {
@@ -4266,6 +4295,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (oevtOrig == null) throw new WTException("Unable get original event [{}]", originalEventInfo.getEventId());
 		
 		Event eventDump = null;
+		EventUpdateResult updateResult = null;
 		if (originalEventInfo.isRecurring()) {
 			// If target is SINCE and the referenced instance is clearly 
 			// the first of the recurrence, we can actually treat the 
@@ -4341,7 +4371,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				event.setEndDate(event.getEndDate().withDate(oevtOrig.getEndDate().toLocalDate()));
 				
 				// 1 - Updates event of new data
-				doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, processCustomValues, validTags);
+				updateResult = doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, processCustomValues, validTags);
 
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
@@ -4353,7 +4383,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} else if (originalEventInfo.isBroken()) {
 			// 1 - Updates broken event (follow eventId) of new data
-			doEventUpdate(con, oevtOrig, event, false, false, true, processAttachments, processTags, processCustomValues, validTags);
+			updateResult = doEventUpdate(con, oevtOrig, event, false, false, true, processAttachments, processTags, processCustomValues, validTags);
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
@@ -4367,7 +4397,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 		} else {
 			// 1 - Updates this event of new data
-			doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, processCustomValues, validTags);
+			updateResult = doEventUpdate(con, oevtOrig, event, true, false, true, processAttachments, processTags, processCustomValues, validTags);
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
@@ -4391,10 +4421,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), Crud.UPDATE);
 
 		// Notify attendees
-		if (notifyAttendees) {
-			List<RecipientTuple> attRcpts = getInvitationRecipients(getTargetProfileId(), eventDump, Crud.UPDATE);
-			if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.UPDATE);
+		if (updateResult != null) {
+			// Notify any replaced resource, this will force the cancellation of the previous booking
+			List<RecipientTuple> resRcpts = getNotifiableRecipients(Crud.DELETE, getTargetProfileId(), event.getOrganizerAddress(), 
+					updateResult.attendeeChanges.getRemoved().stream()
+						.filter((att) -> {
+							return EventAttendee.RecipientType.RESOURCE.equals(att.getRecipientType());
+						})
+						.collect(Collectors.toList())
+				, true);
+			if (!resRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), resRcpts, eventDump, Crud.DELETE);
 		}
+		List<RecipientTuple> attRcpts = getNotifiableRecipients(Crud.UPDATE, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), !notifyAttendees);
+		if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.UPDATE);
 	}
 	
 	private void doEventInstanceDeleteAndCommit(Connection con, UpdateEventTarget target, EventKey eventKey, boolean notifyAttendees, boolean notifyResourceOrganizer) throws WTException {
@@ -4501,10 +4540,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), Crud.DELETE);
 
 		// Notify attendees
-		if (notifyAttendees) {
-			List<RecipientTuple> attRcpts = getInvitationRecipients(getTargetProfileId(), eventDump, Crud.DELETE);
-			if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.DELETE);
-		}
+		List<RecipientTuple> attRcpts = getNotifiableRecipients(Crud.DELETE, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), !notifyAttendees);
+		if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.DELETE);
 		
 		// For resources, notify the organizer (with a DECLINE) that the reservation is no longer available
 		if (notifyResourceOrganizer) {
@@ -4574,11 +4611,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		List<RecipientTuple> nmRcpts = getModificationRecipients(eventDump.getCalendarId(), Crud.DELETE);
 		if (!nmRcpts.isEmpty()) notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump.getFootprint(), Crud.DELETE);
 
-		// Notify attendees
-		if (notifyAttendees) {
-			List<RecipientTuple> attRcpts = getInvitationRecipients(getTargetProfileId(), eventDump, Crud.DELETE);
-			if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.DELETE);
-		}
+		// Notify attendees	
+		List<RecipientTuple> attRcpts = getNotifiableRecipients(Crud.DELETE, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), !notifyAttendees);
+		if (!attRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, Crud.DELETE);
 	}
 	
 	private boolean doEventInputUpdate(Connection con, HashMap<String, OEvent> cache, EventInput input, ProcessReminder processReminder) throws DAOException, IOException {
@@ -4701,7 +4736,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return new EventInsertResult(oevt, orec, obrks, oattes, otags, oattchs, ocvals);
 	}
 	
-	private boolean doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean processRecurrence, boolean processExcludedDates, boolean processAttendees, boolean processAttachments, boolean processTags, boolean processCustomValues, Set<String> validTags) throws IOException, WTException {
+	private EventUpdateResult doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean processRecurrence, boolean processExcludedDates, boolean processAttendees, boolean processAttachments, boolean processTags, boolean processCustomValues, Set<String> validTags) throws IOException, WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		EventAttendeeDAO atteDao = EventAttendeeDAO.getInstance();
 		EventTagDAO tagDao = EventTagDAO.getInstance();
@@ -4774,26 +4809,28 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		boolean ret = evtDao.update(con, originalEvent, revision, originalEvent.getStartDate().isAfterNow()) == 1;
+		ChangeSet<EventAttendee> attendeeChanges = null;
 		
 		if (processAttendees && (event.getAttendees() != null)) {
 			List<EventAttendee> oldAtts = ManagerUtils.createEventAttendeeList(atteDao.selectByEvent(con, originalEvent.getEventId()));
-			CollectionChangeSet<EventAttendee> changeSet = LangUtils.getCollectionChanges(oldAtts, event.getAttendees());
+			ChangeSet<EventAttendee> changeSet = LangUtils.computeChangeSet(oldAtts, event.getAttendees());
 			
-			for (EventAttendee att : changeSet.inserted) {
+			for (EventAttendee att : changeSet.getAdded()) {
 				if (!ManagerUtils.validateForInsert(att)) continue;
 				final OEventAttendee oatt = ManagerUtils.createOEventAttendee(att);
 				oatt.setAttendeeId(IdentifierUtils.getUUID());
 				oatt.setEventId(originalEvent.getEventId());
 				atteDao.insert(con, oatt);
 			}
-			for (EventAttendee att : changeSet.updated) {
+			for (EventAttendee att : changeSet.getUpdated()) {
 				if (!ManagerUtils.validateForUpdate(att)) continue;
 				final OEventAttendee oatt = ManagerUtils.createOEventAttendee(att);
 				atteDao.update(con, oatt);
 			}
-			for (EventAttendee att : changeSet.deleted) {
+			for (EventAttendee att : changeSet.getRemoved()) {
 				atteDao.delete(con, att.getAttendeeId());
 			}
+			attendeeChanges = new ChangeSet<>(changeSet.getAdded(), null, changeSet.getRemoved());
 		}
 		
 		if (processTags && event.hasTags()) {
@@ -4839,7 +4876,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cvalDao.batchInsert(con, ocvals);
 		}
 		
-		return ret;
+		return new EventUpdateResult(ret, attendeeChanges);
+		//return ret;
 	}
 	
 	private int doEventDelete(Connection con, String eventId, boolean logicDelete) throws DAOException {
@@ -5100,26 +5138,27 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}	
 	}
 	
-	private List<RecipientTuple> getInvitationRecipients(UserProfileId ownerProfile, Event event, String crud) {
-		ArrayList<RecipientTuple> rcpts = new ArrayList<>();
+	private List<RecipientTuple> getNotifiableRecipients(final String cudAction, final UserProfileId ownerProfile, final String organizerAddress, final Collection<EventAttendee> attendees, boolean skipIndividuals) {
+		ArrayList<RecipientTuple> items = new ArrayList<>();
 		
-		// Parameter crud is not used for now!
+		// Parameter cudAction is not used for now!
 		
-		if (!event.getAttendees().isEmpty()) {
-			String organizerAddress = event.getOrganizerAddress();
-			for (EventAttendee attendee : event.getAttendees()) {
-				if (!attendee.getNotify()) continue;
+		if (attendees != null && !attendees.isEmpty()) {
+			for (EventAttendee attendee : attendees) {
+				// Resources are always included in list, individuals only if notify flag is true and skip option is false!
+				if (EventAttendee.RecipientType.INDIVIDUAL.equals(attendee.getRecipientType()) && (skipIndividuals || !attendee.getNotify())) continue;
+				// Skip attendees with a missing recipient address
 				InternetAddress attendeeIa = attendee.getRecipientInternetAddress();
 				if (attendeeIa == null) continue;
+				// Skip the organizer attendee (if present) when its response-status is different from NA
 				if (StringUtils.equalsIgnoreCase(organizerAddress, attendeeIa.getAddress())
-						&& !EventAttendee.ResponseStatus.NEEDS_ACTION.equals(attendee.getResponseStatus())) continue;
-				
-				UserProfileId attProfileId = WT.guessUserProfileIdByEmailAddress(attendeeIa.getAddress());
-				rcpts.add(new RecipientTuple(attendeeIa, (attProfileId != null) ? attProfileId : ownerProfile));
+					&& !EventAttendee.ResponseStatus.NEEDS_ACTION.equals(attendee.getResponseStatus())) continue;
+
+				UserProfileId attProfileId = WT.guessProfileIdByPersonalAddress(attendeeIa.getAddress());
+				items.add(new RecipientTuple(attendeeIa, (attProfileId != null) ? attProfileId : ownerProfile));
 			}
 		}
-		
-		return rcpts;
+		return items;
 	}
 	
 	private void notifyForInvitation(UserProfileId senderProfileId, List<RecipientTuple> recipients, Event event, String crud) {
@@ -5920,6 +5959,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (recur == null) logger.warn("Event has NO recurrence rule [{}]", eventId);
 		}
 		return instances;
+	}
+	
+	public static class EventUpdateResult {
+		public final boolean success;
+		public final ChangeSet<EventAttendee> attendeeChanges;
+		
+		public EventUpdateResult(boolean success, ChangeSet<EventAttendee> attendeeChanges) {
+			this.success = success;
+			this.attendeeChanges = attendeeChanges;
+		}
 	}
 	
 	public static class EventInsertResult {

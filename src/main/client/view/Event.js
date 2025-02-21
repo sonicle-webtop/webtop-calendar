@@ -467,7 +467,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			WT.prompt('', {
 				title: me.res('event.btn-importAttendeesPaste.lbl'),
 				fn: function(bid, value) {
-					if (bid === 'ok') me.doImportLinesAsAttendees(value);
+					if (bid === 'ok') me.doImportTextAsAttendees(value);
 				},
 				scope: me,
 				multiline: 200,
@@ -484,7 +484,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						}, {
 							callback: function(success, json) {
 								if (success) {
-									me.doImportRecipientsAsAttendees(json.data);
+									me.doImportListAsAttendees(json.data);
 								}
 							},
 							scope: me
@@ -1606,28 +1606,45 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			}
 		},
 		
-		doImportLinesAsAttendees: function(text, recordDefaults) {
-			this.doImportRecipientsAsAttendees(text.split(/\r\n|\r|\n/g), recordDefaults);
+		doImportTextAsAttendees: function(text, recordDefaults) {
+			this.doImportRecipientsAsAttendees(text.split(/\r\n|\r|\n|,|;/g), recordDefaults);
 		},
 
-		doImportRecipientsAsAttendees: function(items, recordDefaults) {
+		doImportRecipientsAsAttendees: function(items, recordDefaults, limit) {
 			var me = this,
-				store = me.getModel().attendees(),
+				mo = me.getModel(),
+				arr = [],
 				data, rcpt;
+			
+			if (limit === undefined) limit = 1000;
+			if (limit === null || !Ext.isNumber(limit) || limit < 0) limit = Number.MAX_VALUE;
+			
 			if (Ext.isArray(items)) {
-				Ext.iterate(items, function(item) {
-					rcpt = Ext.isString(item) ? item : item.email;
-					if (!Ext.isEmpty(rcpt)) {
-						data = Ext.apply({}, recordDefaults, {
-							notify: true,
-							recipientType: 'IND',
-							recipientRole: 'REQ',
-							responseStatus: 'NA'
-						});
-						data['recipient'] = rcpt;
-						store.add(store.createModel(data));
+				if (items.length <= limit) {
+					Ext.iterate(items, function(item) {
+						rcpt = Ext.String.trim(Ext.isString(item) ? item : item.email);
+						if (!Ext.isEmpty(rcpt)) {
+							data = Ext.apply({}, recordDefaults, {
+								notify: true,
+								recipientType: 'IND',
+								recipientRole: 'REQ',
+								responseStatus: 'NA'
+							});
+							data['recipient'] = rcpt;
+							arr.push(data);
+						}
+					});
+					if (arr.length > 0) {
+						if ((mo.attendees().getCount() + arr.length) <= limit) {
+							mo.attendees().add(arr);
+						} else {
+							WT.error(me.res('event.importAttendees.error.limit', limit));
+						}
 					}
-				});
+						
+				} else {
+					WT.error(me.res('event.importAttendees.error.limit', limit));
+				}
 			}
 		}
 	}

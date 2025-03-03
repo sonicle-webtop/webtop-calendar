@@ -32,8 +32,6 @@
  */
 package com.sonicle.webtop.calendar.rest.v1;
 
-import com.sonicle.commons.LangUtils;
-import com.sonicle.commons.LangUtils.CollectionChangeSet;
 import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.webtop.calendar.CalendarLocale;
 import com.sonicle.webtop.calendar.CalendarManager;
@@ -43,7 +41,7 @@ import com.sonicle.webtop.calendar.ManagerUtils;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.EventObject;
-import com.sonicle.webtop.calendar.model.EventObjectChanged;
+import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
 import com.sonicle.webtop.calendar.swagger.v1.api.CaldavApi;
 import com.sonicle.webtop.calendar.swagger.v1.model.ApiError;
@@ -58,6 +56,8 @@ import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
 import com.sonicle.webtop.core.app.model.FolderShare;
+import com.sonicle.webtop.core.model.ChangedItem;
+import com.sonicle.webtop.core.model.Delta;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -98,7 +98,7 @@ public class CalDav extends CaldavApi {
 		
 		try {
 			Map<Integer, com.sonicle.webtop.calendar.model.Calendar> calendars = manager.listMyCalendars();
-			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(calendars.keySet());
+			Map<Integer, DateTime> revisions = manager.getCalendarsItemsLastRevision(calendars.keySet());
 			for (com.sonicle.webtop.calendar.model.Calendar calendar : calendars.values()) {
 				if (calendar.isProviderRemote()) continue;
 				items.add(createCalendar(currentProfileId, calendar, false, revisions.get(calendar.getCalendarId()), FolderShare.Permissions.full()));
@@ -106,7 +106,7 @@ public class CalDav extends CaldavApi {
 			
 			for (CalendarFSOrigin origin : manager.listIncomingCalendarOrigins().values()) {
 				Map<Integer, CalendarFSFolder> folders = manager.listIncomingCalendarFolders(origin);
-				revisions = manager.getCalendarsLastRevision(folders.keySet());
+				revisions = manager.getCalendarsItemsLastRevision(folders.keySet());
 				for (CalendarFSFolder folder : folders.values()) {
 					com.sonicle.webtop.calendar.model.Calendar calendar = folder.getCalendar();
 					if (calendar.isProviderRemote()) continue;
@@ -137,7 +137,7 @@ public class CalDav extends CaldavApi {
 			if (calendar == null) return respErrorNotFound();
 			if (calendar.isProviderRemote()) return respErrorBadRequest();
 			
-			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(Arrays.asList(calendar.getCalendarId()));
+			Map<Integer, DateTime> revisions = manager.getCalendarsItemsLastRevision(Arrays.asList(calendar.getCalendarId()));
 			CalendarFSOrigin origin = manager.getIncomingCalendarOriginByFolderId(calendarId);
 			if (origin != null) {
 				Map<Integer, CalendarFSFolder> folders = manager.listIncomingCalendarFolders(origin);
@@ -253,16 +253,16 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			if ((hrefs == null) || hrefs.isEmpty()) {
-				List<EventObject> calObjs = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR);
-				for (EventObject calObj : calObjs) {
-					items.add(createCalObjectWithData((EventObjectWithICalendar)calObj));
+				List<EventObject> eventObjects = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR);
+				for (EventObject eventObject : eventObjects) {
+					items.add(createCalObject((EventObjectWithICalendar)eventObject));
 				}
 				return respOk(items);
 				
 			} else {
-				List<EventObjectWithICalendar> calObjs = manager.getEventObjectsWithICalendar(calendarId, hrefs);
-				for (EventObject calObj : calObjs) {
-					items.add(createCalObjectWithData((EventObjectWithICalendar)calObj));
+				List<EventObject> eventObjects = manager.getEventObjects(calendarId, hrefs, EventObjectOutputType.ICALENDAR);
+				for (EventObject eventObject : eventObjects) {
+					items.add(createCalObject((EventObjectWithICalendar)eventObject));
 				}
 				return respOk(items);
 			}
@@ -287,7 +287,7 @@ public class CalDav extends CaldavApi {
 			if (cal == null) return respErrorNotFound();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(Arrays.asList(calendarId));
+			Map<Integer, DateTime> revisions = manager.getCalendarsItemsLastRevision(Arrays.asList(calendarId));
 			
 			DateTime since = null;
 			if (!StringUtils.isBlank(syncToken)) {
@@ -295,8 +295,8 @@ public class CalDav extends CaldavApi {
 				if (since == null) return respErrorBadRequest();
 			}
 			
-			CollectionChangeSet<EventObjectChanged> changes = manager.listEventObjectsChanges(calendarId, since, limit);
-			return respOk(createCalObjectsChanges(revisions.get(calendarId), changes));
+			Delta<EventObject> delta = manager.listEventsDelta(calendarId, since, EventObjectOutputType.STAT);
+			return respOk(createCalObjectsChanges(revisions.get(calendarId), delta));
 			
 		} catch(Exception ex) {
 			logger.error("[{}] getCalObjectsChanges({}, {}, {})", ex, RunContext.getRunProfileId(), calendarUid, syncToken, limit);
@@ -318,9 +318,9 @@ public class CalDav extends CaldavApi {
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			EventObjectWithICalendar calObj = manager.getEventObjectWithICalendar(calendarId, href);
-			if (calObj != null) {
-				return respOk(createCalObjectWithData(calObj));
+			EventObject eventObject = manager.getEventObject(calendarId, href, EventObjectOutputType.ICALENDAR);
+			if (eventObject != null) {
+				return respOk(createCalObject(eventObject));
 			} else {
 				return respErrorNotFound();
 			}
@@ -422,49 +422,52 @@ public class CalDav extends CaldavApi {
 				.ownerUsername(ownerUsername);
 	}
 	
-	private CalObject createCalObject(EventObjectWithICalendar calObject) {
-		return new CalObject()
-				.id(Integer.valueOf(calObject.getEventId()))
-				.uid(calObject.getPublicUid())
-				.href(calObject.getHref())
-				.lastModified(calObject.getRevisionTimestamp().withZone(DateTimeZone.UTC).getMillis()/1000)
-				.etag(buildEtag(calObject.getRevisionTimestamp()))
-				.size(calObject.getSize());
+	private CalObject createCalObject(EventObject obj) {
+		CalObject ret = new CalObject()
+			.id(Integer.valueOf(obj.getEventId()))
+			.uid(obj.getPublicUid())
+			.href(obj.getHref())
+			.lastModified(obj.getRevisionTimestamp().withZone(DateTimeZone.UTC).getMillis()/1000)
+			.etag(buildEtag(obj.getRevisionTimestamp()));
+		
+		if (obj instanceof EventObjectWithICalendar) {
+			EventObjectWithICalendar objic = (EventObjectWithICalendar)obj;
+			return ret.size(objic.getSize())
+				.icalendar(objic.getIcalendar());
+		} else if (obj instanceof EventObjectWithBean) {
+			return ret;
+		} else {
+			return ret;
+		}
 	}
 	
-	private CalObject createCalObjectWithData(EventObjectWithICalendar calObject) {
-		return createCalObject(calObject)
-				.icalendar(calObject.getIcalendar());
-	}
-	
-	private CalObjectChanged createCalObjectChanged(EventObjectChanged calObject) {
+	private CalObjectChanged createCalObjectChanged(EventObject calObject) {
 		return new CalObjectChanged()
-				.id(Integer.valueOf(calObject.getEventId()))
-				.href(calObject.getHref())
-				.etag(buildEtag(calObject.getRevisionTimestamp()));
+			.id(Integer.valueOf(calObject.getEventId()))
+			.href(calObject.getHref())
+			.etag(buildEtag(calObject.getRevisionTimestamp()));
 	}
 	
-	private CalObjectsChanges createCalObjectsChanges(DateTime lastRevisionTimestamp, LangUtils.CollectionChangeSet<EventObjectChanged> changes) {
+	private CalObjectsChanges createCalObjectsChanges(DateTime lastRevisionTimestamp, Delta<EventObject> delta) {
 		ArrayList<CalObjectChanged> inserted = new ArrayList<>();
-		for (EventObjectChanged calObj : changes.inserted) {
-			inserted.add(createCalObjectChanged(calObj));
-		}
-		
 		ArrayList<CalObjectChanged> updated = new ArrayList<>();
-		for (EventObjectChanged calObj : changes.updated) {
-			updated.add(createCalObjectChanged(calObj));
-		}
-		
 		ArrayList<CalObjectChanged> deleted = new ArrayList<>();
-		for (EventObjectChanged calObj : changes.deleted) {
-			deleted.add(createCalObjectChanged(calObj));
+		
+		for (ChangedItem<EventObject> item : delta.getItems()) {
+			if (ChangedItem.ChangeType.ADDED.equals(item.getChangeType())) {
+				inserted.add(createCalObjectChanged(item.getObject()));
+			} else if (ChangedItem.ChangeType.DELETED.equals(item.getChangeType())) {
+				deleted.add(createCalObjectChanged(item.getObject()));
+			} else {
+				updated.add(createCalObjectChanged(item.getObject()));
+			}
 		}
 		
 		return new CalObjectsChanges()
-				.syncToken(buildEtag(lastRevisionTimestamp))
-				.inserted(inserted)
-				.updated(updated)
-				.deleted(deleted);
+			.syncToken(buildEtag(lastRevisionTimestamp))
+			.inserted(inserted)
+			.updated(updated)
+			.deleted(deleted);
 	}
 	
 	private String buildEtag(DateTime revisionTimestamp) {

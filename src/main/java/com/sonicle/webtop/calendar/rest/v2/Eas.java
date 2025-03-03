@@ -102,7 +102,7 @@ public class Eas extends EasApi {
 		try {
 			Integer defltCalendarId = manager.getDefaultCalendarId();
 			Map<Integer, Calendar> calendars = manager.listCalendars();
-			Map<Integer, DateTime> revisions = manager.getCalendarsLastRevision(calendars.keySet());
+			Map<Integer, DateTime> revisions = manager.getCalendarsItemsLastRevision(calendars.keySet());
 			for (Calendar calendar : calendars.values()) {
 				if (calendar.isProviderRemote()) continue;
 				if (Calendar.Sync.OFF.equals(calendar.getSync())) continue;
@@ -115,7 +115,7 @@ public class Eas extends EasApi {
 			for (CalendarFSOrigin origin : manager.listIncomingCalendarOrigins().values()) {
 				Map<Integer, CalendarFSFolder> folders = manager.listIncomingCalendarFolders(origin);
 				Map<Integer, CalendarPropSet> folderProps = manager.getCalendarCustomProps(folders.keySet());
-				revisions = manager.getCalendarsLastRevision(folders.keySet());
+				revisions = manager.getCalendarsItemsLastRevision(folders.keySet());
 				for (CalendarFSFolder folder : folders.values()) {
 					Calendar calendar = folder.getCalendar();
 					if (calendar.isProviderRemote()) continue;

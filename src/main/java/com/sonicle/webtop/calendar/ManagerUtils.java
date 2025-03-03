@@ -85,6 +85,10 @@ public class ManagerUtils {
 		return WT.getPlatformName() + " Calendar";
 	}
 	
+	static int toOffset(int page, int limit) {
+		return limit * (page-1);
+	}
+	
 	public static int decodeAsCalendarId(String calendarPublicUid) throws WTException {
 		try {
 			return Integer.valueOf(new String(Base58.decode(calendarPublicUid)));

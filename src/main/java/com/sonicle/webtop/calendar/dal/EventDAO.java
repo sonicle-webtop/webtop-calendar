@@ -39,7 +39,7 @@ import com.sonicle.webtop.calendar.bol.OEventInfo;
 import com.sonicle.webtop.calendar.bol.VEventObject;
 import com.sonicle.webtop.calendar.bol.VEventHrefSync;
 import com.sonicle.webtop.calendar.bol.VEventFootprint;
-import com.sonicle.webtop.calendar.bol.VEventObjectChange;
+import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.bol.VExpEvent;
 import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
@@ -49,9 +49,10 @@ import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_CUSTOM_VALUES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ICALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
+import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_CALENDARS;
+import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
-import static com.sonicle.webtop.calendar.jooq.tables.CalendarsChanges.CALENDARS_CHANGES;
 import com.sonicle.webtop.calendar.jooq.tables.Events;
 import com.sonicle.webtop.calendar.jooq.tables.RecurrencesBroken;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
@@ -260,17 +261,17 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
-				CALENDARS_CHANGES.CALENDAR_ID,
-				DSL.max(CALENDARS_CHANGES.TIMESTAMP)
+				HISTORY_CALENDARS.CALENDAR_ID,
+				DSL.max(HISTORY_CALENDARS.CHANGE_TIMESTAMP)
 			)
-			.from(CALENDARS_CHANGES)
+			.from(HISTORY_CALENDARS)
 			.where(
-				CALENDARS_CHANGES.CALENDAR_ID.in(calendarIds)
+				HISTORY_CALENDARS.CALENDAR_ID.in(calendarIds)
 			)
 			.groupBy(
-				CALENDARS_CHANGES.CALENDAR_ID
+				HISTORY_CALENDARS.CALENDAR_ID
 			)
-			.fetchMap(CALENDARS_CHANGES.CALENDAR_ID, DSL.max(CALENDARS_CHANGES.TIMESTAMP));
+			.fetchMap(HISTORY_CALENDARS.CALENDAR_ID, DSL.max(HISTORY_CALENDARS.CHANGE_TIMESTAMP));
 	}
 	
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
@@ -840,6 +841,103 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(VEventFootprint.class);
 	}
 	
+	public static Condition createEventsChangedNewOrModifiedCondition() {
+		return HISTORY_EVENTS.CHANGE_TYPE.equal(BaseDAO.CHANGE_TYPE_CREATION)
+			.or(HISTORY_EVENTS.CHANGE_TYPE.equal(BaseDAO.CHANGE_TYPE_UPDATE));
+	}
+	
+	public static Condition createEventsChangedSinceUntilCondition(DateTime since, DateTime until) {
+		return HISTORY_EVENTS.CHANGE_TIMESTAMP.greaterThan(since)
+			.and(HISTORY_EVENTS.CHANGE_TIMESTAMP.lessThan(until));
+	}
+			
+	private Field[] getVEventObjectFields(boolean stat) {
+		if (stat) {
+			return new Field[]{
+				EVENTS.EVENT_ID,
+				EVENTS.CALENDAR_ID,
+				EVENTS.REVISION_STATUS,
+				EVENTS.REVISION_TIMESTAMP,
+				EVENTS.CREATION_TIMESTAMP,
+				EVENTS.PUBLIC_UID,
+				EVENTS.HREF
+			};
+		} else {
+			return EVENTS.fields();
+		}
+	}
+	
+	public void lazy_viewChangedEventObjects(Connection con, Collection<Integer> calendarIds, Condition condition, boolean statFields, int limit, int offset, VEventObjectChanged.Consumer consumer) throws DAOException, WTException {
+		DSLContext dsl = getDSL(con);
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
+		
+		// New field: tags list
+		Field<String> tags = DSL
+			.select(DSL.groupConcat(EVENTS_TAGS.TAG_ID, "|"))
+			.from(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
+			).asField("tags");
+		
+		// New field: has attachments
+		Field<Boolean> hasAttachments = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_ATTACHMENTS)
+				.where(EVENTS_ATTACHMENTS.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_attachments");
+		
+		// New field: has custom values
+		Field<Boolean> hasCustomValues = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_CUSTOM_VALUES)
+				.where(EVENTS_CUSTOM_VALUES.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_custom_values");
+		
+		// New field: has vcard
+		Field<Boolean> hasICalendar = DSL.nvl2(EVENTS_ICALENDARS.EVENT_ID, true, false).as("has_icalendar");
+		
+		Cursor<Record> cursor = dsl
+			.select(
+				HISTORY_EVENTS.CHANGE_TIMESTAMP,
+				HISTORY_EVENTS.CHANGE_TYPE
+			)
+			.select(
+				getVEventObjectFields(statFields)
+			)
+			.select(
+				tags,
+				hasAttachments,
+				hasCustomValues,
+				hasICalendar
+			)
+			.distinctOn(HISTORY_EVENTS.EVENT_ID)
+			.from(HISTORY_EVENTS)
+			.leftOuterJoin(EVENTS).on(HISTORY_EVENTS.EVENT_ID.equal(EVENTS.EVENT_ID))
+			.leftOuterJoin(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
+			.leftOuterJoin(EVENTS_ICALENDARS).on(EVENTS.EVENT_ID.equal(EVENTS_ICALENDARS.EVENT_ID))
+			.where(
+				HISTORY_EVENTS.CALENDAR_ID.in(calendarIds)
+				.and(filterCndt)
+			)
+			.orderBy(
+				HISTORY_EVENTS.EVENT_ID.asc(),
+				HISTORY_EVENTS.ID.desc()
+			)
+			.limit(limit)
+			.offset(offset)
+			.fetchLazy();
+		
+		try {
+			for(;;) {
+				VEventObjectChanged vco = cursor.fetchNextInto(VEventObjectChanged.class);
+				if (vco == null) break;
+				consumer.consume(vco, con);
+			}
+		} finally {
+			cursor.close();
+		}
+	}
+	
 	public void lazy_viewOnlineEventObjects(Connection con, int calendarId, VEventObject.Consumer consumer) throws DAOException, WTException {
 		DSLContext dsl = getDSL(con);
 		
@@ -1304,43 +1402,6 @@ public class EventDAO extends BaseDAO {
 					EVENTS.EVENT_ID.asc()
 				)
 				.fetchGroups(EVENTS.HREF, VEventObject.class);
-		}
-	}
-	
-	public List<VEventObjectChange> viewChangedObjectsByCalendarSince(Connection con, int calendarId, DateTime since, int limit) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		Condition cndtSince = DSL.trueCondition();
-		if (since != null) {
-			cndtSince = CALENDARS_CHANGES.TIMESTAMP.greaterThan(since);
-		}
-		
-		Table<?> t1 = DSL.select(
-				CALENDARS_CHANGES.EVENT_ID,
-				EVENTS.HREF,
-				CALENDARS_CHANGES.TIMESTAMP,
-				CALENDARS_CHANGES.OPERATION
-			)
-			.distinctOn(CALENDARS_CHANGES.EVENT_ID)
-			.from(CALENDARS_CHANGES)
-			.innerJoin(EVENTS).on(CALENDARS_CHANGES.EVENT_ID.equal(EVENTS.EVENT_ID))
-			.where(
-				CALENDARS_CHANGES.CALENDAR_ID.equal(calendarId)
-				.and(cndtSince)
-			)
-			.orderBy(CALENDARS_CHANGES.EVENT_ID, CALENDARS_CHANGES.TIMESTAMP.desc()).asTable("t1");
-		
-		SelectLimitStep step = dsl
-			.select()
-			.from(t1)
-			.orderBy(t1.field(CALENDARS_CHANGES.TIMESTAMP.getName()).desc());
-		
-		if (limit > -1) {
-			return step
-				.limit(limit)
-				.fetchInto(VEventObjectChange.class);
-		} else {
-			return step
-				.fetchInto(VEventObjectChange.class);
 		}
 	}
 	

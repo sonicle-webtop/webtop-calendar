@@ -102,10 +102,8 @@ import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.bol.OActivity;
 import com.sonicle.webtop.core.bol.OCausal;
-import com.sonicle.webtop.core.bol.OUser;
 import com.sonicle.webtop.core.dal.ActivityDAO;
 import com.sonicle.webtop.core.dal.CausalDAO;
-import com.sonicle.webtop.core.dal.UserDAO;
 import com.sonicle.webtop.core.sdk.BaseManager;
 import com.sonicle.webtop.core.dal.DAOException;
 import com.sonicle.webtop.core.sdk.AuthException;
@@ -157,7 +155,6 @@ import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import com.sonicle.webtop.calendar.model.EventObject;
-import com.sonicle.webtop.calendar.model.EventObjectChanged;
 import com.sonicle.webtop.calendar.model.EventFootprint;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.SchedEventInstance;
@@ -236,12 +233,14 @@ import com.sonicle.commons.web.json.CId;
 import com.sonicle.mail.email.EmailMessage;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
 import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
-import com.sonicle.webtop.calendar.bol.VEventObjectChange;
+import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.io.EventInputConsumer;
 import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.core.app.model.Resource;
 import com.sonicle.webtop.core.app.model.ResourceGetOption;
 import com.sonicle.webtop.core.app.model.ShareOrigin;
+import com.sonicle.webtop.core.model.ChangedItem;
+import com.sonicle.webtop.core.model.Delta;
 import com.sonicle.webtop.core.msg.ResourceReservationReplySM;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -470,7 +469,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public Map<Integer, DateTime> getCalendarsLastRevision(Collection<Integer> calendarIds) throws WTException {
+	public Map<Integer, DateTime> getCalendarsItemsLastRevision(Collection<Integer> calendarIds) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -950,29 +949,58 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	@Override
-	public CollectionChangeSet<EventObjectChanged> listEventObjectsChanges(int calendarId, DateTime since, Integer limit) throws WTException {
+	public Delta<EventObject> listEventsDelta(final int calendarId, final DateTime since, final EventObjectOutputType outputType) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
+		// Do NOT support page/limit for now
+		//final int myLimit = limit == null ? Integer.MAX_VALUE : limit;
+		//final int myPage = page == null ? 1 : page;
+		final int myLimit = Integer.MAX_VALUE;
+		final int myPage = 1;
+		
 		try {
+			final boolean fullSync = (since == null);
+			final DateTime until = DateTimeUtils.now(true);
+			
 			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
+			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.TAGS);
+			final ArrayList<ChangedItem<EventObject>> items = new ArrayList<>();
 			con = WT.getConnection(SERVICE_ID);
-			ArrayList<EventObjectChanged> inserted = new ArrayList<>();
-			ArrayList<EventObjectChanged> updated = new ArrayList<>();
-			ArrayList<EventObjectChanged> deleted = new ArrayList<>();
-			List<VEventObjectChange> changes = evtDao.viewChangedObjectsByCalendarSince(con, calendarId, since, limit == null ? -1 : limit);
-			for (VEventObjectChange change : changes) {
-				if (change.isInserted()) {
-					inserted.add(new EventObjectChanged(change.getEventId(), change.getTimestamp(), change.getHref()));
-				} else if (change.isUpdated()) {
-					updated.add(new EventObjectChanged(change.getEventId(), change.getTimestamp(), change.getHref()));
-				} else if (change.isDeleted()) {
-					deleted.add(new EventObjectChanged(change.getEventId(), change.getTimestamp(), change.getHref()));
-				}
+			if (fullSync) {
+				evtDao.lazy_viewChangedEventObjects(
+					con,
+					Arrays.asList(calendarId),
+					EventDAO.createEventsChangedNewOrModifiedCondition(),
+					EventObjectOutputType.STAT.equals(outputType),
+					myLimit,
+					ManagerUtils.toOffset(myPage, myLimit),
+					(VEventObjectChanged veoc, Connection con1) -> {
+						items.add(new ChangedItem<>(ChangedItem.ChangeType.ADDED, doEventObjectPrepare(con1, veoc, outputType, processOpts)));
+					}
+				);
+				
+			} else {
+				evtDao.lazy_viewChangedEventObjects(
+					con,
+					Arrays.asList(calendarId),
+					EventDAO.createEventsChangedSinceUntilCondition(since, until),
+					EventObjectOutputType.STAT.equals(outputType),
+					myLimit,
+					ManagerUtils.toOffset(myPage, myLimit),
+					(VEventObjectChanged veoc, Connection con1) -> {
+						if (veoc.isChangeInsertion()) {
+							items.add(new ChangedItem<>(ChangedItem.ChangeType.ADDED, doEventObjectPrepare(con1, veoc, outputType, processOpts)));
+						} else if (veoc.isChangeUpdate()) {
+							items.add(new ChangedItem<>(ChangedItem.ChangeType.UPDATED, doEventObjectPrepare(con1, veoc, outputType, processOpts)));
+						} else if (veoc.isChangeDeletion()) {
+							items.add(new ChangedItem<>(ChangedItem.ChangeType.DELETED, doEventObjectPrepare(con1, veoc, outputType, processOpts)));
+						}
+					}
+				);
 			}
-			return new CollectionChangeSet<>(inserted, updated, deleted);
+			return new Delta<>(until, items);
 			
 		} catch (Exception ex) {
 			throw ExceptionUtils.wrapThrowable(ex);
@@ -982,22 +1010,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	@Override
-	public EventObjectWithICalendar getEventObjectWithICalendar(int calendarId, String href) throws WTException {
-		List<EventObjectWithICalendar> ccs = getEventObjectsWithICalendar(calendarId, Arrays.asList(href));
-		return ccs.isEmpty() ? null : ccs.get(0);
-	}
-	
-	@Override
-	public List<EventObjectWithICalendar> getEventObjectsWithICalendar(int calendarId, Collection<String> hrefs) throws WTException {
+	public List<EventObject> getEventObjects(final int calendarId, final Collection<String> hrefs, final EventObjectOutputType outputType) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
 		try {
+			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			con = WT.getConnection(SERVICE_ID);
 			
-			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
-			
-			ArrayList<EventObjectWithICalendar> items = new ArrayList<>();
+			ArrayList<EventObject> items = new ArrayList<>();
+			//Map<String, List<VEventObject>> map = evtDao.viewOnlineEventObjectsByCalendarHrefs(con, calendarId, hrefs);
 			Map<String, List<VEventObject>> map = evtDao.viewCalObjectsByCalendarHrefs(con, calendarId, hrefs);
 			for (String href : hrefs) {
 				List<VEventObject> vevts = map.get(href);
@@ -1008,7 +1030,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					logger.trace("Many events ({}) found for same href [{} -> {}]", vevts.size(), vevt.getHref(), vevt.getEventId());
 				}
 				
-				items.add((EventObjectWithICalendar)doEventObjectPrepare(con, vevt, EventObjectOutputType.ICALENDAR));
+				items.add(doEventObjectPrepare(con, vevt, outputType));
 			}
 			return items;
 			
@@ -4032,51 +4054,71 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return bounds;
 	}
 	
-	private EventObject doEventObjectPrepare(Connection con, VEventObject vobj, EventObjectOutputType outputType) throws WTException {
+	// Prepare only Tags
+	private EventObject doEventObjectPrepare(Connection con, VEventObject vevt, EventObjectOutputType outputType) throws WTException {
+		return doEventObjectPrepare(con, vevt, outputType, BitFlags.with(EventProcessOpt.TAGS));
+	}
+	
+	private EventObject doEventObjectPrepare(Connection con, VEventObject vevt, EventObjectOutputType outputType, final BitFlags<EventProcessOpt> options) throws WTException {
 		if (EventObjectOutputType.STAT.equals(outputType)) {
-			return ManagerUtils.fillEventCalObject(new EventObject(), vobj);
+			return ManagerUtils.fillEventCalObject(new EventObject(), vevt);
 			
 		} else {
 			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 			EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+			EventAttachmentDAO eattDao = EventAttachmentDAO.getInstance();
+			EventCustomValueDAO ecvalDao = EventCustomValueDAO.getInstance();
+			//EventICalendarDAO icaDao = EventICalendarDAO.getInstance();
 
-			Event event = ManagerUtils.fillEvent(new Event(), vobj);
+			Event event = ManagerUtils.fillEvent(new Event(), vevt);
 
-			if (vobj.getRecurrenceId() != null) {
-				ORecurrence orec = recDao.select(con, vobj.getRecurrenceId());
-				if (orec == null) throw new WTException("Unable to get recurrence [{}]", vobj.getRecurrenceId());
+			if (vevt.getRecurrenceId() != null) {
+				ORecurrence orec = recDao.select(con, vevt.getRecurrenceId());
+				if (orec == null) throw new WTException("Unable to get recurrence [{}]", vevt.getRecurrenceId());
 				
-				Set<LocalDate> excludedDates = doGetExcludedDates(con, event.getEventId(), vobj.getRecurrenceId());
+				Set<LocalDate> excludedDates = doGetExcludedDates(con, event.getEventId(), vevt.getRecurrenceId());
 				event.setRecurrence(orec.getRule(), orec.getLocalStartDate(event.getDateTimeZone()), excludedDates);
 			}
-			if (vobj.hasAttendees()) {
+			if (vevt.hasAttendees()) {
 				List<OEventAttendee> oatts = attDao.selectByEvent(con, event.getEventId());
 				event.setAttendees(ManagerUtils.createEventAttendeeList(oatts));
+			}
+			
+			if (options.has(EventProcessOpt.TAGS) && !StringUtils.isBlank(vevt.getTags())) {
+				event.setTags(new LinkedHashSet(new CId(vevt.getTags()).getTokens()));
+			}
+			if (options.has(EventProcessOpt.ATTACHMENTS) && vevt.getHasAttachments()) {
+				List<VEventAttachmentWithBytes> oatts = eattDao.selectByEventWithBytes(con, vevt.getEventId());
+				event.setAttachments(ManagerUtils.createEventAttachmentListWithBytes(oatts));
+			}
+			if (options.has(EventProcessOpt.CUSTOM_VALUES) && vevt.getHasCustomValues()) {
+				List<OEventCustomValue> ovals = ecvalDao.selectByEvent(con, vevt.getEventId());
+				event.setCustomValues(ManagerUtils.createCustomValuesMap(ovals));
 			}
 			
 			boolean keepPrivate = needsTreatAsPrivate(RunContext.getRunProfileId(), event.getIsPrivate(), event.getCalendarId());
 			if (keepPrivate) event.censorize();
 			
 			if (EventObjectOutputType.ICALENDAR.equals(outputType)) {
-				EventObjectWithICalendar eco = ManagerUtils.fillEventCalObject(new EventObjectWithICalendar(), vobj);
-				
+				EventObjectWithICalendar ret = ManagerUtils.fillEventCalObject(new EventObjectWithICalendar(), vevt);
 				ICalendarOutput out = new ICalendarOutput(ICalendarUtils.buildProdId(ManagerUtils.getProductName()));
+				
 				//TODO: add support to excluded dates
 				net.fortuna.ical4j.model.Calendar iCal = out.toCalendar(event);
-				if (vobj.getHasIcalendar()) {
+				if (vevt.getHasIcalendar()) {
 					//TODO: in order to be fully compliant, merge generated vcard of the original one in db table!
 				}
 				try {
-					eco.setIcalendar(out.write(iCal));
+					ret.setIcalendar(out.write(iCal));
 				} catch(IOException ex) {
 					throw new WTException(ex, "Unable to write iCalendar");
 				}
-				return eco;
+				return ret;
 				
 			} else {
-				EventObjectWithBean eco = ManagerUtils.fillEventCalObject(new EventObjectWithBean(), vobj);
-				eco.setEvent(event);
-				return eco;
+				EventObjectWithBean ret = ManagerUtils.fillEventCalObject(new EventObjectWithBean(), vevt);
+				ret.setEvent(event);
+				return ret;
 			}
 		}
 	}
@@ -6152,5 +6194,30 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private enum ProcessOptions {
 		ATTACHMENTS, TAGS
+	}
+	
+	private enum EventProcessOpt implements BitFlagsEnum<EventProcessOpt> {
+		RECURRENCE(1<<0), EXLUDED_DATES(1<<1), ATTENDEES(1<<2), ATTACHMENTS(1<<3), TAGS(1<<4), CUSTOM_VALUES(1<<5);
+		
+		private int mask = 0;
+		private EventProcessOpt(int mask) { this.mask = mask; }
+		@Override
+		public long mask() { return this.mask; }
+		
+		public static BitFlags<EventProcessOpt> parseEventGetOptions(BitFlags<EventGetOption> flags) {
+			BitFlags<EventProcessOpt> ret = new BitFlags<>(EventProcessOpt.class);
+			if (flags.has(EventGetOption.ATTACHMENTS)) ret.set(EventProcessOpt.ATTACHMENTS);
+			if (flags.has(EventGetOption.TAGS)) ret.set(EventProcessOpt.TAGS);
+			if (flags.has(EventGetOption.CUSTOM_VALUES)) ret.set(EventProcessOpt.CUSTOM_VALUES);
+			return ret;
+		}
+		
+		public static BitFlags<EventProcessOpt> parseEventUpdateOptions(BitFlags<EventUpdateOption> flags) {
+			BitFlags<EventProcessOpt> ret = new BitFlags<>(EventProcessOpt.class);
+			if (flags.has(EventUpdateOption.ATTACHMENTS)) ret.set(EventProcessOpt.ATTACHMENTS);
+			if (flags.has(EventUpdateOption.TAGS)) ret.set(EventProcessOpt.TAGS);
+			if (flags.has(EventUpdateOption.CUSTOM_VALUES)) ret.set(EventProcessOpt.CUSTOM_VALUES);
+			return ret;
+		}
 	}
 }

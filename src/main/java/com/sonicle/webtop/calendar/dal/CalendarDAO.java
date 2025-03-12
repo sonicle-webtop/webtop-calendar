@@ -313,8 +313,10 @@ public class CalendarDAO extends BaseDAO {
 			.fetchInto(OCalendar.class);
 	}
 	
-	public int insert(Connection con, OCalendar item) throws DAOException {
+	public int insert(Connection con, OCalendar item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		item.setCreationTimestamp(revisionTimestamp);
+		item.setRevisionTimestamp(revisionTimestamp);
 		CalendarsRecord record = dsl.newRecord(CALENDARS, item);
 		return dsl
 			.insertInto(CALENDARS)
@@ -322,10 +324,12 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int update(Connection con, OCalendar item) throws DAOException {
+	public int update(Connection con, OCalendar item, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		item.setRevisionTimestamp(revisionTimestamp);
 		return dsl
 			.update(CALENDARS)
+			.set(CALENDARS.REVISION_TIMESTAMP, item.getRevisionTimestamp())
 			.set(CALENDARS.NAME, item.getName())
 			.set(CALENDARS.DESCRIPTION, item.getDescription())
 			.set(CALENDARS.COLOR, item.getColor())
@@ -343,11 +347,12 @@ public class CalendarDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int update(Connection con, int calendarId, FieldsMap fieldValues) throws DAOException {
+	public int update(Connection con, int calendarId, FieldsMap fieldValues, DateTime revisionTimestamp) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(CALENDARS)
 			.set(fieldValues)
+			.set(CALENDARS.REVISION_TIMESTAMP, revisionTimestamp)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
 			)

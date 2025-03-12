@@ -4012,25 +4012,27 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private Calendar doCalendarInsert(Connection con, CalendarBase cal) throws DAOException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
+		DateTime revisionTimestamp = BaseDAO.createRevisionTimestamp();
 		
 		OCalendar ocal = ManagerUtils.createOCalendar(cal);
 		ocal.setCalendarId(calDao.getSequence(con).intValue());
 		fillOCalendarWithDefaults(ocal);
 		if (ocal.getIsDefault()) calDao.resetIsDefaultByProfile(con, ocal.getDomainId(), ocal.getUserId());
 		
-		calDao.insert(con, ocal);
+		calDao.insert(con, ocal, revisionTimestamp);
 		return ManagerUtils.createCalendar(ocal);
 	}
 	
 	private boolean doCalendarUpdate(Connection con, int calendarId, CalendarBase cal) throws DAOException {
 		CalendarDAO calDao = CalendarDAO.getInstance();
+		DateTime revisionTimestamp = BaseDAO.createRevisionTimestamp();
 		
 		OCalendar ocal = ManagerUtils.createOCalendar(cal);
 		ocal.setCalendarId(calendarId);
 		fillOCalendarWithDefaults(ocal);
 		if (ocal.getIsDefault()) calDao.resetIsDefaultByProfile(con, ocal.getDomainId(), ocal.getUserId());
 		
-		return calDao.update(con, ocal) == 1;
+		return calDao.update(con, ocal, revisionTimestamp) == 1;
 	}
 	
 	private ArrayList<ComparableEventBounds> doListEventsBounds(final Connection con, final Collection<Integer> calendarIds, final DateTime spanFrom, final DateTime spanTo, final DateTimeZone targetTimezone) throws WTException {

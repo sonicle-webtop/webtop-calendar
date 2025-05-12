@@ -606,7 +606,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				endTime: Sonicle.Date.format(me.getVar('workdayEnd'), 'H:i')
 			},
 			scrollTime: Ext.String.leftPad(Math.max(me.getVar('workdayStart').getHours()-1, 0), 2, '0') + ':00',
-			currentMonthMinWidth: 180,
 			buttonConfigs: {
 				today: { ui: '{segmented|toolbar}' },
 				previous: { ui: '{segmented|toolbar}' },
@@ -636,6 +635,8 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				ddCopy: me.res('scheduler.ddcopyevent'),
 				ddResize: me.res('scheduler.ddresizeevent')
 			},
+			//headerTextMinWidth: 180,
+			headerTextRenderer: Sonicle.fullcalendar.Panel.currentMonthYearOnlyHeaderTextRenderer,
 			eventClassNamesFunction: Sonicle.fullcalendar.Panel.appointmentEventClassNamesFunction,
 			eventContentRenderer: Sonicle.fullcalendar.Panel.appointmentEventContentRenderer,
 			eventTooltipRenderer: Sonicle.fullcalendar.Panel.appointmentEventTooltipRenderer,

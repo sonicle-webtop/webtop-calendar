@@ -221,7 +221,7 @@ public class CalendarDAO extends BaseDAO {
 			.fetchInto(OCalendar.class);
 	}
 	
-	public List<OCalendar> selectByProfileIn(Connection con, String domainId, String userId, Integer[] calendars) throws DAOException {
+	public List<OCalendar> selectByProfileIn(Connection con, String domainId, String userId, Collection<Integer> calendars) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()

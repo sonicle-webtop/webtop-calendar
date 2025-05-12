@@ -1234,7 +1234,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				bind: {
 					store: '{record.attendees}'
 				},
-				border: true,
+				border: false,
 				rowLines: false,
 				hideHeaders: true,
 				columns: [

@@ -58,7 +58,7 @@ Ext.define('Sonicle.webtop.calendar.view.CalendarRemoteWiz', {
 			username: null,
 			password: null,
 			name: null,
-			color: '#FFFFFF',
+			color: '#F3F4F6',
 			syncFrequency: null
 		}
 	},

@@ -5197,7 +5197,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (tgt.getUserId() == null) tgt.setUserId(getTargetProfileId().getUserId());
 			if (tgt.getBuiltIn() == null) tgt.setBuiltIn(false);
 			if (StringUtils.isBlank(tgt.getProvider())) tgt.setProvider(EnumUtils.toSerializedName(Calendar.Provider.LOCAL));
-			if (StringUtils.isBlank(tgt.getColor())) tgt.setColor("#FFFFFF");
+			if (StringUtils.isBlank(tgt.getColor())) tgt.setColor("#F3F4F6");
 			if (StringUtils.isBlank(tgt.getSync())) tgt.setSync(EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 			if (tgt.getIsDefault() == null) tgt.setIsDefault(false);
 			if (tgt.getIsPrivate() == null) tgt.setIsPrivate(false);

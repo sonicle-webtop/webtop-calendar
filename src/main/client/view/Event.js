@@ -97,6 +97,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		Sonicle.VMUtils.applyFormulas(me.getVM(), {
 			foIsView: WTF.foIsEqual('_mode', null, me.MODE_VIEW),
+			foIsNew: WTF.foIsEqual('_mode', null, me.MODE_NEW),
 			startDate: {
 				bind: {bindTo: '{record.startDate}'},
 				get: function(val) {
@@ -1310,6 +1311,9 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				items: [
 					me.addAct('eventAuditLog', {
 						text: null,
+						bind: {
+							hidden: '{foIsNew}'
+						},
 						tooltip: WT.res('act-auditLog.lbl'),
 						iconCls: 'fas fa-history',
 						handler: function() {

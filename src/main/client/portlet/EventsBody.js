@@ -80,6 +80,7 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 					xtype: 'socolorcolumn',
 					dataIndex: 'calendarColor',
 					swatchGeometry: 'circle',
+					tooltipField: 'title',
 					labelField: 'title',
 					labelCls: 'wt-text-sm-medium wtcal-portlet-event-title',
 					flex: 1

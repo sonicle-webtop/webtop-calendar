@@ -46,7 +46,7 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarLkp', {
 			return Sonicle.String.substrBeforeLast(rec.get('_profileId'), '@');
 		}),
 		WTF.roField('name', 'string'),
-		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
+		WTF.field('color', 'string', false, {defaultValue: '#F3F4F6'}),
 		WTF.field('evtPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('evtBusy', 'boolean', false, {defaultValue: false}),
 		WTF.roField('evtReminder', 'int', true),

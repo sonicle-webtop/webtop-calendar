@@ -44,7 +44,7 @@ Ext.define('Sonicle.webtop.calendar.model.Calendar', {
 		WTF.field('provider', 'string', false, {defaultValue: 'local'}),
 		WTF.field('name', 'string', false),
 		WTF.field('description', 'string', true),
-		WTF.field('color', 'string', false, {defaultValue: '#FFFFFF'}),
+		WTF.field('color', 'string', false, {defaultValue: '#F3F4F6'}),
 		WTF.field('sync', 'string', false, {defaultValue: 'O'}),
 		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('busy', 'boolean', false, {defaultValue: true}),

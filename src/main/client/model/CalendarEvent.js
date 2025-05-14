@@ -33,7 +33,7 @@
 Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 	extend: 'Ext.data.Model',
 	mixins: [
-		'Sonicle.fullcalendar.api.FullCalendarDataMixin'
+		'Sonicle.fullcalendar.api.EventDataMixin'
 	],
 	
 	allDayField: 'isAllDay',
@@ -76,7 +76,7 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 	
 	privates: {
 		getColor: function() {
-			var parent = this.mixins.sofullcalendardata.getColor.call(this);
+			var parent = this.mixins.sofullcalendareventdata.getColor.call(this);
 			return parent;
 			//return WTA.sdk.mixin.FolderNodeInterface.tailwindColor(parent);
 		},
@@ -85,10 +85,10 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 			return !this.get('isReadOnly') && !this.get('isRecurring');
 		},
 
-		fcPrepareExtendedProps: function() {
+		fcPrepareEventExtendedProps: function() {
 			var me = this,
 				SoO = Sonicle.Object,
-				parent = me.mixins.sofullcalendardata.fcPrepareExtendedProps.call(me);
+				parent = me.mixins.sofullcalendareventdata.fcPrepareEventExtendedProps.call(me);
 		
 			return Ext.apply(parent || {}, {
 				calendarId: me.get('calendarId'),

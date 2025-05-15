@@ -594,6 +594,16 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					autoAbort: true
 				})
 			},
+			eventsOrder: [
+				function(myPofileId) {
+					return function(e1, e2) {
+						var mine1 = e1.extendedProps.ownerId === myPofileId,
+							mine2 = e2.extendedProps.ownerId === myPofileId;
+						return mine1 > mine2 ? -1 : 1;
+					};
+				}(WT.getVar('profileId')), // Call the function soon right here!
+				'start', '-duration', 'allDay', 'title'
+			],
 			eventsForceSolidDisplay: false,
 			locale: WT.getLanguageCode(),
 			startDay: WT.getStartDay(),

@@ -91,6 +91,7 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 				parent = me.mixins.sofullcalendareventdata.fcPrepareEventExtendedProps.call(me);
 		
 			return Ext.apply(parent || {}, {
+				ownerId: me.get('_profileId'),
 				calendarId: me.get('calendarId'),
 				calendarName: me.get('calendarName'),
 				calendarOwner: me.get('_owner'),

@@ -51,7 +51,6 @@ import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.DateRange;
 import com.sonicle.commons.time.DateTimeRange;
-import com.sonicle.commons.time.DateTimeUtils;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.dav.CalDav;
@@ -3115,29 +3114,38 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 					//add custom field values
 					//TODO: move to ICalendarInput class
-					PropertyList cfvprops = ei.sourceEvent.getProperties(XCustomFieldValue.PROPERTY_NAME);
-					if (cfvprops!=null) {
-						HashMap<String, CustomFieldValue> ecfvMap = new HashMap<>();
-						for(Property p: cfvprops) {
-							XProperty ecfv = (XProperty)p;
-							String uid = ecfv.getParameter("UID").getValue();
-							String type = ecfv.getParameter("TYPE").getValue();
-							String value = ecfv.getValue();
-							CustomFieldValue cfv = new CustomFieldValue();
-							cfv.setFieldId(uid);
+					HashMap<String, CustomFieldValue> customValues = new HashMap<>();
+					for (Property prop : ei.sourceEvent.getProperties(XCustomFieldValue.PROPERTY_NAME)) {
+						final String id = XCustomFieldValue.getFieldId((XProperty)prop);
+						if (!customValues.containsKey(id)) {
+							final String type = XCustomFieldValue.getFieldType((XProperty)prop);
+							final String value = XCustomFieldValue.getFieldValue((XProperty)prop);
 							
-							if (XCustomFieldValue.TYPE_STRING.equals(type)) cfv.setStringValue(LangUtils.value(value, (String)null));
-							if (XCustomFieldValue.TYPE_NUMBER.equals(type)) cfv.setNumberValue(LangUtils.value(value, (Double)null));
-							if (XCustomFieldValue.TYPE_BOOLEAN.equals(type)) cfv.setBooleanValue(LangUtils.value(value, (Boolean)null));
-							if (XCustomFieldValue.TYPE_DATE.equals(type)) cfv.setDateValue(JodaTimeUtils.parseDateTimeISO(value));
-							if (XCustomFieldValue.TYPE_TEXT.equals(type)) cfv.setTextValue(LangUtils.value(value, (String)null));
-							ecfvMap.put(uid, cfv);
+							CustomFieldValue cfv = null;
+							if (XCustomFieldValue.TYPE_STRING.equals(type)) {
+								cfv = new CustomFieldValue(id);
+								cfv.setStringValue(LangUtils.value(value, (String)null));
+							} else if (XCustomFieldValue.TYPE_NUMBER.equals(type)) {
+								cfv = new CustomFieldValue(id);
+								cfv.setNumberValue(LangUtils.value(value, (Double)null));
+							} else if (XCustomFieldValue.TYPE_BOOLEAN.equals(type)) {
+								cfv = new CustomFieldValue(id);
+								cfv.setBooleanValue(LangUtils.value(value, (Boolean)null));
+							} else if (XCustomFieldValue.TYPE_DATE.equals(type)) {
+								cfv = new CustomFieldValue(id);
+								cfv.setDateValue(JodaTimeUtils.parseDateTimeISO(value));
+							} else if (XCustomFieldValue.TYPE_TEXT.equals(type)) {
+								cfv = new CustomFieldValue(id);
+								cfv.setTextValue(LangUtils.value(value, (String)null));
+							} else {
+								// throw ???...
+							}
+
+							if (cfv != null) customValues.put(id, cfv);
 						}
-						ei.event.setCustomValues(ecfvMap);
 					}
-					
-				}				
-				
+					ei.event.setCustomValues(customValues);
+				}
 				
 				doEventInputInsert(con, uidMap, ei, ProcessReminder.DISARM_PAST);
 				DbUtils.commitQuietly(con);

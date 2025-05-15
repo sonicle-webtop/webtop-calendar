@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar.rpt;
 
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
@@ -70,9 +70,9 @@ public abstract class AbstractAgenda extends AbstractReport {
 	
 	public void setDataSource(CalendarManager manager, DateTime fromDate, DateTime toDate, DateTimeZone utz, Map<Integer, Calendar> calendars, Collection<SchedEventInstance> instances) throws WTException {
 		int days = -1;
-		if (DateTimeUtils.isEndOfDay(toDate, true)) {
+		if (JodaTimeUtils.isEndOfDay(toDate, true)) {
 			days = Days.daysBetween(fromDate, toDate).getDays()+1;
-		} else if(DateTimeUtils.isMidnight(toDate)) {
+		} else if(JodaTimeUtils.isMidnight(toDate)) {
 			days = Days.daysBetween(fromDate, toDate).getDays();
 		}
 		
@@ -101,14 +101,14 @@ public abstract class AbstractAgenda extends AbstractReport {
 						spanning = false;
 					} else {
 						if(startsInDay(utz, dayDateFrom, sei.getStartDate())) {
-							spanRight = DateTimeUtils.datesBetween(dayDateFrom, sei.getEndDate().withZone(utz));
+							spanRight = JodaTimeUtils.calendarDaysBetween(dayDateFrom, sei.getEndDate().withZone(utz));
 						}
 						if(endsInDay(utz, dayDateFrom, sei.getEndDate())) {
-							spanLeft = DateTimeUtils.datesBetween(sei.getStartDate().withZone(utz), dayDateFrom);
+							spanLeft = JodaTimeUtils.calendarDaysBetween(sei.getStartDate().withZone(utz), dayDateFrom);
 						}
 						if(!startsInDay(utz, dayDateFrom, sei.getStartDate()) && !endsInDay(utz, dayDateFrom, sei.getEndDate())) {
-							spanLeft = DateTimeUtils.datesBetween(sei.getStartDate().withZone(utz), dayDateFrom);
-							spanRight = DateTimeUtils.datesBetween(dayDateFrom, sei.getEndDate().withZone(utz));
+							spanLeft = JodaTimeUtils.calendarDaysBetween(sei.getStartDate().withZone(utz), dayDateFrom);
+							spanRight = JodaTimeUtils.calendarDaysBetween(dayDateFrom, sei.getEndDate().withZone(utz));
 						}
 					}
 					if(spanning) {
@@ -124,11 +124,11 @@ public abstract class AbstractAgenda extends AbstractReport {
 	}
 	
 	private boolean startsInDay(DateTimeZone utz, DateTime dayDate, DateTime eventStartDate) {
-		return DateTimeUtils.startsInDay(dayDate, eventStartDate.withZone(utz));
+		return JodaTimeUtils.startsInDay(dayDate, eventStartDate.withZone(utz));
 	}
 	
 	private boolean endsInDay(DateTimeZone utz, DateTime dayDate, DateTime eventEndDate) {
-		return DateTimeUtils.endsInDay(dayDate, eventEndDate.withZone(utz));
+		return JodaTimeUtils.endsInDay(dayDate, eventEndDate.withZone(utz));
 	}
 	
 	private boolean isInDay(DateTimeZone utz, DateTime dayDate, DateTime eventStartDate, DateTime eventEndDate) {

@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
@@ -87,7 +87,7 @@ public class JsSchedulerEvent {
 	public JsSchedulerEvent() {}
 	
 	public JsSchedulerEvent(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz, Pattern meetingUrlPattern) {
-		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
+		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
 		// Determine if keep event data private
@@ -121,7 +121,7 @@ public class JsSchedulerEvent {
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getMinutesValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = calendar.isProviderRemote() || event.isCensorized(); // Maybe it's better to call this isLocked (no actions will be avail in client scheduler component)
-		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
+		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.hasAttendees();
 		isNtf = event.hasNotifyableAttendees();
 		isRecurring = event.isEventRecurring();
@@ -141,7 +141,7 @@ public class JsSchedulerEvent {
 	}
 	
 	public JsSchedulerEvent(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, VVEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
-		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
+		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
 		// Determine if keep event data private
@@ -174,7 +174,7 @@ public class JsSchedulerEvent {
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = event.getReadOnly() || keepDataPrivate;
-		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !DateTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
+		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
 		hasAtts = event.hasAttendees();
 		isNtf = event.hasNotifyableAttendees();
 		isRecurring = event.isEventRecurring();

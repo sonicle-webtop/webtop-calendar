@@ -36,7 +36,7 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.URIUtils;
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
@@ -88,7 +88,7 @@ public class JsCalendar {
 			remotePassword = params.password;
 			remoteSyncFrequency = cal.getRemoteSyncFrequency();
 			if (cal.getRemoteSyncTimestamp() != null) {
-				remoteLastSync = DateTimeUtils.createYmdHmsFormatter(utz).print(cal.getRemoteSyncTimestamp());
+				remoteLastSync = JodaTimeUtils.createFormatterYMDHMS(utz).print(cal.getRemoteSyncTimestamp());
 			}
 		}
 	}

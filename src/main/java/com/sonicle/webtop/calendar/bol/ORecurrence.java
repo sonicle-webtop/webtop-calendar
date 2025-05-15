@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.commons.LangUtils;
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Recurrences;
@@ -263,7 +263,7 @@ public class ORecurrence extends Recurrences {
 			if (isEndRepeat()) {
 				rec.setCount(getRepeat());
 			} else if(isEndUntil()) {
-				final DateTime lastTimeOfDay = DateTimeUtils.withTimeAtEndOfDay(getUntilDate());
+				final DateTime lastTimeOfDay = JodaTimeUtils.withTimeAtEndOfDay(getUntilDate());
 				rec.setUntil(ICal4jUtils.toIC4jDateTimeUTC(lastTimeOfDay));
 			} else if(isEndNever()) {
 				//TODO: change end logic: rrule without until date means infinite repeat!

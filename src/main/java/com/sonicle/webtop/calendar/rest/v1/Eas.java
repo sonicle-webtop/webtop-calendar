@@ -34,7 +34,7 @@ package com.sonicle.webtop.calendar.rest.v1;
 
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarLocale;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarUtils;
@@ -85,9 +85,9 @@ import org.slf4j.LoggerFactory;
 public class Eas extends EasApi {
 	private static final Logger logger = LoggerFactory.getLogger(Eas.class);
 	private static final String DEFAULT_ETAG = "19700101000000000";
-	private static final DateTimeFormatter ETAG_FMT = DateTimeUtils.createFormatter("yyyyMMddHHmmssSSS", DateTimeZone.UTC);
-	private static final DateTimeFormatter ISO_DATE_FMT = DateTimeUtils.createFormatter("yyyyMMdd", DateTimeZone.UTC);
-	private static final DateTimeFormatter ISO_DATETIME_FMT = DateTimeUtils.createFormatter("yyyyMMdd'T'HHmmss'Z'", DateTimeZone.UTC);
+	private static final DateTimeFormatter ETAG_FMT = JodaTimeUtils.createFormatter("yyyyMMddHHmmssSSS", DateTimeZone.UTC);
+	private static final DateTimeFormatter ISO_DATE_FMT = JodaTimeUtils.createFormatter("yyyyMMdd", DateTimeZone.UTC);
+	private static final DateTimeFormatter ISO_DATETIME_FMT = JodaTimeUtils.createFormatter("yyyyMMdd'T'HHmmss'Z'", DateTimeZone.UTC);
 	
 	@Override
 	public Response getFolders() {
@@ -149,8 +149,8 @@ public class Eas extends EasApi {
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			DateTime since = DateTimeUtils.parseDateTime(ISO_DATETIME_FMT, cutoffDate);
-			if (since == null) DateTimeUtils.now().minusDays(30).withTimeAtStartOfDay();
+			DateTime since = JodaTimeUtils.parseDateTime(ISO_DATETIME_FMT, cutoffDate);
+			if (since == null) JodaTimeUtils.now().minusDays(30).withTimeAtStartOfDay();
 			
 			List<SyncEventStat> items = new ArrayList<>();
 			List<EventObject> evtobjs = manager.listEventObjects(folderId, since, EventObjectOutputType.STAT);
@@ -323,7 +323,7 @@ public class Eas extends EasApi {
 		if (event.hasExcludedDates()) {
 			exDates = new ArrayList<>();
 			for (LocalDate ld : event.getExcludedDates()) {
-				exDates.add(DateTimeUtils.print(ISO_DATE_FMT, ld));
+				exDates.add(JodaTimeUtils.print(ISO_DATE_FMT, ld));
 			}
 		}
 		
@@ -336,8 +336,8 @@ public class Eas extends EasApi {
 		return new SyncEvent()
 				.id(Integer.valueOf(evtobj.getEventId()))
 				.etag(buildEtag(evtobj.getRevisionTimestamp()))
-				.start(DateTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.start))
-				.end(DateTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.end))
+				.start(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.start))
+				.end(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.end))
 				.tz(event.getTimezone())
 				.allDay(event.getAllDay())
 				.organizer(event.getOrganizer())
@@ -348,7 +348,7 @@ public class Eas extends EasApi {
 				.busy(event.getBusy())
 				.reminder(Event.Reminder.getMinutesValue(event.getReminder()))
 				.recRule(event.hasRecurrence() ? event.getRecurrenceRule() : null)
-				.recStart(event.hasRecurrence() ? DateTimeUtils.print(ISO_DATE_FMT, event.getRecurrenceStartDate()) : null)
+				.recStart(event.hasRecurrence() ? JodaTimeUtils.print(ISO_DATE_FMT, event.getRecurrenceStartDate()) : null)
 				.exDates(exDates)
 				.attendees(saas);
 	}
@@ -364,8 +364,8 @@ public class Eas extends EasApi {
 	private <T extends Event> T mergeEvent(T tgt, SyncEventData src) {
 		boolean isNew = tgt.getEventId() == null;
 		
-		tgt.setStartDate(DateTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getStart()));
-		tgt.setEndDate(DateTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getEnd()));
+		tgt.setStartDate(JodaTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getStart()));
+		tgt.setEndDate(JodaTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getEnd()));
 		tgt.setTimezone(src.getTz());
 		tgt.setAllDay(src.isAllDay());
 		tgt.setTitle(src.getTitle());
@@ -381,7 +381,7 @@ public class Eas extends EasApi {
 			if ((src.getExDates() != null) && (!src.getExDates().isEmpty())) {
 				exDates = new LinkedHashSet<>();
 				for (String sdate : src.getExDates()) {
-					LocalDate ld = DateTimeUtils.parseLocalDate(ISO_DATE_FMT, sdate);
+					LocalDate ld = JodaTimeUtils.parseLocalDate(ISO_DATE_FMT, sdate);
 					if (ld != null) exDates.add(ld);
 				}
 			}

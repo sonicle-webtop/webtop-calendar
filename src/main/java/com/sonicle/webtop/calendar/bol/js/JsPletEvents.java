@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
@@ -65,7 +65,7 @@ public class JsPletEvents {
 	public String _itPerms;
 	
 	public JsPletEvents(CalendarFSOrigin origin, CalendarFSFolder folder, SchedEventInstance event, DateTimeZone profileTz, Pattern meetingUrlPattern) {
-		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(profileTz);
+		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(profileTz);
 		final Calendar calendar = folder.getCalendar();
 		
 		id = event.getKey();

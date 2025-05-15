@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar;
 
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.calendar.bol.js.JsPubEvent;
@@ -47,7 +47,6 @@ import com.sonicle.webtop.core.bol.js.JsWTSPublic;
 import com.sonicle.webtop.core.sdk.BasePublicService;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.app.servlet.ServletHelper;
 import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -176,7 +175,7 @@ public class PublicService extends BasePublicService {
 		CoreUserSettings cus = new CoreUserSettings(calendar.getProfileId());
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		DateTimeFormatter dtFmt = DateTimeUtils.createFormatter(pattern, etz);
+		DateTimeFormatter dtFmt = JodaTimeUtils.createFormatter(pattern, etz);
 		return MessageFormat.format("{0} - {1}", dtFmt.print(event.getStartDate()), dtFmt.print(event.getEndDate()));
 	}
 	
@@ -339,7 +338,7 @@ public class PublicService extends BasePublicService {
 		CoreUserSettings cus = new CoreUserSettings(profileId);
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
 		DateTimeZone etz = DateTimeZone.forID(se.getTimezone());
-		DateTimeFormatter dtFmt = DateTimeUtils.createFormatter(pattern, etz);
+		DateTimeFormatter dtFmt = JodaTimeUtils.createFormatter(pattern, etz);
 		return MessageFormat.format("{0} - {1}", dtFmt.print(se.getStartDate()), dtFmt.print(se.getEndDate()));
 	}
 	

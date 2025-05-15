@@ -81,7 +81,7 @@ public class ICalHelper {
 	}
 	
 	public static Calendar toCalendar(Method calMethod, String prodId, Collection<Event> events) throws WTException {
-		//org.joda.time.DateTime now = DateTimeUtils.now();
+		//org.joda.time.DateTime now = JodaTimeUtils.now();
 		Calendar ical = null;
 		if (calMethod == null) {
 			ical = ICalendarUtils.newCalendar(prodId, null);

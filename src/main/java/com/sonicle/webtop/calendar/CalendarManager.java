@@ -229,6 +229,7 @@ import com.sonicle.commons.flags.BitFlagsEnum;
 import com.sonicle.commons.time.DateTimeRange2;
 import com.sonicle.commons.time.DateTimeWindow;
 import com.sonicle.commons.time.DateWindow;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.commons.time.TimeRange;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.CId;
@@ -238,6 +239,8 @@ import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.io.EventInputConsumer;
 import com.sonicle.webtop.calendar.model.CalendarBase;
+import com.sonicle.webtop.core.app.ical4j.XCustomFieldValue;
+import com.sonicle.webtop.core.app.ical4j.XTag;
 import com.sonicle.webtop.core.app.model.Resource;
 import com.sonicle.webtop.core.app.model.ResourceGetOption;
 import com.sonicle.webtop.core.app.model.ShareOrigin;
@@ -970,7 +973,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			final boolean fullSync = (since == null);
-			final DateTime until = DateTimeUtils.now(true);
+			final DateTime until = JodaTimeUtils.now(true);
 			
 			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
@@ -2891,7 +2894,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	public Map<String, DateTime> generateTimeSpans(final LocalDate fromDate, final LocalDate toDate, final TimeRange timeRange, final boolean applyTimeRangeForEachDay, final DateTimeZone timezone, final int minuteResolution) {
 		LinkedHashMap<String, DateTime> spans = new LinkedHashMap<>();
-		DateTimeFormatter ymdhmZoneFmt = DateTimeUtils.createYmdHmFormatter(timezone);
+		DateTimeFormatter ymdhmZoneFmt = JodaTimeUtils.createFormatterYMDHM(timezone);
 		
 		DateTime boundaryInstant = new DateTime(timezone).withDate(toDate.plusDays(1)).withTimeAtStartOfDay();
 		DateTime instant = new DateTime(timezone).withDate(fromDate).withTimeAtStartOfDay();
@@ -2900,11 +2903,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (timeRange != null) {
 				final LocalTime time = instant.toLocalTime();
 				if (applyTimeRangeForEachDay) {
-					add = DateTimeUtils.between(time, timeRange.getStart(), timeRange.getEnd());
+					add = JodaTimeUtils.between(time, timeRange.getStart(), timeRange.getEnd());
 				} else {
 					final LocalDate date = instant.toLocalDate();
 					if (date.isEqual(fromDate) && date.isEqual(toDate)) {
-						add = DateTimeUtils.between(time, timeRange.getStart(), timeRange.getEnd());
+						add = JodaTimeUtils.between(time, timeRange.getStart(), timeRange.getEnd());
 					} else if (date.isEqual(fromDate)) {
 						add = (time.compareTo(timeRange.getStart()) >= 0);
 					} else if (date.isEqual(toDate)) {
@@ -2947,15 +2950,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			for (VVEvent vevt : evtDao.viewByCalendarRangeCondition(con, calendarIds, from, to, BaseDAO.createCondition(conditionPredicate, epv))) {
 				SchedEventInstance item = ManagerUtils.fillSchedEvent(new SchedEventInstance(), vevt);
 				
-				final DateTime rouStart = DateTimeUtils.roundToNearestMinute(item.getStartDate().withZone(timezone), minuteResolution);
-				final DateTime rouEnd = DateTimeUtils.roundToNearestMinute(item.getEndDate().withZone(timezone), minuteResolution);
+				final DateTime rouStart = JodaTimeUtils.roundToNearestMinute(item.getStartDate().withZone(timezone), minuteResolution);
+				final DateTime rouEnd = JodaTimeUtils.roundToNearestMinute(item.getEndDate().withZone(timezone), minuteResolution);
 				final TimeRange rouTimeRange = TimeRange.builder().with(rouStart.toLocalTime(), rouEnd.toLocalTime()).build();
 				spans.putAll(generateTimeSpans(rouStart.toLocalDate(), rouEnd.toLocalDate(), rouTimeRange, false, timezone, minuteResolution));
 			}
 			for (VVEvent vevt : evtDao.viewRecurringByCalendarRangeCondition(con, doListCalendarIdsIn(con, profileId, null), from, to, BaseDAO.createCondition(conditionPredicate, epv))) {
 				for (SchedEventInstance item : calculateRecurringInstances_OLD(con, new SchedEventInstanceMapper(vevt, false), from, to, timezone, noOfRecurringInst)) {
-					final DateTime rouStart = DateTimeUtils.roundToNearestMinute(item.getStartDate().withZone(timezone), minuteResolution);
-					final DateTime rouEnd = DateTimeUtils.roundToNearestMinute(item.getEndDate().withZone(timezone), minuteResolution);
+					final DateTime rouStart = JodaTimeUtils.roundToNearestMinute(item.getStartDate().withZone(timezone), minuteResolution);
+					final DateTime rouEnd = JodaTimeUtils.roundToNearestMinute(item.getEndDate().withZone(timezone), minuteResolution);
 					final TimeRange rouTimeRange = TimeRange.builder().with(rouStart.toLocalTime(), rouEnd.toLocalTime()).build();
 					spans.putAll(generateTimeSpans(rouStart.toLocalDate(), rouEnd.toLocalDate(), rouTimeRange, false, timezone, minuteResolution));
 				}
@@ -3065,10 +3068,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			ei.event.setCalendarId(calendarId);
 			
 			try {
-				
+				//TODO: this kind of data extraction is wrong here...should be moved into ICalendarInput class
 				if (ei.sourceEvent!=null) {
 					
 					//add attachments
+					//TODO: move to ICalendarInput class
 					PropertyList atts = ei.sourceEvent.getProperties(Property.ATTACH);
 					if (atts!=null) {
 						ArrayList<EventAttachment> eatts = new ArrayList<>();
@@ -3094,7 +3098,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 					
 					//add tags
-					PropertyList tags = ei.sourceEvent.getProperties("X-WT-TAG");
+					//TODO: move to ICalendarInput class
+					PropertyList tags = ei.sourceEvent.getProperties(XTag.PROPERTY_NAME);
 					if (tags!=null) {
 						for(Property p: tags) {
 							XProperty tag = (XProperty)p;
@@ -3109,7 +3114,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 					
 					//add custom field values
-					PropertyList cfvprops = ei.sourceEvent.getProperties("X-WT-CUSTOMFIELDVALUE");
+					//TODO: move to ICalendarInput class
+					PropertyList cfvprops = ei.sourceEvent.getProperties(XCustomFieldValue.PROPERTY_NAME);
 					if (cfvprops!=null) {
 						HashMap<String, CustomFieldValue> ecfvMap = new HashMap<>();
 						for(Property p: cfvprops) {
@@ -3119,11 +3125,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							String value = ecfv.getValue();
 							CustomFieldValue cfv = new CustomFieldValue();
 							cfv.setFieldId(uid);
-							if ("boolean".equals(type)) cfv.setBooleanValue(Boolean.parseBoolean(value));
-							else if ("date".equals(type)) cfv.setDateValue(DateTimeUtils.createYmdHmsFormatter().parseDateTime(type));
-							else if ("number".equals(type)) cfv.setNumberValue(LangUtils.value(value, (Double)null));
-							else if ("string".equals(type)) cfv.setStringValue(value);
-							else if ("text".equals(type)) cfv.setTextValue(value);
+							
+							if (XCustomFieldValue.TYPE_STRING.equals(type)) cfv.setStringValue(LangUtils.value(value, (String)null));
+							if (XCustomFieldValue.TYPE_NUMBER.equals(type)) cfv.setNumberValue(LangUtils.value(value, (Double)null));
+							if (XCustomFieldValue.TYPE_BOOLEAN.equals(type)) cfv.setBooleanValue(LangUtils.value(value, (Boolean)null));
+							if (XCustomFieldValue.TYPE_DATE.equals(type)) cfv.setDateValue(JodaTimeUtils.parseDateTimeISO(value));
+							if (XCustomFieldValue.TYPE_TEXT.equals(type)) cfv.setTextValue(LangUtils.value(value, (String)null));
 							ecfvMap.put(uid, cfv);
 						}
 						ei.event.setCustomValues(ecfvMap);
@@ -3548,7 +3555,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				URI newUrl = URIUtils.buildQuietly(builder);
 				
 				try {
-					final DateTime newLastSync = DateTimeUtils.now();
+					final DateTime newLastSync = JodaTimeUtils.now();
 					tempFile = WT.createTempFile(PREFIX, null);
 					
 					// Retrieve webcal content (iCalendar) from the specified URL 
@@ -3687,7 +3694,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					if (dcal == null) throw new WTException("DAV calendar not found");
 					
 					final boolean syncIsSupported = !StringUtils.isBlank(dcal.getSyncToken());
-					final DateTime newLastSync = DateTimeUtils.now();
+					final DateTime newLastSync = JodaTimeUtils.now();
 					
 					if (!full && (syncIsSupported && !StringUtils.isBlank(cal.getRemoteSyncTag()))) { // Partial update using SYNC mode
 						String newSyncToken = dcal.getSyncToken();
@@ -3956,8 +3963,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Set<LocalDate> exclDates = recbDao.selectDatesByEventRecurrence(con, eventId, orec.getRecurrenceId());
 				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), exclDates, instanceMapper.isEventAllDay(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
 				for (LocalDate recurringDate : dates) {
-					DateTime start = DateTimeUtils.toDateTime(recurringDate, eventStartTime, eventTimezone).withZone(userTimezone);
-					DateTime end = DateTimeUtils.toDateTime(recurringDate.plusDays(eventDays), eventEndTime, eventTimezone).withZone(userTimezone);
+					DateTime start = JodaTimeUtils.toDateTime(recurringDate, eventStartTime, eventTimezone).withZone(userTimezone);
+					DateTime end = JodaTimeUtils.toDateTime(recurringDate.plusDays(eventDays), eventEndTime, eventTimezone).withZone(userTimezone);
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
 					final EventInstanceId id = EventInstanceId.build(String.valueOf(eventId), start, eventTimezone);
 					
@@ -4475,7 +4482,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				int oldDaysBetween = CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate());
 				Recur oldRecur = orec.getRecur(); // Dump old recur!
 				
-				LocalTime untilTime = originalEventInfo.getAllDay() ? DateTimeUtils.TIME_AT_STARTOFDAY : originalEventInfo.getStartDate().withZone(originalEventInfo.getDateTimeZone()).toLocalTime();
+				LocalTime untilTime = originalEventInfo.getAllDay() ? JodaTimeUtils.TIME_AT_STARTOFDAY : originalEventInfo.getStartDate().withZone(originalEventInfo.getDateTimeZone()).toLocalTime();
 				orec.updateUntilDate(eventKey.instanceDate.minusDays(1), untilTime, originalEventInfo.getDateTimeZone());
 				recDao.update(con, orec);
 
@@ -4616,7 +4623,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (orec == null) throw new WTException("Unable to get master event's recurrence [{}]", einfo.getRecurrenceId());
 				
 				//orec.updateUntilDate(eventKey.instanceDate, einfo.getDateTimeZone());
-				LocalTime untilTime = einfo.getAllDay() ? DateTimeUtils.TIME_AT_STARTOFDAY : einfo.getStartDate().withZone(einfo.getDateTimeZone()).toLocalTime();
+				LocalTime untilTime = einfo.getAllDay() ? JodaTimeUtils.TIME_AT_STARTOFDAY : einfo.getStartDate().withZone(einfo.getDateTimeZone()).toLocalTime();
 				orec.updateUntilDate(eventKey.instanceDate.minusDays(1), untilTime, einfo.getDateTimeZone());
 				recDao.update(con, orec);
 				
@@ -6086,8 +6093,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, recurStart, context.isEventAllDay(), context.getRecurrenceExclDates(), eventStart, eventEnd, timezone, rangeFrom, rangeTo, limitNoOfInstances);
 			for (LocalDate date : dates) {
-				final DateTime start = DateTimeUtils.toDateTime(date, eventStartTime, timezone);
-				final DateTime end = DateTimeUtils.toDateTime(date.plusDays(dueDays), eventEndTime, timezone);
+				final DateTime start = JodaTimeUtils.toDateTime(date, eventStartTime, timezone);
+				final DateTime end = JodaTimeUtils.toDateTime(date.plusDays(dueDays), eventEndTime, timezone);
 				final EventInstanceId id = EventInstanceId.build(eventId, start, timezone);
 				final String legacyKey = EventKey.buildKey(eventId, eventId, date);
 				instances.add(context.createInstance(id, start, end, legacyKey));

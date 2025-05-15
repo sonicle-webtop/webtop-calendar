@@ -45,7 +45,7 @@ import com.sonicle.commons.concurrent.KeyedReentrantLocks;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.DateTimeRange;
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.commons.time.TimeRange;
 import com.sonicle.commons.web.Crud;
 import com.sonicle.commons.web.DispositionType;
@@ -231,7 +231,7 @@ public class Service extends BaseService {
 	
 	@Override
 	public ServiceVars returnServiceVars() {
-		DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
+		DateTimeFormatter hmf = JodaTimeUtils.createFormatterHM();
 		ServiceVars co = new ServiceVars();
 		co.put("calendarRemoteSyncEnabled", ss.getCalendarRemoteAutoSyncEnabled());
 		co.put("eventStatFieldsVisible", ss.getEventStatisticFieldsVisible());
@@ -923,13 +923,13 @@ public class Service extends BaseService {
 		try {
 			UserProfile up = getEnv().getProfile();
 			DateTimeZone utz = up.getTimeZone();
-			//DateTimeFormatter ymdZoneFmt = DateTimeUtils.createYmdFormatter(utz);
+			//DateTimeFormatter ymdZoneFmt = JodaTimeUtils.createFormatterYMD(utz);
 			
 			// Defines boundaries
 			String start = ServletUtils.getStringParameter(request, "startDate", true);
 			String end = ServletUtils.getStringParameter(request, "endDate", true);
-			DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(start, "00:00:00", up.getTimeZone());
-			DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(end, "23:59:59", up.getTimeZone());
+			DateTime fromDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), start + " 00:00:00");
+			DateTime toDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), end + " 23:59:59");
 			
 			Set<Integer> activeCalIds = getActiveFolderIds();
 			List<LocalDate> dates = manager.listEventDates(activeCalIds, fromDate, toDate, utz);
@@ -958,8 +958,8 @@ public class Service extends BaseService {
 				String to = ServletUtils.getStringParameter(request, "endDate", true);
 				
 				// Defines view boundary
-				DateTime fromDate = DateTimeUtils.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
-				DateTime toDate = DateTimeUtils.parseYmdHmsWithZone(to, "23:59:59", up.getTimeZone());
+				DateTime fromDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), from + " 00:00:00");
+				DateTime toDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), to + " 23:59:59");
 				
 				Set<Integer> activeCalIds = getActiveFolderIds();
 				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, new DateTimeRange(fromDate, toDate), utz, false);
@@ -979,8 +979,8 @@ public class Service extends BaseService {
 				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
-				DateTime newStart = DateTimeUtils.parseYmdHmsWithZone(pl.data.startDate, etz);
-				DateTime newEnd = DateTimeUtils.parseYmdHmsWithZone(pl.data.endDate, etz);
+				DateTime newStart = JodaTimeUtils.parseDateTimeYMDHMS(etz, pl.data.startDate);
+				DateTime newEnd = JodaTimeUtils.parseDateTimeYMDHMS(etz, pl.data.endDate);
 				manager.cloneEventInstance(EventKey.buildKey(pl.data.eventId, pl.data.originalEventId), newStart, newEnd);
 				
 				new JsonResult().printTo(out);
@@ -989,8 +989,8 @@ public class Service extends BaseService {
 				Payload<MapItem, JsSchedulerEvent.Update> pl = ServletUtils.getPayload(request, JsSchedulerEvent.Update.class);
 				
 				DateTimeZone etz = DateTimeZone.forID(pl.data.timezone);
-				DateTime newStart = DateTimeUtils.parseYmdHmsWithZone(pl.data.startDate, etz);
-				DateTime newEnd = DateTimeUtils.parseYmdHmsWithZone(pl.data.endDate, etz);
+				DateTime newStart = JodaTimeUtils.parseDateTimeYMDHMS(etz, pl.data.startDate);
+				DateTime newEnd = JodaTimeUtils.parseDateTimeYMDHMS(etz, pl.data.endDate);
 				manager.updateEventInstance(pl.data.id, newStart, newEnd, pl.data.title, false);
 				
 				new JsonResult().printTo(out);
@@ -1005,8 +1005,8 @@ public class Service extends BaseService {
 				
 				DateTime newStart = null, newEnd = null;
 				if ((newStartString != null) || (newEndString != null)) {
-					newStart = DateTimeUtils.parseYmdHmsWithZone(newStartString, utz);
-					newEnd = DateTimeUtils.parseYmdHmsWithZone(newEndString, utz);
+					newStart = JodaTimeUtils.parseDateTimeYMDHMS(utz, newStartString);
+					newEnd = JodaTimeUtils.parseDateTimeYMDHMS(utz, newEndString);
 				}
 				
 				manager.updateEventInstance(target, new EventKey(eventKey), newStart, newEnd, newTitle, notify);
@@ -1028,7 +1028,7 @@ public class Service extends BaseService {
 				
 				DateTime newStart = null;
 				if (newStartString != null) {
-					newStart = DateTimeUtils.parseYmdHmsWithZone(newStartString, utz);
+					newStart = JodaTimeUtils.parseDateTimeYMDHMS(utz, newStartString);
 				}
 				
 				manager.cloneEventInstance(new EventKey(eventKey), null, newStart, null, notify);
@@ -1270,17 +1270,17 @@ public class Service extends BaseService {
 				String fromDate = ServletUtils.getStringParameter(request, "fromDate", true);
 				String toDate = ServletUtils.getStringParameter(request, "toDate", true);
 				
-				DateTimeFormatter ymd = DateTimeUtils.createYmdFormatter(up.getTimeZone());
+				DateTimeFormatter ymd = JodaTimeUtils.createFormatterYMD(up.getTimeZone());
 				erpWizard = new ErpExportWizard();
 				erpWizard.fromDate = ymd.parseDateTime(fromDate).withTimeAtStartOfDay();
-				erpWizard.toDate = DateTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(toDate));
+				erpWizard.toDate = JodaTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(toDate));
 				
 				LogEntries log = new LogEntries();
 				File file = WT.createTempFile();
 				
 				try {
-					DateTimeFormatter ymd2 = DateTimeUtils.createFormatter("yyyyMMdd", up.getTimeZone());
-					DateTimeFormatter ymdhms = DateTimeUtils.createFormatter("yyyy-MM-dd HH:mm:ss", up.getTimeZone());
+					DateTimeFormatter ymd2 = JodaTimeUtils.createFormatter("yyyyMMdd", up.getTimeZone());
+					DateTimeFormatter ymdhms = JodaTimeUtils.createFormatter("yyyy-MM-dd HH:mm:ss", up.getTimeZone());
 					
 					try (FileOutputStream fos = new FileOutputStream(file)) {
 						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started on {0}", ymdhms.print(new DateTime())));
@@ -1333,9 +1333,9 @@ public class Service extends BaseService {
 			
 			// Parses string parameters
 			DateTimeZone eventTz = DateTimeZone.forID(timezone);
-			DateTimeFormatter ymdHmFmt = DateTimeUtils.createFormatter("yyyy-MM-dd HH:mm", eventTz);
-			DateTime eventStartDt = DateTimeUtils.parseDateTime(ymdHmFmt, eventStartDate);
-			DateTime eventEndDt = DateTimeUtils.parseDateTime(ymdHmFmt, eventEndDate);
+			DateTimeFormatter ymdHmFmt = JodaTimeUtils.createFormatterYMDHM(eventTz);
+			DateTime eventStartDt = JodaTimeUtils.parseDateTime(ymdHmFmt, eventStartDate);
+			DateTime eventEndDt = JodaTimeUtils.parseDateTime(ymdHmFmt, eventEndDate);
 			
 			CalendarUtils.EventBoundary bounds = CalendarUtils.toEventBoundaryForWrite(eventAllDay, eventStartDt, eventEndDt, eventTz);
 			DateTime viewFrom = bounds.start.withTimeAtStartOfDay();
@@ -1387,7 +1387,7 @@ public class Service extends BaseService {
 			final String BUSY = "2";
 			final String OFFSITE = "3";
 			final String ABSENT = "4";
-			DateTimeFormatter hmf = DateTimeUtils.createHmFormatter();
+			DateTimeFormatter hmf = JodaTimeUtils.createFormatterHM();
 			for (Map.Entry<String, UserProfileId> entry : recipientProfiles.entrySet()) {
 				final String address = entry.getKey();
 				final UserProfileId pid = entry.getValue();
@@ -1411,8 +1411,8 @@ public class Service extends BaseService {
 					item.put("attendee", name);
 					item.put("attendeeAddress", address);
 				}
-				item.put("workdayStart", DateTimeUtils.print(hmf, workdayStart));
-				item.put("workdayEnd", DateTimeUtils.print(hmf, workdayEnd));
+				item.put("workdayStart", JodaTimeUtils.print(hmf, workdayStart));
+				item.put("workdayEnd", JodaTimeUtils.print(hmf, workdayEnd));
 				
 				StringBuilder availability = new StringBuilder();
 				if (pid != null) {
@@ -1508,7 +1508,7 @@ public class Service extends BaseService {
 			String view = ServletUtils.getStringParameter(request, "view", "w5");
 			String from = ServletUtils.getStringParameter(request, "startDate", true);
 			
-			DateTime startDate = DateTimeUtils.parseYmdHmsWithZone(from, "00:00:00", up.getTimeZone());
+			DateTime startDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), from + " 00:00:00");
 			
 			ReportConfig.Builder builder = reportConfigBuilder();
 			DateTime fromDate = null, toDate = null;
@@ -1643,7 +1643,7 @@ public class Service extends BaseService {
 			if (query == null) {
 				final CalendarFSOrigin origin = foldersTreeCache.getOrigin(up.getId());
 				final Set<Integer> ids = manager.listCalendarIds();
-				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, DateTimeUtils.now(), utz)) {
+				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, JodaTimeUtils.now(), utz)) {
 					final CalendarFSFolder folder = foldersTreeCache.getFolder(instance.getCalendarId());
 					if (folder == null) continue;
 					
@@ -1653,7 +1653,7 @@ public class Service extends BaseService {
 			} else {
 				final Set<Integer> ids = foldersTreeCache.getFolderIDs();
 				final String pattern = LangUtils.patternizeWords(query);
-				List<SchedEventInstance> instances = manager.listEventInstances(ids, buildSearchRange(DateTimeUtils.now(), utz), EventQuery.createCondition(pattern), utz, true);
+				List<SchedEventInstance> instances = manager.listEventInstances(ids, buildSearchRange(JodaTimeUtils.now(), utz), EventQuery.createCondition(pattern), utz, true);
 				for (SchedEventInstance instance : instances) {
 					final CalendarFSOrigin origin = foldersTreeCache.getOriginByFolder(instance.getCalendarId());
 					if (origin == null) continue;

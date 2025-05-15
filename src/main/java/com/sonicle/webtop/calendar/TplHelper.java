@@ -33,8 +33,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.LangUtils;
-import com.sonicle.commons.RegexUtils;
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.webtop.calendar.model.EventAttendee;
@@ -46,15 +45,10 @@ import com.sonicle.webtop.core.util.RRuleStringify;
 import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -79,7 +73,7 @@ public class TplHelper {
 	
 	private static String buildEventTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event) {
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
@@ -314,7 +308,7 @@ public class TplHelper {
 	
 	private static void fillEventDates(MapItem item, String eventTimezone, DateTime eventStart, DateTime eventEnd, String dateFormat, String timeFormat) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimezone);
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		item.put("timezone", eventTimezone);
 		item.put("startDate", fmt.print(eventStart));
 		item.put("endDate", fmt.print(eventEnd));
@@ -376,7 +370,7 @@ public class TplHelper {
 	
 	public static String buildEventInvitationEmailSubject(Locale locale, String dateFormat, String timeFormat, Event event, String crud) {
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		DateTimeFormatter fmt = DateTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append(StringUtils.abbreviate(event.getTitle(), 30));

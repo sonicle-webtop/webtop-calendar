@@ -34,7 +34,7 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.LangUtils;
-import com.sonicle.commons.time.DateTimeUtils;
+import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.commons.web.json.CompositeId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.calendar.CalendarUtils;
@@ -93,7 +93,7 @@ public class JsEvent {
 	
 	public JsEvent(UserProfileId ownerPid, EventInstance event, Collection<CustomPanel> customPanels, Map<String, CustomField> customFields, String profileLanguageTag, DateTimeZone profileTz) {
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
-		DateTimeFormatter ymdhmsZoneFmt = DateTimeUtils.createYmdHmsFormatter(eventTz);
+		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(eventTz);
 		
 		id = event.getKey();
 		eventId = event.getEventId();
@@ -132,7 +132,7 @@ public class JsEvent {
 		} else {
 			rrs = event.getStartDate().withZone(eventTz).toLocalDate();
 		}
-		rstart = DateTimeUtils.print(DateTimeUtils.createYmdFormatter(), rrs);
+		rstart = JodaTimeUtils.print(JodaTimeUtils.createFormatterYMD(), rrs);
 		
 		attendees = new ArrayList<>();
 		for (EventAttendee att : event.getAttendees()) {
@@ -152,7 +152,7 @@ public class JsEvent {
 		for (EventAttachment att : event.getAttachments()) {
 			Attachment jsa = new Attachment();
 			jsa.id = att.getAttachmentId();
-			//jsatt.lastModified = DateTimeUtils.printYmdHmsWithZone(att.getRevisionTimestamp(), profileTz);
+			//jsatt.lastModified = JodaTimeUtils.printYMDHMS(profileTz, att.getRevisionTimestamp());
 			jsa.name = att.getFilename();
 			jsa.size = att.getSize();
 			attachments.add(jsa);
@@ -189,8 +189,8 @@ public class JsEvent {
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
 		DateTimeZone eventTz = DateTimeZone.forID(timezone);
-		DateTime eventStart = DateTimeUtils.parseYmdHmsWithZone(startDate, eventTz);
-		DateTime eventEnd = DateTimeUtils.parseYmdHmsWithZone(endDate, eventTz);
+		DateTime eventStart = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, startDate);
+		DateTime eventEnd = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, endDate);
 		
 		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForWrite(allDay, eventStart, eventEnd, eventTz);
 		event.setDatesAndTimes(eventBoundary.allDay, eventBoundary.timezone.getID(), eventBoundary.start, eventBoundary.end);
@@ -212,7 +212,7 @@ public class JsEvent {
 		if (ICal4jUtils.adjustRecurUntilDate(recur, event.getStartDate().withZone(eventTz).toLocalTime(), eventTz)) {
 			rrule = recur.toString();
 		}
-		event.setRecurrence(rrule, DateTimeUtils.parseLocalDate(DateTimeUtils.createYmdFormatter(eventTz), rstart), null);
+		event.setRecurrence(rrule, JodaTimeUtils.parseLocalDate(JodaTimeUtils.createFormatterYMD(eventTz), rstart), null);
 		
 		for (JsEvent.Attendee jsa : attendees) {
 			EventAttendee attendee = new EventAttendee();
@@ -248,8 +248,8 @@ public class JsEvent {
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
 		DateTimeZone eventTz = DateTimeZone.forID(js.timezone);
-		DateTime eventStart = DateTimeUtils.parseYmdHmsWithZone(js.startDate, eventTz);
-		DateTime eventEnd = DateTimeUtils.parseYmdHmsWithZone(js.endDate, eventTz);
+		DateTime eventStart = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.startDate);
+		DateTime eventEnd = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.endDate);
 		
 		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForWrite(js.allDay, eventStart, eventEnd, eventTz);
 		event.setDatesAndTimes(eventBoundary.allDay, eventBoundary.timezone.getID(), eventBoundary.start, eventBoundary.end);
@@ -257,8 +257,8 @@ public class JsEvent {
 		//event.setDatesAndTimes(
 		//		js.allDay,
 		//		js.timezone,
-		//		DateTimeUtils.parseYmdHmsWithZone(js.startDate, eventTz),
-		//		DateTimeUtils.parseYmdHmsWithZone(js.endDate, eventTz)
+		//		JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.startDate),
+		//		JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.endDate)
 		//);
 		
 		event.setTitle(js.title);
@@ -279,7 +279,7 @@ public class JsEvent {
 		if (ICal4jUtils.adjustRecurUntilDate(recur, event.getStartDate().withZone(eventTz).toLocalTime(), eventTz)) {
 			js.rrule = recur.toString();
 		}
-		event.setRecurrence(js.rrule, DateTimeUtils.parseLocalDate(DateTimeUtils.createYmdFormatter(eventTz), js.rstart), null);
+		event.setRecurrence(js.rrule, JodaTimeUtils.parseLocalDate(JodaTimeUtils.createFormatterYMD(eventTz), js.rstart), null);
 		
 		for (JsEvent.Attendee jsa : js.attendees) {
 			EventAttendee attendee = new EventAttendee();
@@ -302,7 +302,7 @@ public class JsEvent {
 	
 	/*
 	private static void adjustTimes(Event event, LocalTime workdayStart, LocalTime workdayEnd) {
-		event.setEndDate(DateTimeUtils.ceilTimeAtEndOfDay(event.getEndDate()));
+		event.setEndDate(JodaTimeUtils.ceilTimeAtEndOfDay(event.getEndDate()));
 		// Ensure start < end
 		if(event.getEndDate().compareTo(event.getStartDate()) < 0) {
 			// Swap dates...
@@ -311,8 +311,8 @@ public class JsEvent {
 			event.setStartDate(dt);
 		}
 		// Correct midnight end time
-		if(DateTimeUtils.isMidnight(event.getEndDate()) && DateTimeUtils.isDayBefore(event.getStartDate(), event.getEndDate())) {
-			event.setEndDate(DateTimeUtils.withTimeAtEndOfDay(event.getStartDate()));
+		if(JodaTimeUtils.isMidnight(event.getEndDate()) && JodaTimeUtils.isDayBefore(event.getStartDate(), event.getEndDate())) {
+			event.setEndDate(JodaTimeUtils.withTimeAtEndOfDay(event.getStartDate()));
 		}
 		// Force allDay hours
 		if(event.getAllDay()) {

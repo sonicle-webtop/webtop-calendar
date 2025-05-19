@@ -9,7 +9,7 @@ UNION
 SELECT "events"."calendar_id", "events"."event_id", "events"."revision_timestamp", 'U'
 FROM "calendar"."events"
 INNER JOIN "calendar"."calendars" ON "events"."calendar_id" = "calendars"."calendar_id"
-WHERE "events"."revision_status" IN ('N','M');
+WHERE "events"."revision_status" IN ('M');
 
 INSERT INTO "calendar"."calendars_changes" ("calendar_id", "event_id", "timestamp", "operation")
 SELECT "events"."calendar_id", "events"."event_id", "events"."creation_timestamp", 'D'

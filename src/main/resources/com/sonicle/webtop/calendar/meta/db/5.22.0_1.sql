@@ -24,7 +24,6 @@ ALTER TABLE "calendar"."events_icalendars" ALTER COLUMN "event_id" TYPE varchar(
 ALTER TABLE "calendar"."events_tags" ALTER COLUMN "event_id" TYPE varchar(32) USING "event_id"::varchar(32);
 ALTER TABLE "calendar"."recurrences_broken" ALTER COLUMN "event_id" TYPE varchar(32) USING "event_id"::varchar(32);
 ALTER TABLE "calendar"."recurrences_broken" ALTER COLUMN "new_event_id" TYPE varchar(32) USING "new_event_id"::varchar(32);
-ALTER TABLE "calendar"."calendars_changes" ALTER COLUMN "event_id" TYPE varchar(32) USING "event_id"::varchar(32);
 
 -- ----------------------------
 -- Restore Foreign Keys leveraging on event_id
@@ -33,8 +32,11 @@ ALTER TABLE "calendar"."events_attachments" ADD FOREIGN KEY ("event_id") REFEREN
 ALTER TABLE "calendar"."events_attendees" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "calendar"."events_custom_values" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "calendar"."events_icalendars" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
+DELETE FROM "calendar"."events_tags" WHERE "event_id" NOT IN (SELECT ev."event_id" FROM "calendar"."events" ev);
 ALTER TABLE "calendar"."events_tags" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
+DELETE FROM "calendar"."recurrences_broken" WHERE "event_id" NOT IN (SELECT ev."event_id" FROM "calendar"."events" ev);
 ALTER TABLE "calendar"."recurrences_broken" ADD FOREIGN KEY ("event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
+DELETE FROM "calendar"."recurrences_broken" WHERE "new_event_id" NOT IN (SELECT ev."event_id" FROM "calendar"."events" ev);
 ALTER TABLE "calendar"."recurrences_broken" ADD FOREIGN KEY ("new_event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ----------------------------

@@ -236,6 +236,7 @@ import com.sonicle.mail.email.EmailMessage;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
 import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
+import com.sonicle.webtop.calendar.dal.HistoryDAO;
 import com.sonicle.webtop.calendar.io.EventInputConsumer;
 import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.core.app.ical4j.XCustomFieldValue;
@@ -5060,10 +5061,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			RecurrenceDAO recDao = RecurrenceDAO.getInstance();
 			RecurrenceBrokenDAO recbkDao = RecurrenceBrokenDAO.getInstance();
 			//EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
+			HistoryDAO hisDao = HistoryDAO.getInstance();
 			
 			//attDao.deleteByCalendar(con, calendarId);
 			recbkDao.deleteByCalendar(con, calendarId);
 			recDao.deleteByCalendar(con, calendarId);
+			hisDao.deleteEventsHistoryByCalendar(con, calendarId);
 			return evtDao.deleteByCalendar(con, calendarId);
 		}
 	}

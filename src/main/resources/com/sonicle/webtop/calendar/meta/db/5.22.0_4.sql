@@ -8,10 +8,12 @@ SELECT "calendars"."domain_id", "calendars"."user_id", "calendars"."calendar_id"
 FROM "calendar"."calendars";
 
 -- ----------------------------
--- Fill history_events retrieving data from DEPRECATED table calendars_changes
+-- Fill history_events retrieving data from DEPRECATED table calendars_changes (skip orphaned data otherwise we may get a huge amount of records due to external syncs)
 -- ----------------------------
 INSERT INTO "calendar"."history_events" ("calendar_id", "event_id", "change_timestamp", "change_type")
-SELECT "calendar_id", "event_id", "timestamp", "operation" FROM "calendar"."calendars_changes" ORDER BY "id";
+SELECT "calendar_id", "event_id", "timestamp", "operation" 
+FROM "calendar"."calendars_changes" 
+WHERE "event_id" IN (SELECT "ev"."event_id" FROM "calendar"."events" "ev") ORDER BY "id";
 
 -- ----------------------------
 -- Add calendars triggers

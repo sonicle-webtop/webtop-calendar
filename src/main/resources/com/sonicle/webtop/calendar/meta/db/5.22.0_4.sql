@@ -13,7 +13,7 @@ FROM "calendar"."calendars";
 INSERT INTO "calendar"."history_events" ("calendar_id", "event_id", "change_timestamp", "change_type")
 SELECT "calendar_id", "event_id", "timestamp", "operation" 
 FROM "calendar"."calendars_changes" 
-WHERE "event_id" IN (SELECT "ev"."event_id" FROM "calendar"."events" "ev") ORDER BY "id";
+WHERE "event_id" IN (SELECT "ev"."event_id"::int4 FROM "calendar"."events" "ev") ORDER BY "id";
 
 -- ----------------------------
 -- Add calendars triggers

@@ -40,3 +40,9 @@ DROP TRIGGER IF EXISTS "trg_events_onafter_2" ON "calendar"."events";
 CREATE TRIGGER "trg_events_onafter_2" AFTER UPDATE OF "revision_timestamp" ON "calendar"."events"
 FOR EACH ROW
 EXECUTE PROCEDURE "calendar"."update_events_history"();
+
+-- ----------------------------
+-- Remove OLD events triggers
+-- ----------------------------
+DROP TRIGGER IF EXISTS "log_calendar_changes_tr1" ON "calendar"."events";
+DROP TRIGGER IF EXISTS "log_calendar_changes_tr2" ON "calendar"."events";

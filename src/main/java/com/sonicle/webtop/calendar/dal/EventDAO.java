@@ -49,7 +49,6 @@ import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTENDEES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_CUSTOM_VALUES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ICALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
-import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.RECURRENCES_BROKEN;
@@ -261,17 +260,17 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
-				HISTORY_CALENDARS.CALENDAR_ID,
-				DSL.max(HISTORY_CALENDARS.CHANGE_TIMESTAMP)
+				HISTORY_EVENTS.CALENDAR_ID,
+				DSL.max(HISTORY_EVENTS.CHANGE_TIMESTAMP)
 			)
-			.from(HISTORY_CALENDARS)
+			.from(HISTORY_EVENTS)
 			.where(
-				HISTORY_CALENDARS.CALENDAR_ID.in(calendarIds)
+				HISTORY_EVENTS.CALENDAR_ID.in(calendarIds)
 			)
 			.groupBy(
-				HISTORY_CALENDARS.CALENDAR_ID
+				HISTORY_EVENTS.CALENDAR_ID
 			)
-			.fetchMap(HISTORY_CALENDARS.CALENDAR_ID, DSL.max(HISTORY_CALENDARS.CHANGE_TIMESTAMP));
+			.fetchMap(HISTORY_EVENTS.CALENDAR_ID, DSL.max(HISTORY_EVENTS.CHANGE_TIMESTAMP));
 	}
 	
 	public int insert(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {

@@ -1616,7 +1616,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 
 		doImportRecipientsAsAttendees: function(items, recordDefaults, limit) {
 			var me = this,
+				SoS = Sonicle.String,
 				mo = me.getModel(),
+				personalEmail = WT.getVar('userPersonalEmail'),
+				profileEmail = WT.getVar('userProfileEmail'),
+				itsMe = function(rcpt) {
+					return SoS.contains(rcpt, personalEmail) || SoS.contains(rcpt, profileEmail);
+				},
 				arr = [],
 				data, rcpt;
 			
@@ -1631,7 +1637,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							data = Ext.apply({}, recordDefaults, {
 								notify: true,
 								recipientType: 'IND',
-								recipientRole: 'REQ',
+								recipientRole: itsMe(rcpt) ? 'CHA' : 'REQ',
 								responseStatus: 'NA'
 							});
 							data['recipient'] = rcpt;

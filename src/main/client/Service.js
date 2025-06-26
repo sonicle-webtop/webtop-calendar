@@ -466,9 +466,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}, {
 							xtype: 'socolorcolumn',
 							dataIndex: 'color',
-							displayField: 'folderName',
-							header: me.res('event.fld-calendar.lbl'),
-							width: 150
+							labelField: 'folderName',
+							swatchGeometry: 'circle',
+							hideLabel: true,
+							getTooltip: function(v, rec) {
+								return Sonicle.webtop.calendar.Service.calcCalendarLabel(rec.get('folderName'), null);
+							},
+							text: WTF.headerWithGlyphIcon('fas fa-folder'),
+							menuText: me.res('event.fld-calendar.lbl'),
+							width: 35
 						}, {
 							dataIndex: 'startDate',
 							xtype: 'datecolumn',
@@ -2393,6 +2399,24 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		
 		noTagResReservReply: function(resourceId, eventUid) {
 			return this.NOTAG_RESRESERVREPLY + resourceId + '-' + eventUid;
+		},
+		
+		/**
+		 * Computes a label for displaying calendar info.
+		 * @param {String} name Calendar name.
+		 * @param {String} [ownerDN] Calendar's owner display-name.
+		 * @param {Object} [opts] An object containing configuration.
+		 * 
+		 * This object may contain any of the following properties:
+		 * 
+		 * @param {Boolean} opts.htmlEncode Set to `true` to apply HTML encoding to resulting output.
+		 * @returns {String} The computed label
+		 */
+		calcCalendarLabel: function(name, ownerDN, opts) {
+			opts = opts || {};
+			var pattern = '{1}';
+			if (!Ext.isEmpty(ownerDN)) pattern = '[{0}] ' + pattern;
+			return Ext.String.format(pattern, ownerDN, name);
 		}
 	}
 });

@@ -4875,6 +4875,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithStream)att));
 				else if (att instanceof EventAttachmentWithBytes)
 					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithBytes)att));
+				else if (att instanceof EventAttachmentWithClone)
+					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithClone)att));
 				else
 					throw new IOException("Attachment content not available [" + att.getAttachmentId() + "]");
 			}

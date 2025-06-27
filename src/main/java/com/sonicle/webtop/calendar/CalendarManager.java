@@ -239,6 +239,7 @@ import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.dal.HistoryDAO;
 import com.sonicle.webtop.calendar.io.EventInputConsumer;
 import com.sonicle.webtop.calendar.model.CalendarBase;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithClone;
 import com.sonicle.webtop.core.app.ical4j.XCustomFieldValue;
 import com.sonicle.webtop.core.app.ical4j.XTag;
 import com.sonicle.webtop.core.app.model.Resource;
@@ -2760,6 +2761,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				ei.setStartDate(newEnd.minus(length));
 				ei.setEndDate(newEnd);
 			}
+			ei.setAttachments(EventAttachment.asListToClone(ei.getAttachmentsOrEmpty()));
 			
 		} catch (Exception ex) {
 			throw ExceptionUtils.wrapThrowable(ex);
@@ -5156,6 +5158,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		ovca.setEventId(eventId);
 		ovca.setRawData(rawICalendar);
 		return icaDao.insert(con, ovca) == 1;
+	}
+	
+	private OEventAttachment doEventAttachmentInsert(Connection con, String eventId, EventAttachmentWithClone attachment) throws DAOException, IOException {
+		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
+		
+		OEventAttachment oattch = ManagerUtils.createOEventAttachment(attachment);
+		oattch.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
+		oattch.setEventId(eventId);
+		
+		attchDao.insert(con, oattch, BaseDAO.createRevisionTimestamp());
+		attchDao.insertBytesFromClone(con, oattch.getEventAttachmentId(), attachment.getAttachmentIdToClone());
+		
+		return oattch;
 	}
 	
 	private OEventAttachment doEventAttachmentInsert(Connection con, String eventId, EventAttachmentWithStream attachment) throws DAOException, IOException {

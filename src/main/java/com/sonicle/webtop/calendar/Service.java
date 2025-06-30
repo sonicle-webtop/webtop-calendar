@@ -86,7 +86,7 @@ import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
-import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithInputStream;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventQuery;
@@ -1095,7 +1095,7 @@ public class Service extends BaseService {
 				
 				for (JsEvent.Attachment jsa : pl.data.attachments) {
 					UploadedFile upFile = getUploadedFileOrThrow(jsa._uplId);
-					EventAttachmentWithStream att = new EventAttachmentWithStream(upFile.getFile());
+					EventAttachmentWithInputStream att = new EventAttachmentWithInputStream(upFile.getFile());
 					att.setAttachmentId(jsa.id);
 					att.setFilename(upFile.getFilename());
 					att.setSize(upFile.getSize());
@@ -1116,7 +1116,7 @@ public class Service extends BaseService {
 				for (JsEvent.Attachment jsa : pl.data.attachments) {
 					if (!StringUtils.isBlank(jsa._uplId)) {
 						UploadedFile upFile = getUploadedFileOrThrow(jsa._uplId);
-						EventAttachmentWithStream att = new EventAttachmentWithStream(upFile.getFile());
+						EventAttachmentWithInputStream att = new EventAttachmentWithInputStream(upFile.getFile());
 						att.setAttachmentId(jsa.id);
 						att.setFilename(upFile.getFilename());
 						att.setSize(upFile.getSize());

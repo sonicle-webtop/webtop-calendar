@@ -163,7 +163,6 @@ import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.ComparableEventBounds;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
-import com.sonicle.webtop.calendar.model.EventAttachmentWithStream;
 import com.sonicle.webtop.calendar.model.EventInstanceId;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
@@ -239,7 +238,9 @@ import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.dal.HistoryDAO;
 import com.sonicle.webtop.calendar.io.EventInputConsumer;
 import com.sonicle.webtop.calendar.model.CalendarBase;
-import com.sonicle.webtop.calendar.model.EventAttachmentWithClone;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithInput;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithInputRef;
+import com.sonicle.webtop.calendar.model.EventAttachmentWithInputStream;
 import com.sonicle.webtop.core.app.ical4j.XCustomFieldValue;
 import com.sonicle.webtop.core.app.ical4j.XTag;
 import com.sonicle.webtop.core.app.model.Resource;
@@ -2761,7 +2762,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				ei.setStartDate(newEnd.minus(length));
 				ei.setEndDate(newEnd);
 			}
-			ei.setAttachments(EventAttachment.asListToClone(ei.getAttachmentsOrEmpty()));
+			ei.setAttachments(EventAttachment.asListOfEventAttachmentsWithInputRef(ei.getAttachmentsOrEmpty()));
 			
 		} catch (Exception ex) {
 			throw ExceptionUtils.wrapThrowable(ex);
@@ -3090,7 +3091,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							} else if (uri != null) {
 								URL url = uri.toURL();
 								filename = url.getFile();
-								eatt = new EventAttachmentWithStream(url.openStream());
+								eatt = new EventAttachmentWithInputStream(url.openStream());
 							}
 							eatt.setFilename(filename);
 							eatt.setMediaType(ServletUtils.guessMediaType(filename));
@@ -4867,18 +4868,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 		}
 		
-		ArrayList<OEventAttachment> oattchs = null;
+		ArrayList<OEventAttachment> oatts = null;
 		if (processAttachments && event.hasAttachments()) {
-			oattchs = new ArrayList<>();
+			oatts = new ArrayList<>();
 			for (EventAttachment att : event.getAttachments()) {
-				if (att instanceof EventAttachmentWithStream)
-					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithStream)att));
-				else if (att instanceof EventAttachmentWithBytes)
-					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithBytes)att));
-				else if (att instanceof EventAttachmentWithClone)
-					oattchs.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithClone)att));
-				else
-					throw new IOException("Attachment content not available [" + att.getAttachmentId() + "]");
+				if (att instanceof EventAttachmentWithInput) {
+					oatts.add(doEventAttachmentInsert(con, oevt.getEventId(), (EventAttachmentWithInput)att));
+				} else {
+					throw new IOException("Attachment object not supported [" + att.getAttachmentId() + "]");
+				}
 			}
 		}
 		
@@ -4893,7 +4891,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			cvalDao.batchInsert(con, ocvals);
 		}
 		
-		return new EventInsertResult(oevt, orec, obrks, oattes, otags, oattchs, ocvals);
+		return new EventInsertResult(oevt, orec, obrks, oattes, otags, oatts, ocvals);
 	}
 	
 	private EventUpdateResult doEventUpdate(Connection con, OEvent originalEvent, Event event, boolean processRecurrence, boolean processExcludedDates, boolean processAttendees, boolean processAttachments, boolean processTags, boolean processCustomValues, Set<String> validTags) throws IOException, WTException {
@@ -5009,13 +5007,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			List<EventAttachment> oldAttchs = ManagerUtils.createEventAttachmentList(attchDao.selectByEvent(con, event.getEventId()));
 			CollectionChangeSet<EventAttachment> changeSet = LangUtils.getCollectionChanges(oldAttchs, event.getAttachments());
 
-			for (EventAttachment att : changeSet.inserted) {					
-				if (!(att instanceof EventAttachmentWithStream)) throw new IOException("Attachment stream not available [" + att.getAttachmentId() + "]");
-				doEventAttachmentInsert(con, originalEvent.getEventId(), (EventAttachmentWithStream)att);
+			for (EventAttachment att : changeSet.inserted) {
+				if (att instanceof EventAttachmentWithInput) {
+					doEventAttachmentInsert(con, originalEvent.getEventId(), (EventAttachmentWithInput)att);
+				} else {
+					throw new IOException("Attachment object not supported [" + att.getAttachmentId() + "]");
+				}
 			}
 			for (EventAttachment att : changeSet.updated) {
-				if (!(att instanceof EventAttachmentWithStream)) continue;
-				doEventAttachmentUpdate(con, (EventAttachmentWithStream)att);
+				if (!(att instanceof EventAttachmentWithInputStream)) continue;
+				doEventAttachmentUpdate(con, (EventAttachmentWithInputStream)att);
 			}
 			for (EventAttachment att : changeSet.deleted) {
 				attchDao.delete(con, att.getAttachmentId());
@@ -5162,55 +5163,35 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return icaDao.insert(con, ovca) == 1;
 	}
 	
-	private OEventAttachment doEventAttachmentInsert(Connection con, String eventId, EventAttachmentWithClone attachment) throws DAOException, IOException {
-		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
+	private OEventAttachment doEventAttachmentInsert(Connection con, String eventId, EventAttachmentWithInput attachment) throws DAOException, IOException {
+		Check.notNull(attachment, "attachment");
+		EventAttachmentDAO attDao = EventAttachmentDAO.getInstance();
 		
-		OEventAttachment oattch = ManagerUtils.createOEventAttachment(attachment);
-		oattch.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
-		oattch.setEventId(eventId);
+		OEventAttachment oatt = ManagerUtils.fillOEventAttachment(new OEventAttachment(), attachment);
+		oatt.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
+		oatt.setEventId(eventId);
+		attDao.insert(con, oatt, BaseDAO.createRevisionTimestamp());
 		
-		attchDao.insert(con, oattch, BaseDAO.createRevisionTimestamp());
-		attchDao.insertBytesFromClone(con, oattch.getEventAttachmentId(), attachment.getAttachmentIdToClone());
-		
-		return oattch;
-	}
-	
-	private OEventAttachment doEventAttachmentInsert(Connection con, String eventId, EventAttachmentWithStream attachment) throws DAOException, IOException {
-		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
-		
-		OEventAttachment oattch = ManagerUtils.createOEventAttachment(attachment);
-		oattch.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
-		oattch.setEventId(eventId);
-		InputStream is = attachment.getStream();
-		byte bytes[] = IOUtils.toByteArray(is);
-		oattch.setSize(new Long(bytes.length));
-		attchDao.insert(con, oattch, BaseDAO.createRevisionTimestamp());
-		
-		try {
-			attchDao.insertBytes(con, oattch.getEventAttachmentId(), bytes);
-		} finally {
-			IOUtils.closeQuietly(is);
+		if (attachment instanceof EventAttachmentWithInputStream) {
+			InputStream is = ((EventAttachmentWithInputStream)attachment).getStream();
+			try {
+				attDao.insertBytes(con, oatt.getEventAttachmentId(), IOUtils.toByteArray(is));
+			} finally {
+				IOUtils.closeQuietly(is);
+			}
+			
+		} else if (attachment instanceof EventAttachmentWithInputRef) {
+			final String sourceAttachmentId = ((EventAttachmentWithInputRef)attachment).getAttachmentIdToClone();
+			attDao.insertBytesFromClone(con, oatt.getEventAttachmentId(), sourceAttachmentId);
+			
+		} else {
+			throw new IOException("Attachment data not provided");
 		}
 		
-		return oattch;
+		return oatt;
 	}
 	
-	private OEventAttachment doEventAttachmentInsert(Connection con, String eventId, EventAttachmentWithBytes attachment) throws DAOException, IOException {
-		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
-		
-		OEventAttachment oattch = ManagerUtils.createOEventAttachment(attachment);
-		oattch.setEventAttachmentId(IdentifierUtils.getUUIDTimeBased());
-		oattch.setEventId(eventId);
-		byte bytes[] = attachment.getBytes();
-		oattch.setSize(new Long(bytes.length));
-		attchDao.insert(con, oattch, BaseDAO.createRevisionTimestamp());
-		
-		attchDao.insertBytes(con, oattch.getEventAttachmentId(), bytes);
-		
-		return oattch;
-	}
-	
-	private boolean doEventAttachmentUpdate(Connection con, EventAttachmentWithStream attachment) throws DAOException, IOException {
+	private boolean doEventAttachmentUpdate(Connection con, EventAttachmentWithInputStream attachment) throws DAOException, IOException {
 		EventAttachmentDAO attchDao = EventAttachmentDAO.getInstance();
 		
 		OEventAttachment oattch = ManagerUtils.createOEventAttachment(attachment);

@@ -68,13 +68,11 @@ public class RemoteCalendarSyncTask extends BaseBackgroundServiceTask {
 		SessionManager sesMgr = WebTopApp.getInstance().getSessionManager();
 		CalendarManager calMgr = (CalendarManager)WT.getServiceManager(bs.SERVICE_ID);
 		
-		Map<String, Boolean> crseCache = new HashMap<>();
-		Map<String, Boolean> rsowoCache = new HashMap<>();
 		List<Calendar> cals = calMgr.listRemoteCalendarsToBeSynchronized();
 		for (Calendar cal : cals) {
 			if (shouldStop()) break; // Speed-up shutdown process!
-			if (!isCalendarRemoteSyncEnabled(bs.SERVICE_ID, crseCache, cal.getDomainId())) continue; // Skip if sync is disabled!
-			if (isRemoteSyncOnlyWhenOnline(bs.SERVICE_ID, rsowoCache, cal.getDomainId()) && !sesMgr.isOnline(cal.getProfileId())) continue; // Skip offline profiles!
+			if (!isCalendarRemoteSyncEnabled(bs.SERVICE_ID, cal.getDomainId())) continue; // Skip if sync is disabled!
+			if (isRemoteSyncOnlyWhenOnline(bs.SERVICE_ID, cal.getDomainId()) && !sesMgr.isOnline(cal.getProfileId())) continue; // Skip offline profiles!
 
 			LOGGER.debug("Checking calendar [{}, {}]", cal.getCalendarId(), cal.getName());
 			if (isSyncNeeded(cal, context.getExecuteInstant())) {
@@ -93,20 +91,12 @@ public class RemoteCalendarSyncTask extends BaseBackgroundServiceTask {
 		}
 	}
 	
-	private boolean isCalendarRemoteSyncEnabled(String serviceId, Map<String, Boolean> cache, String domainId) {
-		if (!cache.containsKey(domainId)) {
-			CalendarServiceSettings css = new CalendarServiceSettings(serviceId, domainId);
-			cache.put(domainId, css.getCalendarRemoteAutoSyncEnabled());
-		}
-		return cache.get(domainId);
+	private boolean isCalendarRemoteSyncEnabled(String serviceId, String domainId) {
+		return new CalendarServiceSettings(serviceId, domainId).getCalendarRemoteAutoSyncEnabled();
 	}
 	
-	private boolean isRemoteSyncOnlyWhenOnline(String serviceId, Map<String, Boolean> cache, String domainId) {
-		if (!cache.containsKey(domainId)) {
-			CalendarServiceSettings css = new CalendarServiceSettings(serviceId, domainId);
-			cache.put(domainId, css.getCalendarRemoteAutoSyncOnlyWhenOnline());
-		}
-		return cache.get(domainId);
+	private boolean isRemoteSyncOnlyWhenOnline(String serviceId, String domainId) {
+		return new CalendarServiceSettings(serviceId, domainId).getCalendarRemoteAutoSyncOnlyWhenOnline();
 	}
 
 	private boolean isSyncNeeded(Calendar cal, DateTime now) {

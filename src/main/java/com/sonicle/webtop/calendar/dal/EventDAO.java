@@ -425,7 +425,7 @@ public class EventDAO extends BaseDAO {
 			.fetchInto(OEvent.class);
 	}
 	
-	public int updateHandleInvitationIn(Connection con, Collection<Integer> eventIds, boolean handleInvitation) throws DAOException {
+	public int updateHandleInvitationIn(Connection con, Collection<String> eventIds, boolean handleInvitation) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)

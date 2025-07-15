@@ -72,7 +72,7 @@ public class RecurrenceBrokenDAO extends BaseDAO {
 	}
 	
 	/*
-	public List<ORecurrenceBroken> selectByEventRecurrence(Connection con, Integer eventId, Integer recurrenceId) throws DAOException {
+	public List<ORecurrenceBroken> selectByEventRecurrence(Connection con, String eventId, Integer recurrenceId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()

@@ -615,7 +615,7 @@ public class EventDAO extends BaseDAO {
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
-		Field<Integer> seriesEventId = DSL
+		Field<String> seriesEventId = DSL
 			.select(eve1.EVENT_ID)
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
@@ -673,7 +673,7 @@ public class EventDAO extends BaseDAO {
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
-		Field<Integer> seriesEventId = DSL
+		Field<String> seriesEventId = DSL
 			.select(eve1.EVENT_ID)
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
@@ -722,7 +722,7 @@ public class EventDAO extends BaseDAO {
 		Condition rangeCndt = toRangeCondition(fromDate, toDate, true);
 		// New field: targets the eventId of the original series event
 		// NB: recurring events cannot have a reference to a master series event
-		Field<Integer> seriesEventId = value(null, Integer.class).as("series_event_id");
+		Field<String> seriesEventId = value(null, String.class).as("series_event_id");
 		
 		return dsl
 			.select(
@@ -1043,7 +1043,7 @@ public class EventDAO extends BaseDAO {
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
-		Field<Integer> seriesEventId = DSL
+		Field<String> seriesEventId = DSL
 			.select(eve1.EVENT_ID)
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
@@ -1120,7 +1120,7 @@ public class EventDAO extends BaseDAO {
 		
 		// New field: targets the eventId of the original series event
 		// NB: recurring events cannot have a reference to a master series event
-		Field<Integer> seriesEventId = value(null, Integer.class).as("series_event_id");
+		Field<String> seriesEventId = value(null, String.class).as("series_event_id");
 		
 		// New field: attendees count
 		Field<Integer> attendeesCount = DSL.field(
@@ -1178,7 +1178,7 @@ public class EventDAO extends BaseDAO {
 		// New field: targets the eventId of the original series event
 		RecurrencesBroken rbk1 = RECURRENCES_BROKEN.as("rbk1");
 		Events eve1 = EVENTS.as("eve1");
-		Field<Integer> seriesEventId = DSL
+		Field<String> seriesEventId = DSL
 			.select(eve1.EVENT_ID)
 			.from(rbk1.join(eve1).on(rbk1.EVENT_ID.equal(eve1.EVENT_ID)))
 			.where(
@@ -1230,7 +1230,7 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		
 		// NB: recurring events cannot have a reference to a master series event
-		Field<Integer> seriesEventId = value(null, Integer.class).as("series_event_id");
+		Field<String> seriesEventId = value(null, String.class).as("series_event_id");
 		
 		return dsl
 			.select(

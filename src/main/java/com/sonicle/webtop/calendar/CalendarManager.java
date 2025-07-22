@@ -3529,6 +3529,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		final ICalendarInput icalInput = new ICalendarInput(udata.getTimeZone());
 		final String PENDING_KEY = String.valueOf(calendarId);
+		final String logPrefix = "RemoteSync-" + PENDING_KEY;
 		CalendarDAO calDao = CalendarDAO.getInstance();
 		Connection con = null;
 		
@@ -3541,17 +3542,20 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			con = WT.getConnection(SERVICE_ID, false);
 			Calendar cal = ManagerUtils.createCalendar(calDao.selectById(con, calendarId));
-			if (cal == null) throw new WTException("Calendar not found [{0}]", calendarId);
+			if (cal == null) throw new WTException("Calendar not found [{}]", calendarId);
 			if (!Calendar.Provider.WEBCAL.equals(cal.getProvider()) && !Calendar.Provider.CALDAV.equals(cal.getProvider())) {
-				throw new WTException("Specified calendar is not remote (webcal or CalDAV) [{0}]", calendarId);
+				throw new WTException("Specified calendar is not remote (webcal or CalDAV) [{}]", calendarId);
 			}
 			
 			// Force a full update if last-sync date is null
-			if (cal.getRemoteSyncTimestamp() == null) full = true;
+			if (cal.getRemoteSyncTimestamp() == null) {
+				full = true;
+				logger.debug("[{}] Last sync timestamp is missing: a full sync will be performed!", logPrefix, logPrefix);
+			}
 			
 			CalendarRemoteParameters params = LangUtils.deserialize(cal.getParameters(), CalendarRemoteParameters.class);
-			if (params == null) throw new WTException("Unable to deserialize remote parameters");
-			if (params.url == null) throw new WTException("Remote URL is undefined");
+			if (params == null) throw new WTException("Unable to deserialize remote parameters [{}]", calendarId);
+			if (params.url == null) throw new WTException("Remote URL is undefined [{}]", calendarId);
 			
 			if (Calendar.Provider.WEBCAL.equals(cal.getProvider())) {
 				final String PREFIX = "webcal-";
@@ -3572,7 +3576,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 					// Retrieve webcal content (iCalendar) from the specified URL 
 					// and save it locally
-					logger.debug("Downloading iCalendar file from URL [{}]", newUrl);
+					logger.debug("[{}] Downloading iCalendar file from URL [{}]", logPrefix, newUrl);
 					HttpClient httpCli = null;
 					FileOutputStream os = null;
 					try {
@@ -3581,35 +3585,35 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						HttpClientUtils.writeContent(httpCli, newUrl, os);
 						
 					} catch(IOException ex) {
-						throw new WTException(ex, "Unable to retrieve webcal [{0}]", newUrl);
+						throw new WTException(ex, "Unable to retrieve webcal at '{}'", newUrl);
 					} finally {
 						IOUtils.closeQuietly(os);
 						HttpClientUtils.closeQuietly(httpCli);
 					}
-					logger.debug("Saved to temp file [{}]", tempFile.getName());
+					logger.debug("[{}] iCalendar file saved to temp [{}]", logPrefix, tempFile.getName());
 
 					// Parse downloaded iCalendar
-					logger.debug("Parsing downloaded iCalendar file");
+					logger.debug("[{}] Parsing iCalendar file", logPrefix);
 					net.fortuna.ical4j.model.Calendar ical = null;
 					FileInputStream is = null;
 					try {
 						is = new FileInputStream(tempFile);
 						ical = ICalendarUtils.parse(is);
 						//TODO: add support to FILENAME property (Google https://github.com/ical4j/ical4j/issues/69)
-					} catch(IOException | ParserException ex) {
-						throw new WTException(ex, "Unable to read webcal");
+					} catch (IOException | ParserException ex) {
+						throw new WTException(ex, "Unable to read iCalendar [{}]", tempFile.getName());
 					} finally {
 						IOUtils.closeQuietly(os);
 					}
 					
 					icalInput.withIncludeVEventSourceInOutput(true);
 					ArrayList<EventInput> input = icalInput.fromICalendarFile(ical, null);
-					logger.debug("Found {} events", input.size());
+					logger.debug("[{}] Parsing done, found {} events", logPrefix, input.size());
 					
 					Map<String, VEventHrefSync> syncByHref = null;
 							
 					if (full) {
-						logger.debug("Cleaning up calendar [{}]", calendarId);
+						logger.debug("[{}] Empting calendar '{}'", logPrefix, calendarId);
 						doEventsDeleteByCalendar(con, calendarId, false);
 					} else {
 						EventDAO evtDao = EventDAO.getInstance();
@@ -3617,7 +3621,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 					
 					// Inserts/Updates data...
-					logger.debug("Inserting/Updating events...");
+					logger.debug("[{}] Begin processing events", logPrefix);
 					try {
 						String autoUidPrefix = DigestUtils.md5Hex(newUrl.toString()); // auto-gen base prefix in case of missing UID
 						HashSet<String> hrefs = new HashSet<>();
@@ -3627,32 +3631,33 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							if (StringUtils.isBlank(ei.event.getPublicUid())) {
 								String autoUid = autoUidPrefix + "-" + i;
 								ei.event.setPublicUid(autoUid);
-								logger.trace("Missing UID: using auto-gen value. [{}]", autoUid);
+								if (logger.isTraceEnabled()) logger.trace("[{}] Missing UID: using auto-gen value '{}'", logPrefix, autoUid);
 							}
 							String href = ManagerUtils.buildHref(ei.event.getPublicUid());
+							if (logger.isTraceEnabled()) logger.trace("[{}] Working on event '{}'", logPrefix, href);
 							
 							//if (logger.isTraceEnabled()) logger.trace("{}", ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
 							if (hrefs.contains(href)) {
-								logger.trace("Event duplicated. Skipped! [{}]", href);
+								if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' is duplicated, skipping it", logPrefix, href);
 								continue;
 							}
 							
 							boolean skip = false;
 							String matchingEventId = null;
-							String eiHash = DigestUtils.md5Hex(ei.sourceEvent.toString());
+							String eiHash = ei.computeDataHash();
 							
 							if (syncByHref != null) { // Only if... (!full) see above!
 								VEventHrefSync hrefSync = syncByHref.remove(href);
 								if (hrefSync != null) { // Href found -> maybe updated item
 									if (!StringUtils.equals(hrefSync.getEtag(), eiHash)) {
 										matchingEventId = hrefSync.getEventId();
-										logger.trace("Event updated [{}, {}]", href, eiHash);
+										if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' was updated [{}]", logPrefix, href, eiHash);
 									} else {
 										skip = true;
-										logger.trace("Event not modified [{}, {}]", href, eiHash);
+										if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' is not modified [{}]", logPrefix, href, eiHash);
 									}
 								} else { // Href not found -> added item
-									logger.trace("Event newly added [{}, {}]", href, eiHash);
+									if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' was newly added [{}]", logPrefix, href, eiHash);
 								}
 							}
 							
@@ -3662,11 +3667,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								ei.event.setEtag(eiHash);
 								
 								if (matchingEventId != null) {
+									if (logger.isTraceEnabled()) logger.trace("[{}] Updating event '{}'", logPrefix, matchingEventId);
 									ei.event.setEventId(matchingEventId);
 									boolean updated = doEventInputUpdate(con, cache, ei, ProcessReminder.NO);
 									if (!updated) throw new WTException("Event not found [{}]", ei.event.getEventId());
 									
 								} else {
+									if (logger.isTraceEnabled()) logger.trace("[{}] Inserting event '{}'", logPrefix, href);
 									doEventInputInsert(con, cache, ei, ProcessReminder.NO);
 								}
 							}
@@ -3677,7 +3684,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						if (syncByHref != null) { // Only if... (!full) see above!
 							// Remaining hrefs -> deleted items
 							for (VEventHrefSync hrefSync : syncByHref.values()) {
-								logger.trace("Event deleted [{}]", hrefSync.getHref());
+								if (logger.isTraceEnabled()) {
+									logger.trace("[{}] Event was deleted '{}'", logPrefix, hrefSync.getHref());
+									logger.trace("[{}] Deleting event '{}'", logPrefix, hrefSync.getEventId());
+								}
 								doEventDelete(con, hrefSync.getEventId(), false);
 							}
 						}
@@ -3686,14 +3696,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						calDao.updateRemoteSyncById(con, calendarId, newLastSync, null);
 						DbUtils.commitQuietly(con);
 
-					} catch(Exception ex) {
+					} catch (Exception ex) {
 						DbUtils.rollbackQuietly(con);
+						logger.error("[{}] {}", logPrefix, ex.getMessage());
 						throw new WTException(ex, "Error importing iCalendar");
 					}
 					
 				} finally {
 					if (tempFile != null) {
-						logger.debug("Removing temp file [{}]", tempFile.getName());
+						logger.debug("[{}] Removing temp file '{}'", logPrefix, tempFile.getName());
 						WT.deleteTempFile(tempFile);
 					}
 				}
@@ -3711,9 +3722,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					if (!full && (syncIsSupported && !StringUtils.isBlank(cal.getRemoteSyncTag()))) { // Partial update using SYNC mode
 						String newSyncToken = dcal.getSyncToken();
 						
-						logger.debug("Querying CalDAV endpoint for changes [{}, {}]", params.url.toString(), cal.getRemoteSyncTag());
+						logger.debug("[{}] Querying CalDAV endpoint for changes [{}, {}]", logPrefix, params.url.toString(), cal.getRemoteSyncTag());
 						List<DavSyncStatus> changes = dav.getCalendarChanges(params.url.toString(), cal.getRemoteSyncTag());
-						logger.debug("Returned {} items", changes.size());
+						logger.debug("[{}] Returned {} items", logPrefix, changes.size());
 						
 						try {
 							if (!changes.isEmpty()) {
@@ -3721,7 +3732,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								Map<String, List<String>> eventIdsByHref = evtDao.selectHrefsByByCalendar(con, calendarId);
 								
 								// Process changes...
-								logger.debug("Processing changes...");
+								logger.debug("[{}] Processing changes", logPrefix);
 								HashSet<String> hrefs = new HashSet<>();
 								for (DavSyncStatus change : changes) {
 									String href = FilenameUtils.getName(change.getPath());
@@ -3734,7 +3745,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 										List<String> eventIds = eventIdsByHref.get(href);
 										String eventId = (eventIds != null) ? eventIds.get(eventIds.size()-1) : null;
 										if (eventId == null) {
-											logger.warn("Deletion not possible. Event path not found [{}]", PathUtils.concatPaths(dcal.getPath(), FilenameUtils.getName(href)));
+											logger.warn("[{}] Deletion not possible. Event path not found [{}]", logPrefix, PathUtils.concatPaths(dcal.getPath(), FilenameUtils.getName(href)));
 											continue;
 										}
 										doEventDelete(con, eventId, false);
@@ -3742,19 +3753,19 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								}
 
 								// Retrieves events list from DAV endpoint (using multiget)
-								logger.debug("Retrieving inserted/updated events [{}]", hrefs.size());
+								logger.debug("[{}] Retrieving inserted/updated events [{}]", logPrefix, hrefs.size());
 								Collection<String> paths = hrefs.stream().map(href -> PathUtils.concatPaths(dcal.getPath(), FilenameUtils.getName(href))).collect(Collectors.toList());
 								List<DavCalendarEvent> devts = dav.listCalendarEvents(params.url.toString(), paths);
 								//List<DavCalendarEvent> devts = dav.listCalendarEvents(params.url.toString(), hrefs);
 
 								// Inserts/Updates data...
-								logger.debug("Inserting/Updating events...");
+								logger.debug("[{}] Inserting/Updating events", logPrefix);
 								HashMap<String, OEvent> cache = new HashMap<>();
 								for (DavCalendarEvent devt : devts) {
 									String href = FilenameUtils.getName(devt.getPath());
 									//String href = devt.getPath();
 									
-									if (logger.isTraceEnabled()) logger.trace("{}", ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
+									if (logger.isTraceEnabled()) logger.trace("[{}]\n{}", logPrefix, ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
 									List<String> eventIds = eventIdsByHref.get(href);
 									String eventId = (eventIds != null) ? eventIds.get(eventIds.size()-1) : null;
 									
@@ -3778,6 +3789,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							
 						} catch(Exception ex) {
 							DbUtils.rollbackQuietly(con);
+							logger.error("[{}] {}", logPrefix, ex.getMessage());
 							throw new WTException(ex, "Error importing iCalendar");
 						}
 						
@@ -3788,16 +3800,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						}
 						
 						// Retrieves cards from DAV endpoint
-						logger.debug("Querying CalDAV endpoint [{}]", params.url.toString());
+						logger.debug("[{}] Querying CalDAV endpoint [{}]", logPrefix, params.url.toString());
 						List<DavCalendarEvent> devts = dav.listCalendarEvents(params.url.toString());
-						logger.debug("Returned {} items", devts.size());
+						logger.debug("[{}] Returned {} items", devts.size());
 						
 						// Handles data...
 						try {
 							Map<String, VEventHrefSync> syncByHref = null;
 							
 							if (full) {
-								logger.debug("Cleaning up calendar [{}]", calendarId);
+								logger.debug("[{}] Cleaning up calendar [{}]", logPrefix, calendarId);
 								doEventsDeleteByCalendar(con, calendarId, false);
 							} else if (!full && !syncIsSupported) {
 								// This hash-map is only needed when syncing using hashes
@@ -3805,7 +3817,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								syncByHref = evtDao.viewHrefSyncDataByCalendar(con, calendarId);
 							}	
 							
-							logger.debug("Processing results...");
+							logger.debug("[{}] Processing results...", logPrefix);
 							// Define a simple map in order to check duplicates.
 							// eg. SOGo passes same card twice :(
 							HashSet<String> hrefs = new HashSet<>();
@@ -3815,9 +3827,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								//String href = devt.getPath();
 								String etag = devt.geteTag();
 								
-								if (logger.isTraceEnabled()) logger.trace("{}", ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
+								if (logger.isTraceEnabled()) logger.trace("[{}]\n{}", logPrefix, ICalendarUtils.print(ICalendarUtils.getVEvent(devt.getCalendar())));
 								if (hrefs.contains(href)) {
-									logger.trace("Card duplicated. Skipped! [{}]", href);
+									if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' is duplicated, skipping it", logPrefix, href);
 									continue;
 								}
 								
@@ -3834,13 +3846,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 										if (!StringUtils.equals(hrefSync.getEtag(), hash)) {
 											matchingEventId = hrefSync.getEventId();
 											etag = hash;
-											logger.trace("Event updated [{}, {}]", href, hash);
+											if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' was updated [{}]", logPrefix, href, hash);
 										} else {
 											skip = true;
-											logger.trace("Event not modified [{}, {}]", href, hash);
+											if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' is not modified [{}]", logPrefix, href, hash);
 										}
 									} else { // Href not found -> added item
-										logger.trace("Event newly added [{}]", href);
+										if (logger.isTraceEnabled()) logger.trace("[{}] Event '{}' was newly added [{}]", logPrefix, href, hash);
 										etag = hash;
 									}
 								}
@@ -3868,7 +3880,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							if (syncByHref != null) { // Only if... (!full && !syncIsSupported) see above!
 								// Remaining hrefs -> deleted items
 								for (VEventHrefSync hrefSync : syncByHref.values()) {
-									logger.trace("Event deleted [{}]", hrefSync.getHref());
+									if (logger.isTraceEnabled()) {
+										logger.trace("[{}] Event was deleted '{}'", logPrefix, hrefSync.getHref());
+										logger.trace("[{}] Deleting event '{}'", logPrefix, hrefSync.getEventId());
+									}
 									doEventDelete(con, hrefSync.getEventId(), false);
 								}
 							}
@@ -3876,13 +3891,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							calDao.updateRemoteSyncById(con, calendarId, newLastSync, newSyncToken);
 							DbUtils.commitQuietly(con);
 							
-						} catch(Exception ex) {
+						} catch (Exception ex) {
 							DbUtils.rollbackQuietly(con);
+							logger.error("[{}] {}", logPrefix, ex.getMessage());
 							throw new WTException(ex, "Error importing iCalendar");
 						}
 					}
 					
-				} catch(DavException ex) {
+				} catch (DavException ex) {
 					throw new WTException(ex, "CalDAV error");
 				}
 			}

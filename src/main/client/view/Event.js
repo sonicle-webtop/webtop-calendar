@@ -1034,19 +1034,19 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									xtype: 'button',
 									ui: '{secondary|toolbar}',
 									tooltip: me.res('event.btn-importAttendees.tip'),
-									iconCls: 'wtcal-icon-importAttendees',
+									iconCls: 'wt-icon-add',
 									arrowVisible: false,
 									menu: [
 										{
 											text: me.res('event.btn-importAttendeesPaste.lbl'),
 											tooltip: me.res('event.btn-importAttendeesPaste.tip'),
-											iconCls: 'wtcal-icon-importAttendeesPaste',
+											iconCls: 'wt-icon-clipboard-paste',
 											handler: function() {
 												me.importAttendeesUI('raw');
 											}
 										}, {
 											text: me.res('event.btn-importAttendeesList.lbl'),
-											iconCls: 'wtcal-icon-importAttendeesList',
+											iconCls: 'wt-icon-add',
 											handler: function() {
 												me.importAttendeesUI('list');
 											}

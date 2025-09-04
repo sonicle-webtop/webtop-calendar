@@ -19,10 +19,7 @@
 /*.wtcal-icon-importEvents { background-image: url('event-import_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-exportEvents { background-image: url('event-export_16.svg') !important; background-size: contain; }*/
 .wtcal-icon-showDescription:before { content: '\f1dc'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-addResource:before { content: '\f54f'; font-family: var(--fa-style-family-classic); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-importAttendees:before { content: '\f055'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-importAttendeesPaste:before { content: '\f0ea'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-importAttendeesList:before { content: '\f055'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
+/*.wtcal-icon-addResource { background-image: url('resource_16.svg') !important; background-size: contain; }*/
 .wtcal-icon-addMeeting:before { content: '\f03d'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
 /* ---------- Icons (others) */
 /*.wtcal-icon-reminder-event { background-image: url('event_16.svg') !important; background-size: contain; }*/
@@ -93,7 +90,7 @@
 	background-repeat: repeat;
 }
 */
-/* ---------- Portlet */
+/* ---------- Portlet@Grid */
 .wtcal-portlet-grid .x-grid-row.x-grid-row-with-rowbody .x-grid-cell-inner {
     padding-bottom: 2px;
 }
@@ -103,8 +100,22 @@
     gap: 5px;
     padding-top: 0px;
 }
-.wtcal-portlet-event-body-attime {}
-.wtcal-portlet-event-body-location { color: gray; /* FIXME */ }
+/* ---------- Portlet@EventsBody */
+/* Override default style */
+.wtcal-portlet-event-body .x-grid-rowbody {
+    gap: 8px;
+}
+.wtcal-portlet-event-body-atdate {
+	color: var(--wt-theme-color-n3);
+}
+.wtcal-portlet-event-body-attime {
+	padding: 2px 10px;
+	border-radius: 10px;
+	background: var(--wt-theme-color-surface-l2);
+}
+.wtcal-portlet-event-body-location {
+    color: unset;
+}
 /* ---------- ToolPanel */
 .wtcal-tool-searchpanel-body {
     padding: 10px 5px 10px 5px;

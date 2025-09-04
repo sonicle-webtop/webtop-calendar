@@ -788,6 +788,88 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
+					labelIconCls: 'wtcal-icon-eventLocation',
+					bind: {
+						hidden: '{foLocationIsMeeting}'
+					},
+					hidden: true,
+					items: [
+						{
+							xtype: 'sofieldhgroup',
+							items: [
+								{
+									//FIXME: check suggestcombo on delete all field
+									xtype: 'textfield',
+									bind: '{record.location}',
+									sid: me.mys.ID,
+									suggestionContext: 'eventlocation',
+									flex: 1
+								}, {
+									xtype: 'sohspacer'
+								}, {
+									xtype: 'button',
+									ui: 'default-toolbar',
+									iconCls: 'wtcal-icon-addMeeting',
+									tooltip: WT.res(WT.ID, 'act-addMeeting.lbl', WT.getMeetingConfig().name),
+									disabled: Ext.isEmpty(WT.getMeetingProvider()) || !WT.isPermitted(WT.ID, 'MEETING', 'CREATE'),
+									handler: function() {
+										me.addMeetingUI();
+									}
+								}
+							],
+							fieldLabel: me.res('event.fld-location.lbl')
+						}
+					]
+				}, {
+					xtype: 'sofieldsection',
+					labelIconCls: 'wtcal-icon-eventLocation',
+					bind: {
+						hidden: '{!foLocationIsMeeting}'
+					},
+					hidden: true,
+					items: [
+						{
+							xtype: 'textfield',
+							bind: '{record.location}',
+							triggers: {
+								clear: WTF.clearTrigger()
+							},
+							fieldLabel: me.res('event.fld-location.lbl')
+						}, {
+							xtype: 'sofieldhgroup',
+							items: [
+								{
+									xtype: 'button',
+									ui: '{secondary}',
+									iconCls: 'wt-glyph-clone',
+									tooltip: me.res('event.btn-copyMeeting.tip'),
+									handler: function() {
+										var location = me.getModel().get('location');
+										if (!Ext.isEmpty(location)) {
+											Sonicle.ClipboardMgr.copy(location);
+											WT.toast(me.res('event.toast.meetinglink.copied'));
+										}
+									}
+								}, {
+									xtype: 'sohspacer',
+									ui: 'small'
+								}, {
+									xtype: 'button',
+									ui: '{secondary}',
+									iconCls: 'fas fa-arrow-up-right-from-square',
+									text: me.res('event.btn-goToMeeting.lbl'),
+									handler: function() {
+										var location = me.getModel().get('location');
+										if (Sonicle.String.startsWith(location, 'http', true)) {
+											Sonicle.URLMgr.open(location, true);
+										}
+									}
+								}
+							]
+						}
+					]
+				}, {
+					xtype: 'sofieldsection',
 					labelIconCls: 'wtcal-icon-eventDescription',
 					bind: {
 						hidden: '{hidden.flddescription}'
@@ -1094,88 +1176,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							handler: function() {
 								me.showAvailability();
 							}
-						}
-					]
-				}, {
-					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventLocation',
-					bind: {
-						hidden: '{foLocationIsMeeting}'
-					},
-					hidden: true,
-					items: [
-						{
-							xtype: 'sofieldhgroup',
-							items: [
-								{
-									//FIXME: check suggestcombo on delete all field
-									xtype: 'textfield',
-									bind: '{record.location}',
-									sid: me.mys.ID,
-									suggestionContext: 'eventlocation',
-									flex: 1
-								}, {
-									xtype: 'sohspacer'
-								}, {
-									xtype: 'button',
-									ui: 'default-toolbar',
-									iconCls: 'wtcal-icon-addMeeting',
-									tooltip: WT.res(WT.ID, 'act-addMeeting.lbl', WT.getMeetingConfig().name),
-									disabled: Ext.isEmpty(WT.getMeetingProvider()) || !WT.isPermitted(WT.ID, 'MEETING', 'CREATE'),
-									handler: function() {
-										me.addMeetingUI();
-									}
-								}
-							],
-							fieldLabel: me.res('event.fld-location.lbl')
-						}
-					]
-				}, {
-					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventLocation',
-					bind: {
-						hidden: '{!foLocationIsMeeting}'
-					},
-					hidden: true,
-					items: [
-						{
-							xtype: 'textfield',
-							bind: '{record.location}',
-							triggers: {
-								clear: WTF.clearTrigger()
-							},
-							fieldLabel: me.res('event.fld-location.lbl')
-						}, {
-							xtype: 'sofieldhgroup',
-							items: [
-								{
-									xtype: 'button',
-									ui: '{secondary}',
-									iconCls: 'fas fa-clone',
-									tooltip: me.res('event.btn-copyMeeting.tip'),
-									handler: function() {
-										var location = me.getModel().get('location');
-										if (!Ext.isEmpty(location)) {
-											Sonicle.ClipboardMgr.copy(location);
-											WT.toast(me.res('event.toast.meetinglink.copied'));
-										}
-									}
-								}, {
-									xtype: 'sohspacer',
-									ui: 'small'
-								}, {
-									xtype: 'button',
-									ui: '{secondary}',
-									iconCls: 'fas fa-arrow-up-right-from-square',
-									text: me.res('event.btn-goToMeeting.lbl'),
-									handler: function() {
-										var location = me.getModel().get('location');
-										if (Sonicle.String.startsWith(location, 'http', true)) {
-											Sonicle.URLMgr.open(location, true);
-										}
-									}
-								}
-							]
 						}
 					]
 				}, {

@@ -485,7 +485,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						}, {
 							callback: function(success, json) {
 								if (success) {
-									me.doImportListAsAttendees(json.data);
+									me.doImportRecipientsAsAttendees(json.data);
 								}
 							},
 							scope: me

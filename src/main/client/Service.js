@@ -424,17 +424,21 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}));
 		
 		me.setMainComponent(Ext.create({
-			xtype: 'container',
+			xtype: 'wtpanelct',
 			layout: 'card',
+			cls: 'wtcal-main',
 			referenceHolder: true,
 			activeItem: 0,
 			items: [
 				me.createSchedulerCfg(tagsStore, {
-					reference: 'scheduler'
+					reference: 'scheduler',
+					cls: 'wtcal-main-scheduler'
 				}),
 				{
 					xtype: 'grid',
 					reference: 'gpresults',
+					cls: 'wtcal-main-results',
+					//cls: 'wtcal-main-list-grid',
 					stateful: true,
 					stateId: me.buildStateId('gpeventsresults'),
 					store: {

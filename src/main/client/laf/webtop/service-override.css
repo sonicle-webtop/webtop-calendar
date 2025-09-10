@@ -43,6 +43,18 @@
 /*.wtcal-icon-attendeeResponse-DE { background-image: url('response-declined_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-attendeeResponse-TE { background-image: url('response-tentative_16.svg') !important; background-size: contain; }*/
 
+/* ---------- Main (center) scheduler */
+.wtcal-main {
+	border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+.wtcal-main-scheduler {
+    padding: 0px 8px 8px 8px;
+}
+.wtcal-main-results {
+    padding: 8px 8px 8px 8px;
+}
+
 /* ---------- Planning */
 .wtcal-planning-free {}
 .wtcal-planning-free-out {

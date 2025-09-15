@@ -31,13 +31,13 @@
 .wtcal-icon-event-single { background-image: url('event_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-recurring { background-image: url('event-recurring_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-broken { background-image: url('event-broken_16.svg') !important; background-size: contain; }
-.wtcal-icon-eventTitle:before { content: '\f1dc'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-eventDescription:before { content: '\f036'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-eventDateTime:before { content: '\f017'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-eventLocation:before { content: '\f3c5'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-eventReminder:before { content: '\f0f3'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-eventAttendees:before { content: '\f0c0'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
-.wtcal-icon-eventAttachments:before { content: '\f0c6'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
+.wtcal-icon-sectionAttachments { background-size: contain; } .wtcal-icon-sectionAttachments:before { content: '\f0c6'; font: var(--fa-font-solid); }
+.wtcal-icon-sectionAttendees { background-size: contain; } .wtcal-icon-sectionAttendees:before { content: 'f0c0'; font: var(--fa-font-solid); }
+.wtcal-icon-sectionDateTime { background-size: contain; } .wtcal-icon-sectionDateTime:before { content: '\f017'; font: var(--fa-font-solid); }
+.wtcal-icon-sectionDescription { background-size: contain; } .wtcal-icon-sectionDescription:before { content: '\f036'; font: var(--fa-font-solid); }
+.wtcal-icon-sectionLocation { background-size: contain; } .wtcal-icon-sectionLocation:before { content: '\f3c5'; font: var(--fa-font-solid); }
+.wtcal-icon-sectionReminder { background-size: contain; } .wtcal-icon-sectionReminder:before { content: '\f0f3'; font: var(--fa-font-solid); }
+.wtcal-icon-sectionTitle { background-size: contain; } .wtcal-icon-sectionTitle:before { content: '\f1dc'; font: var(--fa-font-solid); }
 .wtcal-icon-attendeeResponse-NA { background-image: url('response-needsAction_16.svg') !important; background-size: contain; }
 .wtcal-icon-attendeeResponse-AC { background-image: url('response-accepted_16.svg') !important; background-size: contain; }
 .wtcal-icon-attendeeResponse-DE { background-image: url('response-declined_16.svg') !important; background-size: contain; }

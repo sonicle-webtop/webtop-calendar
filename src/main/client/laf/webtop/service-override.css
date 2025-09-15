@@ -31,13 +31,13 @@
 /*.wtcal-icon-event-single { background-image: url('event_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-event-recurring { background-image: url('event-recurring_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-event-broken { background-image: url('event-broken_16.svg') !important; background-size: contain; }*/
-.wtcal-icon-eventTitle { background-image: url('section-title_16.svg') !important; background-size: contain; } .wtcal-icon-eventTitle:before { content: ''; }
-.wtcal-icon-eventDescription { background-image: url('section-description_16.svg') !important; background-size: contain; } .wtcal-icon-eventDescription:before { content: ''; }
-.wtcal-icon-eventDateTime { background-image: url('section-datetime_16.svg') !important; background-size: contain; } .wtcal-icon-eventDateTime:before { content: ''; }
-.wtcal-icon-eventLocation { background-image: url('section-location_16.svg') !important; background-size: contain; } .wtcal-icon-eventLocation:before { content: ''; }
-.wtcal-icon-eventReminder { background-image: url('section-reminder_16.svg') !important; background-size: contain; } .wtcal-icon-eventReminder:before { content: ''; }
-.wtcal-icon-eventAttendees { background-image: url('section-attendees_16.svg') !important; background-size: contain; } .wtcal-icon-eventAttendees:before { content: ''; }
-.wtcal-icon-eventAttachments { background-image: url('section-attachments.svg') !important; background-size: contain; } .wtcal-icon-eventAttachments:before { content: ''; }
+.wtcal-icon-sectionAttachments { background-image: url('section-attachments.svg') !important; } .wtcal-icon-sectionAttachments:before { content: ''; }
+.wtcal-icon-sectionAttendees { background-image: url('section-attendees_16.svg') !important; } .wtcal-icon-sectionAttendees:before { content: ''; }
+.wtcal-icon-sectionDateTime { background-image: url('section-datetime_16.svg') !important; } .wtcal-icon-sectionDateTime:before { content: ''; }
+.wtcal-icon-sectionDescription { background-image: url('section-description_16.svg') !important; } .wtcal-icon-sectionDescription:before { content: ''; }
+.wtcal-icon-sectionLocation { background-image: url('section-location_16.svg') !important; } .wtcal-icon-sectionLocation:before { content: ''; }
+.wtcal-icon-sectionReminder { background-image: url('section-reminder_16.svg') !important; } .wtcal-icon-sectionReminder:before { content: ''; }
+.wtcal-icon-sectionTitle { background-image: url('section-title_16.svg') !important; background-size: contain; } .wtcal-icon-sectionTitle:before { content: ''; }
 /*.wtcal-icon-attendeeResponse-NA { background-image: url('response-needsAction_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-attendeeResponse-AC { background-image: url('response-accepted_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-attendeeResponse-DE { background-image: url('response-declined_16.svg') !important; background-size: contain; }*/

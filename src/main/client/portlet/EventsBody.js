@@ -98,7 +98,7 @@ Ext.define('Sonicle.webtop.calendar.portlet.EventsBody', {
 								return !rec.hasMeeting();
 							},
 							getClass: function(v, meta, rec) {
-								var cls = 'fas fa-video ';
+								var cls = 'wt-glyph-meeting ';
 								if (!rec.hasMeeting()) cls += (Ext.baseCSSPrefix + 'hidden-display');
 								return cls;
 							}

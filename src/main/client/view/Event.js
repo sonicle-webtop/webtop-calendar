@@ -750,7 +750,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					anchor: '100%'
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventTitle',
+					labelIconCls: 'wtcal-icon-sectionTitle',
 					items: [
 						{
 							xtype: 'sofieldhgroup',
@@ -788,7 +788,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventLocation',
+					labelIconCls: 'wtcal-icon-sectionLocation',
 					bind: {
 						hidden: '{foLocationIsMeeting}'
 					},
@@ -822,7 +822,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventLocation',
+					labelIconCls: 'wtcal-icon-sectionLocation',
 					bind: {
 						hidden: '{!foLocationIsMeeting}'
 					},
@@ -841,13 +841,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								{
 									xtype: 'button',
 									ui: '{secondary}',
-									iconCls: 'wt-glyph-clone',
+									iconCls: 'wt-icon-clipboard-copy',
 									tooltip: me.res('event.btn-copyMeeting.tip'),
 									handler: function() {
 										var location = me.getModel().get('location');
 										if (!Ext.isEmpty(location)) {
 											Sonicle.ClipboardMgr.copy(location);
-											WT.toast(me.res('event.toast.meetinglink.copied'));
+											WT.toast(WT.res('toast.info.copied'));
 										}
 									}
 								}, {
@@ -856,7 +856,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								}, {
 									xtype: 'button',
 									ui: '{secondary}',
-									iconCls: 'fas fa-arrow-up-right-from-square',
+									iconCls: 'wt-glyph-open',
 									text: me.res('event.btn-goToMeeting.lbl'),
 									handler: function() {
 										var location = me.getModel().get('location');
@@ -870,7 +870,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventDescription',
+					labelIconCls: 'wtcal-icon-sectionDescription',
 					bind: {
 						hidden: '{hidden.flddescription}'
 					},
@@ -888,7 +888,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventDateTime',
+					labelIconCls: 'wtcal-icon-sectionDateTime',
 					items: [
 						{
 							xtype: 'sofieldhgroup',
@@ -919,7 +919,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								}, {
 									xtype: 'button',
 									ui: 'default-toolbar',
-									iconCls: 'fas fa-stopwatch',
+									iconCls: 'wt-glyph-stopwatch',
 									tooltip: me.res('event.btn-now.tip'),
 									bind: {
 										disabled: '{fldallDay.checked}'
@@ -956,7 +956,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								}, {
 									xtype: 'button',
 									ui: 'default-toolbar',
-									iconCls: 'fas fa-stopwatch',
+									iconCls: 'wt-glyph-stopwatch',
 									tooltip: me.res('event.btn-now.tip'),
 									bind: {
 										disabled: '{fldallDay.checked}'
@@ -1004,7 +1004,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									store: Ext.create('WTA.store.Timezone', {
 										autoLoad: true
 									}),
-									staticIconCls: 'fas fa-earth-americas',
+									staticIconCls: 'wt-glyph-earth',
 									width: 270
 								}),
 								{
@@ -1060,7 +1060,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventReminder',
+					labelIconCls: 'wtcal-icon-sectionReminder',
 					bind: {
 						hidden: '{!foHasReminder}'
 					},
@@ -1079,7 +1079,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventAttendees',
+					labelIconCls: 'wtcal-icon-sectionAttendees',
 					items: [
 						{
 							xtype: 'sofieldhgroup',
@@ -1180,7 +1180,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-eventAttachments',
+					labelIconCls: 'wtcal-icon-sectionAttachments',
 					bind: {
 						hidden: '{!foHasAttachments}'
 					},
@@ -1315,7 +1315,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							hidden: '{foIsNew}'
 						},
 						tooltip: WT.res('act-auditLog.lbl'),
-						iconCls: 'fas fa-history',
+						iconCls: 'wt-icon-audit',
 						handler: function() {
 							me.mys.openAuditUI(me.getModel().get('eventId'), 'EVENT');
 						},

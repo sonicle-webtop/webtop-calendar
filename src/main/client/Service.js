@@ -476,7 +476,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							getTooltip: function(v, rec) {
 								return Sonicle.webtop.calendar.Service.calcCalendarLabel(rec.get('folderName'), null);
 							},
-							text: WTF.headerWithGlyphIcon('fas fa-folder'),
+							text: WTF.headerWithGlyphIcon('wt-glyph-folder'),
 							menuText: me.res('event.fld-calendar.lbl'),
 							width: 35
 						}, {

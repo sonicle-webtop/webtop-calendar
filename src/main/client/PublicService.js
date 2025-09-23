@@ -36,7 +36,7 @@ Ext.define('Sonicle.webtop.calendar.PublicService', {
 	
 	init: function() {
 		var me = this;
-		me.setMainComponent(Ext.create('Sonicle.webtop.calendar.view.pub.'+me.getVar('view'), {
+		me.setMainComponent(Ext.create('Sonicle.webtop.calendar.view-public.'+me.getVar('view'), {
 			region: 'center',
 			mys: me
 		}));

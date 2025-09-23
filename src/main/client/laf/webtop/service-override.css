@@ -13,6 +13,7 @@
 /*.wtcal-icon-editCalendar { background-image: url('calendar-edit_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-deleteCalendar { background-image: url('calendar-delete_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-newEvent { background-image: url('event-new_16.svg') !important; background-size: contain; }*/
+.x-btn-ui-default .wtcal-icon-newEvent { background-image: url('event-new-primary_16.svg') !important; background-size: contain; }
 /*.wtcal-icon-addEvent { background-image: url('event-add_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-openEvent { background-image: none !important; background-size: contain; }*/
 /*.wtcal-icon-rejoinSeries { background-image: url('event-rejoinSeries_16.svg') !important; background-size: contain; }*/

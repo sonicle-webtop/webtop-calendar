@@ -44,7 +44,11 @@
 /*.wtcal-icon-attendeeResponse-DE { background-image: url('response-declined_16.svg') !important; background-size: contain; }*/
 /*.wtcal-icon-attendeeResponse-TE { background-image: url('response-tentative_16.svg') !important; background-size: contain; }*/
 
-/* ---------- Main (center) scheduler */
+/* ---------- Tool */
+.wtcal-tool-searchpanel-body {
+    padding: 10px 5px 10px 5px;
+}
+/* ---------- Main */
 .wtcal-main {
 	border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
@@ -55,43 +59,18 @@
 .wtcal-main-results {
     padding: 8px 8px 8px 8px;
 }
-
-/* ---------- Planning */
-.wtcal-planning-free {}
-.wtcal-planning-free-out {
-    background-color: #fafafa;
+/* ---------- .ux.grid.column.Contact */
+.wtcon-contactcolumn-head > span {
+    color: var(--wt-theme-color-off);
 }
-.wtcal-planning-busy {
-    background-color: #9fc6e7;
+.wtcon-contactcolumn-body > span {
+	color: var(--wt-theme-color-off);
 }
-.wtcal-planning-unknown {
-    background-color: #e2e2e2;
-}
+/* ---------- .ux.PlanningGrid */
 .wtcal-planning-legend {
 	margin: 0;
 	padding: 0;
 	border: 1px solid;
-}
-.wtcal-planning-grid .wtcal-planning-free.x-grid-cell-selected {
-    background-color: #cff0db;
-}
-.wtcal-planning-grid .wtcal-planning-free-out.x-grid-cell-selected {
-    background-color: #cce6d5;
-}
-.wtcal-planning-grid .wtcal-planning-unknown.x-grid-cell-selected {
-    background-color: #b7d7c1;
-}
-.wtcal-planning-grid .wtcal-planning-free.x-grid-cell-selected.wtcal-planning-sel-collision {
-    background-color: #fbdddd;
-}
-.wtcal-planning-grid .wtcal-planning-free-out.x-grid-cell-selected.wtcal-planning-sel-collision {
-    background-color: #f7d9d9;
-}
-.wtcal-planning-grid .wtcal-planning-busy.x-grid-cell-selected.wtcal-planning-sel-collision {
-    background-color: #c8c3d7;
-}
-.wtcal-planning-grid .wtcal-planning-unknown.x-grid-cell-selected.wtcal-planning-sel-collision {
-    background-color: #e3c4c5;
 }
 .wtcal-planning-grid .x-group-sub-header .x-column-header-inner {
     padding-right: 5px;
@@ -118,18 +97,7 @@
 .wtcal-portlet-event-body .x-grid-rowbody {
     gap: 8px;
 }
-.wtcal-portlet-event-body-atdate {
-	color: var(--wt-theme-color-n3);
-}
 .wtcal-portlet-event-body-attime {
 	padding: 2px 10px;
 	border-radius: 10px;
-	background: var(--wt-theme-color-surface-l2);
-}
-.wtcal-portlet-event-body-location {
-    color: unset;
-}
-/* ---------- ToolPanel */
-.wtcal-tool-searchpanel-body {
-    padding: 10px 5px 10px 5px;
 }

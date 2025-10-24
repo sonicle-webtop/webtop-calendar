@@ -1,0 +1,43 @@
+/* ---------- .ux.PlanningGrid */
+.wtcal-planning-free {}
+.wtcal-planning-free-out {
+    background-color: #fafafa;
+}
+.wtcal-planning-busy {
+    background-color: #9fc6e7;
+}
+.wtcal-planning-unknown {
+    background-color: #e2e2e2;
+}
+.wtcal-planning-grid .wtcal-planning-free.x-grid-cell-selected {
+    background-color: #cff0db;
+}
+.wtcal-planning-grid .wtcal-planning-free-out.x-grid-cell-selected {
+    background-color: #cce6d5;
+}
+.wtcal-planning-grid .wtcal-planning-unknown.x-grid-cell-selected {
+    background-color: #b7d7c1;
+}
+.wtcal-planning-grid .wtcal-planning-free.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #fbdddd;
+}
+.wtcal-planning-grid .wtcal-planning-free-out.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #f7d9d9;
+}
+.wtcal-planning-grid .wtcal-planning-busy.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #c8c3d7;
+}
+.wtcal-planning-grid .wtcal-planning-unknown.x-grid-cell-selected.wtcal-planning-sel-collision {
+    background-color: #e3c4c5;
+}
+/* ---------- Portlet@EventsBody */
+/* Override default style */
+.wtcal-portlet-event-body-atdate {
+	color: var(--wt-theme-color-n3);
+}
+.wtcal-portlet-event-body-attime {
+	background: var(--wt-theme-color-surface-l2);
+}
+.wtcal-portlet-event-body-location {
+    color: unset;
+}

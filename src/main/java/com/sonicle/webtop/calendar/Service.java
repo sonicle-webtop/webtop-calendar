@@ -40,6 +40,7 @@ import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.URIUtils;
+import com.sonicle.commons.beans.ItemsListResult;
 import com.sonicle.commons.cache.AbstractPassiveExpiringBulkMap;
 import com.sonicle.commons.concurrent.KeyedReentrantLocks;
 import com.sonicle.commons.db.DbUtils;
@@ -101,9 +102,9 @@ import com.sonicle.webtop.calendar.rpt.RptAgendaWeek5;
 import com.sonicle.webtop.calendar.rpt.RptAgendaWeek7;
 import com.sonicle.webtop.contacts.IContactsManager;
 import com.sonicle.webtop.contacts.model.ContactLookup;
+import com.sonicle.webtop.contacts.model.ContactQueryUI;
 import com.sonicle.webtop.contacts.model.ContactType;
 import com.sonicle.webtop.contacts.model.Grouping;
-import com.sonicle.webtop.contacts.model.ListContactsResult;
 import com.sonicle.webtop.contacts.model.ShowBy;
 import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.CoreUserSettings;
@@ -1621,9 +1622,9 @@ public class Service extends BaseService {
 				}
 				InternetAddress ia = InternetAddressUtils.toInternetAddress(recipient);
 				Set<Integer> catIds = icm.listAllCategoryIds();
-				ListContactsResult lcr = icm.listContacts(catIds, ContactType.CONTACT, Grouping.ALPHABETIC, ShowBy.DISPLAY, ia.getAddress());
+				ItemsListResult<ContactLookup> ilr = icm.listContacts(catIds, ContactType.CONTACT, Grouping.ALPHABETIC, ShowBy.DISPLAY, ContactQueryUI.build(ia.getAddress()), null, null, false);
 				ArrayList<JsContact> jsc = new ArrayList<>();
-				for(ContactLookup cl: lcr.items) {
+				for(ContactLookup cl: ilr.getItems()) {
 					jsc.add(new JsContact(cl.getContactId(), cl.getDisplayName()+ "<"+cl.getEmail1()+">", WT.getProfileData(cl.getCategoryProfileId()).getDisplayName()));
 				}
 				new JsonResult(jsc).printTo(out);

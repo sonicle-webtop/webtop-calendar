@@ -87,8 +87,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			SoS = Sonicle.String,
 			tagsStore = WT.getTagsStore(),
 			scfields = WTA.ux.field.Search.customFieldDefs2Fields(me.ID, me.getVar('cfieldsSearchable')),
-			durRes = function(sym) { return WT.res('word.dur.'+sym); },
-			durSym = [durRes('y'), durRes('d'), durRes('h'), durRes('m'), durRes('s')];
+			durSym = WTF.durationSymbols('narrow');
 				
 		//TODO: trovare una collocazione a questa chiamata
 		Sonicle.upload.Uploader.registerMimeType('text/calendar', ['ical','ics','icalendar']);
@@ -496,11 +495,11 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 							dataIndex: 'duration',
 							header: me.res('gpevents.duration.lbl'),
 							renderer : function(v, meta, rec) {
-								return (v > 0) ? Sonicle.Date.humanReadableDuration(v, true, durSym) : '';
+								return (v > 0) ? Sonicle.Date.humanReadableDuration(v, {symbols: durSym}) : '';
 							},
 							summaryType: 'sum',
 							summaryRenderer: function(v) {
-								return '<strong>Σ: ' + ((v > 0) ? Sonicle.Date.humanReadableDuration(v, true, durSym) : '') + '</strong>';
+								return '<strong>Σ: ' + ((v > 0) ? Sonicle.Date.humanReadableDuration(v, {symbols: durSym}) : '') + '</strong>';
 							},
 							width: 80
 						}, {

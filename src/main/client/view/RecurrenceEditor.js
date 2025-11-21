@@ -112,7 +112,8 @@ Ext.define('Sonicle.webtop.calendar.view.RecurrenceEditor', {
 					},
 					startDay: WT.getStartDay(),
 					format: WT.getShortDateFmt(),
-					fieldLabel: WT.res('sorrfield.starts')
+					fieldLabel: WT.res('sorrfield.starts'),
+					readOnly: true
 				}, {
 					xtype: 'sorrfield',
 					bind: {

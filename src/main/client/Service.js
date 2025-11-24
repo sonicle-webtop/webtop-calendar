@@ -414,7 +414,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 						}
 					},
 					border: false,
-					cls: 'wtcal-tool-tree',
+					cls: 'wt-tool-tree wtcal-tool-tree',
 					bodyCls: 'wt-tool-bg',
 					width: '100%',
 					flex: 1

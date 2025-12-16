@@ -85,6 +85,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	viewModel: {
 		data: {
+			data: {
+				hasNewMeeting: false,
+				meetingData: null,
+				meetingMyTitle: null,
+				meetingMyLocation: null,
+				meetingMyDesc: null
+			},
 			hidden: {
 				flddescription: false
 			}
@@ -166,7 +173,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			foLocationIsMeeting: WTF.foGetFn('record', 'location', function(val) {
 				return WT.isMeetingUrl(val);
 			}),
-			foHasMeeting: WTF.foIsEmpty('record', 'meetingUrl', true),
+			foHasMeeting: WTF.foIsEmpty('record', 'guessedMeetingUrl', true),
 			foHasAttendees: WTF.foAssociationIsEmpty('record', 'attendees', true),
 			foHasAttendeesCount: WTF.foAssociationCount('record', 'attendees'),
 			foHasAttachments: WTF.foAssociationIsEmpty('record', 'attachments', true)
@@ -405,15 +412,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						callback: function(success, data) {
 							me.unwait();
 							if (success) {
-								var fmt = Ext.String.format,
-									name =  WT.getVar('userDisplayName'),
-									mo = me.getModel();
-								if (mo.isFieldEmpty('title')) mo.set('title', fmt(data.embedTexts.subject, name));
-								mo.set('location', data.link);
-								mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmt(data.embedTexts.unschedDescription, name, data.link)));
+								me.doAddNewMeeting(data);
+							} else {
+								me.doClearNewMeeting();
 							}
 						}
 					});
+				} else {
+					me.lref('btnnewmeeting').toggle(false);
 				}
 			}
 		});
@@ -735,7 +741,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				{
 					xtype: 'wtmeetingurlfield',
 					bind: {
-						value: '{record.meetingUrl}',
+						value: '{record.guessedMeetingUrl}',
 						hidden: '{!foHasMeeting}'
 					},
 					linkText: me.res('event.meeting.info'),
@@ -789,10 +795,6 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}, {
 					xtype: 'sofieldsection',
 					labelIconCls: 'wtcal-icon-sectionLocation',
-					bind: {
-						hidden: '{foLocationIsMeeting}'
-					},
-					hidden: true,
 					items: [
 						{
 							xtype: 'sofieldhgroup',
@@ -807,65 +809,27 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								}, {
 									xtype: 'sohspacer'
 								}, {
-									xtype: 'button',
+									xtype: 'sotogglebutton',
+									reference: 'btnnewmeeting',
+									bind: {
+										pressed: '{data.hasNewMeeting}'
+									},
 									ui: 'default-toolbar',
-									iconCls: 'wtcal-icon-addMeeting',
-									tooltip: WT.res(WT.ID, 'act-addMeeting.lbl', WT.getMeetingConfig().name),
+									offIconCls: 'wtcal-icon-addMeeting',
+									onIconCls: 'wtcal-icon-removeMeeting',
+									offTooltip: WT.res(WT.ID, 'act-addMeeting.lbl', WT.getMeetingConfig().name),
+									onTooltip: me.res('event.btn-removeMeeting.tip'),
 									disabled: Ext.isEmpty(WT.getMeetingProvider()) || !WT.isPermitted(WT.ID, 'MEETING', 'CREATE'),
-									handler: function() {
-										me.addMeetingUI();
+									toggleHandler: function(s, state) {
+										if (state === true) {
+											me.addMeetingUI();
+										} else {
+											me.doClearNewMeeting();
+										}
 									}
 								}
 							],
 							fieldLabel: me.res('event.fld-location.lbl')
-						}
-					]
-				}, {
-					xtype: 'sofieldsection',
-					labelIconCls: 'wtcal-icon-sectionLocation',
-					bind: {
-						hidden: '{!foLocationIsMeeting}'
-					},
-					hidden: true,
-					items: [
-						{
-							xtype: 'textfield',
-							bind: '{record.location}',
-							triggers: {
-								clear: WTF.clearTrigger()
-							},
-							fieldLabel: me.res('event.fld-location.lbl')
-						}, {
-							xtype: 'sofieldhgroup',
-							items: [
-								{
-									xtype: 'button',
-									ui: '{secondary}',
-									iconCls: 'wt-icon-clipboard-copy',
-									tooltip: me.res('event.btn-copyMeeting.tip'),
-									handler: function() {
-										var location = me.getModel().get('location');
-										if (!Ext.isEmpty(location)) {
-											Sonicle.ClipboardMgr.copy(location);
-											WT.toast(WT.res('toast.info.copied'));
-										}
-									}
-								}, {
-									xtype: 'sohspacer',
-									ui: 'small'
-								}, {
-									xtype: 'button',
-									ui: '{secondary}',
-									iconCls: 'wt-glyph-open',
-									text: me.res('event.btn-goToMeeting.lbl'),
-									handler: function() {
-										var location = me.getModel().get('location');
-										if (Sonicle.String.startsWith(location, 'http', true)) {
-											Sonicle.URLMgr.open(location, true);
-										}
-									}
-								}
-							]
 						}
 					]
 				}, {
@@ -1656,6 +1620,52 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					WT.error(me.res('event.importAttendees.error.limit', limit));
 				}
 			}
+		},
+		
+		doAddNewMeeting: function(meetingData) {
+			var me = this,
+				SoVMU = Sonicle.VMUtils,
+				fmt = Ext.String.format,
+				vm = me.getViewModel(),
+				myName = WT.getVar('userDisplayName'),
+				fmtTitle = fmt(meetingData.embedTexts.subject, myName),
+				fmtLocation = meetingData.embedTexts.location,
+				fmtDesc = fmt(meetingData.embedTexts.unschedDescription, myName, meetingData.link),
+				mo = me.getModel();
+			
+			SoVMU.setData(vm, {
+				hasNewMeeting: true,
+				meetingData: meetingData,
+				meetingMyTitle: fmtTitle,
+				meetingMyLocation: fmtLocation,
+				meetingMyDesc: fmtDesc
+			});
+			
+			if (mo.isFieldEmpty('title')) mo.set('title', fmtTitle);
+			if (mo.isFieldEmpty('location')) mo.set('location', fmtLocation);
+			mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmtDesc));
+		},
+		
+		doClearNewMeeting: function() {
+			var me = this,
+				SoS = Sonicle.String,
+				SoVMU = Sonicle.VMUtils,
+				vm = me.getViewModel(),
+				data = SoVMU.getData(vm, ['meetingMyTitle', 'meetingMyLocation', 'meetingMyDesc']),
+				mo = me.getModel();
+				
+			SoVMU.setData(vm, {
+				hasNewMeeting: false,
+				meetingData: null,
+				meetingMyTitle: null,
+				meetingMyLocation: null,
+				meetingMyDesc: null
+			});
+			
+			mo.set('title', SoS.replace(mo.get('title'), data.meetingMyTitle, ''));
+			mo.set('location', SoS.replace(mo.get('location'), data.meetingMyLocation, ''));
+			mo.set('description', SoS.replace(mo.get('description'), data.meetingMyDesc, ''));
+			if (!Ext.isEmpty(data.meetingMyDesc)) mo.set('description', SoS.replace(mo.get('description'), '\n' + data.meetingMyDesc, ''));
 		}
 	}
 });

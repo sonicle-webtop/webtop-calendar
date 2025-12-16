@@ -21,6 +21,7 @@
 .wtcal-icon-showDescription:before { content: '\f1dc'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
 .wtcal-icon-addResource { background-image: url('resource_16.svg') !important; background-size: contain; }
 .wtcal-icon-addMeeting:before { content: '\f03d'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
+.wtcal-icon-removeMeeting:before { content: '\f4e2'; font: var(--fa-font-solid); background-size: contain; } /* FIXME: defaults to FA for now */
 /* ---------- Icons (others) */
 .wtcal-icon-reminder-event { background-image: url('event_16.svg') !important; background-size: contain; }
 .wtcal-icon-calendar { background-image: url('calendar_16.svg') !important; background-size: contain; }

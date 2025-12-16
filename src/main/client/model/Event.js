@@ -83,7 +83,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 			return Sonicle.form.field.rr.Recurrence.joinRRuleString(rrule, date);
 		}),
 		WTF.field('tags', 'string', true),
-		WTF.calcField('meetingUrl', 'string', ['location', 'description'], function(v, rec, loc, desc) {
+		WTF.calcField('guessedMeetingUrl', 'string', ['location', 'description'], function(v, rec, loc, desc) {
 			var reURL = Sonicle.String.reSimpleURLs,
 				urls = [], groups, i;
 			Ext.iterate([loc, desc], function(s) {

@@ -47,8 +47,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'WTA.ux.UploadButton',
 		'WTA.ux.field.Attachments',
 		'WTA.ux.field.Meeting',
-		'WTA.ux.field.MeetingUrl',
 		'WTA.ux.field.RecipientSuggestCombo',
+		'WTA.ux.form.MeetingActionFeedback',
 		'WTA.ux.panel.CustomFieldsEditor',
 		'WTA.model.SubjectLkp',
 		'WTA.store.Timezone',
@@ -533,7 +533,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}
 			});
 		} else {
-			WT.error(me.mys.res('openContact.empty'))
+			WT.error(me.mys.res('openContact.empty'));
 		}
 	},
 	
@@ -739,21 +739,17 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			return [
 				me.createTagsFieldCfg(),	
 				{
-					xtype: 'wtmeetingurlfield',
+					xtype: 'wtformmeetingactionfeedback',
 					bind: {
-						value: '{record.guessedMeetingUrl}',
+						meetingUrl: '{record.guessedMeetingUrl}',
 						hidden: '{!foHasMeeting}'
 					},
-					linkText: me.res('event.meeting.info'),
-					hidden: true,
+					text: me.res('event.meeting.info'),
 					listeners: {
 						copy: function() {
 							WT.toast(WT.res('meeting.toast.link.copied'));
 						}
-					},
-					hideLabel: true,
-					cls: 'wtcal-event-info',
-					anchor: '100%'
+					}
 				}, {
 					xtype: 'sofieldsection',
 					labelIconCls: 'wtcal-icon-sectionTitle',

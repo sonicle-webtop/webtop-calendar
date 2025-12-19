@@ -1647,7 +1647,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			if (mo.isFieldEmpty('title')) mo.set('title', fmtTitle);
 			if (mo.isFieldEmpty('location')) mo.set('location', fmtLocation);
 			mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmtDesc));
-			me.showHideField('flddescription', true);
+			me.showHideField('flddescription', false);
 		},
 		
 		doClearNewMeeting: function() {

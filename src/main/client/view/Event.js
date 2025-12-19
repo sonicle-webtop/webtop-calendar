@@ -416,6 +416,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								if (mo.isFieldEmpty('title')) mo.set('title', fmt(data.embedTexts.subject, name));
 								mo.set('location', data.link);
 								mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmt(data.embedTexts.unschedDescription, name, data.link)));
+								me.showHideField('flddescription', true);
 							}
 						}
 					});

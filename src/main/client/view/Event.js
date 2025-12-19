@@ -70,6 +70,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.webtop.calendar.view.RecurrenceEditor'
 	],
 	
+	/**
+	 * @cfg {Boolean} hideDescriptionOnNew 
+	 */
+	hideDescriptionOnNew: false,
+	
 	dockableConfig: {
 		title: '{event.tit}',
 		iconCls: 'wtcal-icon-event',
@@ -752,6 +757,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}
 				}, {
 					xtype: 'sofieldsection',
+					itemId: 'secfldtitle', // Keep to allow overrides!
 					labelIconCls: 'wtcal-icon-sectionTitle',
 					items: [
 						{
@@ -830,6 +836,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
+					itemId: 'secflddescription', // Keep to allow overrides!
 					labelIconCls: 'wtcal-icon-sectionDescription',
 					bind: {
 						hidden: '{hidden.flddescription}'
@@ -1310,13 +1317,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		},
 		
 		initHiddenFields: function() {
-			// Description field is now visible by default
-			/*
-			var mo = this.getModel();
-			Sonicle.VMUtils.set(this.getVM(), 'hidden', {
-				flddescription: mo.isFieldEmpty('description')
-			});
-			*/
+			var me = this,
+				mo = me.getModel();
+			
+			if (me.isMode(me.MODE_NEW)) {
+				// When NEW, follow default visibility only if description field is empty!
+				if (mo.isFieldEmpty('description')) me.showHideField('flddescription', me.hideDescriptionOnNew);
+			}
 		},
 		
 		onViewLoad: function(s, success) {
@@ -1640,6 +1647,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			if (mo.isFieldEmpty('title')) mo.set('title', fmtTitle);
 			if (mo.isFieldEmpty('location')) mo.set('location', fmtLocation);
 			mo.set('description', Sonicle.String.join('\n', mo.get('description'), fmtDesc));
+			me.showHideField('flddescription', true);
 		},
 		
 		doClearNewMeeting: function() {

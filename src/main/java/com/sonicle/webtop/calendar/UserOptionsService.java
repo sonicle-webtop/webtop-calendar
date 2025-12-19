@@ -74,6 +74,7 @@ public class UserOptionsService extends BaseUserOptionsService {
 				jso.workdayStart = hmf.print(cus.getWorkdayStart());
 				jso.workdayEnd = hmf.print(cus.getWorkdayEnd());
 				jso.eventReminderDelivery = cus.getEventReminderDelivery();
+				jso.eventHideDescriptionOnNew = cus.getEventDescriptionFieldStartHidden();
 				
 				new JsonResult(jso).printTo(out);
 				
@@ -86,6 +87,7 @@ public class UserOptionsService extends BaseUserOptionsService {
 				if (pl.map.has("workdayStart")) cus.setWorkdayStart(hmf.parseLocalTime(pl.data.workdayStart));
 				if (pl.map.has("workdayEnd")) cus.setWorkdayEnd(hmf.parseLocalTime(pl.data.workdayEnd));
 				if (pl.map.has("eventReminderDelivery")) cus.setEventReminderDelivery(pl.data.eventReminderDelivery);
+				if (pl.map.has("eventHideDescriptionOnNew")) cus.setEventDescriptionFieldStartHidden(pl.data.eventHideDescriptionOnNew);
 				
 				new JsonResult().printTo(out);
 			}

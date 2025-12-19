@@ -750,6 +750,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					anchor: '100%'
 				}, {
 					xtype: 'sofieldsection',
+					itemId: 'secfldtitle', // Keep to allow overrides!
 					labelIconCls: 'wtcal-icon-sectionTitle',
 					items: [
 						{
@@ -870,6 +871,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					]
 				}, {
 					xtype: 'sofieldsection',
+					itemId: 'secflddescription', // Keep to allow overrides!
 					labelIconCls: 'wtcal-icon-sectionDescription',
 					bind: {
 						hidden: '{hidden.flddescription}'

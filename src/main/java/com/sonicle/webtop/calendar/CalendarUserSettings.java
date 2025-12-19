@@ -101,6 +101,14 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setString(EVENT_REMINDER_DELIVERY, value);
 	}
 	
+	public boolean getEventDescriptionFieldStartHidden() {
+		return getBoolean(EVENT_DESCRIPTION_FIELD_STARTHIDDEN, false);
+	}
+	
+	public boolean setEventDescriptionFieldStartHidden(boolean value) {
+		return setBoolean(EVENT_DESCRIPTION_FIELD_STARTHIDDEN, value);
+	}
+	
 	public StringSet getInactiveCalendarOrigins() {
 		return getObject(INACTIVE_CALENDAR_ORIGINS, new StringSet(), StringSet.class);
 	}

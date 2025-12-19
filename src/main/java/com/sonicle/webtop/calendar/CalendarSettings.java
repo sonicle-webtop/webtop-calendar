@@ -105,6 +105,13 @@ public class CalendarSettings {
 	
 	/**
 	 * [user]
+	 * [boolean] (false)
+	 * True to open a new event with description field initially hidden
+	 */
+	public static final String EVENT_DESCRIPTION_FIELD_STARTHIDDEN = "event.description.starthidden";
+	
+	/**
+	 * [user]
 	 * [string[]]
 	 * List of deactivated origin nodes.
 	 */

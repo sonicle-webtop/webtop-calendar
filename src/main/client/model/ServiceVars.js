@@ -37,6 +37,7 @@ Ext.define('Sonicle.webtop.calendar.model.ServiceVars', {
 	fields: [
 		WTF.field('calendarRemoteSyncEnabled', 'boolean', true),
 		WTF.field('eventStatFieldsVisible', 'boolean', true),
+		WTF.field('eventHideDescriptionOnNew', 'boolean', true),
 		WTF.field('defaultCalendarSync', 'string', true),
 		WTF.field('view', 'string', true),
 		WTF.field('timeResolution', 'int', true),

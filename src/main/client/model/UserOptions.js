@@ -40,7 +40,8 @@ Ext.define('Sonicle.webtop.calendar.model.UserOptions', {
 		WTF.field('timeResolution', 'int', false),
 		WTF.field('workdayStart', 'date', false, {dateFormat: 'H:i'}),
 		WTF.field('workdayEnd', 'date', false, {dateFormat: 'H:i'}),
-		WTF.field('eventReminderDelivery', 'string', false)
+		WTF.field('eventReminderDelivery', 'string', false),
+		WTF.field('eventHideDescriptionOnNew', 'string', false)
 	],
 	
 	setWorkdayStart: function(date) {

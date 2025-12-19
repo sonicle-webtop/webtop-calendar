@@ -236,6 +236,7 @@ public class Service extends BaseService {
 		ServiceVars co = new ServiceVars();
 		co.put("calendarRemoteSyncEnabled", ss.getCalendarRemoteAutoSyncEnabled());
 		co.put("eventStatFieldsVisible", ss.getEventStatisticFieldsVisible());
+		co.put("eventHideDescriptionOnNew", us.getEventDescriptionFieldStartHidden());
 		co.put("defaultCalendarSync", EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 		co.put("view", us.getView());
 		co.put("timeResolution", us.getSchedulerTimeResolution());

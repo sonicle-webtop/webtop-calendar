@@ -70,6 +70,11 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		'Sonicle.webtop.calendar.view.RecurrenceEditor'
 	],
 	
+	/**
+	 * @cfg {Boolean} hideDescriptionOnNew 
+	 */
+	hideDescriptionOnNew: false,
+	
 	dockableConfig: {
 		title: '{event.tit}',
 		iconCls: 'wtcal-icon-event',
@@ -1352,13 +1357,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		},
 		
 		initHiddenFields: function() {
-			// Description field is now visible by default
-			/*
-			var mo = this.getModel();
-			Sonicle.VMUtils.set(this.getVM(), 'hidden', {
-				flddescription: mo.isFieldEmpty('description')
-			});
-			*/
+			var me = this,
+				mo = me.getModel();
+			
+			if (me.isMode(me.MODE_NEW)) {
+				// When NEW, follow default visibility only if description field is empty!
+				if (mo.isFieldEmpty('description')) me.showHideField('flddescription', me.hideDescriptionOnNew);
+			}
 		},
 		
 		onViewLoad: function(s, success) {

@@ -132,7 +132,6 @@ import java.util.List;
 import java.util.Locale;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeBodyPart;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -206,7 +205,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import jakarta.mail.Session;
 import jakarta.mail.internet.AddressException;
-import jakarta.mail.internet.MimeMultipart;
 import java.util.concurrent.TimeUnit;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Parameter;
@@ -233,6 +231,7 @@ import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.CId;
 import com.sonicle.mail.email.CalendarMethod;
 import com.sonicle.mail.email.EmailMessage;
+import com.sonicle.mail.email.Recipients;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
 import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
@@ -5356,8 +5355,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, senderProfileId.getDomainId());
 		ICalendarOutput out = new ICalendarOutput(ICalendarUtils.buildProdId(ManagerUtils.getProductName()));
 		net.fortuna.ical4j.model.property.Method icalMethod = crud.equals(Crud.DELETE) ? net.fortuna.ical4j.model.property.Method.CANCEL : net.fortuna.ical4j.model.property.Method.REQUEST;
+		CalendarMethod calMethod = crud.equals(Crud.DELETE) ? CalendarMethod.CANCEL : CalendarMethod.REQUEST;
 		
 		try {
+			String sentFolder = lookupMailSentFolderName(senderProfileId);
 			InternetAddress from = WT.getUserData(senderProfileId).getPersonalEmail();
 			String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
 			
@@ -5366,43 +5367,50 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			//net.fortuna.ical4j.model.Calendar ical = ICalHelper.toCalendar(icalMethod, prodId, event);
 			
 			// Creates base message parts
-			String icalText = ICalendarUtils.calendarToString(ical);
-			MimeBodyPart calPart = ICalendarUtils.createInvitationCalendarPart(icalMethod, icalText);
-			String filename = ICalendarUtils.buildICalendarAttachmentFilename(WT.getPlatformName());
-			MimeBodyPart attPart = ICalendarUtils.createInvitationAttachmentPart(icalText, filename);
+			//String icalText = ICalendarUtils.calendarToString(ical);
+			//MimeBodyPart calPart = ICalendarUtils.createInvitationCalendarPart(icalMethod, icalText);
+			//String filename = ICalendarUtils.buildICalendarAttachmentFilename(WT.getPlatformName());
+			//MimeBodyPart attPart = ICalendarUtils.createInvitationAttachmentPart(icalText, filename);
 			
 			Map<String, String> meetingProviders = css.getMeetingProviders();
-			IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail");
+			//IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail");
 			//FIXME: if mailMgr is not present, send of base SMTP
-			Session session = getMailSession();
+			//Session session = getMailSession();
 			for (RecipientTuple rcpt : recipients) {
 				if (!InternetAddressUtils.isAddressValid(rcpt.recipient)) {
 					logger.warn("Recipient for event invitation is invalid [{}]", rcpt.recipient);
 					continue;
 				}
-				UserProfile.Data ud = WT.getUserData(rcpt.refProfileId);
+				UserProfile.Data ud = WT.getProfileData(rcpt.refProfileId);
 				if (ud == null) continue;
 				
 				try {
 					String title = TplHelper.buildEventInvitationTitle(ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), event.getFootprint(), crud);
 					String customBodyHtml = TplHelper.buildTplEventInvitationBody(crud, event, rcpt.recipient.getAddress(), ud.getLocale(), ud.getShortDateFormat(), ud.getShortTimeFormat(), meetingProviders, servicePublicUrl);
-					String source = NotificationHelper.buildSource(ud.getLocale(), SERVICE_ID);
+					String source = EmailNotification.buildSource(ud.getLocale(), SERVICE_ID);
 					String because = lookupResource(ud.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
 
 					String subject = EmailNotification.buildSubject(ud.getLocale(), SERVICE_ID, title);
 					String html = TplHelper.buildEventInvitationHtml(ud.getLocale(), event.getTitle(), customBodyHtml, source, because, rcpt.recipient.getAddress(), crud);
 					
-					MimeMultipart mmp = ICalendarUtils.createInvitationPart(html, calPart, attPart);
-					sendMail(session, mailMgr, from, rcpt.recipient, subject, mmp);
+					//MimeMultipart mmp = ICalendarUtils.createInvitationPart(html, calPart, attPart);
+					//sendMail(session, mailMgr, from, rcpt.recipient, subject, mmp);
+					EmailMessage message = ICalendarHelper.prepareICalendarMessage(calMethod, ical, from, rcpt.recipient, subject, html);
+					WT.sendEmailMessage(senderProfileId, message, sentFolder);
 					
 				} catch(IOException | TemplateException | MessagingException ex1) {
 					logger.warn("Unable to send invitation [{}]", ex1, rcpt.recipient.getAddress());
 				}
 			}
 			
-		} catch(IOException | MessagingException | WTException ex) {
+		} catch(/*IOException | MessagingException |*/ WTException ex) {
 			logger.warn("Unable to prepare invite notification", ex);
 		}
+	}
+	
+	private String lookupMailSentFolderName(UserProfileId sendingProfileId) {
+		IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail", sendingProfileId);
+		return (mailMgr != null) ? mailMgr.getFolderSent() : null;
 	}
 	
 	/*
@@ -5465,7 +5473,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		final String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
 		final InternetAddress iaOrganizer = ICalendarUtils.getOrganizerAddress(ICalendarUtils.getVEvent(icalRequest));
-		final EmailMessage email = com.sonicle.webtop.core.util.ICalendarHelper.prepareICalendarReply(prodId, icalRequest, forAddress, iaOrganizer, response, locale);
+		final EmailMessage email = ICalendarHelper.prepareICalendarReply(prodId, icalRequest, forAddress, iaOrganizer, response, locale);
 		WT.sendEmailMessage(sendingProfileId, email);
 	}
 	
@@ -5493,12 +5501,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (!InternetAddressUtils.isAddressValid(to)) throw new WTException("Organizer address not valid [{0}]", event.getOrganizer());
 			
 			String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
-			String source = NotificationHelper.buildSource(locale, SERVICE_ID);
+			String source = EmailNotification.buildSource(locale, SERVICE_ID);
 			String subject = TplHelper.buildResponseUpdateTitle(locale, event, targetAttendee);
 			String customBodyHtml = TplHelper.buildTplResponseUpdateBody(event, locale, dateFormat, timeFormat, meetingProviders, servicePublicUrl);
 			
 			EmailNotification.NoReplyBuilder builder = new EmailNotification.NoReplyBuilder()
-					.withCustomBody(event.getTitle(), customBodyHtml);
+				.withCustomBody(event.getTitle(), customBodyHtml);
 			
 			if (EventAttendee.ResponseStatus.ACCEPTED.equals(targetAttendee.getResponseStatus())) {
 				builder.greenMessage(MessageFormat.format(lookupResource(locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_ACCEPTED), targetAttendee.getRecipient()));
@@ -5510,7 +5518,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				builder.greyMessage(MessageFormat.format(lookupResource(locale, CalendarLocale.TPL_EMAIL_RESPONSEUPDATE_MSG_OTHER), targetAttendee.getRecipient()));
 			}
 			String html = builder.build(locale, source).write();
-			WT.sendEmail(getMailSession(), true, from, to, subject, html);
+			WT.sendEmailMessage(senderProfileId, from, Recipients.to(to).asList(), subject, html);
 			
 		} catch(Exception ex) {
 			logger.warn("Unable to notify organizer", ex);
@@ -5611,6 +5619,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		return !eventOwner.equals(runningProfile);
 	}
 	
+	/*
 	private void sendMail(Session session, IMailManager mailMgr, InternetAddress from, InternetAddress to, String subject, MimeMultipart mpart) throws MessagingException {
 		boolean fallback = true;
 		if (mailMgr != null) {
@@ -5623,6 +5632,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		if (fallback) WT.sendEmail(session, from, Arrays.asList(to), null, null, subject, mpart);
 	}
+	*/
 	
 	private VVEventInstance cloneEvent(VVEventInstance sourceEvent, DateTime newStart, DateTime newEnd) {
 		VVEventInstance event = new VVEventInstance(sourceEvent);

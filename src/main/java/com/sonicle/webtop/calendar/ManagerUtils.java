@@ -515,17 +515,4 @@ public class ManagerUtils {
 		}
 		return tgt;
 	}
-	
-	/**
-	 * Construct a date-time using date from instanceDate parameter and time 
-	 * part from targetDateTime object, appropriately moved to desired timezone 
-	 * (the timezone of the task).
-	 * @param instanceDate Instance local date.
-	 * @param targetDateTime Target date-time from which extract the time part.
-	 * @param targetTimezone Target timezone
-	 * @return The built date-time object
-	 */
-	static DateTime instanceDateToDateTime(LocalDate instanceDate, DateTime targetDateTime, DateTimeZone targetTimezone) {
-		return instanceDate.toDateTime(targetDateTime.withZone(targetTimezone).toLocalTime(), targetTimezone);
-	}
 }

@@ -259,6 +259,7 @@ import net.fortuna.ical4j.model.Property;
 import net.fortuna.ical4j.model.PropertyList;
 import net.fortuna.ical4j.model.property.Attach;
 import net.fortuna.ical4j.model.property.XProperty;
+import org.joda.time.LocalDateTime;
 
 /**
  *
@@ -3983,9 +3984,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		DateTime eventStart = instanceMapper.getEventStartDate();
 		DateTime eventEnd = instanceMapper.getEventEndDate();
 		DateTimeZone eventTimezone = instanceMapper.getEventTimezone();
-		int eventDays = CalendarUtils.calculateLengthInDays(eventStart, eventEnd);
-		LocalTime eventStartTime = eventStart.withZone(eventTimezone).toLocalTime();
-		LocalTime eventEndTime = eventEnd.withZone(eventTimezone).toLocalTime();
 		
 		try {
 			// Retrieves reccurence and broken dates (if any)
@@ -3996,6 +3994,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			} else {
 				if (rangeFrom == null) rangeFrom = orec.getStartDate();
 				if (rangeTo == null) rangeTo = orec.getStartDate().plusYears(1);
+				final LocalDateTime eventLocalStart = eventStart.withZone(eventTimezone).toLocalDateTime();
+				final LocalDateTime eventLocalEnd = eventEnd.withZone(eventTimezone).toLocalDateTime();
 
 				Recur recur = orec.getRecur();
 				if (recur == null) throw new WTException("Unable to parse rrule [{}]", orec.getRule());
@@ -4003,29 +4003,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				Set<LocalDate> exclDates = recbDao.selectDatesByEventRecurrence(con, eventId, orec.getRecurrenceId());
 				List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), exclDates, instanceMapper.isEventAllDay(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
 				for (LocalDate recurringDate : dates) {
-					DateTime start = JodaTimeUtils.toDateTime(recurringDate, eventStartTime, eventTimezone).withZone(userTimezone);
-					DateTime end = JodaTimeUtils.toDateTime(recurringDate.plusDays(eventDays), eventEndTime, eventTimezone).withZone(userTimezone);
+					final DateTimeWindow eventSpan = CalendarUtils.computeStartEndForEventInstance(
+						recurringDate,
+						eventLocalStart,
+						eventLocalEnd,
+						eventTimezone);
 					String key = EventKey.buildKey(eventId, eventId, recurringDate);
-					final EventInstanceId id = EventInstanceId.build(String.valueOf(eventId), start, eventTimezone);
+					final EventInstanceId id = EventInstanceId.build(String.valueOf(eventId), eventSpan.getStart(), eventTimezone);
 					
-					instances.add(instanceMapper.createInstance(key, start, end));
+					instances.add(instanceMapper.createInstance(key, eventSpan.getStart(), eventSpan.getEnd()));
 				}
-				
-				/*
-				DateList dates = ICal4jUtils.calculateRecurrenceSet(recur, orec.getStartDate(), eventStart, eventEnd, eventTimezone, rangeFrom, rangeTo, limit);
-				Iterator it = dates.iterator();
-				while (it.hasNext()) {
-					net.fortuna.ical4j.model.Date dt = (net.fortuna.ical4j.model.Date)it.next();
-					LocalDate recurringDate = ICal4jUtils.toJodaLocalDate(dt, eventTimezone);
-					if (obrecs.containsKey(recurringDate)) continue; // Skip broken date...
-
-					DateTime start = recurringDate.toDateTime(eventStartTime, eventTimezone).withZone(userTimezone);
-					DateTime end = recurringDate.plusDays(eventDays).toDateTime(eventEndTime, eventTimezone).withZone(userTimezone);
-					String key = EventKey.buildKey(eventId, eventId, recurringDate);
-
-					instances.add(instanceMapper.createInstance(key, start, end));
-				}
-				*/
 			}
 			
 		} catch (Exception ex) {
@@ -4467,9 +4454,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private void recalculateStartEndForInstanceDate(LocalDate instanceDate, EventInstance event) {
-		int spanDays = Math.abs(CalendarUtils.calculateLengthInDays(event.getStartDate(), event.getEndDate()));
-		event.setStartDate(ManagerUtils.instanceDateToDateTime(instanceDate, event.getStartDate(), event.getDateTimeZone()));
-		event.setEndDate(ManagerUtils.instanceDateToDateTime(instanceDate.plusDays(spanDays), event.getEndDate(), event.getDateTimeZone()));
+		DateTimeWindow window = CalendarUtils.computeStartEndForEventInstance(
+			instanceDate,
+			event.getStartDate().withZone(event.getDateTimeZone()).toLocalDateTime(),
+			event.getEndDate().withZone(event.getDateTimeZone()).toLocalDateTime(),
+			event.getDateTimeZone());
+		event.setStartDate(window.getStart());
+		event.setEndDate(window.getEnd());
 	}
 		
 	private void doEventInstanceUpdateAndCommit(Connection con, OEventInfo originalEventInfo, UpdateEventTarget target, EventKey eventKey, Event event, boolean processAttachments, boolean processTags, boolean processCustomValues, boolean notifyIndividualAttendees, Set<String> validTags) throws IOException, WTException {
@@ -6123,9 +6114,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		final Recur recur = context.getRecurrenceDefinition();
 		
 		if (eventStart != null && eventEnd != null && recurStart != null && recur != null) {
-			LocalTime eventStartTime = eventStart.withZone(timezone).toLocalTime();
-			LocalTime eventEndTime = eventEnd.withZone(timezone).toLocalTime();
-			Integer dueDays = Math.abs(Days.daysBetween(eventStart.toLocalDate(), eventEnd.toLocalDate()).getDays());
+			final LocalDateTime eventLocalStart = eventStart.withZone(timezone).toLocalDateTime();
+			final LocalDateTime eventLocalEnd = eventEnd.withZone(timezone).toLocalDateTime();
 			
 			// Define initial computation range taken from parameters
 			DateTime rangeFrom = spanFrom;
@@ -6137,11 +6127,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recur, recurStart, context.isEventAllDay(), context.getRecurrenceExclDates(), eventStart, eventEnd, timezone, rangeFrom, rangeTo, limitNoOfInstances);
 			for (LocalDate date : dates) {
-				final DateTime start = JodaTimeUtils.toDateTime(date, eventStartTime, timezone);
-				final DateTime end = JodaTimeUtils.toDateTime(date.plusDays(dueDays), eventEndTime, timezone);
-				final EventInstanceId id = EventInstanceId.build(eventId, start, timezone);
+				final DateTimeWindow eventSpan = CalendarUtils.computeStartEndForEventInstance(
+					date,
+					eventLocalStart,
+					eventLocalEnd,
+					timezone);
+				
+				final EventInstanceId id = EventInstanceId.build(eventId, eventSpan.getStart(), timezone);
 				final String legacyKey = EventKey.buildKey(eventId, eventId, date);
-				instances.add(context.createInstance(id, start, end, legacyKey));
+				instances.add(context.createInstance(id, eventSpan.getStart(), eventSpan.getEnd(), legacyKey));
 			}
 		} else {
 			if (eventStart == null) logger.warn("Event has NO valid start instant [{}]", eventId);

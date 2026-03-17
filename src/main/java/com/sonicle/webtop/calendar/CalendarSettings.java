@@ -137,4 +137,11 @@ public class CalendarSettings {
 	 * Enable/disable statistic fields (activity, customer, stat.customer, causal) display.
 	 */
 	public static final String EVENT_STATISTIC_FIELDS_VISIBLE = "event.statistic.fields.visible";
+	
+	/**
+	 * [user]
+	 * [boolean]
+	 * Enable/disable attendeen notifications for caldav.
+	 */
+	public static final String CALDAV_NOTIFYATTENDEES = "caldav.notifyattendees";
 }

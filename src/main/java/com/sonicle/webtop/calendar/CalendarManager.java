@@ -1079,12 +1079,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public void addEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar) throws WTException {
+		addEventObject(calendarId, href, iCalendar, true);
+	}
+	
+	public void addEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar, boolean notifyAttendees) throws WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		
 		BitFlags<EventAddOption> addOpts = BitFlags.noneOf(EventAddOption.class);
-		boolean notifyAttendees = false;
 		ICalendarInput in = new ICalendarInput(udata.getTimeZone())
-			.withDefaultAttendeeNotify(notifyAttendees);
+			.withDefaultAttendeeNotify(false);
 		
 		ArrayList<EventInput> eis = in.fromICalendarFile(iCalendar, null);
 		if (eis.isEmpty()) throw new WTException("iCalendar object does not contain any events");
@@ -1106,8 +1109,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		// Invitation messages should be sent only in two cases:
 		// 1) Organizer addr. matches current-user's personal address
 		// 2) Organizer addr. matches current-user's profile address
-		String orgAddress = ei.event.getOrganizerAddress();
-		if (StringUtils.equals(orgAddress, udata.getPersonalEmailAddress()) || StringUtils.equals(orgAddress, udata.getProfileEmailAddress())) {
+		if (notifyAttendees && iAmTheOrganizer(ei.event.getOrganizerInternetAddress(), udata)) {
 			EventAddOption.enableAttendeesNotifications(addOpts);
 			ei.event.getAttendees().stream().forEach(att -> att.setNotify(true));
 		}
@@ -1116,6 +1118,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public void updateEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar) throws WTNotFoundException, WTException {
+		updateEventObject(calendarId, href, iCalendar, true);
+	}
+	
+	public void updateEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar, boolean notifyAttendees) throws WTNotFoundException, WTException {
 		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
 		String eventId = doGetEventIdByCategoryHref(calendarId, href, true);
 		
@@ -1150,7 +1156,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		refInput.event.setEventId(eventId);
 		refInput.event.setCalendarId(calendarId);
 		refInput.event.setExcludedDates(exDates);
-		updateEvent(refInput.event, false, false, false, true);
+		updateEvent(refInput.event, false, false, false, notifyAttendees);
 		
 		// Here we do not support creating broken events related to the
 		// main event series (re-attach unavailable). Instance exceptions 
@@ -1173,8 +1179,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public void deleteEventObject(int calendarId, String href) throws WTNotFoundException, WTException {
+		deleteEventObject(calendarId, href, true);
+	}
+	
+	public void deleteEventObject(int calendarId, String href, boolean notifyAttendees) throws WTNotFoundException, WTException {
 		String eventId = doGetEventIdByCategoryHref(calendarId, href, true);
-		deleteEvent(eventId, true);
+		deleteEvent(eventId, notifyAttendees);
 	}
 	
 	private String doGetEventIdByCategoryHref(int calendarId, String href, boolean throwExIfManyMatchesFound) throws WTNotFoundException, WTException {
@@ -5514,6 +5524,28 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} catch(Exception ex) {
 			logger.warn("Unable to notify organizer", ex);
 		}	
+	}
+	
+	public boolean iAmTheOrganizer(final InternetAddress eventOrganizer, final UserProfile.Data myData) {
+		if (myData == null) return false;
+		return iAmTheOrganizer(eventOrganizer, myData.getPersonalEmailAddress(), myData.getProfileEmailAddress());
+	}
+	
+	/**
+	 * Checks if passed addresses belongs to event's organizer.
+	 * This will return a positive match in these two cases (OR):
+	 * - organizer addr. matches personal address
+	 * - organizer addr. matches profile address
+	 * 
+	 * @param eventOrganizer
+	 * @param myPersonalEmailAddress
+	 * @param myProfileEmailAddress
+	 * @return 
+	 */
+	public boolean iAmTheOrganizer(final InternetAddress eventOrganizer, final String myPersonalEmailAddress, final String myProfileEmailAddress) {
+		if (eventOrganizer == null) return false;
+		String orgAddress = InternetAddressUtils.getAddress(eventOrganizer);
+		return StringUtils.equals(orgAddress, myPersonalEmailAddress) || StringUtils.equals(orgAddress, myProfileEmailAddress);
 	}
 	
 	/*

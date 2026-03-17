@@ -36,6 +36,7 @@ import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarLocale;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarServiceSettings;
+import com.sonicle.webtop.calendar.CalendarUserSettings;
 import com.sonicle.webtop.calendar.EventObjectOutputType;
 import com.sonicle.webtop.calendar.ManagerUtils;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
@@ -334,6 +335,7 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response addCalObject(String calendarUid, ApiDavCalObjectNew body) {
 		CalendarManager manager = getManager();
+		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
 		if (logger.isDebugEnabled()) {
 			logger.debug("[{}] addCalObject({}, ...)", RunContext.getRunProfileId(), calendarUid);
@@ -341,10 +343,11 @@ public class CalDav extends CaldavApi {
 		}
 		
 		try {
+			boolean notifyAttendees = us.getCalDAVNotifyAttendees();
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			// Manager's call is already ro protected for remoteProviders
 			net.fortuna.ical4j.model.Calendar iCalendar = parseICalendar(body.getIcalendar());
-			manager.addEventObject(calendarId, body.getHref(), iCalendar);
+			manager.addEventObject(calendarId, body.getHref(), iCalendar, notifyAttendees);
 			return respOk();
 			
 		} catch(Exception ex) {
@@ -356,6 +359,7 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response updateCalObject(String calendarUid, String href, String body) {
 		CalendarManager manager = getManager();
+		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
 		if (logger.isDebugEnabled()) {
 			logger.debug("[{}] updateCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href);
@@ -363,10 +367,11 @@ public class CalDav extends CaldavApi {
 		}
 		
 		try {
+			boolean notifyAttendees = us.getCalDAVNotifyAttendees();
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			// Manager's call is already ro protected for remoteProviders
 			net.fortuna.ical4j.model.Calendar iCalendar = parseICalendar(body);
-			manager.updateEventObject(calendarId, href, iCalendar);
+			manager.updateEventObject(calendarId, href, iCalendar, notifyAttendees);
 			return respOkNoContent();
 			
 		} catch (WTNotFoundException ex) {
@@ -380,14 +385,16 @@ public class CalDav extends CaldavApi {
 	@Override
 	public Response deleteCalObject(String calendarUid, String href) {
 		CalendarManager manager = getManager();
+		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
 		if (logger.isDebugEnabled()) {
 			logger.debug("[{}] deleteCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href);
 		}
 		
 		try {
+			boolean notifyAttendees = us.getCalDAVNotifyAttendees();
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
-			manager.deleteEventObject(calendarId, href);
+			manager.deleteEventObject(calendarId, href, notifyAttendees);
 			return respOkNoContent();
 			
 		} catch (WTNotFoundException ex) {

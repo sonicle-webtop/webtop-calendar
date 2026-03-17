@@ -59,7 +59,8 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 					this.get('record').setWorkdayEnd(val);
 				}
 			},
-			eventHideDescriptionOnNew: WTF.checkboxBind('record', 'eventHideDescriptionOnNew')
+			eventHideDescriptionOnNew: WTF.checkboxBind('record', 'eventHideDescriptionOnNew'),
+			caldavNotifyAttendees: WTF.checkboxBind('record', 'caldavNotifyAttendees')
 		}
 	},
 		
@@ -164,6 +165,22 @@ Ext.define('Sonicle.webtop.calendar.view.UserOptions', {
 					bind: '{eventHideDescriptionOnNew}',
 					hideEmptyLabel: false,
 					boxLabel: WT.res(me.ID, 'opts.main.fld-eventHideDescriptionOnNew.lbl'),
+					listeners: {
+						change: {
+							fn: function(s) {
+								//TODO: workaround...il modello veniva salvato prima dell'aggionamento
+								Ext.defer(function() {
+									me.onBlurAutoSave(s);
+								}, 200);
+							},
+							scope: me
+						}
+					}
+				}, {
+					xtype: 'checkbox',
+					bind: '{caldavNotifyAttendees}',
+					hideEmptyLabel: false,
+					boxLabel: WT.res(me.ID, 'opts.main.fld-caldavNotifyAttendees.lbl'),
 					listeners: {
 						change: {
 							fn: function(s) {

@@ -132,4 +132,12 @@ public class CalendarUserSettings extends BaseUserSettings {
 	public boolean setDefaultCalendarFolder(Integer calendarId) {
 		return setInteger(DEFAULT_CALENDAR_FOLDER, calendarId);
 	}
+	
+	public boolean getCalDAVNotifyAttendees() {
+		return getBoolean(CALDAV_NOTIFYATTENDEES, true);
+	}
+	
+	public boolean setCalDAVNotifyAttendees(boolean value) {
+		return setBoolean(CALDAV_NOTIFYATTENDEES, value);
+	}
 }

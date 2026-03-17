@@ -75,6 +75,7 @@ public class UserOptionsService extends BaseUserOptionsService {
 				jso.workdayEnd = hmf.print(cus.getWorkdayEnd());
 				jso.eventReminderDelivery = cus.getEventReminderDelivery();
 				jso.eventHideDescriptionOnNew = cus.getEventDescriptionFieldStartHidden();
+				jso.caldavNotifyAttendees = cus.getCalDAVNotifyAttendees();
 				
 				new JsonResult(jso).printTo(out);
 				
@@ -88,6 +89,7 @@ public class UserOptionsService extends BaseUserOptionsService {
 				if (pl.map.has("workdayEnd")) cus.setWorkdayEnd(hmf.parseLocalTime(pl.data.workdayEnd));
 				if (pl.map.has("eventReminderDelivery")) cus.setEventReminderDelivery(pl.data.eventReminderDelivery);
 				if (pl.map.has("eventHideDescriptionOnNew")) cus.setEventDescriptionFieldStartHidden(pl.data.eventHideDescriptionOnNew);
+				if (pl.map.has("caldavNotifyAttendees")) cus.setCalDAVNotifyAttendees(pl.data.caldavNotifyAttendees);
 				
 				new JsonResult().printTo(out);
 			}

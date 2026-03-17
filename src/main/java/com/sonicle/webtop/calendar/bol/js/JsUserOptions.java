@@ -45,6 +45,7 @@ public class JsUserOptions extends JsUserOptionsBase {
 	public String workdayEnd;
 	public String eventReminderDelivery;
 	public Boolean eventHideDescriptionOnNew;
+	public Boolean caldavNotifyAttendees;
 	
 	public JsUserOptions() {}
 	

@@ -104,12 +104,13 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	},
 	
 	constructor: function(cfg) {
-		var me = this;
+		var me = this,
+			SoVMU = Sonicle.VMUtils;
 		me.callParent([cfg]);
 		
-		Sonicle.VMUtils.applyFormulas(me.getVM(), {
-			foIsView: WTF.foIsEqual('_mode', null, me.MODE_VIEW),
-			foIsNew: WTF.foIsEqual('_mode', null, me.MODE_NEW),
+		SoVMU.applyFormulas(me.getVM(), {
+			foIsView: SoVMU.foPropIsEqual('', '_mode', me.MODE_VIEW),
+			foIsNew: SoVMU.foPropIsEqual('', '_mode', me.MODE_NEW),
 			startDate: {
 				bind: {bindTo: '{record.startDate}'},
 				get: function(val) {
@@ -149,15 +150,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			allDay: WTF.checkboxBind('record', 'allDay'),
 			isPrivate: WTF.checkboxBind('record', 'isPrivate'),
 			busy: WTF.checkboxBind('record', 'busy'),
-			foReminder: WTF.foFieldTwoWay('record', 'reminder', function(v) {
+			foReminder: WTF.foFieldTwoWay('reminder', function(v) {
 					return !Ext.isEmpty(v);
 				}, function(v) {
 					return (v === true) ? 5 : null;
 			}), 
-			foHasDescription: WTF.foIsEmpty('record', 'description', true),
-			foHasReminder: WTF.foIsEmpty('record', 'reminder', true),
-			foHasRecurrence: WTF.foIsEmpty('record', 'rrule', true),
-			foRRuleString: WTF.foFieldTwoWay('record', 'rruleString', function(v, rec) {
+			foHasDescription: WTF.foFieldIsEmpty('description', true),
+			foHasReminder: WTF.foFieldIsEmpty('reminder', true),
+			foHasRecurrence: WTF.foFieldIsEmpty('rrule', true),
+			foRRuleString: WTF.foFieldTwoWay('rruleString', function(v, rec) {
 					return v;
 				}, function(v, rec) {
 					var ret = Sonicle.form.field.rr.Recurrence.splitRRuleString(v);
@@ -168,17 +169,17 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			foHumanReadableRRule: WTF.foGetFn('record', 'rruleString', function(v) {
 				return WT.toHumanReadableRRule(v);
 			}),
-			foWasRecurring: WTF.foIsEqual('record', '_recurringInfo', 'recurring'),
-			foTags: WTF.foFieldTwoWay('record', 'tags', function(v) {
+			foWasRecurring: WTF.foFieldIsEqual('_recurringInfo', 'recurring'),
+			foTags: WTF.foFieldTwoWay('tags', function(v) {
 					return Sonicle.String.split(v, '|');
 				}, function(v) {
 					return Sonicle.String.join('|', v);
 			}),
-			foHasTags: WTF.foIsEmpty('record', 'tags', true),
+			foHasTags: WTF.foFieldIsEmpty('tags', true),
 			foLocationIsMeeting: WTF.foGetFn('record', 'location', function(val) {
 				return WT.isMeetingUrl(val);
 			}),
-			foHasMeeting: WTF.foIsEmpty('record', 'guessedMeetingUrl', true),
+			foHasMeeting: WTF.foFieldIsEmpty('guessedMeetingUrl', true),
 			foHasAttendees: WTF.foAssociationIsEmpty('record', 'attendees', true),
 			foHasAttendeesCount: WTF.foAssociationCount('record', 'attendees'),
 			foHasAttachments: WTF.foAssociationIsEmpty('record', 'attachments', true)

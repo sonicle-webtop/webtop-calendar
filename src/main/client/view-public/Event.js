@@ -49,7 +49,7 @@ Ext.define('Sonicle.webtop.calendar.view-public.Event', {
 		me.callParent([cfg]);
 		
 		Sonicle.VMUtils.applyFormulas(me.getVM(), {
-			foIsWhereEmpty: WTF.foIsEmpty('record', 'where')
+			foIsWhereEmpty: WTF.foFieldIsEmpty('where')
 		});
 	},
 	

@@ -343,7 +343,7 @@ public class CalDav extends CaldavApi {
 		}
 		
 		try {
-			boolean notifyAttendees = us.getCalDAVNotifyAttendees();
+			boolean notifyAttendees = us.getDavEventNotifyAttendees();
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			// Manager's call is already ro protected for remoteProviders
 			net.fortuna.ical4j.model.Calendar iCalendar = parseICalendar(body.getIcalendar());
@@ -367,7 +367,7 @@ public class CalDav extends CaldavApi {
 		}
 		
 		try {
-			boolean notifyAttendees = us.getCalDAVNotifyAttendees();
+			boolean notifyAttendees = us.getDavEventNotifyAttendees();
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			// Manager's call is already ro protected for remoteProviders
 			net.fortuna.ical4j.model.Calendar iCalendar = parseICalendar(body);
@@ -392,7 +392,7 @@ public class CalDav extends CaldavApi {
 		}
 		
 		try {
-			boolean notifyAttendees = us.getCalDAVNotifyAttendees();
+			boolean notifyAttendees = us.getDavEventNotifyAttendees();
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			manager.deleteEventObject(calendarId, href, notifyAttendees);
 			return respOkNoContent();

@@ -133,11 +133,11 @@ public class CalendarUserSettings extends BaseUserSettings {
 		return setInteger(DEFAULT_CALENDAR_FOLDER, calendarId);
 	}
 	
-	public boolean getCalDAVNotifyAttendees() {
-		return getBoolean(CALDAV_NOTIFYATTENDEES, true);
+	public boolean getDavEventNotifyAttendees() {
+		return getBoolean(DAV_EVENT_NOTIFYATTENDEES, true);
 	}
 	
-	public boolean setCalDAVNotifyAttendees(boolean value) {
-		return setBoolean(CALDAV_NOTIFYATTENDEES, value);
+	public boolean setDavEventNotifyAttendees(boolean value) {
+		return setBoolean(DAV_EVENT_NOTIFYATTENDEES, value);
 	}
 }

@@ -60,6 +60,13 @@ public class CalendarSettings {
 	public static final String DAV_CALENDAR_DELETE_ENABLED = "dav.calendar.delete.enabled";
 	
 	/**
+	 * [user]
+	 * [boolean](true)
+	 * Enable/disable attendees notifications for events added/modified through DAV rest-api interface. Defaults to `true`.
+	 */
+	public static final String DAV_EVENT_NOTIFYATTENDEES = "dav.event.notifyattendees";
+	
+	/**
 	 * [][default]
 	 * [enum {O:OFF, R:READ, W:WRITE}] (O)
 	 * The default value of the sync field for new calendars.
@@ -137,11 +144,4 @@ public class CalendarSettings {
 	 * Enable/disable statistic fields (activity, customer, stat.customer, causal) display.
 	 */
 	public static final String EVENT_STATISTIC_FIELDS_VISIBLE = "event.statistic.fields.visible";
-	
-	/**
-	 * [user]
-	 * [boolean]
-	 * Enable/disable attendeen notifications for caldav.
-	 */
-	public static final String CALDAV_NOTIFYATTENDEES = "caldav.notifyattendees";
 }

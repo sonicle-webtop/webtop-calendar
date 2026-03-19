@@ -638,10 +638,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public Map<String, String> getCalendarLinks(int calendarId) throws WTException {
 		checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 		
-		UserProfile.Data ud = WT.getUserData(getTargetProfileId());
+		UserProfile.Data pdata = WT.getProfileData(getTargetProfileId());
 		String davServerBaseUrl = WT.getDavServerBaseUrl(getTargetProfileId().getDomainId());
 		String calendarUid = ManagerUtils.encodeAsCalendarUid(calendarId);
-		String calendarUrl = MessageFormat.format(ManagerUtils.CALDAV_CALENDAR_URL, ud.getProfileEmailAddress(), calendarUid);
+		String calendarUrl = MessageFormat.format(ManagerUtils.CALDAV_CALENDAR_URL, pdata.getProfileEmailAddress(), calendarUid);
 		
 		LinkedHashMap<String, String> links = new LinkedHashMap<>();
 		links.put(ManagerUtils.CALENDAR_LINK_CALDAV, PathUtils.concatPathParts(davServerBaseUrl, calendarUrl));
@@ -1083,10 +1083,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public void addEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar, boolean notifyAttendees) throws WTException {
-		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		final UserProfile.Data pdata = WT.getProfileData(getTargetProfileId());
 		
 		BitFlags<EventAddOption> addOpts = BitFlags.noneOf(EventAddOption.class);
-		ICalendarInput in = new ICalendarInput(udata.getTimeZone())
+		ICalendarInput in = new ICalendarInput(pdata.getTimeZone())
 			.withDefaultAttendeeNotify(false);
 		
 		ArrayList<EventInput> eis = in.fromICalendarFile(iCalendar, null);
@@ -1109,7 +1109,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		// Invitation messages should be sent only in two cases:
 		// 1) Organizer addr. matches current-user's personal address
 		// 2) Organizer addr. matches current-user's profile address
-		if (notifyAttendees && iAmTheOrganizer(ei.event.getOrganizerInternetAddress(), udata)) {
+		if (notifyAttendees && iAmTheOrganizer(ei.event.getOrganizerInternetAddress(), pdata)) {
 			EventAddOption.enableAttendeesNotifications(addOpts);
 			ei.event.getAttendees().stream().forEach(att -> att.setNotify(true));
 		}
@@ -1122,7 +1122,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public void updateEventObject(int calendarId, String href, net.fortuna.ical4j.model.Calendar iCalendar, boolean notifyAttendees) throws WTNotFoundException, WTException {
-		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		final UserProfile.Data udata = WT.getProfileData(getTargetProfileId());
 		String eventId = doGetEventIdByCategoryHref(calendarId, href, true);
 		
 		ICalendarInput in = new ICalendarInput(udata.getTimeZone())
@@ -1826,7 +1826,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	public Event handleInvitationFromICal(final net.fortuna.ical4j.model.Calendar ical, final Integer calendarId, final BitFlags<HandleICalInviationOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
 		Check.notNull(ical, "ical");
 		Check.notNull(options, "options");
-		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		final UserProfile.Data udata = WT.getProfileData(getTargetProfileId());
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -2118,7 +2118,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	@Deprecated
 	@Override
 	public Event addEventFromICal(int calendarId, net.fortuna.ical4j.model.Calendar ical) throws WTException {
-		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+		final UserProfile.Data udata = WT.getProfileData(getTargetProfileId());
 		
 		ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
 		if (parsed.isEmpty()) throw new WTException("iCal must contain at least one event");
@@ -2150,7 +2150,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				if (evt == null) throw new WTException("Event not found [{}]", uid);
 
 				EventDAO edao = EventDAO.getInstance();
-				final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
+				final UserProfile.Data udata = WT.getProfileData(getTargetProfileId());
 
 				// Parse the ical using the code used in import
 				ArrayList<EventInput> parsed = new ICalendarInput(udata.getTimeZone()).fromICalendarFile(ical, null);
@@ -3228,7 +3228,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			ccon = WT.getCoreConnection();
 			
 			final UserProfileId pid = getTargetProfileId();
-			final UserProfile.Data udata = WT.getUserData(pid);
+			final UserProfile.Data pdata = WT.getProfileData(pid);
 			HashMap<String, Object> map = null;
 			for (Integer calendarId : listMyCalendarIds()) {
 				for (VVEvent ve : edao.viewByCalendarRangeCondition(con, calendarId, fromDate, toDate, null)) {
@@ -3236,9 +3236,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					try {
 						map = new HashMap<>();
 						map.put("userId", pid.getUserId());
-						map.put("descriptionId", udata.getDisplayName());
+						map.put("descriptionId", pdata.getDisplayName());
 						fillExportMapBasic(map, coreMgr, con, vei);
-						fillExportMapDates(map, udata.getTimeZone(), vei);
+						fillExportMapDates(map, pdata.getTimeZone(), vei);
 						mapw.write(map, headers, processors);
 						
 					} catch(Exception ex) {
@@ -3246,15 +3246,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 				}
 				for(VVEvent ve : edao.viewRecurringByCalendarRangeCondition(con, calendarId, fromDate, toDate, null)) {
-					final List<VVEventInstance> instances = calculateRecurringInstances_OLD(con, new VVEventInstanceMapper(ve), fromDate, toDate, udata.getTimeZone());
+					final List<VVEventInstance> instances = calculateRecurringInstances_OLD(con, new VVEventInstanceMapper(ve), fromDate, toDate, pdata.getTimeZone());
 					
 					try {
 						map = new HashMap<>();
 						map.put("userId", pid.getUserId());
-						map.put("descriptionId", udata.getDisplayName());
+						map.put("descriptionId", pdata.getDisplayName());
 						fillExportMapBasic(map, coreMgr, con, ve);
 						for (VVEventInstance vei : instances) {
-							fillExportMapDates(map, udata.getTimeZone(), vei);
+							fillExportMapDates(map, pdata.getTimeZone(), vei);
 							mapw.write(map, headers, processors);
 						}	
 						
@@ -3363,7 +3363,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					if (shouldLog) logger.debug("[{}] Creating alert... [{}]", i, instance.getKey());
 					BaseReminder alert = null;
 					if (byEmailCache.get(instance.getCalendarProfileId())) {
-						UserProfile.Data ud = WT.getUserData(instance.getCalendarProfileId());
+						UserProfile.Data ud = WT.getProfileData(instance.getCalendarProfileId());
 						if (ud == null) throw new WTException("UserData is null [{}]", instance.getCalendarProfileId());
 						CoreUserSettings cus = new CoreUserSettings(instance.getCalendarProfileId());
 						EventInstance eventInstance = getEventInstance(instance.getKey());
@@ -3548,8 +3548,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	public void syncRemoteCalendar(int calendarId, boolean full) throws WTException {
-		final UserProfile.Data udata = WT.getUserData(getTargetProfileId());
-		final ICalendarInput icalInput = new ICalendarInput(udata.getTimeZone());
+		final UserProfile.Data pdata = WT.getProfileData(getTargetProfileId());
+		final ICalendarInput icalInput = new ICalendarInput(pdata.getTimeZone());
 		final String PENDING_KEY = String.valueOf(calendarId);
 		final String logPrefix = "RemoteSync-" + PENDING_KEY;
 		CalendarDAO calDao = CalendarDAO.getInstance();
@@ -5279,7 +5279,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (ocoi != null) {
 			UserProfileId owner = ocoi.getProfileId();
 			if (ocoi.getNotifyOnExtUpdate() && !owner.equals(RunContext.getRunProfileId())) {
-				UserProfile.Data ud = WT.getUserData(owner);
+				UserProfile.Data ud = WT.getProfileData(owner);
 				if (ud != null) {
 					rcpts.add(new RecipientTuple(ud.getPersonalEmail(), owner));
 				}
@@ -5290,7 +5290,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	private void notifyForEventModification(UserProfileId fromProfileId, List<RecipientTuple> recipients, EventFootprint event, String crud) {
 		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, fromProfileId.getDomainId());
-		UserProfile.Data udFrom = WT.getUserData(fromProfileId);
+		UserProfile.Data udFrom = WT.getProfileData(fromProfileId);
 		InternetAddress from = udFrom.getPersonalEmail();
 		
 		Map<String, String> meetingProviders = css.getMeetingProviders();
@@ -5300,7 +5300,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				logger.warn("Recipient for event modification is invalid [{}]", rcpt.recipient);
 				continue;
 			}
-			UserProfile.Data ud = WT.getUserData(rcpt.refProfileId);
+			UserProfile.Data ud = WT.getProfileData(rcpt.refProfileId);
 			if (ud == null) continue;
 			
 			try {
@@ -5360,7 +5360,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		try {
 			String sentFolder = lookupMailSentFolderName(senderProfileId);
-			InternetAddress from = WT.getUserData(senderProfileId).getPersonalEmail();
+			InternetAddress from = WT.getProfileData(senderProfileId).getPersonalEmail();
 			String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
 			
 			// Creates ical content

@@ -399,16 +399,16 @@ public class CalDav extends CaldavApi {
 	}
 	
 	private Calendar createCalendar(UserProfileId currentProfileId, com.sonicle.webtop.calendar.model.Calendar cal, boolean isResource, DateTime lastRevisionTimestamp, FolderShare.Permissions permissions) {
-		UserProfile.Data owud = WT.getUserData(cal.getProfileId());
+		UserProfile.Data pdata = WT.getProfileData(cal.getProfileId());
 		
 		String displayName = cal.getName();
 		if (isResource) {
-			displayName = "[" + WT.lookupResource(SERVICE_ID, getLocale(currentProfileId), CalendarLocale.CALENDAR_TYPE_RESOURCE) + "] " + owud.getDisplayName();
+			displayName = "[" + WT.lookupResource(SERVICE_ID, getLocale(currentProfileId), CalendarLocale.CALENDAR_TYPE_RESOURCE) + "] " + pdata.getDisplayName();
 		} else if (!currentProfileId.equals(cal.getProfileId())) {
 			//String apn = LangUtils.abbreviatePersonalName(false, owud.getDisplayName());
-			displayName = "[" + owud.getDisplayName() + "] " + displayName;
+			displayName = "[" + pdata.getDisplayName() + "] " + displayName;
 		}
-		String ownerUsername = owud.getProfileEmailAddress();
+		String ownerUsername = pdata.getProfileEmailAddress();
 		
 		return new Calendar()
 				.id(cal.getCalendarId())

@@ -180,7 +180,7 @@ public class PublicService extends BasePublicService {
 	}
 	
 	private String buildOrganizer(UserProfileId organizerPid) {
-		return StringUtils.defaultString(WT.getUserData(organizerPid).getDisplayName(), organizerPid.toString());
+		return StringUtils.defaultString(WT.getProfileData(organizerPid).getDisplayName(), organizerPid.toString());
 	}
 	
 	private ArrayList<JsPubEvent.Attendee> buildAttendees(int id, Event event) {

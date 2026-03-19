@@ -136,8 +136,8 @@ public class ManagerUtils {
 	*/
 	
 	public static String buildOrganizer(UserProfileId profileId) {
-		UserProfile.Data ud = WT.getUserData(profileId);
-		InternetAddress ia = InternetAddressUtils.toInternetAddress(ud.getEmail().getAddress(), ud.getDisplayName());
+		UserProfile.Data pdata = WT.getProfileData(profileId);
+		InternetAddress ia = InternetAddressUtils.toInternetAddress(pdata.getEmail().getAddress(), pdata.getDisplayName());
 		return ia.toString();
 	}
 	

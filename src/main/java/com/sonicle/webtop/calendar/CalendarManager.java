@@ -246,6 +246,7 @@ import com.sonicle.webtop.core.app.ical4j.XTag;
 import com.sonicle.webtop.core.app.model.Resource;
 import com.sonicle.webtop.core.app.model.ResourceGetOption;
 import com.sonicle.webtop.core.app.model.ShareOrigin;
+import com.sonicle.webtop.core.app.sdk.WTEmailSendException;
 import com.sonicle.webtop.core.model.ChangedItem;
 import com.sonicle.webtop.core.model.Delta;
 import com.sonicle.webtop.core.msg.ResourceReservationReplySM;
@@ -5294,7 +5295,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		InternetAddress from = udFrom.getPersonalEmail();
 		
 		Map<String, String> meetingProviders = css.getMeetingProviders();
-		Session session = getMailSession();
 		for (RecipientTuple rcpt : recipients) {
 			if (!InternetAddressUtils.isAddressValid(rcpt.recipient)) {
 				logger.warn("Recipient for event modification is invalid [{}]", rcpt.recipient);
@@ -5314,9 +5314,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						.withCustomBody(title, customBodyHtml)
 						.build(ud.getLocale(), source, because, rcpt.recipient.getAddress()).write();
 				
-				WT.sendEmail(session, true, from, rcpt.recipient, subject, html);
+				WT.sendEmailMessage(getTargetProfileId(), from, Recipients.to(rcpt.recipient).asList(), subject, html);
 
-			} catch(IOException | TemplateException | MessagingException ex) {
+			} catch(IOException | TemplateException | MessagingException | WTEmailSendException ex) {
 				logger.error("Unable to notify recipient after event modification [{}]", ex, rcpt.recipient);
 			}
 		}	

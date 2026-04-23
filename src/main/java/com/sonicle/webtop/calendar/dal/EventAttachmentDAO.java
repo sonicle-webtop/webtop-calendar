@@ -41,6 +41,7 @@ import com.sonicle.webtop.calendar.jooq.tables.records.EventsAttachmentsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.List;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
@@ -132,15 +133,29 @@ public class EventAttachmentDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int delete(Connection con, String attachmentId) throws DAOException {
+	public int deleteByIdEvent(Connection con, String attachmentId, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_ATTACHMENTS)
-			.where(EVENTS_ATTACHMENTS.EVENT_ATTACHMENT_ID.equal(attachmentId))
+			.where(
+				EVENTS_ATTACHMENTS.EVENT_ATTACHMENT_ID.equal(attachmentId)
+				.and(EVENTS_ATTACHMENTS.EVENT_ID.equal(eventId))
+			)
 			.execute();
 	}
 	
-	public OEventAttachmentData selectBytes(Connection con, String attachmentId) throws DAOException {
+	public int deleteByIdsEvent(Connection con, Collection<String> attachmentIds, String eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(EVENTS_ATTACHMENTS)
+			.where(
+				EVENTS_ATTACHMENTS.EVENT_ATTACHMENT_ID.in(attachmentIds)
+				.and(EVENTS_ATTACHMENTS.EVENT_ID.equal(eventId))
+			)
+			.execute();
+	}
+	
+	public OEventAttachmentData selectBytesById(Connection con, String attachmentId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -175,7 +190,7 @@ public class EventAttachmentDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteBytes(Connection con, String attachmentId) throws DAOException {
+	public int deleteBytesById(Connection con, String attachmentId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_ATTACHMENTS_DATA)

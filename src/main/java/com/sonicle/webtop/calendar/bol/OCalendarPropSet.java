@@ -32,12 +32,12 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.jooq.tables.pojos.CalendarProps;
+import com.sonicle.webtop.calendar.jooq.tables.pojos.CalendarsProps;
 
 /**
  *
  * @author malbinola
  */
-public class OCalendarPropSet extends CalendarProps {
+public class OCalendarPropSet extends CalendarsProps {
 	
 }

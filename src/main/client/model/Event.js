@@ -55,11 +55,10 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	idProperty: 'id',
 	fields: [
 		WTF.field('id', 'string', false),
-		WTF.field('eventId', 'string', true),
+		WTF.roField('eventId', 'string'),
 		WTF.field('calendarId', 'int', false),
-		WTF.field('recurrenceId', 'int', true),
-		WTF.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
-		WTF.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.field('start', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.field('end', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.field('timezone', 'string', false),
 		WTF.field('allDay', 'boolean', false, {defaultValue: false}),
 		WTF.field('title', 'string', false),
@@ -99,7 +98,6 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		}),
 		// Read-only fields
 		WTF.roField('_profileId', 'string'),
-		WTF.roField('_recurringInfo', 'string', {defaultValue: 'none'}),
 		WTF.roField('_cfdefs', 'string')
 	],
 	hasMany: [
@@ -108,16 +106,28 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		WTF.hasMany('cvalues', 'Sonicle.webtop.core.ux.data.CustomFieldValueModel')
 	],
 	
-	wasRecurring: function() {
-		return !this.phantom && this.get('_recurringInfo') === 'recurring';
+	isSeriesMaster: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('eventId')) && !Ext.isEmpty(me.get('rrule'));
 	},
 	
-	wasBroken: function() {
-		return !this.phantom && this.get('_recurringInfo') === 'broken';
+	isSeriesItem: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('eventId')) && !Ext.isEmpty(me.get('rrule'));
 	},
 	
-	isRecurring: function() {
+	isSeriesBroken: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('eventId'));
+	},
+	
+	hasRecurrence: function() {
 		return !this.isFieldEmpty('rrule');
+	},
+	
+	hasAttendees: function() {
+		var sto = this.attendees();
+		return !sto ? false : (sto.getCount() > 0);
 	},
 	
 	isNotifyable: function() {
@@ -129,40 +139,35 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		return ret;
 	},
 	
-	hasAttendees: function() {
-		var sto = this.attendees();
-		return !sto ? false : (sto.getCount() > 0);
-	},
-	
 	setStart: function(date) {
 		var me = this,
 			dt = Ext.isDate(date) ? date : new Date(),
-			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true);
+			dur = Sonicle.Date.diff(me.get('start'), me.get('end'), Ext.Date.MINUTE, true);
 		
-		me.set('startDate', dt);
-		me.set('endDate', Ext.Date.add(dt, Ext.Date.MINUTE, dur, true));
+		me.set('start', dt);
+		me.set('end', Ext.Date.add(dt, Ext.Date.MINUTE, dur, true));
 		if (me.phantom) me.set('rstart', Ext.Date.clone(dt));
 	},
 	
 	setEnd: function(date) {
 		var me = this,
 			dt = Ext.isDate(date) ? date : new Date(),
-			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
-			sta = me.get('startDate');
+			dur = Sonicle.Date.diff(me.get('start'), me.get('end'), Ext.Date.MINUTE, true),
+			sta = me.get('start');
 		
-		me.set('endDate', dt);
+		me.set('end', dt);
 		if (!Ext.isDate(sta)) return;
-		if (dt < sta) me.set('startDate', Ext.Date.add(dt, Ext.Date.MINUTE, -dur, true));
+		if (dt < sta) me.set('start', Ext.Date.add(dt, Ext.Date.MINUTE, -dur, true));
 	},
 	
 	setStartDate: function(date) {
 		var me = this,
 			dt = Ext.isDate(date) ? date : new Date(),
-			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
+			dur = Sonicle.Date.diff(me.get('start'), me.get('end'), Ext.Date.MINUTE, true),
 			v;
 		
-		v = me.setDatePart('startDate', dt);
-		me.set('endDate', Ext.Date.add(v, Ext.Date.MINUTE, dur, true));
+		v = me.setDatePart('start', dt);
+		me.set('end', Ext.Date.add(v, Ext.Date.MINUTE, dur, true));
 		if (me.phantom) me.set('rstart', Ext.Date.clone(v));
 	},
 	
@@ -170,7 +175,7 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 		var me = this, sta;
 		me.setDatePart('rstart', date, null, null, options);
 		if (me.phantom && Ext.isDate(date)) {
-			sta = me.get('startDate');
+			sta = me.get('start');
 			if (Ext.isDate(sta)) me.setStartDate(Ext.Date.clone(Sonicle.Date.min(date, sta)));
 		}
 	},
@@ -178,33 +183,33 @@ Ext.define('Sonicle.webtop.calendar.model.Event', {
 	setStartTime: function(date) {
 		var me = this,
 			dt = Ext.isDate(date) ? date : new Date(),
-			dur = Sonicle.Date.diff(me.get('startDate'), me.get('endDate'), Ext.Date.MINUTE, true),
+			dur = Sonicle.Date.diff(me.get('start'), me.get('end'), Ext.Date.MINUTE, true),
 			v;
 		
-		v = me.setTimePart('startDate', dt);
-		me.set('endDate', Ext.Date.add(v, Ext.Date.MINUTE, dur, true));
+		v = me.setTimePart('start', dt);
+		me.set('end', Ext.Date.add(v, Ext.Date.MINUTE, dur, true));
 	},
 	
 	setEndDate: function(date) {
 		var me = this,
 			dt = Ext.isDate(date) ? date : new Date(),
-			sta = me.get('startDate'),
-			dur = Sonicle.Date.diff(sta, me.get('endDate'), Ext.Date.MINUTE, true),
+			sta = me.get('start'),
+			dur = Sonicle.Date.diff(sta, me.get('end'), Ext.Date.MINUTE, true),
 			v;
 		
-		v = me.setDatePart('endDate', dt);
+		v = me.setDatePart('end', dt);
 		if (!Ext.isDate(sta)) return;
-		if (v < sta) me.set('startDate', Ext.Date.add(v, Ext.Date.MINUTE, -dur, true));
+		if (v < sta) me.set('start', Ext.Date.add(v, Ext.Date.MINUTE, -dur, true));
 	},
 	
 	setEndTime: function(date) {
 		var me = this,
 			dt = Ext.isDate(date) ? date : new Date(),
-			sta = me.get('startDate'),
+			sta = me.get('start'),
 			v;
 		
-		v = me.setTimePart('endDate', dt);
+		v = me.setTimePart('end', dt);
 		if (!Ext.isDate(sta)) return;
-		if (v < sta) me.set('startDate', v);
+		if (v < sta) me.set('start', v);
 	}
 });

@@ -37,7 +37,7 @@ import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
-import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.calendar.model.EventLookupInstance;
 import com.sonicle.webtop.core.model.Meeting;
 import java.util.regex.Pattern;
 import org.joda.time.DateTimeZone;
@@ -60,16 +60,18 @@ public class JsPletEvents {
 	public String title;
 	public String location;
 	public String meeting;
+	
+	public String _owPid;
 	public String _orDN;
 	public String _foPerms;
 	public String _itPerms;
 	
-	public JsPletEvents(CalendarFSOrigin origin, CalendarFSFolder folder, SchedEventInstance event, DateTimeZone profileTz, Pattern meetingUrlPattern) {
+	public JsPletEvents(CalendarFSOrigin origin, CalendarFSFolder folder, EventLookupInstance event, DateTimeZone profileTz, Pattern meetingUrlPattern) {
 		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(profileTz);
 		final Calendar calendar = folder.getCalendar();
 		
-		id = event.getKey();
-		eventId = event.getEventId();
+		id = event.getId().toString();
+		eventId = event.getOriginalEventId();
 		calendarId = event.getCalendarId();
 		calendarName = calendar.getName();
 		calendarColor = calendar.getColor();
@@ -77,8 +79,8 @@ public class JsPletEvents {
 		// Source field is already in UTC, we need only to display it
 		// in the timezone choosen by user in his settings.
 		// Formatter will be instantiated specifying desired timezone.
-		startDate = ymdhmsZoneFmt.print(event.getStartDate());
-		endDate = ymdhmsZoneFmt.print(event.getEndDate());
+		startDate = ymdhmsZoneFmt.print(event.getStart());
+		endDate = ymdhmsZoneFmt.print(event.getEnd());
 		timezone = event.getTimezone();
 		isAllDay = event.getAllDay();
 		
@@ -86,6 +88,7 @@ public class JsPletEvents {
 		location = event.getLocation();
 		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		
+		_owPid = calendar.getProfileId().toString();
 		_orDN = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
 		_foPerms = folder.getPermissions().getFolderPermissions().toString();
 		_itPerms = folder.getPermissions().getItemsPermissions().toString();

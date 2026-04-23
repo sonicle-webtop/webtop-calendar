@@ -38,9 +38,11 @@ import com.sonicle.commons.web.json.MapItem;
 import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.Event;
-import com.sonicle.webtop.calendar.model.EventFootprint;
+import com.sonicle.webtop.calendar.model.EventBase;
+import com.sonicle.webtop.calendar.model.EventEx;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.util.EmailNotification;
+import com.sonicle.webtop.core.model.ProfileI18n;
 import com.sonicle.webtop.core.util.RRuleStringify;
 import freemarker.template.TemplateException;
 import java.io.IOException;
@@ -71,43 +73,43 @@ public class TplHelper {
 		return null;
 	}
 	
-	private static String buildEventTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event) {
+	private static String buildEventTitle(ProfileI18n profileI18n, EventEx event) {
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(profileI18n.getDateFormat() + " " + profileI18n.getTimeFormat(), etz);
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
 		sb.append(" @");
 		
-		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
-			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+		if (event.hasRecurrence()) {
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(profileI18n.getLocale());
 			RRuleStringify rrs = new RRuleStringify(strings, etz);
 			sb.append(" (");
-			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrenceRule()));
+			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrence().getRule()));
 			sb.append(")");
 		}
 		
 		//TODO: solo l'orario se date coincidono!!!
 		sb.append(" ");
-		sb.append(fmt.print(event.getStartDate()));
+		sb.append(fmt.print(event.getStart()));
 		sb.append(" - ");
-		sb.append(fmt.print(event.getEndDate()));
+		sb.append(fmt.print(event.getEnd()));
 		
 		return sb.toString();
 	}
 	
-	public static String buildEventModificationTitle(Locale locale, EventFootprint event, String crud) {
+	public static String buildEventModificationTitle(Locale locale, EventEx event, String crud) {
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
 		sb.append(" @");
 		
-		if (!StringUtils.isEmpty(event.getRecurrenceRule())) {
+		if (event.hasRecurrence()) {
 			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
 			RRuleStringify rrs = new RRuleStringify(strings, etz);
 			sb.append(" (");
-			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrenceRule()));
+			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrence().getRule()));
 			sb.append(")");
 		}
 		
@@ -115,43 +117,43 @@ public class TplHelper {
 		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUJECT_KEY), sb.toString());
 	}
 	
-	public static String buildEventInvitationTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event, String crud) {
-		String title = buildEventTitle(locale, dateFormat, timeFormat, event);
+	public static String buildEventInvitationTitle(ProfileI18n profileI18n, EventEx event, String crud) {
+		String title = buildEventTitle(profileI18n, event);
 		String SUJECT_KEY = MessageFormat.format(CalendarLocale.EMAIL_INVITATION_SUBJECT_X, crud);
-		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUJECT_KEY), title);
+		return MessageFormat.format(WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), SUJECT_KEY), title);
 	}
 	
-	public static String buildEventReminderTitle(Locale locale, String dateFormat, String timeFormat, EventFootprint event) {
-		String title = buildEventTitle(locale, dateFormat, timeFormat, event);
-		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_REMINDER_SUBJECT), title);
+	public static String buildEventReminderTitle(ProfileI18n profileI18n, EventEx event) {
+		String title = buildEventTitle(profileI18n, event);
+		return MessageFormat.format(WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.EMAIL_REMINDER_SUBJECT), title);
 	}
 	
-	public static String buildResponseUpdateTitle(Locale locale, Event event, EventAttendee attendee) {
+	public static String buildResponseUpdateTitle(ProfileI18n profileI18n, EventBase event, EventAttendee attendee) {
 		String pattern;
 		if (EventAttendee.ResponseStatus.ACCEPTED.equals(attendee.getResponseStatus())) {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED);
+			pattern = WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_ACCEPTED);
 		} else if (EventAttendee.ResponseStatus.TENTATIVE.equals(attendee.getResponseStatus())) {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_TENTATIVE);
+			pattern = WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_TENTATIVE);
 		} else if (EventAttendee.ResponseStatus.DECLINED.equals(attendee.getResponseStatus())) {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_DECLINED);
+			pattern = WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_DECLINED);
 		} else {
-			pattern = WT.lookupResource(SERVICE_ID, locale, CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_OTHER);
+			pattern = WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.EMAIL_RESPONSEUPDATE_SUBJECT_OTHER);
 		}
 		return MessageFormat.format(pattern, event.getTitle());
 	}
 	
-	public static String buildEventModificationBody(EventFootprint event, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders) throws IOException, TemplateException, AddressException {
+	public static String buildEventModificationBody(ProfileI18n profileI18n, EventEx event, Map<String, String> meetingProviders) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
-		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
-		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
-		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
-		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
-		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
+		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
+		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
+		i18n.put("where", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
+		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
 		
 		MapItem evt = new MapItem();
-		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
-		fillEventOccurs(evt, event.getTimezone(), event.getRecurrenceRule(), locale);
-		fillEventLocation(evt, event.getLocation(), locale, meetingProviders); 
+		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventOccurs(profileI18n, evt, event.getTimezone(), event.hasRecurrence() ? event.getRecurrence().getRule() : null);
+		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders); 
 		
 		MapItem vars = new MapItem();
 		vars.put("i18n", i18n);
@@ -160,28 +162,28 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventModification-body.html", vars);
 	}
 	
-	public static String buildTplEventInvitationBody(String crud, Event event, String recipientEmail, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+	public static String buildTplEventInvitationBody(ProfileI18n profileI18n, String crud, EventEx event, String recipientEmail, Map<String, String> meetingProviders, String servicePublicUrl) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
-		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
-		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
-		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
-		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
-		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
-		i18n.put("organizer", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
-		i18n.put("who", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHO));
-		i18n.put("going", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING));
-		i18n.put("goingToAll", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOINGTOALL));
-		i18n.put("goingYes", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING_YES));
-		i18n.put("goingMaybe", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING_MAYBE));
-		i18n.put("goingNo", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_GOING_NO));
-		i18n.put("view", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
+		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
+		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
+		i18n.put("where", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
+		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
+		i18n.put("organizer", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
+		i18n.put("who", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHO));
+		i18n.put("going", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_GOING));
+		i18n.put("goingToAll", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_GOINGTOALL));
+		i18n.put("goingYes", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_GOING_YES));
+		i18n.put("goingMaybe", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_GOING_MAYBE));
+		i18n.put("goingNo", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_GOING_NO));
+		i18n.put("view", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
 		
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
 		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
-		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
-		fillEventOccurs(evt, event.getTimezone(), event.getRecurrenceRule(), locale);
-		fillEventLocation(evt, event.getLocation(), locale, meetingProviders);
+		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventOccurs(profileI18n, evt, event.getTimezone(), event.hasRecurrence() ? event.getRecurrence().getRule() : null);
+		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders);
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
 		
 		String recipientAttendeeId = null;
@@ -219,20 +221,20 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventInvitation-body.html", vars);
 	}
 	
-	public static String buildTplResponseUpdateBody(Event event, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders, String servicePublicUrl) throws IOException, TemplateException, AddressException {
+	public static String buildTplResponseUpdateBody(ProfileI18n profileI18n, Event event, Map<String, String> meetingProviders, String servicePublicUrl) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
-		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
-		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
-		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
-		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
-		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
-		i18n.put("view", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
+		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
+		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
+		i18n.put("where", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
+		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
+		i18n.put("view", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_VIEW));
 		
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
-		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
-		fillEventOccurs(evt, event.getTimezone(), event.getRecurrenceRule(), locale);
-		fillEventLocation(evt, event.getLocation(), locale, meetingProviders);
+		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventOccurs(profileI18n, evt, event.getTimezone(), event.hasRecurrence() ? event.getRecurrence().getRule() : null);
+		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders);
 		
 		String viewUrl = CalendarManager.buildEventPublicUrl(servicePublicUrl, event.getPublicUid());
 		
@@ -244,41 +246,41 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/responseUpdate-body.html", vars);
 	}
 	
-	public static String buildEventInvitationHtml(Locale locale, String bodyHeader, String customBodyHtml, String source, String because, String recipientEmail, String crud) throws IOException, TemplateException {
+	public static String buildEventInvitationHtml(ProfileI18n profileI18n, String bodyHeader, String customBodyHtml, String source, String because, String recipientEmail, String crud) throws IOException, TemplateException {
 		EmailNotification.BecauseBuilder builder = new EmailNotification.BecauseBuilder()
 				.withCustomBody(bodyHeader, customBodyHtml);
 
 		if (StringUtils.equals(crud, "update")) {
-			builder.greenMessage(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_UPDATED));
+			builder.greenMessage(WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_MSG_UPDATED));
 		} else if(StringUtils.equals(crud, "delete")) {
-			builder.redMessage(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_MSG_DELETED));
+			builder.redMessage(WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_MSG_DELETED));
 		}
 		if (StringUtils.equals(crud, "create")) {
-			builder.customFooterHeaderPattern(WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_HEADER));
+			builder.customFooterHeaderPattern(WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_HEADER));
 		}
 		
-		String fooMsgPatt = builder.getDefaultFooterMessagePattern(locale);
-		fooMsgPatt += "<br>"+WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER);
+		String fooMsgPatt = builder.getDefaultFooterMessagePattern(profileI18n.getLocale());
+		fooMsgPatt += "<br>"+WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_DISCLAIMER);
 		builder.customFooterMessagePattern(fooMsgPatt);
 		
-		return builder.build(locale, source, because, recipientEmail).write();
+		return builder.build(profileI18n.getLocale(), source, because, recipientEmail).write();
 	}
 	
-	public static String buildTplEventReminderBody(Event event, Locale locale, String dateFormat, String timeFormat, Map<String, String> meetingProviders) throws IOException, TemplateException, AddressException {
+	public static String buildTplEventReminderBody(ProfileI18n profileI18n, EventEx event, Map<String, String> meetingProviders) throws IOException, TemplateException, AddressException {
 		MapItem i18n = new MapItem();
-		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
-		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
-		i18n.put("where", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
-		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
-		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
-		i18n.put("organizer", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
-		i18n.put("who", WT.lookupResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_WHO));
+		i18n.put("whenStart", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_START));
+		i18n.put("whenEnd", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHEN_END));
+		i18n.put("where", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE));
+		i18n.put("whereMap", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHERE_MAP));
+		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
+		i18n.put("organizer", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_ORGANIZER));
+		i18n.put("who", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_WHO));
 		
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
 		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
-		fillEventDates(evt, event.getTimezone(), event.getStartDate(), event.getEndDate(), dateFormat, timeFormat);
-		fillEventLocation(evt, event.getLocation(), locale, meetingProviders);
+		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders);
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
 		
 		MapItemList evtAtts = new MapItemList();
@@ -306,32 +308,32 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventInvitation-body.html", vars);
 	}
 	
-	private static void fillEventDates(MapItem item, String eventTimezone, DateTime eventStart, DateTime eventEnd, String dateFormat, String timeFormat) {
+	private static void fillEventDates(ProfileI18n profileI18n, MapItem item, String eventTimezone, DateTime eventStart, DateTime eventEnd) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimezone);
-		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(dateFormat + " " + timeFormat, etz);
+		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(profileI18n.getDateFormat() + " " + profileI18n.getTimeFormat(), etz);
 		item.put("timezone", eventTimezone);
 		item.put("startDate", fmt.print(eventStart));
 		item.put("endDate", fmt.print(eventEnd));
 	}
 	
-	private static void fillEventOccurs(MapItem item, String eventTimezone, String eventRecurrenceRule, Locale locale) {
+	private static void fillEventOccurs(ProfileI18n profileI18n, MapItem item, String eventTimezone, String eventRecurrenceRule) {
 		DateTimeZone etz = DateTimeZone.forID(eventTimezone);
 		item.put("occurs", null);
 		if (!StringUtils.isBlank(eventRecurrenceRule)) {
-			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
+			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(profileI18n.getLocale());
 			RRuleStringify rrs = new RRuleStringify(strings, etz);
 			item.put("occurs", rrs.toHumanReadableTextQuietly(eventRecurrenceRule));
 		}
 	}
 	
-	private static void fillEventLocation(MapItem item, String eventLocation, Locale locale, Map<String, String> meetingProviders) {
+	private static void fillEventLocation(ProfileI18n profileI18n, MapItem item, String eventLocation, Map<String, String> meetingProviders) {
 		String location = StringUtils.defaultIfBlank(eventLocation, null);
 		String meetingProvider = findMatchingMeetingUrl(meetingProviders, location);
 		if (meetingProvider != null) {
 			item.put("meeting", location);
 			item.put("meetingLinkName", location);
 			item.put("meetingLinkUrl", StringUtils.defaultString(location));
-			item.put("joinMeetingOn", WT.lookupFormattedResource(SERVICE_ID, locale, CalendarLocale.TPL_EMAIL_INVITATION_JOIN_MEETING, meetingProvider));
+			item.put("joinMeetingOn", WT.lookupFormattedResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_JOIN_MEETING, meetingProvider));
 			
 		} else {
 			item.put("location", StringUtils.defaultIfBlank(location, null));

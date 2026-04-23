@@ -32,12 +32,15 @@
  */
 package com.sonicle.webtop.calendar.rest.v2;
 
+import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarLocale;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarServiceSettings;
 import com.sonicle.webtop.calendar.CalendarUserSettings;
 import com.sonicle.webtop.calendar.EventObjectOutputType;
+import com.sonicle.webtop.calendar.ICalendarManager;
+import com.sonicle.webtop.calendar.ICalendarManager.EventNotifyOption;
 import com.sonicle.webtop.calendar.ManagerUtils;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
@@ -296,7 +299,7 @@ public class CalDav extends CaldavApi {
 				if (since == null) return respErrorBadRequest();
 			}
 			
-			Delta<EventObject> delta = manager.listEventsDelta(calendarId, since, /*limit,*/ EventObjectOutputType.STAT);
+			Delta<EventObject> delta = manager.listEventObjectsDelta(calendarId, since, /*limit,*/ EventObjectOutputType.STAT);
 			return respOk(createCalObjectsChanges(revisions.get(calendarId), delta));
 			
 		} catch(Exception ex) {
@@ -392,9 +395,9 @@ public class CalDav extends CaldavApi {
 		}
 		
 		try {
-			boolean notifyAttendees = us.getDavEventNotifyAttendees();
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
-			manager.deleteEventObject(calendarId, href, notifyAttendees);
+			BitFlags<EventNotifyOption> notifyOps = us.getDavEventNotifyAttendees() ? EventNotifyOption.withAllAttendeesNotifications() : EventNotifyOption.withDefaults();
+			manager.deleteEventObject(calendarId, href, notifyOps);
 			return respOkNoContent();
 			
 		} catch (WTNotFoundException ex) {

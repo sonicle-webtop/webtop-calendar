@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.beans.SortInfo;
 import com.sonicle.webtop.calendar.bol.OCalendar;
 import com.sonicle.webtop.calendar.bol.OCalendarOwnerInfo;
 import com.sonicle.webtop.calendar.bol.VCalendarDefaults;
@@ -40,9 +41,11 @@ import static com.sonicle.webtop.calendar.jooq.Sequences.SEQ_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsRecord;
 import com.sonicle.webtop.calendar.model.CalendarBase;
+import com.sonicle.webtop.calendar.model.CalendarQuery;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -50,6 +53,7 @@ import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.SortField;
 import org.jooq.impl.DSL;
 
 /**
@@ -60,6 +64,21 @@ public class CalendarDAO extends BaseDAO {
 	private final static CalendarDAO INSTANCE = new CalendarDAO();
 	public static CalendarDAO getInstance() {
 		return INSTANCE;
+	}
+	
+	private static Collection<SortField<?>> toCalendarsOrderByClause(final Set<SortInfo> sortInfo) {
+		ArrayList<SortField<?>> fields = new ArrayList<>();
+		for (SortInfo si : sortInfo) {
+			if (si.getField().equals(CalendarQuery.ID)) fields.add(BaseDAO.toSortField(CALENDARS.CALENDAR_ID, si));
+			else if (si.getField().equals(CalendarQuery.USER_ID)) fields.add(BaseDAO.toSortField(DSL.upper(DSL.nullif(CALENDARS.USER_ID, "")), si));
+			else if (si.getField().equals(CalendarQuery.BUILT_IN)) fields.add(BaseDAO.toSortField(CALENDARS.BUILT_IN, si));
+			else if (si.getField().equals(CalendarQuery.PROVIDER)) fields.add(BaseDAO.toSortField(DSL.upper(DSL.nullif(CALENDARS.PROVIDER, "")), si));
+			else if (si.getField().equals(CalendarQuery.NAME)) fields.add(BaseDAO.toSortField(DSL.upper(DSL.nullif(CALENDARS.NAME, "")), si));
+			else if (si.getField().equals(CalendarQuery.DESCRIPTION)) fields.add(BaseDAO.toSortField(DSL.upper(DSL.nullif(CALENDARS.DESCRIPTION, "")), si).nullsLast());
+			else if (si.getField().equals(CalendarQuery.COLOR)) fields.add(BaseDAO.toSortField(DSL.upper(DSL.nullif(CALENDARS.COLOR, "")), si).nullsLast());
+			else if (si.getField().equals(CalendarQuery.EAS_SYNC)) fields.add(BaseDAO.toSortField(DSL.upper(DSL.nullif(CALENDARS.SYNC, "")), si));
+		}
+		return fields;
 	}
 
 	public Long getSequence(Connection con) throws DAOException {
@@ -96,9 +115,9 @@ public class CalendarDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
-				CALENDARS.IS_PRIVATE.as("defaults_private"),
-				CALENDARS.BUSY.as("defaults_busy"),
-				CALENDARS.REMINDER.as("defaults_reminder")
+				CALENDARS.DEF_VISIBILITY,
+				CALENDARS.DEF_TRANSPARENCY,
+				CALENDARS.DEF_REMINDER
 			)
 			.from(CALENDARS)
 			.where(
@@ -187,20 +206,38 @@ public class CalendarDAO extends BaseDAO {
 			.fetchInto(OCalendar.class);
 	}
 	
-	public List<OCalendar> selectByDomainIn(Connection con, String domainId, Collection<Integer> calendarIds) throws DAOException {
+	public int countByDomainIn(Connection con, String domainId, Collection<Integer> calendarIds, Condition condition) throws DAOException {
 		DSLContext dsl = getDSL(con);
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
+		
+		return dsl
+			.selectCount()
+			.from(CALENDARS)
+			.where(
+				CALENDARS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS.CALENDAR_ID.in(calendarIds))
+				.and(filterCndt)
+			)
+			.fetchOne(0, Integer.class);
+	}
+	
+	public List<OCalendar> selectByDomainIn(Connection con, String domainId, Collection<Integer> calendarIds, Condition condition, Set<SortInfo> sortInfo, int limit, int offset) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
+		
 		return dsl
 			.select()
 			.from(CALENDARS)
 			.where(
 				CALENDARS.DOMAIN_ID.equal(domainId)
 				.and(CALENDARS.CALENDAR_ID.in(calendarIds))
+				.and(filterCndt)
 			)
 			.orderBy(
-				CALENDARS.BUILT_IN.desc(),
-				//CALENDARS.PROVIDER.asc(),
-				CALENDARS.NAME.asc()
+				toCalendarsOrderByClause(sortInfo)
 			)
+			.limit(limit)
+			.offset(offset)
 			.fetchInto(OCalendar.class);
 	}
 	
@@ -284,19 +321,6 @@ public class CalendarDAO extends BaseDAO {
 			.fetchInto(OCalendar.class);
 	}
 	
-	public Integer selectDefaultByProfile(Connection con, String domainId, String userId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.select(CALENDARS.CALENDAR_ID)
-			.from(CALENDARS)
-			.where(
-				CALENDARS.DOMAIN_ID.equal(domainId)
-				.and(CALENDARS.USER_ID.equal(userId))
-				.and(CALENDARS.IS_DEFAULT.equal(true))
-			)
-			.fetchOneInto(Integer.class);
-	}
-	
 	public List<OCalendar> selectByProvider(Connection con, Collection<CalendarBase.Provider> providers) throws DAOException {
 		List<String> providerList = providers.stream().map(prov -> EnumUtils.toSerializedName(prov)).collect(Collectors.toList());
 		DSLContext dsl = getDSL(con);
@@ -334,10 +358,9 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.DESCRIPTION, item.getDescription())
 			.set(CALENDARS.COLOR, item.getColor())
 			.set(CALENDARS.SYNC, item.getSync())
-			.set(CALENDARS.IS_DEFAULT, item.getIsDefault())
-			.set(CALENDARS.IS_PRIVATE, item.getIsPrivate())
-			.set(CALENDARS.BUSY, item.getBusy())
-			.set(CALENDARS.REMINDER, item.getReminder())
+			.set(CALENDARS.DEF_VISIBILITY, item.getDefVisibility())
+			.set(CALENDARS.DEF_TRANSPARENCY, item.getDefTransparency())
+			.set(CALENDARS.DEF_REMINDER, item.getDefReminder())
 			.set(CALENDARS.NOTIFY_ON_EXT_UPDATE, item.getNotifyOnExtUpdate())
 			.set(CALENDARS.PARAMETERS, item.getParameters())
 			.set(CALENDARS.REMOTE_SYNC_FREQUENCY, item.getRemoteSyncFrequency())
@@ -367,18 +390,6 @@ public class CalendarDAO extends BaseDAO {
 			.set(CALENDARS.REMOTE_SYNC_TAG, syncTag)
 			.where(
 				CALENDARS.CALENDAR_ID.equal(calendarId)
-			)
-			.execute();
-	}
-	
-	public int resetIsDefaultByProfile(Connection con, String domainId, String userId) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.update(CALENDARS)
-			.set(CALENDARS.IS_DEFAULT, false)
-			.where(
-				CALENDARS.DOMAIN_ID.equal(domainId)
-				.and(CALENDARS.USER_ID.equal(userId))
 			)
 			.execute();
 	}

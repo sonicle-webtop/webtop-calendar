@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sonicle S.r.l.
+ * Copyright (C) 2026 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,7 +28,7 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2018 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2026 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar;
 
@@ -42,17 +42,20 @@ import com.sonicle.webtop.calendar.bol.OEventAttachment;
 import com.sonicle.webtop.calendar.bol.OEventAttendee;
 import com.sonicle.webtop.calendar.bol.OEventCustomValue;
 import com.sonicle.webtop.calendar.bol.VEventAttachmentWithBytes;
+import com.sonicle.webtop.calendar.bol.VEventLookup;
 import com.sonicle.webtop.calendar.bol.VEventObject;
-import com.sonicle.webtop.calendar.bol.VVEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.Event;
+import com.sonicle.webtop.calendar.model.EventAlertLookup;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.model.EventAttendee;
+import com.sonicle.webtop.calendar.model.EventBase;
+import com.sonicle.webtop.calendar.model.EventEx;
+import com.sonicle.webtop.calendar.model.EventLookup;
 import com.sonicle.webtop.calendar.model.EventObject;
-import com.sonicle.webtop.calendar.model.SchedEvent;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.model.CustomFieldValue;
 import com.sonicle.webtop.core.sdk.UserProfile;
@@ -69,8 +72,6 @@ import net.sf.qualitycheck.Check;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 
 /**
  *
@@ -157,15 +158,17 @@ public class ManagerUtils {
 		if ((tgt != null) && (src != null)) {
 			tgt.setDomainId(src.getDomainId());
 			tgt.setUserId(src.getUserId());
+			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
+			tgt.setCreationTimestamp(src.getCreationTimestamp());
 			tgt.setBuiltIn(src.getBuiltIn());
 			tgt.setProvider(EnumUtils.forSerializedName(src.getProvider(), Calendar.Provider.class));
 			tgt.setName(src.getName());
 			tgt.setDescription(src.getDescription());
 			tgt.setColor(src.getColor());
 			tgt.setSync(EnumUtils.forSerializedName(src.getSync(), Calendar.Sync.class));
-			tgt.setIsPrivate(src.getIsPrivate());
-			tgt.setDefaultBusy(src.getBusy());
-			tgt.setDefaultReminder(src.getReminder());
+			tgt.setDefaultVisibility(EnumUtils.forSerializedName(src.getDefVisibility(), EventBase.Visibility.class));
+			tgt.setDefaultTransparency(EnumUtils.forSerializedName(src.getDefTransparency(), EventBase.Transparency.class));
+			tgt.setDefaultReminder(src.getDefReminder());
 			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
 			tgt.setRemoteSyncFrequency(src.getRemoteSyncFrequency());
@@ -189,14 +192,31 @@ public class ManagerUtils {
 			tgt.setDescription(src.getDescription());
 			tgt.setColor(src.getColor());
 			tgt.setSync(EnumUtils.toSerializedName(src.getSync()));
-			tgt.setIsPrivate(src.getIsPrivate());
-			tgt.setBusy(src.getDefaultBusy());
-			tgt.setReminder(src.getDefaultReminder());
+			tgt.setDefVisibility(EnumUtils.toSerializedName(src.getDefaultVisibility()));
+			tgt.setDefTransparency(EnumUtils.toSerializedName(src.getDefaultTransparency()));
+			tgt.setDefReminder(src.getDefaultReminder());
 			tgt.setNotifyOnExtUpdate(src.getNotifyOnExtUpdate());
 			tgt.setParameters(src.getParameters());
 			tgt.setRemoteSyncFrequency(src.getRemoteSyncFrequency());
 			tgt.setRemoteSyncTimestamp(src.getRemoteSyncTimestamp());
 			tgt.setRemoteSyncTag(src.getRemoteSyncTag());
+		}
+		return tgt;
+	}
+	
+	static OCalendar fillOCalendarWithDefaults(OCalendar tgt, UserProfileId targetProfile, CalendarServiceSettings ss) {
+		if (tgt != null) {
+			if (tgt.getDomainId() == null) tgt.setDomainId(targetProfile.getDomainId());
+			if (tgt.getUserId() == null) tgt.setUserId(targetProfile.getUserId());
+			if (tgt.getBuiltIn() == null) tgt.setBuiltIn(false);
+			if (StringUtils.isBlank(tgt.getProvider())) tgt.setProvider(EnumUtils.toSerializedName(Calendar.Provider.LOCAL));
+			if (StringUtils.isBlank(tgt.getColor())) tgt.setColor("#F3F4F6");
+			if (StringUtils.isBlank(tgt.getSync())) tgt.setSync(EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
+			if (tgt.getDefVisibility()== null) tgt.setDefVisibility(EnumUtils.toSerializedName(EventBase.Visibility.PUBLIC));
+			if (tgt.getDefTransparency()== null) tgt.setDefTransparency(EnumUtils.toSerializedName(EventBase.Transparency.OPAQUE));
+			//if (tgt.getEventInvitation() == null) tgt.setEventInvitation(false);
+			//if (tgt.getNotifyOnSelfUpdate() == null) tgt.setNotifyOnSelfUpdate(false); // Not yet supported!
+			if (tgt.getNotifyOnExtUpdate() == null) tgt.setNotifyOnExtUpdate(false);
 		}
 		return tgt;
 	}
@@ -227,19 +247,7 @@ public class ManagerUtils {
 		return fill;
 	}
 	
-	static EventObject fillEventCalObject(EventObject tgt, Event src) {
-		if ((tgt != null) && (src != null)) {
-			tgt.setEventId(src.getEventId());
-			tgt.setCalendarId(src.getCalendarId());
-			tgt.setRevisionStatus(src.getRevisionStatus());
-			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
-			tgt.setPublicUid(src.getPublicUid());
-			tgt.setHref(src.getHref());
-		}
-		return tgt;
-	}
-	
-	static <T extends EventObject> T fillEventCalObject(T tgt, VEventObject src) {
+	static <T extends EventObject> T fillEventObject(T tgt, VEventObject src) {
 		if ((tgt != null) && (src != null)) {
 			tgt.setEventId(src.getEventId());
 			tgt.setCalendarId(src.getCalendarId());
@@ -251,81 +259,140 @@ public class ManagerUtils {
 		return tgt;
 	}
 	
-	static Event createEvent(OEvent src) {
-		return (src == null) ? null : fillEvent(new Event(), src);
+	static <T extends EventLookup> T fillEventLookup(T tgt, VEventLookup src) {
+		fillEvent((EventBase)tgt, src);
+		if ((tgt != null) && (src != null)) {
+			tgt.setTags(src.getTags());
+			tgt.setHasRecurrence(src.getHasRecurrence());
+			tgt.setAttendeesCount(src.getAttendeesCount());
+			tgt.setNotifyableAttendeesCount(src.getNotifyableAttendeesCount());
+			tgt.setCalendarName(src.getCalendarName());
+			tgt.setCalendarDomainId(src.getCalendarDomainId());
+			tgt.setCalendarUserId(src.getCalendarUserId());
+		}
+		return tgt;
+	}
+	
+	static <T extends EventAlertLookup> T fillEventAlertLookup(T tgt, VEventLookup src) {
+		fillEvent((EventBase)tgt, src);
+		if ((tgt != null) && (src != null)) {
+			tgt.setRemindedOn(src.getRemindedOn());
+			tgt.setHasRecurrence(src.getHasRecurrence());
+			tgt.setCalendarName(src.getCalendarName());
+			tgt.setCalendarDomainId(src.getCalendarDomainId());
+			tgt.setCalendarUserId(src.getCalendarUserId());
+		}
+		return tgt;
 	}
 	
 	static <T extends Event> T fillEvent(T tgt, OEvent src) {
+		fillEvent((EventEx)tgt, src);
 		if ((tgt != null) && (src != null)) {
 			tgt.setEventId(src.getEventId());
-			tgt.setCalendarId(src.getCalendarId());
-			tgt.setRevisionStatus(EnumUtils.forSerializedName(src.getRevisionStatus(), Event.RevisionStatus.class));
-			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
-			tgt.setCreationTimestamp(src.getCreationTimestamp());
-			//fill.setRevisionSequence(with.getRevisionSequence());
-			tgt.setPublicUid(src.getPublicUid());
-			tgt.setReadOnly(src.getReadOnly());
-			tgt.setStartDate(src.getStartDate());
-			tgt.setEndDate(src.getEndDate());
-			tgt.setTimezone(src.getTimezone());
-			tgt.setAllDay(src.getAllDay());
-			tgt.setOrganizer(src.getOrganizer());
-			tgt.setTitle(src.getTitle());
-			tgt.setDescription(src.getDescription());
-			tgt.setLocation(src.getLocation());
-			tgt.setIsPrivate(src.getIsPrivate());
-			tgt.setBusy(src.getBusy());
-			tgt.setReminder(Event.Reminder.valueOf(src.getReminder()));
-			tgt.setHref(src.getHref());
-			tgt.setEtag(src.getEtag());
-			tgt.setActivityId(src.getActivityId());
-			tgt.setMasterDataId(src.getMasterDataId());
-			tgt.setStatMasterDataId(src.getStatMasterDataId());
-			tgt.setCausalId(src.getCausalId());
+			tgt.setSeriesEventId(src.getSeriesEventId());
+			tgt.setSeriesInstanceId(src.getSeriesInstanceId());
 		}
 		return tgt;
 	}
 	
-	/*
-	static void fillEventWithDefaults(Event fill) {
-		if (fill != null) {
-			if (StringUtils.isBlank(fill.getPublicUid())) {
-				fill.setPublicUid(buildEventUid(fill.getEventId(), WT.getDomainInternetName(getTargetProfileId().getDomainId())));
-			}
-			if (fill.getReadOnly() == null) fill.setReadOnly(false);
-			if (StringUtils.isBlank(fill.getOrganizer())) fill.setOrganizer(buildOrganizer());
-		}
-	}
-	*/
-	
-	static OEvent createOEvent(Event src) {
-		return (src == null) ? null : fillOEvent(new OEvent(), src);
+	static <T extends EventEx> T fillEvent(T tgt, OEvent src) {
+		fillEvent((EventBase)tgt, src);
+		if ((tgt != null) && (src != null)) {}
+		return tgt;
 	}
 	
-	static OEvent fillOEvent(OEvent tgt, Event src) {
+	static <T extends EventBase> T fillEvent(T tgt, OEvent src) {
 		if ((tgt != null) && (src != null)) {
-			tgt.setEventId(src.getEventId());
 			tgt.setCalendarId(src.getCalendarId());
-			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
 			tgt.setPublicUid(src.getPublicUid());
-			tgt.setReadOnly(src.getReadOnly());
-			tgt.setStartDate(src.getStartDate());
-			tgt.setEndDate(src.getEndDate());
+			tgt.setRevisionStatus(EnumUtils.forSerializedName(src.getRevisionStatus(), Event.RevisionStatus.class));
+			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
+			tgt.setCreationTimestamp(src.getCreationTimestamp());
+			tgt.setRevisionSequence(src.getRevisionSequence());
+			tgt.setRowStatus(EnumUtils.forSerializedName(src.getRowStatus(), EventBase.RowStatus.class));
+			tgt.setStatus(EnumUtils.forSerializedName(src.getStatus(), EventBase.Status.class));
+			tgt.setOrganizer(src.getOrganizer());
+			tgt.setOrganizerId(src.getOrganizerId());
+			tgt.setTitle(src.getTitle());
+			tgt.setLocation(src.getLocation());
+			tgt.setDescriptionType(EnumUtils.forSerializedName(src.getDescriptionType(), EventBase.BodyType.class));
+			tgt.setDescription(src.getDescription());
 			tgt.setTimezone(src.getTimezone());
 			tgt.setAllDay(src.getAllDay());
+			tgt.setStart(src.getStart());
+			tgt.setEnd(src.getEnd());
+			tgt.setVisibility(EnumUtils.forSerializedName(src.getVisibility(), EventBase.Visibility.class));
+			tgt.setTransparency(EnumUtils.forSerializedName(src.getTransparency(), EventBase.Transparency.class));
+			tgt.setHref(src.getHref());
+			tgt.setEtag(src.getEtag());
+			tgt.setReminder(Event.Reminder.valueOf(src.getReminder()));
+		}
+		return tgt;
+	}
+	
+	static OEvent fillOEventWithDefaultsForInsert(OEvent tgt, UserProfileId targetProfile, DateTime defaultTimestamp) {
+		if (tgt != null) {
+			if (StringUtils.isBlank(tgt.getPublicUid())) {
+				tgt.setPublicUid(ManagerUtils.buildEventUid(tgt.getEventId(), WT.getPrimaryDomainName(targetProfile.getDomainId())));
+			}
+			if (tgt.getRevisionTimestamp()== null) tgt.setRevisionTimestamp(defaultTimestamp);
+			if (tgt.getRevisionSequence() == null) tgt.setRevisionSequence(0);
+			if (tgt.getCreationTimestamp() == null) tgt.setCreationTimestamp(defaultTimestamp);
+			if (tgt.getRowStatus()== null) tgt.setRowStatus(EnumUtils.toSerializedName(EventBase.RowStatus.DEFAULT));
+			if (tgt.getStatus() == null) tgt.setStatus(EnumUtils.toSerializedName(EventBase.Status.CONFIRMED));
+			if (StringUtils.isBlank(tgt.getOrganizer())) {
+				tgt.setOrganizer(buildOrganizer(targetProfile));
+				tgt.setOrganizerId(targetProfile.getUserId());
+			}
+			if (tgt.getTimezone() == null) {
+				UserProfile.Data pdata = WT.getProfileData(targetProfile);
+				if (pdata != null) tgt.setTimezone(pdata.getTimeZoneId());
+			}
+			if (tgt.getDescriptionType() == null) tgt.setDescriptionType(EnumUtils.toSerializedName(EventBase.BodyType.TEXT));
+			if (StringUtils.isBlank(tgt.getHref())) tgt.setHref(ManagerUtils.buildHref(tgt.getEventId(), WT.getPrimaryDomainName(targetProfile.getDomainId())));
+		}
+		return tgt;
+	}
+	
+	static OEvent fillOEventWithDefaultsForUpdate(OEvent tgt, DateTime defaultTimestamp) {
+		if (tgt != null) {
+			if (tgt.getDescriptionType()== null) tgt.setDescriptionType(EnumUtils.toSerializedName(EventBase.BodyType.TEXT));
+		}
+		return tgt;
+	}
+	
+	static OEvent fillOEvent(OEvent tgt, EventEx src) {
+		fillOEvent(tgt, (EventBase)src);
+		if ((tgt != null) && (src != null)) {
+			
+		}
+		return tgt;
+	}
+	
+	static OEvent fillOEvent(OEvent tgt, EventBase src) {
+		if ((tgt != null) && (src != null)) {
+			tgt.setCalendarId(src.getCalendarId());
+			tgt.setPublicUid(src.getPublicUid());
+			tgt.setRevisionStatus(EnumUtils.toSerializedName(src.getRevisionStatus()));
+			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
+			tgt.setRevisionSequence(src.getRevisionSequence());
+			tgt.setCreationTimestamp(src.getCreationTimestamp());
 			tgt.setOrganizer(src.getOrganizer());
+			tgt.setOrganizerId(src.getOrganizerId());
+			tgt.setStart(src.getStart());
+			tgt.setEnd(src.getEnd());
+			tgt.setTimezone(src.getTimezone());
+			tgt.setAllDay(src.getAllDay());
 			tgt.setTitle(src.getTitle());
-			tgt.setDescription(src.getDescription());
 			tgt.setLocation(src.getLocation());
-			tgt.setIsPrivate(src.getIsPrivate());
-			tgt.setBusy(src.getBusy());
+			tgt.setDescriptionType(EnumUtils.toSerializedName(src.getDescriptionType()));
+			tgt.setDescription(src.getDescription());
+			tgt.setVisibility(EnumUtils.toSerializedName(src.getVisibility()));
+			tgt.setTransparency(EnumUtils.toSerializedName(src.getTransparency()));
+			tgt.setStatus(EnumUtils.toSerializedName(src.getStatus()));
 			tgt.setReminder(Event.Reminder.getMinutesValue(src.getReminder()));
 			tgt.setHref(src.getHref());
 			tgt.setEtag(src.getEtag());
-			tgt.setActivityId(src.getActivityId());
-			tgt.setMasterDataId(src.getMasterDataId());
-			tgt.setStatMasterDataId(src.getStatMasterDataId());
-			tgt.setCausalId(src.getCausalId());
 		}
 		return tgt;
 	}
@@ -341,6 +408,7 @@ public class ManagerUtils {
 			tgt.setRecipientType(EnumUtils.forSerializedName(src.getRecipientType(), EventAttendee.RecipientType.class));
 			tgt.setRecipientRole(EnumUtils.forSerializedName(src.getRecipientRole(), EventAttendee.RecipientRole.class));
 			tgt.setResponseStatus(EnumUtils.forSerializedName(src.getResponseStatus(), EventAttendee.ResponseStatus.class));
+			tgt.setResponseTimestamp(src.getResponseTimestamp());
 			tgt.setNotify(src.getNotify());
 		}
 		return tgt;
@@ -365,10 +433,6 @@ public class ManagerUtils {
 		return true;
 	}
 	
-	static OEventAttendee createOEventAttendee(EventAttendee src) {
-		return (src == null) ? null : fillOEventAttendee(new OEventAttendee(), src);
-	}
-	
 	static OEventAttendee fillOEventAttendee(OEventAttendee tgt, EventAttendee src) {
 		if ((tgt != null) && (src != null)) {
 			tgt.setAttendeeId(src.getAttendeeId());
@@ -387,34 +451,6 @@ public class ManagerUtils {
 			atts.add(createEventAttendee(attendee));
 		}
 		return atts;
-	}
-	
-	static <T extends SchedEvent> T fillSchedEvent(T tgt, VVEvent src) {
-		if ((tgt != null) && (src != null)) {
-			tgt.setEventId(src.getEventId());
-			tgt.setCalendarId(src.getCalendarId());
-			tgt.setPublicUid(src.getPublicUid());
-			tgt.setRevisionTimestamp(src.getRevisionTimestamp());
-			tgt.setStartDate(src.getStartDate());
-			tgt.setEndDate(src.getEndDate());
-			tgt.setTimezone(src.getTimezone());
-			tgt.setAllDay(src.getAllDay());
-			tgt.setOrganizer(src.getOrganizer());
-			tgt.setTitle(src.getTitle());
-			tgt.setDescription(src.getDescription());
-			tgt.setLocation(src.getLocation());
-			tgt.setIsPrivate(src.getIsPrivate());
-			tgt.setBusy(src.getBusy());
-			tgt.setReminder(Event.Reminder.valueOf(src.getReminder()));
-			tgt.setTags(src.getTags());
-			tgt.setCalendarDomainId(src.getCalendarDomainId());
-			tgt.setCalendarUserId(src.getCalendarUserId());
-			tgt.setSeriesEventId(src.getSeriesEventId());
-			tgt.setAttendeesCount(src.getAttendeesCount());
-			tgt.setNotifyableAttendeesCount(src.getNotifyableAttendeesCount());
-			tgt.setRecurInfo(src.isEventRecurring(), src.isEventBroken());
-		}
-		return tgt;
 	}
 	
 	static List<EventAttachment> createEventAttachmentList(List<OEventAttachment> items) {
@@ -454,8 +490,6 @@ public class ManagerUtils {
 		if (src == null) return null;
 		return fillEventAttachment(new EventAttachmentWithBytes(src.getBytes()), src);
 	}
-	
-	
 	
 	static OEventAttachment createOEventAttachment(EventAttachment src) {
 		if (src == null) return null;
@@ -497,11 +531,6 @@ public class ManagerUtils {
 			tgt.setTextValue(src.getTextValue());
 		}
 		return tgt;
-	}
-	
-	static OEventCustomValue createOEventCustomValue(CustomFieldValue src) {
-		if (src == null) return null;
-		return fillOEventCustomValue(new OEventCustomValue(), src);
 	}
 	
 	static <T extends OEventCustomValue> T fillOEventCustomValue(T tgt, CustomFieldValue src) {

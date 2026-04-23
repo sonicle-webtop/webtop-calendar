@@ -33,7 +33,7 @@
 package com.sonicle.webtop.calendar.bol.model;
 
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.calendar.model.EventLookupInstance;
 import com.sonicle.webtop.core.util.JRHelper;
 import java.awt.Image;
 import java.util.Date;
@@ -58,15 +58,15 @@ public class RBAgendaEvent {
 	public Integer spanLeft;
 	public Integer spanRight;
 	
-	public RBAgendaEvent(Calendar calendar, SchedEventInstance event, Integer spanLeft, Integer spanRight) {
+	public RBAgendaEvent(Calendar calendar, EventLookupInstance event, Integer spanLeft, Integer spanRight) {
 		this.calendarId = calendar.getCalendarId();
 		this.calendarName = calendar.getName();
 		this.calendarColor = Calendar.getHexColor(calendar.getColor());
 		this.calendarColorImage = JRHelper.colorAsImage(Calendar.getHexColor(calendar.getColor()));
-		this.eventKey = event.getKey();
-		this.eventId = event.getEventId();
-		this.startDate = event.getStartDate().toDate();
-		this.endDate = event.getEndDate().toDate();
+		this.eventKey = event.getId().toString();
+		this.eventId = event.getOriginalEventId();
+		this.startDate = event.getStart().toDate();
+		this.endDate = event.getEnd().toDate();
 		this.timezone = event.getTimezone();
 		this.allDay = event.getAllDay();
 		this.title = event.getTitle();

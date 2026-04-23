@@ -36,7 +36,7 @@ import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.bol.model.RBAgendaEvent;
 import com.sonicle.webtop.calendar.model.Calendar;
-import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.calendar.model.EventLookupInstance;
 import com.sonicle.webtop.core.io.output.AbstractReport;
 import com.sonicle.webtop.core.io.output.ReportConfig;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -68,7 +68,7 @@ public abstract class AbstractAgenda extends AbstractReport {
 	}
 	*/
 	
-	public void setDataSource(CalendarManager manager, DateTime fromDate, DateTime toDate, DateTimeZone utz, Map<Integer, Calendar> calendars, Collection<SchedEventInstance> instances) throws WTException {
+	public void setDataSource(CalendarManager manager, DateTime fromDate, DateTime toDate, DateTimeZone utz, Map<Integer, Calendar> calendars, Collection<EventLookupInstance> instances) throws WTException {
 		int days = -1;
 		if (JodaTimeUtils.isEndOfDay(toDate, true)) {
 			days = Days.daysBetween(fromDate, toDate).getDays()+1;
@@ -85,36 +85,36 @@ public abstract class AbstractAgenda extends AbstractReport {
 		for(int i=0; i<days; i++) {
 			dayDateFrom = fromDate.plusDays(i);
 			dayDates.add(dayDateFrom.toDate());
-			daysSpanningEvents.add(new ArrayList<RBAgendaEvent>());
-			daysEvents.add(new ArrayList<RBAgendaEvent>());
+			daysSpanningEvents.add(new ArrayList<>());
+			daysEvents.add(new ArrayList<>());
 		}
 		
 		// Arranges events by day...
-		for(SchedEventInstance sei : instances) {
+		for(EventLookupInstance eli : instances) {
 			for(int i=0; i<days; i++) {
 				dayDateFrom = fromDate.plusDays(i);
-				if(isInDay(utz, dayDateFrom, sei.getStartDate(), sei.getEndDate())) {
-					Calendar calendar = calendars.get(sei.getCalendarId());
+				if(isInDay(utz, dayDateFrom, eli.getStart(), eli.getEnd())) {
+					Calendar calendar = calendars.get(eli.getCalendarId());
 					boolean spanning = true;
 					Integer spanLeft = null, spanRight  = null;
-					if(!sei.getAllDay() && startsInDay(utz, dayDateFrom, sei.getStartDate()) && endsInDay(utz, dayDateFrom, sei.getEndDate())) {
+					if(!eli.getAllDay() && startsInDay(utz, dayDateFrom, eli.getStart()) && endsInDay(utz, dayDateFrom, eli.getEnd())) {
 						spanning = false;
 					} else {
-						if(startsInDay(utz, dayDateFrom, sei.getStartDate())) {
-							spanRight = JodaTimeUtils.calendarDaysBetween(dayDateFrom, sei.getEndDate().withZone(utz));
+						if(startsInDay(utz, dayDateFrom, eli.getStart())) {
+							spanRight = JodaTimeUtils.calendarDaysBetween(dayDateFrom, eli.getEnd().withZone(utz));
 						}
-						if(endsInDay(utz, dayDateFrom, sei.getEndDate())) {
-							spanLeft = JodaTimeUtils.calendarDaysBetween(sei.getStartDate().withZone(utz), dayDateFrom);
+						if(endsInDay(utz, dayDateFrom, eli.getEnd())) {
+							spanLeft = JodaTimeUtils.calendarDaysBetween(eli.getStart().withZone(utz), dayDateFrom);
 						}
-						if(!startsInDay(utz, dayDateFrom, sei.getStartDate()) && !endsInDay(utz, dayDateFrom, sei.getEndDate())) {
-							spanLeft = JodaTimeUtils.calendarDaysBetween(sei.getStartDate().withZone(utz), dayDateFrom);
-							spanRight = JodaTimeUtils.calendarDaysBetween(dayDateFrom, sei.getEndDate().withZone(utz));
+						if(!startsInDay(utz, dayDateFrom, eli.getStart()) && !endsInDay(utz, dayDateFrom, eli.getEnd())) {
+							spanLeft = JodaTimeUtils.calendarDaysBetween(eli.getStart().withZone(utz), dayDateFrom);
+							spanRight = JodaTimeUtils.calendarDaysBetween(dayDateFrom, eli.getEnd().withZone(utz));
 						}
 					}
 					if(spanning) {
-						daysSpanningEvents.get(i).add(new RBAgendaEvent(calendar, sei, spanLeft, spanRight));
+						daysSpanningEvents.get(i).add(new RBAgendaEvent(calendar, eli, spanLeft, spanRight));
 					} else {
-						daysEvents.get(i).add(new RBAgendaEvent(calendar, sei, spanLeft, spanRight));
+						daysEvents.get(i).add(new RBAgendaEvent(calendar, eli, spanLeft, spanRight));
 					}
 				}
 			}

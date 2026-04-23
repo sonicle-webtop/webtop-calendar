@@ -33,8 +33,8 @@
 package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.OCalendarPropSet;
-import static com.sonicle.webtop.calendar.jooq.tables.CalendarProps.CALENDAR_PROPS;
-import com.sonicle.webtop.calendar.jooq.tables.records.CalendarPropsRecord;
+import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS_PROPS;
+import com.sonicle.webtop.calendar.jooq.tables.records.CalendarsPropsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
@@ -56,33 +56,33 @@ public class CalendarPropsDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
-			.from(CALENDAR_PROPS)
+			.from(CALENDARS_PROPS)
 			.where(
-				CALENDAR_PROPS.DOMAIN_ID.equal(domainId)
-				.and(CALENDAR_PROPS.USER_ID.equal(userId))
-				.and(CALENDAR_PROPS.CALENDAR_ID.in(calendarIds))
+				CALENDARS_PROPS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS_PROPS.USER_ID.equal(userId))
+				.and(CALENDARS_PROPS.CALENDAR_ID.in(calendarIds))
 			)
-			.fetchMap(CALENDAR_PROPS.CALENDAR_ID, OCalendarPropSet.class);
+			.fetchMap(CALENDARS_PROPS.CALENDAR_ID, OCalendarPropSet.class);
 	}
 	
 	public OCalendarPropSet selectByProfileCalendar(Connection con, String domainId, String userId, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
-			.from(CALENDAR_PROPS)
+			.from(CALENDARS_PROPS)
 			.where(
-				CALENDAR_PROPS.DOMAIN_ID.equal(domainId)
-				.and(CALENDAR_PROPS.USER_ID.equal(userId))
-				.and(CALENDAR_PROPS.CALENDAR_ID.equal(calendarId))
+				CALENDARS_PROPS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS_PROPS.USER_ID.equal(userId))
+				.and(CALENDARS_PROPS.CALENDAR_ID.equal(calendarId))
 			)
 			.fetchOneInto(OCalendarPropSet.class);
 	}
 	
 	public int insert(Connection con, OCalendarPropSet item) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		CalendarPropsRecord record = dsl.newRecord(CALENDAR_PROPS, item);
+		CalendarsPropsRecord record = dsl.newRecord(CALENDARS_PROPS, item);
 		return dsl
-			.insertInto(CALENDAR_PROPS)
+			.insertInto(CALENDARS_PROPS)
 			.set(record)
 			.execute();
 	}
@@ -90,14 +90,14 @@ public class CalendarPropsDAO extends BaseDAO {
 	public int update(Connection con, OCalendarPropSet item) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.update(CALENDAR_PROPS)
-			.set(CALENDAR_PROPS.HIDDEN, item.getHidden())
-			.set(CALENDAR_PROPS.COLOR, item.getColor())
-			.set(CALENDAR_PROPS.SYNC, item.getSync())
+			.update(CALENDARS_PROPS)
+			.set(CALENDARS_PROPS.HIDDEN, item.getHidden())
+			.set(CALENDARS_PROPS.COLOR, item.getColor())
+			.set(CALENDARS_PROPS.SYNC, item.getSync())
 			.where(
-				CALENDAR_PROPS.DOMAIN_ID.equal(item.getDomainId())
-				.and(CALENDAR_PROPS.USER_ID.equal(item.getUserId()))
-				.and(CALENDAR_PROPS.CALENDAR_ID.equal(item.getCalendarId()))
+				CALENDARS_PROPS.DOMAIN_ID.equal(item.getDomainId())
+				.and(CALENDARS_PROPS.USER_ID.equal(item.getUserId()))
+				.and(CALENDARS_PROPS.CALENDAR_ID.equal(item.getCalendarId()))
 			)
 			.execute();
 	}
@@ -105,9 +105,9 @@ public class CalendarPropsDAO extends BaseDAO {
 	public int deleteByCalendar(Connection con, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.delete(CALENDAR_PROPS)
+			.delete(CALENDARS_PROPS)
 			.where(
-				CALENDAR_PROPS.CALENDAR_ID.equal(calendarId)
+				CALENDARS_PROPS.CALENDAR_ID.equal(calendarId)
 			)
 			.execute();
 	}
@@ -115,9 +115,9 @@ public class CalendarPropsDAO extends BaseDAO {
 	public int deleteByDomain(Connection con, String domainId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.delete(CALENDAR_PROPS)
+			.delete(CALENDARS_PROPS)
 			.where(
-				CALENDAR_PROPS.DOMAIN_ID.equal(domainId)
+				CALENDARS_PROPS.DOMAIN_ID.equal(domainId)
 			)
 			.execute();
 	}
@@ -125,10 +125,10 @@ public class CalendarPropsDAO extends BaseDAO {
 	public int deleteByProfile(Connection con, String domainId, String userId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.delete(CALENDAR_PROPS)
+			.delete(CALENDARS_PROPS)
 			.where(
-				CALENDAR_PROPS.DOMAIN_ID.equal(domainId)
-				.and(CALENDAR_PROPS.USER_ID.equal(userId))
+				CALENDARS_PROPS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS_PROPS.USER_ID.equal(userId))
 			)
 			.execute();
 	}
@@ -136,11 +136,11 @@ public class CalendarPropsDAO extends BaseDAO {
 	public int deleteByProfileCalendar(Connection con, String domainId, String userId, int calendarId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.delete(CALENDAR_PROPS)
+			.delete(CALENDARS_PROPS)
 			.where(
-				CALENDAR_PROPS.DOMAIN_ID.equal(domainId)
-				.and(CALENDAR_PROPS.USER_ID.equal(userId))
-				.and(CALENDAR_PROPS.CALENDAR_ID.equal(calendarId))
+				CALENDARS_PROPS.DOMAIN_ID.equal(domainId)
+				.and(CALENDARS_PROPS.USER_ID.equal(userId))
+				.and(CALENDARS_PROPS.CALENDAR_ID.equal(calendarId))
 			)
 			.execute();
 	}

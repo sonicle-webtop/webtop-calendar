@@ -34,19 +34,28 @@ package com.sonicle.webtop.calendar.rest.v1;
 
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
+import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarLocale;
 import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.EventObjectOutputType;
+import com.sonicle.webtop.calendar.ICalendarManager.EventGetOption;
+import com.sonicle.webtop.calendar.ICalendarManager.EventNotifyOption;
+import com.sonicle.webtop.calendar.ICalendarManager.EventUpdateOption;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttendee;
+import com.sonicle.webtop.calendar.model.EventEx;
+import com.sonicle.webtop.calendar.model.EventInstance;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
+import com.sonicle.webtop.calendar.model.EventRecurrence;
+import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.swagger.v1.api.EasApi;
 import com.sonicle.webtop.calendar.swagger.v1.model.ApiError;
 import com.sonicle.webtop.calendar.swagger.v1.model.SyncEvent;
@@ -77,6 +86,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.jooq.tools.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.sonicle.webtop.calendar.model.EventBounds;
 
 /**
  *
@@ -201,7 +211,7 @@ public class Eas extends EasApi {
 		}
 		
 		try {
-			Event newEvent = mergeEvent(new Event(), body.getData());
+			Event newEvent = mergeEvent(new Event(), body.getData(), true);
 			newEvent.setCalendarId(folderId);
 			
 			Event event = manager.addEvent(newEvent);
@@ -226,11 +236,14 @@ public class Eas extends EasApi {
 		}
 		
 		try {
-			Event event = manager.getEvent(String.valueOf(id), false, false);
+			EventInstanceId instanceId = EventInstanceId.buildMaster(String.valueOf(id));
+			BitFlags<EventGetOption> getOpts = BitFlags.with(EventGetOption.ATTENDEES);
+			EventInstance event = manager.getEventInstance(instanceId, getOpts);
 			if (event == null) return respErrorNotFound();
 			
-			mergeEvent(event, body.getData());
-			manager.updateEvent(event, false, false, false, true);
+			mergeEvent(event, body.getData(), false);
+			BitFlags<EventUpdateOption> updateOpts = BitFlags.with(EventUpdateOption.ATTENDEES);
+			manager.updateEventInstance(UpdateEventTarget.ALL_SERIES, instanceId, event, updateOpts, EventNotifyOption.withAllAttendeesNotifications());
 			
 			ArrayList<EventObject> evtobjs = new ArrayList<>();
 			EventObject evtobj = manager.getEventObject(folderId, String.valueOf(id), EventObjectOutputType.STAT);
@@ -244,7 +257,7 @@ public class Eas extends EasApi {
 			List<SyncEventData> eventExceptions = body.getExceptions();
 			if ((eventExceptions != null) && !eventExceptions.isEmpty()) {
 				for (SyncEventData eventException : eventExceptions) {
-					Event newEvent = mergeEvent(new Event(), eventException);
+					Event newEvent = mergeEvent(new Event(), eventException, true);
 					newEvent.setCalendarId(folderId);
 					newEvent = manager.addEvent(newEvent);
 					
@@ -271,7 +284,8 @@ public class Eas extends EasApi {
 		}
 		
 		try {
-			manager.deleteEvent(String.valueOf(id), true);
+			EventInstanceId instanceId = EventInstanceId.buildMaster(String.valueOf(id));
+			manager.deleteEventInstance(UpdateEventTarget.ALL_SERIES, instanceId, EventNotifyOption.withAllAttendeesNotifications());
 			return respOkNoContent();
 			
 		} catch (WTNotFoundException ex) {
@@ -317,12 +331,12 @@ public class Eas extends EasApi {
 	}
 	
 	private SyncEvent createSyncEvent(EventObjectWithBean evtobj) {
-		Event event = evtobj.getEvent();
+		EventEx event = evtobj.getEvent();
 		
 		ArrayList<String> exDates = null;
-		if (event.hasExcludedDates()) {
+		if (event.hasRecurrence() && event.getRecurrence().hasExcludedDates()) {
 			exDates = new ArrayList<>();
-			for (LocalDate ld : event.getExcludedDates()) {
+			for (LocalDate ld : event.getRecurrence().getExcludedDatesOrEmpty()) {
 				exDates.add(JodaTimeUtils.print(ISO_DATE_FMT, ld));
 			}
 		}
@@ -332,25 +346,25 @@ public class Eas extends EasApi {
 			saas.add(createSyncEventDataAttendee(attendee));
 		}
 		
-		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.getEventBoundary(event);
+		EventBounds eventBoundary = CalendarUtils.toEventBounds(event);
 		return new SyncEvent()
-				.id(Integer.valueOf(evtobj.getEventId()))
-				.etag(buildEtag(evtobj.getRevisionTimestamp()))
-				.start(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.start))
-				.end(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.end))
-				.tz(event.getTimezone())
-				.allDay(event.getAllDay())
-				.organizer(event.getOrganizer())
-				.title(event.getTitle())
-				.description(event.getDescription())
-				.location(event.getLocation())
-				.prvt(event.getIsPrivate())
-				.busy(event.getBusy())
-				.reminder(Event.Reminder.getMinutesValue(event.getReminder()))
-				.recRule(event.hasRecurrence() ? event.getRecurrenceRule() : null)
-				.recStart(event.hasRecurrence() ? JodaTimeUtils.print(ISO_DATE_FMT, event.getRecurrenceStartDate()) : null)
-				.exDates(exDates)
-				.attendees(saas);
+			.id(Integer.valueOf(evtobj.getEventId()))
+			.etag(buildEtag(evtobj.getRevisionTimestamp()))
+			.start(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.getStart()))
+			.end(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.getEnd()))
+			.tz(event.getTimezone())
+			.allDay(event.getAllDay())
+			.organizer(event.getOrganizer())
+			.title(event.getTitle())
+			.description(event.getDescription())
+			.location(event.getLocation())
+			.prvt(event.isVisibilityPrivate())
+			.busy(event.isTransparencyOpaque())
+			.reminder(Event.Reminder.getMinutesValue(event.getReminder()))
+			.recRule(event.hasRecurrence() ? event.getRecurrence().getRule() : null)
+			.recStart(event.hasRecurrence() ? JodaTimeUtils.print(ISO_DATE_FMT, event.getRecurrence().getStart()) : null)
+			.exDates(exDates)
+			.attendees(saas);
 	}
 	
 	private SyncEventDataAttendee createSyncEventDataAttendee(EventAttendee attendee) {
@@ -361,22 +375,20 @@ public class Eas extends EasApi {
 				.status(EnumUtils.toSerializedName(attendee.getResponseStatus()));
 	}
 	
-	private <T extends Event> T mergeEvent(T tgt, SyncEventData src) {
-		boolean isNew = tgt.getEventId() == null;
-		
-		tgt.setStartDate(JodaTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getStart()));
-		tgt.setEndDate(JodaTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getEnd()));
+	private <T extends EventEx> T mergeEvent(T tgt, SyncEventData src, boolean isNew) {
+		tgt.setStart(JodaTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getStart()));
+		tgt.setEnd(JodaTimeUtils.parseDateTime(ISO_DATETIME_FMT, src.getEnd()));
 		tgt.setTimezone(src.getTz());
 		tgt.setAllDay(src.isAllDay());
 		tgt.setTitle(src.getTitle());
 		tgt.setDescription(src.getDescription());
 		tgt.setLocation(src.getLocation());
-		tgt.setIsPrivate(src.isPrvt());
-		tgt.setBusy(src.isBusy());
+		tgt.setVisibility(src.isPrvt() ? EventEx.Visibility.PRIVATE : EventEx.Visibility.PUBLIC);
+		tgt.setTransparency(src.isBusy() ? EventEx.Transparency.OPAQUE : EventEx.Transparency.TRANSPARENT);
 		tgt.setReminder(Event.Reminder.valueOf(src.getReminder()));
 		
 		if (!StringUtils.isBlank(src.getRecRule())) {
-			LocalDate startDate = tgt.getStartDate().withZone(tgt.getDateTimeZone()).toLocalDate();
+			DateTime startDate = tgt.getStart().withZone(tgt.getTimezoneObject());
 			LinkedHashSet<LocalDate> exDates = null;
 			if ((src.getExDates() != null) && (!src.getExDates().isEmpty())) {
 				exDates = new LinkedHashSet<>();
@@ -385,7 +397,7 @@ public class Eas extends EasApi {
 					if (ld != null) exDates.add(ld);
 				}
 			}
-			tgt.setRecurrence(src.getRecRule(), startDate, exDates);
+			tgt.setRecurrence(new EventRecurrence(src.getRecRule(), startDate, exDates));
 		}
 		
 		if (isNew || tgt.getAttendees().isEmpty()) {

@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2014 Sonicle S.r.l.
+/*
+ * Copyright (C) 2026 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,44 +28,51 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2014 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2026 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.model.EventKey;
-import com.rits.cloning.Cloner;
-import org.joda.time.DateTimeZone;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
+import com.sonicle.webtop.core.sdk.UserProfileId;
 
 /**
  *
  * @author malbinola
  */
-public class VVEventInstance extends VVEvent {
-	protected String key;
+public class VEventLookup extends VEventObject {
+	protected String calendarName;
+	protected String calendarDomainId;
+	protected String calendarUserId;
 	
-	public VVEventInstance() {
-		super();
-	}
-	
-	public VVEventInstance(VVEvent event) {
-		this(EventKey.buildKey(event.getEventId(), event.getSeriesEventId()), event);
-	}
-	
-	public VVEventInstance(String key, VVEvent event) {
-		super();
-		this.key = key;
-		Cloner.standard().copyPropertiesOfInheritedClass(event, this);
+	public String getCalendarName() {
+		return calendarName;
 	}
 
-	public String getKey() {
-		return key;
+	public void setCalendarName(String calendarName) {
+		this.calendarName = calendarName;
+	}
+
+	public String getCalendarDomainId() {
+		return calendarDomainId;
+	}
+
+	public void setCalendarDomainId(String calendarDomainId) {
+		this.calendarDomainId = calendarDomainId;
+	}
+
+	public String getCalendarUserId() {
+		return calendarUserId;
+	}
+
+	public void setCalendarUserId(String calendarUserId) {
+		this.calendarUserId = calendarUserId;
 	}
 	
-	public void setKey(String value) {
-		key = value;
+	public UserProfileId getCalendarProfileId() {
+		return new UserProfileId(getCalendarDomainId(), getCalendarUserId());
 	}
 	
-	public DateTimeZone getDateTimeZone() {
-		return DateTimeZone.forID(getTimezone());
+	public EventInstanceId createInstanceId() {
+		return EventInstanceId.build(getEventId(), getSeriesEventId(), getSeriesInstanceId());
 	}
 }

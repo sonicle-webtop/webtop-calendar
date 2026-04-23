@@ -32,15 +32,19 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.google.gson.annotations.SerializedName;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.time.JodaTimeUtils;
-import com.sonicle.commons.web.json.CompositeId;
+import com.sonicle.commons.web.json.CId;
 import com.sonicle.commons.web.json.JsonResult;
 import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttendee;
+import com.sonicle.webtop.calendar.model.EventEx;
 import com.sonicle.webtop.calendar.model.EventInstance;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
+import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.core.bol.js.ObjCustomFieldDefs;
 import com.sonicle.webtop.core.bol.js.ObjCustomFieldValue;
 import com.sonicle.webtop.core.model.CustomField;
@@ -53,10 +57,13 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import net.fortuna.ical4j.model.Recur;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormatter;
+import com.sonicle.webtop.calendar.model.EventBounds;
 
 /**
  *
@@ -66,9 +73,8 @@ public class JsEvent {
 	public String id;
 	public String eventId;
 	public Integer calendarId;
-	public Integer recurrenceId;
-	public String startDate;
-	public String endDate;
+	public String start;
+	public String end;
 	public String timezone;
 	public Boolean allDay;
 	public String title;
@@ -87,7 +93,6 @@ public class JsEvent {
 	public String tags;
 	public ArrayList<Attachment> attachments;
 	public ArrayList<ObjCustomFieldValue> cvalues;
-	public String _recurringInfo; // Read-only
 	public String _profileId; // Read-only
 	public String _cfdefs; // Read-only
 	
@@ -95,27 +100,23 @@ public class JsEvent {
 		DateTimeZone eventTz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(eventTz);
 		
-		id = event.getKey();
-		eventId = event.getEventId();
+		id = event.getId().toString();
+		eventId = event.getOriginalEventId();
 		calendarId = event.getCalendarId();
 		
-		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForRead(event.getAllDay(), event.getStartDate(), event.getEndDate(), event.getDateTimeZone());
-		startDate = ymdhmsZoneFmt.print(eventBoundary.start);
-		endDate = ymdhmsZoneFmt.print(eventBoundary.end);
-		timezone = eventBoundary.timezone.getID();
-		allDay = eventBoundary.allDay;
+		EventBounds eventBoundary = CalendarUtils.toEventBoundsForRead(event.getAllDay(), event.getStart(), event.getEnd(), event.getTimezoneObject());
+		start = ymdhmsZoneFmt.print(eventBoundary.getStart());
+		end = ymdhmsZoneFmt.print(eventBoundary.getEnd());
+		timezone = eventBoundary.getTimezoneObject().getID();
+		allDay = eventBoundary.isAllDay();
 		
-		title = event.getTitle();
+		title = event.getTitle();	
 		description = event.getDescription();
 		location = event.getLocation();
-		isPrivate = event.getIsPrivate();
-		busy = event.getBusy();
+		isPrivate = event.isVisibilityPrivate();
+		busy = event.isTransparencyOpaque();
 		reminder = EventInstance.Reminder.getMinutesValue(event.getReminder());
-		activityId = event.getActivityId();
-		masterDataId = event.getMasterDataId();
-		statMasterDataId = event.getStatMasterDataId();
-		causalId = event.getCausalId();
-		rrule = event.getRecurrenceRule();
+		rrule = event.hasRecurrence() ? event.getRecurrence().getRule() : null;
 		
 		/*
 		Recur recur = ICal4jUtils.parseRRule(rrule);
@@ -127,15 +128,15 @@ public class JsEvent {
 		*/
 		
 		LocalDate rrs = null;
-		if (event.getRecurrenceStartDate() != null) {
-			rrs = event.getRecurrenceStartDate();
+		if (event.hasRecurrence()) {
+			rrs = event.getRecurrence().getStart().withZone(eventTz).toLocalDate();
 		} else {
-			rrs = event.getStartDate().withZone(eventTz).toLocalDate();
+			rrs = event.getStart().withZone(eventTz).toLocalDate();
 		}
 		rstart = JodaTimeUtils.print(JodaTimeUtils.createFormatterYMD(), rrs);
 		
 		attendees = new ArrayList<>();
-		for (EventAttendee att : event.getAttendees()) {
+		for (EventAttendee att : event.getAttendeesOrEmpty()) {
 			Attendee jsa = new Attendee();
 			jsa.attendeeId = att.getAttendeeId();
 			jsa.recipient = att.getRecipient();
@@ -146,10 +147,10 @@ public class JsEvent {
 			attendees.add(jsa);
 		}
 		
-		tags = new CompositeId(event.getTags()).toString();
+		this.tags = CId.build(event.getTags()).toString();
 		
 		attachments = new ArrayList<>();
-		for (EventAttachment att : event.getAttachments()) {
+		for (EventAttachment att : event.getAttachmentsOrEmpty()) {
 			Attachment jsa = new Attachment();
 			jsa.id = att.getAttachmentId();
 			//jsatt.lastModified = JodaTimeUtils.printYMDHMS(profileTz, att.getRevisionTimestamp());
@@ -174,46 +175,47 @@ public class JsEvent {
 		}
 		
 		// Read-only fields
-		_recurringInfo = EnumUtils.toSerializedName(event.getRecurInfo());
 		_profileId = ownerPid.toString();
 		_cfdefs = LangUtils.serialize(new ObjCustomFieldDefs(panels, fields), ObjCustomFieldDefs.class);
 	}
 	
-	public EventInstance toEventInstance(DateTimeZone profileTz) {
-		EventInstance event = new EventInstance();
-		event.setKey(id);
-		event.setEventId(eventId);
-		event.setCalendarId(calendarId);
+	public EventEx createEventForAdd(DateTimeZone profileTz) {
+		DateTimeZone tz = LangUtils.coalesce(JodaTimeUtils.parseTimezone(timezone), profileTz);
+		DateTimeFormatter fmtYmdHms = JodaTimeUtils.createFormatterYMDHMS(tz);
+		
+		EventEx item = new EventEx();
+		item.setCalendarId(calendarId);
 		
 		// Incoming fields are in a precise timezone, so we need to instantiate
 		// the formatter specifying the right timezone to use.
 		// Then DateTime objects are automatically translated to UTC
-		DateTimeZone eventTz = DateTimeZone.forID(timezone);
-		DateTime eventStart = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, startDate);
-		DateTime eventEnd = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, endDate);
+		DateTime dtStart = JodaTimeUtils.parseDateTime(fmtYmdHms, start);
+		DateTime dtEnd = JodaTimeUtils.parseDateTime(fmtYmdHms, end);
+		EventBounds eventBoundary = CalendarUtils.toEventBoundsForWrite(allDay, dtStart, dtEnd, tz);
+		item.setDatesAndTimes(eventBoundary.isAllDay(), eventBoundary.getTimezoneObject().getID(), eventBoundary.getStart(), eventBoundary.getEnd());
 		
-		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForWrite(allDay, eventStart, eventEnd, eventTz);
-		event.setDatesAndTimes(eventBoundary.allDay, eventBoundary.timezone.getID(), eventBoundary.start, eventBoundary.end);
-		event.setTitle(title);
-		event.setDescription(description);
-		event.setLocation(location);
-		event.setIsPrivate(isPrivate);
-		event.setBusy(busy);
-		event.setReminder(EventInstance.Reminder.valueOf(reminder));
-		event.setActivityId(activityId);
-		event.setMasterDataId(masterDataId);
-		event.setStatMasterDataId(statMasterDataId);
-		event.setCausalId(causalId);
+		item.setTitle(title);
+		item.setLocation(location);
+		item.setDescriptionType(EventEx.BodyType.TEXT);
+		item.setDescription(description);
+		item.setVisibility(isPrivate ? EventEx.Visibility.PRIVATE : EventEx.Visibility.PUBLIC);
+		item.setTransparency(busy ? EventEx.Transparency.OPAQUE : EventEx.Transparency.TRANSPARENT);
+		item.setReminder(EventEx.Reminder.valueOf(reminder));
 		
-		// Fix recur until-date timezone: due to we do not have tz-db in client
-		// we cannot move until-date into the right zone directly in browser, 
-		// so we need to change it here if necessary.
-		Recur recur = ICal4jUtils.parseRRule(rrule);
-		if (ICal4jUtils.adjustRecurUntilDate(recur, event.getStartDate().withZone(eventTz).toLocalTime(), eventTz)) {
-			rrule = recur.toString();
+		if (!StringUtils.isBlank(rrule)) {
+			LocalTime lt = item.getStart().toLocalTime();
+			// Fix recur until-date timezone: due to we do not have tz-db in client
+			// we cannot move until-date into the right zone directly in browser, 
+			// so we need to change it here if necessary.
+			Recur recur = ICal4jUtils.parseRRule(rrule);
+			if (ICal4jUtils.adjustRecurUntilDate(recur, lt, tz)) {
+				rrule = recur.toString();
+			}
+			//item.setRecurrence(new EventRecurrence(rrule, JodaTimeUtils.parseLocalDate(fmtYmd, rstart)));
+			item.setRecurrence(new EventRecurrence(rrule, item.getStart()));
 		}
-		event.setRecurrence(rrule, JodaTimeUtils.parseLocalDate(JodaTimeUtils.createFormatterYMD(eventTz), rstart), null);
 		
+		item.setAttendees(new ArrayList<>());
 		for (JsEvent.Attendee jsa : attendees) {
 			EventAttendee attendee = new EventAttendee();
 			attendee.setAttendeeId(jsa.attendeeId);
@@ -222,105 +224,23 @@ public class JsEvent {
 			attendee.setRecipientRole(EnumUtils.forSerializedName(jsa.recipientRole, EventAttendee.RecipientRole.class));
 			attendee.setResponseStatus(EnumUtils.forSerializedName(jsa.responseStatus, EventAttendee.ResponseStatus.class));
 			attendee.setNotify(jsa.notify);
-			event.getAttendees().add(attendee);
+			item.getAttendees().add(attendee);
 		}
 		
-		event.setTags(new LinkedHashSet<>(new CompositeId().parse(tags).getTokens()));
+		item.setTags(new LinkedHashSet<>(new CId(tags).getTokens()));
 		
 		ArrayList<CustomFieldValue> customValues = new ArrayList<>();
 		for (ObjCustomFieldValue jscfv : cvalues) {
 			customValues.add(jscfv.toCustomFieldValue(profileTz));
 		}
-		event.setCustomValues(customValues);
+		item.setCustomValues(customValues);
 		// Attachment needs to be treated outside this class in order to have complete access to their streams
-		return event;
+		return item;
 	}
 	
-	
-	/*
-	public static EventInstance buildEventInstance(JsEvent js) {
-		EventInstance event = new EventInstance();
-		event.setKey(js.id);
-		event.setEventId(js.eventId);
-		event.setCalendarId(js.calendarId);
-		
-		// Incoming fields are in a precise timezone, so we need to instantiate
-		// the formatter specifying the right timezone to use.
-		// Then DateTime objects are automatically translated to UTC
-		DateTimeZone eventTz = DateTimeZone.forID(js.timezone);
-		DateTime eventStart = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.startDate);
-		DateTime eventEnd = JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.endDate);
-		
-		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.toEventBoundaryForWrite(js.allDay, eventStart, eventEnd, eventTz);
-		event.setDatesAndTimes(eventBoundary.allDay, eventBoundary.timezone.getID(), eventBoundary.start, eventBoundary.end);
-		
-		//event.setDatesAndTimes(
-		//		js.allDay,
-		//		js.timezone,
-		//		JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.startDate),
-		//		JodaTimeUtils.parseDateTimeYMDHMS(eventTz, js.endDate)
-		//);
-		
-		event.setTitle(js.title);
-		event.setDescription(js.description);
-		event.setLocation(js.location);
-		event.setIsPrivate(js.isPrivate);
-		event.setBusy(js.busy);
-		event.setReminder(EventInstance.Reminder.valueOf(js.reminder));
-		event.setActivityId(js.activityId);
-		event.setMasterDataId(js.masterDataId);
-		event.setStatMasterDataId(js.statMasterDataId);
-		event.setCausalId(js.causalId);
-		
-		// Fix recur until-date timezone: due to we do not have tz-db in client
-		// we cannot move until-date into the right zone directly in browser, 
-		// so we need to change it here if necessary.
-		Recur recur = ICal4jUtils.parseRRule(js.rrule);
-		if (ICal4jUtils.adjustRecurUntilDate(recur, event.getStartDate().withZone(eventTz).toLocalTime(), eventTz)) {
-			js.rrule = recur.toString();
-		}
-		event.setRecurrence(js.rrule, JodaTimeUtils.parseLocalDate(JodaTimeUtils.createFormatterYMD(eventTz), js.rstart), null);
-		
-		for (JsEvent.Attendee jsa : js.attendees) {
-			EventAttendee attendee = new EventAttendee();
-			attendee.setAttendeeId(jsa.attendeeId);
-			attendee.setRecipient(jsa.recipient);
-			attendee.setRecipientType(EnumUtils.forSerializedName(jsa.recipientType, EventAttendee.RecipientType.class));
-			attendee.setRecipientRole(EnumUtils.forSerializedName(jsa.recipientRole, EventAttendee.RecipientRole.class));
-			attendee.setResponseStatus(EnumUtils.forSerializedName(jsa.responseStatus, EventAttendee.ResponseStatus.class));
-			attendee.setNotify(jsa.notify);
-			event.getAttendees().add(attendee);
-		}
-		
-		event.setTags(new LinkedHashSet<>(new CompositeId().parse(js.tags).getTokens()));
-		
-		// Attachment needs to be treated outside this class in order to have complete access to their streams
-		
-		return event;
+	public EventEx createEventForUpdate(DateTimeZone profileTz) {
+		return createEventForAdd(profileTz);
 	}
-	*/
-	
-	/*
-	private static void adjustTimes(Event event, LocalTime workdayStart, LocalTime workdayEnd) {
-		event.setEndDate(JodaTimeUtils.ceilTimeAtEndOfDay(event.getEndDate()));
-		// Ensure start < end
-		if(event.getEndDate().compareTo(event.getStartDate()) < 0) {
-			// Swap dates...
-			DateTime dt = event.getEndDate();
-			event.setEndDate(event.getStartDate());
-			event.setStartDate(dt);
-		}
-		// Correct midnight end time
-		if(JodaTimeUtils.isMidnight(event.getEndDate()) && JodaTimeUtils.isDayBefore(event.getStartDate(), event.getEndDate())) {
-			event.setEndDate(JodaTimeUtils.withTimeAtEndOfDay(event.getStartDate()));
-		}
-		// Force allDay hours
-		if(event.getAllDay()) {
-			event.setStartDate(event.getStartDate().withTime(workdayStart));
-			event.setEndDate(event.getEndDate().withTime(workdayEnd));
-		}
-	}
-	*/
 	
 	public static class Attendee {
 		public String attendeeId;

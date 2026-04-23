@@ -48,6 +48,7 @@ Ext.define('Sonicle.webtop.calendar.model.PletEvents', {
 		WTF.roField('title', 'string'),
 		WTF.roField('location', 'string'),
 		WTF.roField('meeting', 'string'),
+		WTF.roField('_owPid', 'string'),
 		WTF.roField('_orDN', 'string'),
 		WTF.roField('_foPerms', 'string'),
 		WTF.roField('_itPerms', 'string')

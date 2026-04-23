@@ -34,6 +34,8 @@ package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import com.sonicle.webtop.calendar.IEvent;
+import com.sonicle.webtop.calendar.model.EventBase;
+import com.sonicle.webtop.calendar.model.EventBoundsImpl;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -43,17 +45,29 @@ import org.joda.time.DateTimeZone;
  */
 public class OEvent extends Events implements IEvent {
 	
-	public DateTimeZone getDateTimezone() {
+	public boolean isRecordStatusReadOnly() {
+		return EventBase.RowStatus.READ_ONLY.equals(getRowStatus());
+	}
+	
+	public DateTimeZone getTimezoneObject() {
 		return DateTimeZone.forID(getTimezone());
+	}
+	
+	public boolean isVisibilityPrivate() {
+		return EventBase.Visibility.PRIVATE.equals(getVisibility());
 	}
 	
 	public void ensureCoherence() {
 		// Ensure start < end
-		if (getStartDate().compareTo(getEndDate()) > 0) {
+		if (getStart().compareTo(getEnd()) > 0) {
 			// Swap dates...
-			final DateTime dt = getEndDate();
-			setEndDate(getStartDate());
-			setStartDate(dt);
+			final DateTime dt = getEnd();
+			setEnd(getStart());
+			setStart(dt);
 		}
+	}
+	
+	public EventBoundsImpl toEventBoundary() {
+		return new EventBoundsImpl(getAllDay(), getStart(), getEnd(), getTimezoneObject());
 	}
 }

@@ -42,6 +42,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jooq.BatchBindStep;
 import org.jooq.DSLContext;
 import static org.jooq.impl.DSL.*;
 
@@ -95,6 +96,25 @@ public class EventTagDAO extends BaseDAO {
 			.set(EVENTS_TAGS.EVENT_ID, eventId)
 			.set(EVENTS_TAGS.TAG_ID, tagId)
 			.execute();
+	}
+	
+	public int[] batchInsert(Connection con, String eventId, Collection<String> tagIds) throws DAOException {
+		if (tagIds.isEmpty()) return new int[0];
+		DSLContext dsl = getDSL(con);
+		BatchBindStep batch = dsl.batch(
+			dsl.insertInto(EVENTS_TAGS, 
+				EVENTS_TAGS.EVENT_ID, 
+				EVENTS_TAGS.TAG_ID
+			)
+			.values((String)null, null)
+		);
+		for (String tagId : tagIds) {
+			batch.bind(
+				eventId,
+				tagId
+			);
+		}
+		return batch.execute();
 	}
 	
 	public int insertByCalendar(Connection con, int calendarId, String tagId) throws DAOException {
@@ -165,12 +185,23 @@ public class EventTagDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByTask(Connection con, String eventId) throws DAOException {
+	public int deleteByEvent(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_TAGS)
 			.where(
 				EVENTS_TAGS.EVENT_ID.equal(eventId)
+			)
+			.execute();
+	}
+	
+	public int deleteByIdsEvent(Connection con, String eventId, Collection<String> tagIds) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(EVENTS_TAGS)
+			.where(
+				EVENTS_TAGS.EVENT_ID.equal(eventId)
+				.and(EVENTS_TAGS.TAG_ID.in(tagIds))
 			)
 			.execute();
 	}

@@ -40,6 +40,9 @@ import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
+import com.sonicle.webtop.calendar.model.EventBase;
+import com.sonicle.webtop.calendar.model.EventBase.Transparency;
+import com.sonicle.webtop.calendar.model.EventBase.Visibility;
 import org.joda.time.DateTimeZone;
 
 /**
@@ -76,8 +79,8 @@ public class JsCalendar {
 		description = cal.getDescription();
 		color = cal.getColor();
 		sync = EnumUtils.toSerializedName(cal.getSync());
-		isPrivate = cal.getIsPrivate();
-		busy = cal.getDefaultBusy();
+		isPrivate = Visibility.PRIVATE.equals(cal.getDefaultVisibility());
+		busy = Transparency.OPAQUE.equals(cal.getDefaultTransparency());
 		reminder = cal.getDefaultReminder();
 		notifyOnExtUpdate = cal.getNotifyOnExtUpdate();
 		
@@ -107,8 +110,8 @@ public class JsCalendar {
 		item.setDescription(description);
 		item.setColor(color);
 		item.setSync(EnumUtils.forSerializedName(sync, CalendarBase.Sync.class));
-		item.setIsPrivate(isPrivate);
-		item.setDefaultBusy(busy);
+		item.setDefaultVisibility(isPrivate ? Visibility.PRIVATE : Visibility.PUBLIC);
+		item.setDefaultTransparency(busy ? Transparency.OPAQUE : Transparency.TRANSPARENT);
 		item.setDefaultReminder(reminder);
 		item.setNotifyOnExtUpdate(notifyOnExtUpdate);
 		if (item.isProviderRemote()) {

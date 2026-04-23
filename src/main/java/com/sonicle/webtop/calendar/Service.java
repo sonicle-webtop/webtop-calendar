@@ -46,6 +46,8 @@ import com.sonicle.commons.concurrent.KeyedReentrantLocks;
 import com.sonicle.commons.db.DbUtils;
 import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.DateTimeRange;
+import com.sonicle.commons.time.DateTimeWindow;
+import com.sonicle.commons.time.DateWindow;
 import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.commons.time.TimeRange;
 import com.sonicle.commons.web.Crud;
@@ -62,6 +64,8 @@ import com.sonicle.commons.web.json.bean.StringSet;
 import com.sonicle.commons.web.json.extjs.GridColumnMeta;
 import com.sonicle.commons.web.json.extjs.GridMetadata;
 import com.sonicle.commons.web.json.extjs.ExtTreeNode;
+import com.sonicle.webtop.calendar.ICalendarManager.EventGetOption;
+import com.sonicle.webtop.calendar.ICalendarManager.EventNotifyOption;
 import com.sonicle.webtop.calendar.bol.js.JsCalendar;
 import com.sonicle.webtop.calendar.bol.js.JsCalendarLinks;
 import com.sonicle.webtop.calendar.bol.js.JsSchedulerEvent;
@@ -77,10 +81,9 @@ import com.sonicle.webtop.calendar.bol.model.MyCalendarFSFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.EventInstance;
 import com.sonicle.webtop.calendar.bol.model.RBEventDetail;
-import com.sonicle.webtop.calendar.model.EventKey;
 import com.sonicle.webtop.calendar.bol.model.SetupDataCalendarRemote;
 import com.sonicle.webtop.calendar.io.CSVOutput;
-import com.sonicle.webtop.calendar.io.EventICalFileReader;
+import com.sonicle.webtop.calendar.io.ICalendarInput;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
@@ -88,12 +91,18 @@ import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.EventAttachment;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithBytes;
 import com.sonicle.webtop.calendar.model.EventAttachmentWithInputStream;
+import com.sonicle.webtop.calendar.model.EventBase;
+import com.sonicle.webtop.calendar.model.EventBase.Transparency;
+import com.sonicle.webtop.calendar.model.EventBase.Visibility;
+import com.sonicle.webtop.calendar.model.EventEx;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
+import com.sonicle.webtop.calendar.model.EventLookupInstance;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
-import com.sonicle.webtop.calendar.model.EventQuery;
+import com.sonicle.webtop.calendar.model.EventQueryUI;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
-import com.sonicle.webtop.calendar.model.SchedEventInstance;
 import com.sonicle.webtop.calendar.model.UpdateTagsOperation;
+import com.sonicle.webtop.calendar.msg.EventImportLogSM;
 import com.sonicle.webtop.calendar.msg.RemoteSyncResult;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
@@ -130,17 +139,18 @@ import com.sonicle.webtop.core.model.CustomPanel;
 import com.sonicle.webtop.core.app.model.FolderShare;
 import com.sonicle.webtop.core.app.model.FolderSharing;
 import com.sonicle.webtop.core.app.model.GenericSubject;
+import com.sonicle.webtop.core.app.util.log.LogEntry;
+import com.sonicle.webtop.core.app.util.log.LogHandler;
+import com.sonicle.webtop.core.app.util.log.MemoryLogHandler;
 import com.sonicle.webtop.core.bol.js.JsSubjectLkp;
 import com.sonicle.webtop.core.sdk.AsyncActionCollection;
 import com.sonicle.webtop.core.sdk.BaseService;
 import com.sonicle.webtop.core.sdk.BaseServiceAsyncAction;
+import com.sonicle.webtop.core.sdk.ServiceMessage;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
 import com.sonicle.webtop.core.sdk.WTRuntimeException;
-import com.sonicle.webtop.core.util.LogEntries;
-import com.sonicle.webtop.core.util.LogEntry;
-import com.sonicle.webtop.core.util.MessageLogEntry;
 import com.sonicle.webtop.core.util.RRuleStringify;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -167,8 +177,11 @@ import jakarta.mail.internet.InternetAddress;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.zip.ZipOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -182,6 +195,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.prefs.CsvPreference;
+import com.sonicle.webtop.calendar.model.EventBounds;
 
 /**
  *
@@ -580,8 +594,8 @@ public class Service extends BaseService {
 		node.put("_sync", EnumUtils.toSerializedName(sync));
 		node.put("_default", isDefault);
 		node.put("_active", isActive);
-		node.put("_isPrivate", calendar.getIsPrivate());
-		node.put("_defBusy", calendar.getDefaultBusy());
+		node.put("_isPrivate", Visibility.PRIVATE.equals(calendar.getDefaultVisibility()));
+		node.put("_defBusy", Transparency.OPAQUE.equals(calendar.getDefaultTransparency()));
 		node.put("_defReminder", calendar.getDefaultReminder());
 		if (!chooser) node.setChecked(isActive);
 		return node;
@@ -934,7 +948,8 @@ public class Service extends BaseService {
 			DateTime toDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), end + " 23:59:59");
 			
 			Set<Integer> activeCalIds = getActiveFolderIds();
-			List<LocalDate> dates = manager.listEventDates(activeCalIds, fromDate, toDate, utz);
+			DateTimeWindow dateTimeWindow = DateTimeWindow.builder().with(fromDate, toDate).build();
+			Set<LocalDate> dates = manager.listEventDates(activeCalIds, dateTimeWindow, utz);
 			for (LocalDate date : dates) {
 				items.add(new JsSchedulerEventDate(date.toString("yyyy-MM-dd")));
 			}
@@ -964,8 +979,9 @@ public class Service extends BaseService {
 				DateTime toDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), to + " 23:59:59");
 				
 				Set<Integer> activeCalIds = getActiveFolderIds();
-				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, new DateTimeRange(fromDate, toDate), utz, false);
-				for (SchedEventInstance instance : instances) {
+				DateTimeWindow dateTimeWindow = DateTimeWindow.builder().with(fromDate, toDate).build();
+				List<EventLookupInstance> instances = manager.listEventInstances(activeCalIds, dateTimeWindow, (String)null, false, utz);
+				for (EventLookupInstance instance : instances) {
 					final CalendarFSOrigin origin = foldersTreeCache.getOriginByFolder(instance.getCalendarId());
 					if (origin == null) continue;
 					final CalendarFSFolder folder = foldersTreeCache.getFolder(instance.getCalendarId());
@@ -998,7 +1014,7 @@ public class Service extends BaseService {
 				new JsonResult().printTo(out);
 				
 			}*/ else if (crud.equals(Crud.UPDATE)) {
-				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String iid = ServletUtils.getStringParameter(request, "id", true);
 				String newStartString = ServletUtils.getStringParameter(request, "newStart", null);
 				String newEndString = ServletUtils.getStringParameter(request, "newEnd", null);
 				String newTitle = ServletUtils.getStringParameter(request, "newTitle", null);
@@ -1011,19 +1027,23 @@ public class Service extends BaseService {
 					newEnd = JodaTimeUtils.parseDateTimeYMDHMS(utz, newEndString);
 				}
 				
-				manager.updateEventInstance(target, new EventKey(eventKey), newStart, newEnd, newTitle, notify);
+				EventInstanceId instanceId = EventInstanceId.parse(iid);
+				BitFlags<EventNotifyOption> notifyOpts = notify ? EventNotifyOption.withAllAttendeesNotifications() : EventNotifyOption.withDefaults();
+				manager.updateEventInstanceQuick(target, instanceId, newStart, newEnd, newTitle, notifyOpts);
 				new JsonResult().printTo(out);
 				
 			} else if (crud.equals(Crud.DELETE)) {
-				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String iid = ServletUtils.getStringParameter(request, "id", true);
 				UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
 				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				
-				manager.deleteEventInstance(target, new EventKey(eventKey), notify);
+				EventInstanceId instanceId = EventInstanceId.parse(iid);
+				BitFlags<EventNotifyOption> notifyOpts = notify ? EventNotifyOption.withAllAttendeesNotifications() : EventNotifyOption.withDefaults();
+				manager.deleteEventInstance(target, instanceId, notifyOpts);
 				new JsonResult().printTo(out);
 				
 			} else if (crud.equals(Crud.COPY)) {
-				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String iid = ServletUtils.getStringParameter(request, "id", true);
 				String newStartString = ServletUtils.getStringParameter(request, "newStart", null);
 				//UpdateEventTarget target = ServletUtils.getEnumParameter(request, "target", UpdateEventTarget.THIS_INSTANCE, UpdateEventTarget.class);
 				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
@@ -1033,26 +1053,34 @@ public class Service extends BaseService {
 					newStart = JodaTimeUtils.parseDateTimeYMDHMS(utz, newStartString);
 				}
 				
-				manager.cloneEventInstance(new EventKey(eventKey), null, newStart, null, notify);
+				EventInstanceId instanceId = EventInstanceId.parse(iid);
+				BitFlags<EventNotifyOption> notifyOpts = notify ? EventNotifyOption.withAllAttendeesNotifications() : EventNotifyOption.withoutAnyAttendeesNotifications();
+				manager.cloneEventInstance(instanceId, null, newStart, null, null, notifyOpts);
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals(Crud.MOVE)) {
 				boolean copy = ServletUtils.getBooleanParameter(request, "copy", false);
-				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String iid = ServletUtils.getStringParameter(request, "id", true);
 				Integer calendarId = ServletUtils.getIntParameter(request, "targetCalendarId", true);
 				
+				EventInstanceId instanceId = EventInstanceId.parse(iid);
 				if (copy) {
 					boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
-					manager.cloneEventInstance(new EventKey(eventKey), calendarId, null, null, notify);
+					BitFlags<EventGetOption> copyOpts = BitFlags.with(EventGetOption.ATTENDEES, EventGetOption.ATTACHMENTS, EventGetOption.TAGS, EventGetOption.CUSTOM_VALUES);
+					BitFlags<EventNotifyOption> notifyOpts = notify ? EventNotifyOption.withAllAttendeesNotifications() : EventNotifyOption.withoutAnyAttendeesNotifications();
+					manager.moveEventInstance(true, Arrays.asList(instanceId), calendarId, copyOpts, notifyOpts);
 				} else {
-					manager.moveEventInstance(new EventKey(eventKey), calendarId);
+					BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications();
+					manager.moveEventInstance(Arrays.asList(instanceId), calendarId, notifyOpts);
 				}
 				new JsonResult().printTo(out);
 				
 			} else if(crud.equals("restore")) {
-				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String iid = ServletUtils.getStringParameter(request, "id", true);
 				
-				manager.restoreEventInstance(new EventKey(eventKey));
+				BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withAllAttendeesNotifications();
+				EventInstanceId instanceId = EventInstanceId.parse(iid);
+				manager.restoreEventInstance(instanceId, notifyOpts);
 				new JsonResult().printTo(out);
 			}
 			
@@ -1070,9 +1098,10 @@ public class Service extends BaseService {
 		try {
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if (crud.equals(Crud.READ)) {
-				String eventKey = ServletUtils.getStringParameter(request, "id", true);
+				String id = ServletUtils.getStringParameter(request, "id", true);
 				
-				EventInstance evt = manager.getEventInstance(eventKey);
+				EventInstanceId instanceId = EventInstanceId.parse(id);
+				EventInstance evt = manager.getEventInstance(instanceId);
 				UserProfileId ownerId = manager.getCalendarOwner(evt.getCalendarId());
 				
 				Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, evt.getTags());
@@ -1091,10 +1120,7 @@ public class Service extends BaseService {
 				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				EventInstance event = pl.data.toEventInstance(up.getTimeZone());
-				CoreManager core = WT.getCoreManager();
-				event.setOrganizer(core.getUserData().getFullEmailAddress());
-				
+				EventEx event = pl.data.createEventForAdd(up.getTimeZone());
 				for (JsEvent.Attachment jsa : pl.data.attachments) {
 					UploadedFile upFile = getUploadedFileOrThrow(jsa._uplId);
 					EventAttachmentWithInputStream att = new EventAttachmentWithInputStream(upFile.getFile());
@@ -1102,10 +1128,9 @@ public class Service extends BaseService {
 					att.setFilename(upFile.getFilename());
 					att.setSize(upFile.getSize());
 					att.setMediaType(upFile.getMediaType());
-					event.getAttachments().add(att);
+					event.addAttachment(att);
 				}
 				manager.addEvent(event, notify);
-				
 				new JsonResult().printTo(out);
 				
 			} else if (crud.equals(Crud.UPDATE)) {
@@ -1113,7 +1138,7 @@ public class Service extends BaseService {
 				boolean notify = ServletUtils.getBooleanParameter(request, "notify", false);
 				Payload<MapItem, JsEvent> pl = ServletUtils.getPayload(request, JsEvent.class);
 				
-				EventInstance event = pl.data.toEventInstance(up.getTimeZone());
+				EventEx event = pl.data.createEventForUpdate(up.getTimeZone());
 				
 				for (JsEvent.Attachment jsa : pl.data.attachments) {
 					if (!StringUtils.isBlank(jsa._uplId)) {
@@ -1123,16 +1148,19 @@ public class Service extends BaseService {
 						att.setFilename(upFile.getFilename());
 						att.setSize(upFile.getSize());
 						att.setMediaType(upFile.getMediaType());
-						event.getAttachments().add(att);
+						event.addAttachment(att);
 					} else {
 						EventAttachment att = new EventAttachment();
 						att.setAttachmentId(jsa.id);
 						att.setFilename(jsa.name);
 						att.setSize(jsa.size);
-						event.getAttachments().add(att);
+						event.addAttachment(att);
 					}
 				}
-				manager.updateEventInstance(target, event, true, true, true, notify);
+				
+				EventInstanceId instanceId = EventInstanceId.parse(pl.data.id);
+				BitFlags<EventNotifyOption> notifyOpts = notify ? EventNotifyOption.withAllAttendeesNotifications() : EventNotifyOption.withoutAnyAttendeesNotifications();
+				manager.updateEventInstance(target, instanceId, event, notifyOpts);
 				
 				new JsonResult().printTo(out);
 				
@@ -1158,9 +1186,10 @@ public class Service extends BaseService {
 			String attachmentId = ServletUtils.getStringParameter(request, "attachmentId", null);
 			
 			if (!StringUtils.isBlank(attachmentId)) {
-				String eventId = ServletUtils.getStringParameter(request, "eventId", true);
+				String iid = ServletUtils.getStringParameter(request, "iid", true);
 				
-				EventAttachmentWithBytes attch = manager.getEventAttachment(eventId, attachmentId);
+				EventInstanceId instanceId = EventInstanceId.parse(iid);
+				EventAttachmentWithBytes attch = manager.getEventInstanceAttachment(instanceId, attachmentId);
 				InputStream is = null;
 				try {
 					is = new ByteArrayInputStream(attch.getBytes());
@@ -1193,10 +1222,11 @@ public class Service extends BaseService {
 		
 		try {
 			ServletUtils.StringArray tags = ServletUtils.getObjectParameter(request, "tags", ServletUtils.StringArray.class, true);
-			String eventId = ServletUtils.getStringParameter(request, "id", false);
+			String iid = ServletUtils.getStringParameter(request, "id", false);
 			
+			EventInstanceId instanceId = EventInstanceId.parse(iid);
 			Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, tags);
-			Map<String, CustomFieldValue> cvalues = (eventId != null) ? manager.getEventCustomValues(eventId) : null;
+			Map<String, CustomFieldValue> cvalues = (instanceId != null) ? manager.getEventInstanceCustomValues(instanceId) : null;
 			Map<String, CustomField> cfields = new HashMap<>();
 			for (CustomPanel cpanel : cpanels.values()) {
 				for (String fieldId : cpanel.getFields()) {
@@ -1214,11 +1244,10 @@ public class Service extends BaseService {
 	
 	public void processManageGridEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		ArrayList<JsSchedulerEvent> items = new ArrayList<>();
+		UserProfile userProfile = getEnv().getProfile();
+		DateTimeZone userTimeZone = userProfile.getTimeZone();
 		
 		try {
-			UserProfile up = getEnv().getProfile();
-			DateTimeZone utz = up.getTimeZone();
-			
 			String crud = ServletUtils.getStringParameter(request, "crud", true);
 			if (crud.equals(Crud.READ)) {
 				String queryText = ServletUtils.getStringParameter(request, "queryText", null);
@@ -1230,30 +1259,29 @@ public class Service extends BaseService {
 				
 				Map<String, CustomField.Type> map = cacheSearchableCustomFieldType.shallowCopy();
 				Set<Integer> activeCalIds = getActiveFolderIds();
-				List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, EventQuery.createCondition(queryObj, map, utz), utz);
-				for (SchedEventInstance instance : instances) {
+				List<EventLookupInstance> instances = manager.listEventInstances(activeCalIds, EventQueryUI.build(queryObj, map, userTimeZone), true, userTimeZone);
+				for (EventLookupInstance instance : instances) {
 					final CalendarFSOrigin origin = foldersTreeCache.getOriginByFolder(instance.getCalendarId());
 					if (origin == null) continue;
 					final CalendarFSFolder folder = foldersTreeCache.getFolder(instance.getCalendarId());
 					if (folder == null) continue;
 					
 					final CalendarPropSet props = foldersPropsCache.get(folder.getFolderId()).orElse(null);
-					items.add(new JsSchedulerEvent(origin, folder, props, instance, up.getId(), utz, MEETING_PROVIDERS_URLS_PATTERN));
+					items.add(new JsSchedulerEvent(origin, folder, props, instance, userProfile.getId(), userTimeZone, MEETING_PROVIDERS_URLS_PATTERN));
 				}
 				
 				new JsonResult("events", items).printTo(out);
 				
 			} else if (crud.equals("updateTag")) {
-				StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
+				StringArray ids = ServletUtils.getObjectParameter(request, "ids", StringArray.class, true);
 				UpdateTagsOperation op = ServletUtils.getEnumParameter(request, "op", true, UpdateTagsOperation.class);
 				StringArray tags = ServletUtils.getObjectParameter(request, "tags", StringArray.class, true);
 				
-				LinkedHashSet<String> ids = new LinkedHashSet<>();
-				for (String key : keys) {
-					ids.add(new EventKey(key).eventId);
-				}
-				manager.updateEventTags(op, ids, new HashSet<>(tags));
-				
+				List<EventInstanceId> iids = ids.stream()
+					.map(id -> EventInstanceId.parse(id))
+					.filter(id -> id != null)
+					.collect(Collectors.toList());
+				manager.updateEventInstanceTags(op, iids, new HashSet<>(tags));
 				new JsonResult().printTo(out);
 			}
 		
@@ -1277,27 +1305,26 @@ public class Service extends BaseService {
 				erpWizard.fromDate = ymd.parseDateTime(fromDate).withTimeAtStartOfDay();
 				erpWizard.toDate = JodaTimeUtils.withTimeAtEndOfDay(ymd.parseDateTime(toDate));
 				
-				LogEntries log = new LogEntries();
 				File file = WT.createTempFile();
-				
+				MemoryLogHandler logHandler = new MemoryLogHandler();
 				try {
 					DateTimeFormatter ymd2 = JodaTimeUtils.createFormatter("yyyyMMdd", up.getTimeZone());
 					DateTimeFormatter ymdhms = JodaTimeUtils.createFormatter("yyyy-MM-dd HH:mm:ss", up.getTimeZone());
 					
 					try (FileOutputStream fos = new FileOutputStream(file)) {
-						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Started on {0}", ymdhms.print(new DateTime())));
-						manager.exportEvents(log, erpWizard.fromDate, erpWizard.toDate, fos);
-						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Ended on {0}", ymdhms.print(new DateTime())));
+						LogHandler.log(logHandler, 0, LogEntry.Level.INFO, "Started on {}", ymdhms.print(new DateTime()));
+						manager.exportEvents(erpWizard.fromDate, erpWizard.toDate, fos, logHandler);
+						LogHandler.log(logHandler, 0, LogEntry.Level.INFO, "Ended on {}", ymdhms.print(new DateTime()));
 						erpWizard.file = file;
 						erpWizard.filename = MessageFormat.format(ERP_EXPORT_FILENAME, up.getDomainId(), ymd2.print(erpWizard.fromDate), ymd2.print(erpWizard.fromDate), "csv");
-						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "File ready: {0}", erpWizard.filename));
-						log.addMaster(new MessageLogEntry(LogEntry.Level.INFO, "Operation completed succesfully"));
-						new JsonResult(new JsWizardData(log.print())).printTo(out);
+						LogHandler.log(logHandler, 0, LogEntry.Level.INFO, "File ready: {}", erpWizard.filename);
+						LogHandler.log(logHandler, 0, LogEntry.Level.INFO, "Operation completed succesfully");
+						new JsonResult(new JsWizardData(logHandler.print())).printTo(out);
 					}
-				} catch(Throwable t) {
+				} catch (Throwable t) {
 					logger.error("Error generating export", t);
 					file.delete();
-					new JsonResult(new JsWizardData(log.print())).setSuccess(false).printTo(out);
+					new JsonResult(new JsWizardData(logHandler.print())).setSuccess(false).printTo(out);
 				}	
 			}
 			
@@ -1339,14 +1366,14 @@ public class Service extends BaseService {
 			DateTime eventStartDt = JodaTimeUtils.parseDateTime(ymdHmFmt, eventStartDate);
 			DateTime eventEndDt = JodaTimeUtils.parseDateTime(ymdHmFmt, eventEndDate);
 			
-			CalendarUtils.EventBoundary bounds = CalendarUtils.toEventBoundaryForWrite(eventAllDay, eventStartDt, eventEndDt, eventTz);
-			DateTime viewFrom = bounds.start.withTimeAtStartOfDay();
-			DateTime viewEnd = bounds.end.withTimeAtStartOfDay().plusDays(7-1); // Display 7days in total
+			EventBounds bounds = CalendarUtils.toEventBoundsForWrite(eventAllDay, eventStartDt, eventEndDt, eventTz);
+			DateTime viewFrom = bounds.getStart().withTimeAtStartOfDay();
+			DateTime viewEnd = bounds.getEnd().withTimeAtStartOfDay().plusDays(7-1); // Display 7days in total
 			//DateTime viewEnd = viewFrom.plusDays(7-1); // Display 7days in total
 			TimeRange workdayTimeRange = null;
 			if (boundToWorkingHours) workdayTimeRange = TimeRange.builder().withStart(us.getWorkdayStart()).withEnd(us.getWorkdayEnd()).build();
 			
-			Map<String, DateTime> spans = manager.generateTimeSpans(viewFrom.toLocalDate(), viewEnd.toLocalDate(), workdayTimeRange, true, eventTz, resolution);
+			Map<String, DateTime> spans = manager.generateTimeSpans(viewFrom.toLocalDate(), viewEnd.toLocalDate(), workdayTimeRange, true, resolution, eventTz);
 			
 			ArrayList<MapItem> items = new ArrayList<>();
 			ArrayList<GridColumnMeta> colsInfo = new ArrayList<>();
@@ -1418,11 +1445,12 @@ public class Service extends BaseService {
 				
 				StringBuilder availability = new StringBuilder();
 				if (pid != null) {
-					final Map<String, DateTime> busySpans = manager.calculateTransparencyTimeSpans(pid, true, viewFrom.toLocalDate(), viewEnd.toLocalDate(), workdayTimeRange, eventTz, resolution);
+					final DateWindow dateWindow = DateWindow.builder().with(viewFrom.toLocalDate(), viewEnd.toLocalDate()).build();
+					final Map<String, DateTime> opaqueSpans = manager.computeTransparencyTimeSpans(pid, EventBase.Transparency.OPAQUE, dateWindow, workdayTimeRange, resolution, eventTz);
 					Iterator it = spans.keySet().iterator();
 					while (it.hasNext()) {
 						final String key = (String)it.next();
-						final String spanStatus = busySpans.containsKey(key) ? BUSY : FREE;
+						final String spanStatus = opaqueSpans.containsKey(key) ? BUSY : FREE;
 						availability.append(spanStatus);
 						if (it.hasNext()) availability.append("|");
 					}
@@ -1445,72 +1473,113 @@ public class Service extends BaseService {
 	
 	public void processImportEventsFromICal(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		UserProfile up = getEnv().getProfile();
-		FileInputStream fis = null;
+		
 		try {
-			String uploadId = ServletUtils.getStringParameter(request, "uploadId", true);
 			String op = ServletUtils.getStringParameter(request, "op", true);
+			String uploadId = ServletUtils.getStringParameter(request, "uploadId", true);
 			
 			UploadedFile upl = getUploadedFile(uploadId);
-			if(upl == null) throw new WTException("Uploaded file not found [{0}]", uploadId);
+			if (upl == null) throw new WTException("Uploaded file not found [{}]", uploadId);
 			File file = new File(WT.getTempFolder(), upl.getUploadId());
-			fis = new FileInputStream(file);
 			
-			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
-			
-			if(op.equals("do")) {
+			if ("do".equals(op)) {
+				String oid = ServletUtils.getStringParameter(request, "oid", true);
 				Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
-				String mode = ServletUtils.getStringParameter(request, "importMode", true);
+				ICalendarManager.ImportMode mode = ServletUtils.getEnumParameter(request, "importMode", ICalendarManager.ImportMode.COPY, ICalendarManager.ImportMode.class);
 				
-				LogEntries log = manager.importEvents(calendarId, rea, fis, mode);
-				fis.close();
+				WebTopSession wts = getWts();
+				ICalendarInput in = new ICalendarInput(up.getTimeZone())
+					.withLogHandler(new LogHandler() {
+						@Override
+						public void handle(Collection<LogEntry> entries) {
+							if (entries != null) wts.notify(toEventImportLogSMs(oid, true, entries));
+						}
+					});
+				
+				FileInputStream fis = null;
+				try {	
+					fis = new FileInputStream(file);
+					manager.importEvents(calendarId, in, fis, mode, new LogHandler() {
+						@Override
+						public void handle(Collection<LogEntry> entries) {
+							if (entries != null) wts.notify(toEventImportLogSMs(oid, false, entries));
+						}
+					});
+				} finally {
+					IOUtils.closeQuietly(fis);
+				}
 				removeUploadedFile(uploadId);
-				new JsonResult(new JsWizardData(log.print())).printTo(out);
+				new JsonResult(new JsWizardData(null)).printTo(out);
 			}
 			
 		} catch(Exception ex) {
-			logger.error("Error in ImportContactsFromICal", ex);
+			logger.error("Error in ImportEventsFromICal", ex);
 			new JsonResult(false, ex.getMessage()).printTo(out);
-		} finally {
-			IOUtils.closeQuietly(fis);
 		}
 	}
 	
 	public void processImportEventsFromURL(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 		UserProfile up = getEnv().getProfile();
-		InputStream is = null;
+		
 		try {
-			String surl = ServletUtils.getStringParameter(request, "url", true);
 			String op = ServletUtils.getStringParameter(request, "op", true);
+			String surl = ServletUtils.getStringParameter(request, "url", true);
 			
-			EventICalFileReader rea = new EventICalFileReader(up.getTimeZone());
-			
-			if(op.equals("do")) {
+			if ("do".equals(op)) {
+				String oid = ServletUtils.getStringParameter(request, "oid", true);
 				Integer calendarId = ServletUtils.getIntParameter(request, "calendarId", true);
-				String mode = ServletUtils.getStringParameter(request, "importMode", true);
-				URL url = new URL(surl);
-				is = url.openStream();
-				LogEntries log = manager.importEvents(calendarId, rea, is, mode);
-				new JsonResult(new JsWizardData(log.print())).printTo(out);
+				ICalendarManager.ImportMode mode = ServletUtils.getEnumParameter(request, "importMode", ICalendarManager.ImportMode.COPY, ICalendarManager.ImportMode.class);
+				
+				WebTopSession wts = getWts();
+				ICalendarInput in = new ICalendarInput(up.getTimeZone())
+					.withLogHandler(new LogHandler() {
+						@Override
+						public void handle(Collection<LogEntry> entries) {
+							if (entries != null) wts.notify(toEventImportLogSMs(oid, true, entries));
+						}
+					});
+				
+				InputStream is = null;
+				try {	
+					is = new URL(surl).openStream();
+					manager.importEvents(calendarId, in, is, mode, new LogHandler() {
+						@Override
+						public void handle(Collection<LogEntry> entries) {
+							if (entries != null) wts.notify(toEventImportLogSMs(oid, false, entries));
+						}
+					});
+				} finally {
+					IOUtils.closeQuietly(is);
+				}
+				
+				new JsonResult(new JsWizardData(null)).printTo(out);
 			}
 			
-		} catch(Exception ex) {
-			logger.error("Error in ImportContactsFromICal", ex);
+		} catch (Exception ex) {
+			logger.error("Error in ImportEventsFromURL", ex);
 			new JsonResult(false, ex.getMessage()).printTo(out);
-		} finally {
-			IOUtils.closeQuietly(is);
 		}
+	}
+	
+	private ServiceMessage toEventImportLogSMs(String operationId, boolean pushDown, Collection<LogEntry> entries) {
+		StringJoiner sj = new StringJoiner("\n");
+		for (LogEntry entry : entries) {
+			if (pushDown) entry.pushDown();
+			sj.add(entry.toString());
+		}
+		return new EventImportLogSM(SERVICE_ID, operationId, sj.toString());
 	}
 	
 	public void processPrintScheduler(HttpServletRequest request, HttpServletResponse response) {
 		ByteArrayOutputStream baos = null;
-		UserProfile up = getEnv().getProfile();
+		UserProfile userProfile = getEnv().getProfile();
 		
 		try {
 			String filename = ServletUtils.getStringParameter(request, "filename", "print");
 			String view = ServletUtils.getStringParameter(request, "view", "w5");
 			String from = ServletUtils.getStringParameter(request, "startDate", true);
 			
-			DateTime startDate = JodaTimeUtils.parseDateTimeYMDHMS(up.getTimeZone(), from + " 00:00:00");
+			DateTime startDate = JodaTimeUtils.parseDateTimeYMDHMS(userProfile.getTimeZone(), from + " 00:00:00");
 			
 			ReportConfig.Builder builder = reportConfigBuilder();
 			DateTime fromDate = null, toDate = null;
@@ -1553,9 +1622,9 @@ public class Service extends BaseService {
 			Map<Integer, Calendar> calendars = foldersTreeCache.getFolders().stream()
 				.filter(folder -> activeCalIds.contains(folder.getFolderId()))
 				.collect(Collectors.toMap(folder -> folder.getFolderId(), folder -> folder.getCalendar()));
-			
-			List<SchedEventInstance> instances = manager.listEventInstances(activeCalIds, new DateTimeRange(fromDate, toDate), up.getTimeZone(), true);
-			rpt.setDataSource(manager, fromDate, toDate, up.getTimeZone(), calendars, instances);
+			DateTimeWindow dateTimeWindow = DateTimeWindow.builder().with(fromDate, toDate).build();
+			List<EventLookupInstance> instances = manager.listEventInstances(activeCalIds, dateTimeWindow, (String)null, true, userProfile.getTimeZone());
+			rpt.setDataSource(manager, fromDate, toDate, userProfile.getTimeZone(), calendars, instances);
 			
 			baos = new ByteArrayOutputStream();
 			WT.generateReportToStream(rpt, AbstractReport.OutputType.PDF, baos);
@@ -1578,15 +1647,16 @@ public class Service extends BaseService {
 		
 		try {
 			String filename = ServletUtils.getStringParameter(request, "filename", "print");
-			StringArray keys = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
+			StringArray ids = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
 			
 			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(up.getLocale());
 			RRuleStringify rrs = new RRuleStringify(strings, up.getTimeZone());
 			
 			EventInstance event = null;
 			Calendar calendar = null;
-			for(String key : keys) {
-				event = manager.getEventInstance(key);
+			for (String id : ids) {
+				EventInstanceId instanceId = EventInstanceId.parse(id);
+				event = manager.getEventInstance(instanceId);
 				calendar = manager.getCalendar(event.getCalendarId());
 				items.add(new RBEventDetail(core, rrs, calendar, event));
 			}
@@ -1644,8 +1714,15 @@ public class Service extends BaseService {
 			String query = ServletUtils.getStringParameter(request, "query", null);
 			if (query == null) {
 				final CalendarFSOrigin origin = foldersTreeCache.getOrigin(up.getId());
-				final Set<Integer> ids = manager.listCalendarIds();
-				for (SchedEventInstance instance : manager.listUpcomingEventInstances(ids, JodaTimeUtils.now(), utz)) {
+				final Set<Integer> ids = manager.listMyCalendarIds();
+				
+				DateTime now = JodaTimeUtils.now().withZone(utz);
+				DateTimeWindow dateTimeWindow = DateTimeWindow.builder()
+					.withStart(now.withSecondOfMinute(0).withMillisOfSecond(0))
+					.withEnd(now.withTimeAtStartOfDay().plusDays(3))
+					.build();
+				List<EventLookupInstance> instances = manager.listEventInstances(ids, dateTimeWindow, (String)null, true, utz);
+				for (EventLookupInstance instance : instances) {
 					final CalendarFSFolder folder = foldersTreeCache.getFolder(instance.getCalendarId());
 					if (folder == null) continue;
 					
@@ -1655,8 +1732,8 @@ public class Service extends BaseService {
 			} else {
 				final Set<Integer> ids = foldersTreeCache.getFolderIDs();
 				final String pattern = LangUtils.patternizeWords(query);
-				List<SchedEventInstance> instances = manager.listEventInstances(ids, buildSearchRange(JodaTimeUtils.now(), utz), EventQuery.createCondition(pattern), utz, true);
-				for (SchedEventInstance instance : instances) {
+				List<EventLookupInstance> instances = manager.listEventInstances(ids, EventQueryUI.build(pattern), true, utz);
+				for (EventLookupInstance instance : instances) {
 					final CalendarFSOrigin origin = foldersTreeCache.getOriginByFolder(instance.getCalendarId());
 					if (origin == null) continue;
 					final CalendarFSFolder folder = foldersTreeCache.getFolder(instance.getCalendarId());

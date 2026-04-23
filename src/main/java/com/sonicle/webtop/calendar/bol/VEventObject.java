@@ -39,11 +39,12 @@ import java.sql.Connection;
  *
  * @author malbinola
  */
-public class VEventObject extends OEvent {
+public class VEventObject extends VEventObjectBase {
 	protected String tags;
-	protected Boolean hasIcalendar;
 	protected Integer attendeesCount;
+	protected Integer notifyableAttendeesCount;
 	protected Boolean hasAttachments;
+	protected Boolean hasIcalendar;
 	protected Boolean hasCustomValues;
 
 	public String getTags() {
@@ -68,6 +69,14 @@ public class VEventObject extends OEvent {
 
 	public void setAttendeesCount(Integer attendeesCount) {
 		this.attendeesCount = attendeesCount;
+	}
+
+	public Integer getNotifyableAttendeesCount() {
+		return notifyableAttendeesCount;
+	}
+
+	public void setNotifyableAttendeesCount(Integer notifyableAttendeesCount) {
+		this.notifyableAttendeesCount = notifyableAttendeesCount;
 	}
 
 	public boolean hasAttendees() {

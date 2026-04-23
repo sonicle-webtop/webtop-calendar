@@ -32,36 +32,33 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.commons.EnumUtils;
+import com.sonicle.webtop.calendar.model.EventBase;
+
 /**
  *
  * @author malbinola
  */
 public class VCalendarDefaults {
-	private Boolean defaultsPrivate;
-	private Boolean defaultsBusy;
-	private Integer defaultsReminder;
-
-	public Boolean getDefaultsPrivate() {
-		return defaultsPrivate;
+	private final EventBase.Visibility defVisibility;
+	private final EventBase.Transparency defTransparency;
+	private final Integer defReminder;
+	
+	public VCalendarDefaults(String defVisibility, String defTransparency, Integer defReminder) {
+		this.defVisibility = EnumUtils.forSerializedName(defVisibility, EventBase.Visibility.class);
+		this.defTransparency = EnumUtils.forSerializedName(defVisibility, EventBase.Transparency.class);
+		this.defReminder = defReminder;
 	}
 
-	public void setDefaultsPrivate(Boolean defaultsPrivate) {
-		this.defaultsPrivate = defaultsPrivate;
+	public EventBase.Visibility getDefVisibility() {
+		return defVisibility;
 	}
 
-	public Boolean getDefaultsBusy() {
-		return defaultsBusy;
+	public EventBase.Transparency getDefTransparency() {
+		return defTransparency;
 	}
 
-	public void setDefaultsBusy(Boolean defaultsBusy) {
-		this.defaultsBusy = defaultsBusy;
-	}
-
-	public Integer getDefaultsReminder() {
-		return defaultsReminder;
-	}
-
-	public void setDefaultsReminder(Integer defaultsReminder) {
-		this.defaultsReminder = defaultsReminder;
+	public Integer getDefReminder() {
+		return defReminder;
 	}
 }

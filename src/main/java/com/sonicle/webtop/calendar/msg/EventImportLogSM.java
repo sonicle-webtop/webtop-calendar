@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2014 Sonicle S.r.l.
+/*
+ * Copyright (C) 2026 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,50 +28,21 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2014 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2026 Sonicle S.r.l.".
  */
-package com.sonicle.webtop.calendar.io;
+package com.sonicle.webtop.calendar.msg;
 
-import com.sonicle.webtop.core.sdk.WTException;
-import com.sonicle.webtop.core.util.ICalendarUtils;
-import com.sonicle.webtop.core.util.LogEntries;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import net.fortuna.ical4j.data.ParserException;
-import net.fortuna.ical4j.model.Calendar;
-import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTimeZone;
+import com.sonicle.webtop.core.sdk.ServiceMessage;
 
 /**
  *
  * @author malbinola
  */
-public class EventICalFileReader implements EventFileReader {
-	private final DateTimeZone defaultTz;
+public class EventImportLogSM extends ServiceMessage {
 	
-	public EventICalFileReader(DateTimeZone defaultTz) {
-		this.defaultTz = defaultTz;
+	public EventImportLogSM(String serviceId, String operationId, String log) {
+		super(serviceId, "eventImportLog");
+		this.setMappedPayload("oid", operationId);
+		this.setMappedPayload("log", log);
 	}
-	
-	@Override
-	public ArrayList<EventInput> listEvents(LogEntries log, InputStream is) throws IOException, UnsupportedOperationException, WTException {
-		Calendar cal = null;
-		try {
-			cal = ICalendarUtils.parse(is);
-		} catch(ParserException ex) {
-			throw new UnsupportedOperationException(ex);
-		}
-		return new ICalendarInput(defaultTz).fromICalendarFile(cal, log);
-	}
-	
-	@Override
-	public void listEvents(LogEntries log, InputStream is, EventInputConsumer consumer) throws IOException, ParserException, UnsupportedOperationException, WTException {
-		new ICalendarInput(defaultTz)
-				.withIncludeVEventSourceInOutput(true)
-				.fromICalendarStream(is, log, consumer);
-	}
-	
 }

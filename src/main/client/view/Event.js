@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2024 Sonicle S.r.l.
+ * Copyright (C) 2026 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,7 +28,7 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2024 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2026 Sonicle S.r.l.".
  */
 Ext.define('Sonicle.webtop.calendar.view.Event', {
 	extend: 'WTA.sdk.ModelView',
@@ -112,7 +112,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			foIsView: SoVMU.foPropIsEqual('', '_mode', me.MODE_VIEW),
 			foIsNew: SoVMU.foPropIsEqual('', '_mode', me.MODE_NEW),
 			startDate: {
-				bind: {bindTo: '{record.startDate}'},
+				bind: {bindTo: '{record.start}'},
 				get: function(val) {
 					return val ? Ext.Date.clone(val): null;
 				},
@@ -121,7 +121,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}
 			},
 			startTime: {
-				bind: {bindTo: '{record.startDate}'},
+				bind: {bindTo: '{record.start}'},
 				get: function(val) {
 					return (val) ? Ext.Date.clone(val): null;
 				},
@@ -130,7 +130,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}
 			},
 			endDate: {
-				bind: {bindTo: '{record.endDate}'},
+				bind: {bindTo: '{record.end}'},
 				get: function(val) {
 					return val ? Ext.Date.clone(val): null;
 				},
@@ -139,7 +139,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				}
 			},
 			endTime: {
-				bind: {bindTo: '{record.endDate}'},
+				bind: {bindTo: '{record.end}'},
 				get: function(val) {
 					return val ? Ext.Date.clone(val): null;
 				},
@@ -169,14 +169,25 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			foHumanReadableRRule: WTF.foGetFn('record', 'rruleString', function(v) {
 				return WT.toHumanReadableRRule(v);
 			}),
-			foWasRecurring: WTF.foFieldIsEqual('_recurringInfo', 'recurring'),
 			foTags: WTF.foFieldTwoWay('tags', function(v) {
 					return Sonicle.String.split(v, '|');
 				}, function(v) {
 					return Sonicle.String.join('|', v);
 			}),
 			foHasTags: WTF.foFieldIsEmpty('tags', true),
-			foLocationIsMeeting: WTF.foGetFn('record', 'location', function(val) {
+			//foIsSeriesMaster: WTF.foFieldGet('id', function(val, rec) {
+			//	return !rec.phantom && rec.isSeriesMaster();
+			//}),
+			foIsSeriesItem: WTF.foFieldGet('id', function(val, rec) {
+				return !rec.phantom && rec.isSeriesItem();
+			}),
+			foIsSeriesBroken: WTF.foFieldGet('id', function(val, rec) {
+				return !rec.phantom && rec.isSeriesBroken();
+			}),
+			foRRDisabled: WTF.foFieldMGet('id', function(val, rec) {
+				return !rec.phantom && (rec.isSeriesItem() || rec.isSeriesBroken());
+			}),
+			foLocationIsMeeting: WTF.foFieldGet('location', function(val) {
 				return WT.isMeetingUrl(val);
 			}),
 			foHasMeeting: WTF.foFieldIsEmpty('guessedMeetingUrl', true),
@@ -343,12 +354,33 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		]);
 	},
 	
+	openSeriesEventUI: function() {
+		var me = this,
+			edit = me.isMode('edit'),
+			mo = me.getModel();
+		
+		if (mo.isDirty()) {
+			WT.confirmOk(me.res('event.confirm.open.series.dirty'), function(bid) {
+				if (bid === 'ok') {
+					me.closeView(false);
+					me.mys.openEventUI(edit, mo.getId(), true);
+				}
+			}, me, {
+				okText: this.res('event.confirm.open.series.dirty.ok')
+			});
+			
+		} else {
+			me.closeView(false);
+			me.mys.openEventUI(edit, mo.getId(), true);
+		}
+	},
+	
 	restoreEventUI: function() {
 		var me = this,
 			mo = me.getModel();
 		
-		WT.confirm(me.res('event.recurring.confirm.restore'), function(bid) {
-			if (bid === 'yes') {
+		WT.confirmOk(me.res('event.confirm.restore.series', WT.resEllipsis(mo.get('title'))), function(bid) {
+			if (bid === 'ok') {
 				me.wait();
 				me.mys.restoreEvent(mo.getId(), {
 					callback: function(success) {
@@ -360,7 +392,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 					}
 				});
 			}
-		}, me);
+		}, me, {
+			title: this.res('event.confirm.restore.series.tit'),
+			okText: this.res('event.confirm.restore.series.ok')
+		});
 	},
 	
 	manageTagsUI: function(selTagIds) {
@@ -393,7 +428,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		} else {
 			url = WTF.processBinUrl(me.mys.ID, 'DownloadEventAttachment', {
 				inline: !download,
-				eventId: me.getModel().get('eventId'),
+				iid: me.getModel().getId(),
 				attachmentId: rec.get('id')
 			});
 		}
@@ -435,16 +470,10 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		var me = this,
 			mo = me.getModel();
 		
-		if (mo.wasRecurring()) {
-			if (mo.isModified('rrule') || mo.isModified('rstart')) {
-				me.mys.confirmOnSeries(function(bid) {
-					if (bid === 'yes') me.doSaveEvent(mo, 'all');
-				}, me);
-			} else {
-				me.mys.confirmOnRecurringFor('save', function(bid, value) {
-					if (bid === 'ok') me.doSaveEvent(mo, value);
-				}, me);
-			}
+		if (!mo.isNewlyCreated() && mo.isSeriesItem()) {
+			me.mys.confirmOnRecurringFor('save', mo.get('title'), function(bid, value) {
+				if (bid === 'ok') me.doSaveEvent(mo, value);
+			}, me);
 		} else {
 			me.doSaveEvent(mo, null);
 		}
@@ -452,14 +481,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 	
 	deleteEventUI: function() {
 		var me = this,
-				mo = me.getModel();
+			mo = me.getModel();
 		
-		if (mo.wasRecurring()) {
-			me.mys.confirmOnRecurringFor('delete', function(bid, value) {
+		if (mo.isNewlyCreated()) return;
+		if (mo.isSeriesItem()) {
+			me.mys.confirmOnRecurringFor('delete', mo.get('title'), function(bid, value) {
 				if (bid === 'ok') me.doDeleteEvent(mo, value);
 			}, me);
 		} else {
-			WT.confirm(me.mys.res('event.confirm.delete', mo.get('title')), function(bid) {
+			WT.confirm(me.res('event.confirm.delete', WT.resEllipsis(mo.get('title'))), function(bid) {
 				if (bid === 'yes') me.doDeleteEvent(mo, null);
 			}, me);
 		}
@@ -532,14 +562,14 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						if (json.data.length>0) {
 							me.openContactFromResult(json.data);
 						}
-						else WT.error(me.mys.res('openContact.notfound'));
+						else WT.error(me.res('openContact.notfound'));
 					} else {
 						WT.error(json.message);
 					}
 				}
 			});
 		} else {
-			WT.error(me.mys.res('openContact.empty'));
+			WT.error(me.res('openContact.empty'));
 		}
 	},
 	
@@ -553,7 +583,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		} else {
 			var picker = Ext.create({
 				xtype: 'wtpickerwindow',
-				title: me.mys.res('openContactFromResult.tit'),
+				title: me.res('openContactFromResult.tit'),
 				height: 350,
 				width: 600,
 				items: [
@@ -707,6 +737,17 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						me.restoreEventUI();
 					}
 				}),
+				/*
+				me.addAct('openSeries', {
+					text: null,
+					tooltip: me.res('act-openSeries.lbl'),
+					iconCls: 'wtcal-icon-openSeries',
+					hidden: true,
+					handler: function() {
+						me.openSeriesEventUI();
+					}
+				}),
+				*/
 				me.addAct('print', {
 					text: null,
 					tooltip: WT.res('act-print.lbl'),
@@ -743,14 +784,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		prepareMainFields: function() {
 			var me = this;
 			return [
-				me.createTagsFieldCfg(),	
+				me.createTagsFieldCfg(),
 				{
 					xtype: 'wtformmeetingactionfeedback',
 					bind: {
 						meetingUrl: '{record.guessedMeetingUrl}',
 						hidden: '{!foHasMeeting}'
 					},
-					text: me.res('event.meeting.info'),
+					text: me.res('event.info.meeting'),
+					hidden: true,
 					listeners: {
 						copy: function() {
 							WT.toast(WT.res('meeting.toast.link.copied'));
@@ -865,7 +907,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									xtype: 'datefield',
 									bind: {
 										value: '{startDate}',
-										disabled: '{foWasRecurring}'
+										disabled: '{foIsSeriesItem}'
 									},
 									startDay: WT.getStartDay(),
 									format: WT.getShortDateFmt(),
@@ -902,7 +944,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									xtype: 'datefield',
 									bind: {
 										value: '{endDate}',
-										disabled: '{foWasRecurring}'
+										disabled: '{foIsSeriesItem}'
 									},
 									startDay: WT.getStartDay(),
 									format: WT.getShortDateFmt(),
@@ -983,7 +1025,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 									xtype: 'sorrrepeatfield',
 									bind: {
 										value: '{foRRuleString}',
-										defaultStartDate: '{startDate}'
+										defaultStartDate: '{startDate}',
+										disabled: '{foRRDisabled}'
 									},
 									noneText: WT.res('sorrrepeatfield.none'),
 									dailyText: WT.res('sorrrepeatfield.daily'),
@@ -1016,6 +1059,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							xtype: 'so-displayfield',
 							bind: {
 								value: '{foHumanReadableRRule}',
+								disabled: '{foRRDisabled}',
 								hidden: '{!foHasRecurrence}'
 							},
 							hidden: true,
@@ -1024,6 +1068,41 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 							handler: function(s) {
 								me.editRecurrence();
 							}
+						}, {
+							xtype: 'sofieldvgroup',
+							bind: {
+								hidden: '{!foRRDisabled}'
+							},
+							items: [
+								{
+									xtype: 'soformactionfeedback',
+									bind: {
+										hidden: '{!foIsSeriesItem}'
+									},
+									hidden: true,
+									text: me.res('event.info.recurring.rrnoteditable'),
+									buttons: [
+										{
+											xtype: 'button',
+											ui: '{icon|toolbar}',
+											iconCls: 'wtcal-icon-openSeries',
+											tooltip: me.res('act-openSeries.lbl'),
+											handler: function(s, e) {
+												me.openSeriesEventUI();
+											}
+										}
+									]
+								},
+								{
+									xtype: 'soformactionfeedback',
+									bind: {
+										hidden: '{!foIsSeriesBroken}'
+									},
+									hidden: true,
+									text: me.res('event.info.broken.rrnoteditable')
+								}
+							],
+							hidden: true
 						}
 					]
 				}, {
@@ -1254,7 +1333,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						items: [
 							{
 								iconCls: 'wt-glyph-contact',
-								tooltip: me.mys.res('openContact.tip'),
+								tooltip: me.res('openContact.tip'),
 								handler: function(g, ridx) {
 									var rec = g.getStore().getAt(ridx);
 									me.openContactUI(rec);
@@ -1329,18 +1408,27 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		onViewLoad: function(s, success) {
 			var me = this,
-				SoD = Sonicle.Data,
-				vm = me.getVM(),
 				mo = me.getModel();
 			// Overrides autogenerated string id by extjs...
 			// It avoids type conversion problems server-side!
 			//if(me.isMode(me.MODE_NEW)) me.getModel().set('eventId', -1, {dirty: false});
 			
+			if (success && !mo.isNewlyCreated()) {
+				if (mo.isSeriesMaster()) {
+					me.setViewTitle(me.res('event.series.tit'));
+					me.setViewIconCls('wtcal-icon-eventType-seriesMaster');
+				} else if (mo.isSeriesBroken()) {
+					me.setViewIconCls('wtcal-icon-eventType-seriesBroken');
+				} else if (mo.isSeriesItem()) {
+					me.setViewIconCls('wtcal-icon-eventType-seriesItem');
+				}
+			}
 			
 			if (me.isMode(me.MODE_NEW)) {
 				me.getAct('saveClose').setDisabled(false);
 				me.getAct('delete').setHidden(true);
 				me.getAct('restore').setHidden(true);
+				//me.getAct('openSeries').setHidden(true);
 				me.getAct('tags').setHidden(false);
 				if (me.mys.hasAuditUI()) me.getAct('eventAuditLog').setDisabled(true);
 				me.reloadCustomFields((me.opts.data || {}).tags, me.opts.cfData, false);
@@ -1348,13 +1436,15 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				me.getAct('saveClose').setDisabled(true);
 				me.getAct('delete').setHidden(true);
 				me.getAct('restore').setHidden(true);
+				//me.getAct('openSeries').setHidden(!mo.isSeriesBroken() && !mo.isSeriesItem());
 				me.getAct('tags').setHidden(true);
 				if (me.mys.hasAuditUI()) me.getAct('eventAuditLog').setDisabled(false);
 				me.hideCustomFields(me.getModel().cvalues().getCount() < 1);
 			} else if (me.isMode(me.MODE_EDIT)) {
 				me.getAct('saveClose').setDisabled(false);
 				me.getAct('delete').setHidden(false);
-				me.getAct('restore').setHidden(!mo.wasBroken());
+				me.getAct('restore').setHidden(!mo.isSeriesBroken());
+				//me.getAct('openSeries').setHidden(!mo.isSeriesBroken() && !mo.isSeriesItem());
 				me.getAct('tags').setHidden(false);
 				me.lref('fldcalendar').setReadOnly(false);
 				if (me.mys.hasAuditUI()) me.getAct('eventAuditLog').setDisabled(false);
@@ -1434,8 +1524,8 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 				vw = WT.createView(me.mys.ID, 'view.PlanningEditor', {
 					swapReturn: true,
 					viewCfg: {
-						eventStart: Sonicle.Date.clone(mo.get('startDate')),
-						eventEnd: Sonicle.Date.clone(mo.get('endDate')),
+						eventStart: Sonicle.Date.clone(mo.get('start')),
+						eventEnd: Sonicle.Date.clone(mo.get('end')),
 						eventTimezone: mo.get('timezone'),
 						eventAllDay: mo.get('allDay'),
 						eventOrganizerProfile: mo.get('_profileId'),
@@ -1616,12 +1706,12 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 						if ((mo.attendees().getCount() + arr.length) <= limit) {
 							mo.attendees().add(arr);
 						} else {
-							WT.error(me.res('event.importAttendees.error.limit', limit));
+							WT.error(me.res('event.error.importAttendees.limit', limit));
 						}
 					}
 						
 				} else {
-					WT.error(me.res('event.importAttendees.error.limit', limit));
+					WT.error(me.res('event.error.importAttendees.limit', limit));
 				}
 			}
 		},

@@ -33,7 +33,8 @@
 Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 	extend: 'Ext.data.Model',
 	mixins: [
-		'Sonicle.fullcalendar.api.EventDataMixin'
+		'Sonicle.fullcalendar.api.EventDataMixin',
+		'WTA.sdk.mixin.ItemWithinFolder'
 	],
 	
 	allDayField: 'isAllDay',
@@ -47,32 +48,50 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 		WTF.field('eventId', 'string', false),
 		WTF.field('calendarId', 'int', false),
 		WTF.field('calendarName', 'string', false),
-		WTF.field('description', 'string', false),
+		WTF.field('color', 'string', false),
+		WTF.field('org', 'string', false),
+		
 		WTF.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.field('timezone', 'string', false),
 		WTF.field('isAllDay', 'boolean', false, {defaultValue: false}),
 		WTF.field('title', 'string', false),
-		WTF.field('color', 'string', false),
+		
 		WTF.field('location', 'string', true),
+		WTF.field('description', 'string', false),
 		WTF.field('meeting', 'string', true),
 		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('reminder', 'int', true),
 		WTF.field('isReadOnly', 'boolean', false, {defaultValue: false}),
-		WTF.field('hideData', 'boolean', false, {defaultValue: false}),
 		WTF.field('hasTz', 'boolean', false, {defaultValue: false}),
 		WTF.field('hasAtts', 'boolean', false, {defaultValue: false}),
 		WTF.field('isNtf', 'boolean', false, {defaultValue: false}),
-		WTF.field('isRecurring', 'boolean', false, {defaultValue: false}),
-		WTF.field('isBroken', 'boolean', false, {defaultValue: false}),
-		WTF.field('hasCmts', 'boolean', false, {defaultValue: false}),
+		
+		WTF.field('hasDesc', 'boolean', false, {defaultValue: false}),
 		WTF.field('tags', 'string', true),
-		WTF.field('folderName', 'string', false),
-		WTF.field('org', 'string', false),
-		WTF.field('_owner', 'string', false),
-		WTF.field('_rights', 'string', false),
-		WTF.field('_profileId', 'string', false)
+		
+		WTF.roField('hasRecur', 'boolean'),
+		
+		WTF.roField('_owPid', 'string'),
+		WTF.roField('_orDN', 'string'),
+		WTF.roField('_foPerms', 'string'),
+		WTF.roField('_itPerms', 'string')
 	],
+	
+	isSeriesMaster: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('eventId')) && me.get('hasRecur');
+	},
+	
+	isSeriesItem: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('eventId')) && me.get('hasRecur');
+	},
+	
+	isSeriesBroken: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('eventId'));
+	},
 	
 	privates: {
 		getColor: function() {
@@ -82,7 +101,7 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 		},
 		
 		fcIsEditable: function() {
-			return !this.get('isReadOnly') && !this.get('isRecurring');
+			return !this.get('isReadOnly') && !this.isSeriesItem();
 		},
 
 		fcPrepareEventExtendedProps: function() {
@@ -91,21 +110,21 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 				parent = me.mixins.sofullcalendareventdata.fcPrepareEventExtendedProps.call(me);
 		
 			return Ext.apply(parent || {}, {
-				ownerId: me.get('_profileId'),
+				ownerId: me.get('_owPid'),
 				calendarId: me.get('calendarId'),
 				calendarName: me.get('calendarName'),
-				calendarOwner: me.get('_owner'),
+				calendarOwner: me.get('_orDN'),
+				organizer: me.get('org'),
 				timezone: me.get('timezone'),
 				location: me.get('location'),
 				description: me.get('description'),
 				meeting: me.get('meeting'),
 				tags: me.get('tags'),
-				organizer: me.get('org'),
-				isRecurring: me.get('isRecurring'),
-				isBroken: me.get('isBroken'),
+				isRecurring: me.isSeriesItem(),
+				isBroken: me.isSeriesBroken(),
 				isPrivate: me.get('isPrivate'),
 				hasOtherTz: me.get('hasTz'),
-				hasBody: me.get('hasCmts'),
+				hasBody: me.get('hasDesc'),
 				hasAttendees: me.get('hasAtts'),
 				hasMeeting: !Ext.isEmpty(me.get('meeting')),
 				hasReminder: SoO.numberValue(me.get('reminder'), -1) >= 0

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sonicle S.r.l.
+ * Copyright (C) 2026 Sonicle S.r.l.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License version 3 as published by
@@ -28,11 +28,12 @@
  * version 3, these Appropriate Legal Notices must retain the display of the
  * Sonicle logo and Sonicle copyright notice. If the display of the logo is not
  * reasonably feasible for technical reasons, the Appropriate Legal Notices must
- * display the words "Copyright (C) 2018 Sonicle S.r.l.".
+ * display the words "Copyright (C) 2026 Sonicle S.r.l.".
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.core.sdk.UserProfileId;
+import com.sonicle.webtop.core.util.ICal4jUtils;
+import net.fortuna.ical4j.model.Recur;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -40,20 +41,20 @@ import org.joda.time.DateTimeZone;
  *
  * @author malbinola
  */
-public class VExpEvent {
+public class VEventBounds {
 	protected String eventId;
+	protected String seriesEventId;
+	protected String seriesInstanceId;
+	protected String publicId;
 	protected Integer calendarId;
-	protected Integer recurrenceId;
-	protected DateTime startDate;
-	protected DateTime endDate;
+	protected DateTime start;
+	protected DateTime end;
 	protected String timezone;
 	protected Boolean allDay;
-	protected String title;
-	protected Integer reminder;
-	protected DateTime remindedOn;
+	protected DateTime recurrenceStart;
+	protected String recurrenceRule;
 	protected String calendarDomainId;
 	protected String calendarUserId;
-	protected String seriesEventId;
 
 	public String getEventId() {
 		return eventId;
@@ -61,6 +62,30 @@ public class VExpEvent {
 
 	public void setEventId(String eventId) {
 		this.eventId = eventId;
+	}
+
+	public String getSeriesEventId() {
+		return seriesEventId;
+	}
+
+	public void setSeriesEventId(String seriesEventId) {
+		this.seriesEventId = seriesEventId;
+	}
+
+	public String getSeriesInstanceId() {
+		return seriesInstanceId;
+	}
+
+	public void setSeriesInstanceId(String seriesInstanceId) {
+		this.seriesInstanceId = seriesInstanceId;
+	}
+
+	public String getPublicId() {
+		return publicId;
+	}
+
+	public void setPublicId(String publicId) {
+		this.publicId = publicId;
 	}
 
 	public Integer getCalendarId() {
@@ -71,28 +96,20 @@ public class VExpEvent {
 		this.calendarId = calendarId;
 	}
 
-	public Integer getRecurrenceId() {
-		return recurrenceId;
+	public DateTime getStart() {
+		return start;
 	}
 
-	public void setRecurrenceId(Integer recurrenceId) {
-		this.recurrenceId = recurrenceId;
+	public void setStart(DateTime start) {
+		this.start = start;
 	}
 
-	public DateTime getStartDate() {
-		return startDate;
+	public DateTime getEnd() {
+		return end;
 	}
 
-	public void setStartDate(DateTime startDate) {
-		this.startDate = startDate;
-	}
-
-	public DateTime getEndDate() {
-		return endDate;
-	}
-
-	public void setEndDate(DateTime endDate) {
-		this.endDate = endDate;
+	public void setEnd(DateTime end) {
+		this.end = end;
 	}
 
 	public String getTimezone() {
@@ -110,29 +127,21 @@ public class VExpEvent {
 	public void setAllDay(Boolean allDay) {
 		this.allDay = allDay;
 	}
-	
-	public String getTitle() {
-		return title;
+
+	public DateTime getRecurrenceStart() {
+		return recurrenceStart;
 	}
 
-	public void setTitle(String title) {
-		this.title = title;
+	public void setRecurrenceStart(DateTime recurrenceStart) {
+		this.recurrenceStart = recurrenceStart;
 	}
 
-	public Integer getReminder() {
-		return reminder;
+	public String getRecurrenceRule() {
+		return recurrenceRule;
 	}
 
-	public void setReminder(Integer reminder) {
-		this.reminder = reminder;
-	}
-
-	public DateTime getRemindedOn() {
-		return remindedOn;
-	}
-
-	public void setRemindedOn(DateTime remindedOn) {
-		this.remindedOn = remindedOn;
+	public void setRecurrenceRule(String recurrenceRule) {
+		this.recurrenceRule = recurrenceRule;
 	}
 
 	public String getCalendarDomainId() {
@@ -150,20 +159,16 @@ public class VExpEvent {
 	public void setCalendarUserId(String calendarUserId) {
 		this.calendarUserId = calendarUserId;
 	}
-
-	public String getSeriesEventId() {
-		return seriesEventId;
-	}
-
-	public void setSeriesEventId(String seriesEventId) {
-		this.seriesEventId = seriesEventId;
-	}
 	
-	public DateTimeZone getDateTimeZone() {
+	public DateTimeZone getTimezoneObject() {
 		return DateTimeZone.forID(getTimezone());
 	}
 	
-	public UserProfileId getCalendarProfileId() {
-		return new UserProfileId(calendarDomainId, calendarUserId);
+	public boolean hasRecurrence() {
+		return getRecurrenceStart() != null;
+	}
+	
+	public Recur getRecurrenceObject() {
+		return ICal4jUtils.parseRRule(getRecurrenceRule());
 	}
 }

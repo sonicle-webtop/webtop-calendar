@@ -32,13 +32,17 @@
  */
 package com.sonicle.webtop.calendar;
 
+import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.commons.web.ServletUtils;
 import com.sonicle.commons.web.json.JsonResult;
+import com.sonicle.webtop.calendar.ICalendarManager.EventGetOption;
 import com.sonicle.webtop.calendar.bol.js.JsPubEvent;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.calendar.model.EventInstance;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
 import com.sonicle.webtop.core.CoreUserSettings;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
@@ -98,7 +102,7 @@ public class PublicService extends BasePublicService {
 					EventUrlPath eventUrlPath = new EventUrlPath(path.getRemainingPath());
 					CalendarManager adminCalMgr = getAdminManager(domainId);
 
-					Event event = null;
+					EventInstance event = null;
 					if (!StringUtils.isBlank(eventUrlPath.getPublicUid())) {
 						if (eventUrlPath.isActionReply()) {
 							String aid = ServletUtils.getStringParameter(request, "aid", true);
@@ -107,15 +111,18 @@ public class PublicService extends BasePublicService {
 							EventAttendee.ResponseStatus responseStatus = toResponseStatus(resp);
 							if (responseStatus == null) throw new WTException("Invalid resp [{}]", resp);
 							
-							String eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
+							String eventId = adminCalMgr.findEventId(eventUrlPath.getPublicUid());
 							if (eventId != null) {
-								event = adminCalMgr.updateEvent(eventId, aid, responseStatus);
+								EventInstanceId instanceId = EventInstanceId.buildMaster(eventId);
+								adminCalMgr.updateEventInstanceAttendeeResponse(instanceId, aid, responseStatus, true);
 							}
 							
 						} else {
-							String eventId = adminCalMgr.getEventId(eventUrlPath.getPublicUid());
+							String eventId = adminCalMgr.findEventId(eventUrlPath.getPublicUid());
 							if (eventId != null) {
-								event = adminCalMgr.getEvent(eventId);
+								EventInstanceId instanceId = EventInstanceId.buildMaster(eventId);
+								BitFlags<EventGetOption> getOpts = BitFlags.with(EventGetOption.ATTENDEES);
+								event = adminCalMgr.getEventInstance(instanceId, getOpts);
 							}
 						}
 					}
@@ -126,7 +133,7 @@ public class PublicService extends BasePublicService {
 						
 					} else {
 						Calendar calendar = adminCalMgr.getCalendar(event.getCalendarId());
-						if (event.getIsPrivate()) event.censorize();
+						if (event.isVisibilityPrivate()) event.censorize();
 						writeEventPage(request, response, domainId, wts, "Event", calendar, event);
 					}
 
@@ -156,7 +163,7 @@ public class PublicService extends BasePublicService {
 		}
 	}
 	
-	private String buildEventData(Calendar calendar, Event event) {
+	private String buildEventData(Calendar calendar, EventInstance event) {
 		JsPubEvent js = new JsPubEvent();
 		js.id = 1;
 		js.title = event.getTitle();
@@ -171,31 +178,31 @@ public class PublicService extends BasePublicService {
 		return JsonResult.gson().toJson(js);
 	}
 	
-	private String buildWhenString(Calendar calendar, Event event) {
+	private String buildWhenString(Calendar calendar, EventInstance event) {
 		CoreUserSettings cus = new CoreUserSettings(calendar.getProfileId());
 		String pattern = cus.getShortDateFormat() + " " + cus.getShortTimeFormat();
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
 		DateTimeFormatter dtFmt = JodaTimeUtils.createFormatter(pattern, etz);
-		return MessageFormat.format("{0} - {1}", dtFmt.print(event.getStartDate()), dtFmt.print(event.getEndDate()));
+		return MessageFormat.format("{0} - {1}", dtFmt.print(event.getStart()), dtFmt.print(event.getEnd()));
 	}
 	
 	private String buildOrganizer(UserProfileId organizerPid) {
 		return StringUtils.defaultString(WT.getProfileData(organizerPid).getDisplayName(), organizerPid.toString());
 	}
 	
-	private ArrayList<JsPubEvent.Attendee> buildAttendees(int id, Event event) {
+	private ArrayList<JsPubEvent.Attendee> buildAttendees(int id, EventInstance event) {
 		ArrayList<JsPubEvent.Attendee> attendees = new ArrayList<>();
-		for(EventAttendee attendee : event.getAttendees()) {
+		for(EventAttendee attendee : event.getAttendeesOrEmpty()) {
 			attendees.add(new JsPubEvent.Attendee(attendee));
 		}
 		return attendees;
 	}
 	
-	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, String domainId, WebTopSession wts, String view, Calendar calendar, Event event) throws IOException, TemplateException {
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, String domainId, WebTopSession wts, String view, Calendar calendar, EventInstance event) throws IOException, TemplateException {
 		writeEventPage(request, response, domainId, wts, view, calendar, event, new JsWTSPublic.Vars());
 	}
 	
-	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, String domainId, WebTopSession wts, String view, Calendar calendar, Event event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
+	private void writeEventPage(HttpServletRequest request, HttpServletResponse response, String domainId, WebTopSession wts, String view, Calendar calendar, EventInstance event, JsWTSPublic.Vars vars) throws IOException, TemplateException {
 		vars.put("view", view);
 		vars.put("eventData", buildEventData(calendar, event));
 		writePage(response, wts, vars, WT.getPublicContextPath(domainId));

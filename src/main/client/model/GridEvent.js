@@ -33,6 +33,9 @@
  */
 Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 	extend: 'WTA.ux.data.BaseModel',
+	mixins: [
+		'WTA.sdk.mixin.ItemWithinFolder'
+	],
 	requires: [
 		'Sonicle.Date'
 	],
@@ -40,18 +43,18 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 	fields: [
 		WTF.roField('id', 'string'),
 		WTF.roField('eventId', 'string'),
+		WTF.roField('calendarId', 'string'),
+		WTF.roField('calendarName', 'string'),
+		WTF.roField('color', 'string'),
+		WTF.roField('org', 'string'),
 		WTF.roField('startDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('endDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('timezone', 'string'),
 		WTF.roField('title', 'string'),
 		WTF.roField('location', 'string'),
 		WTF.roField('meeting', 'string'),
-		WTF.roField('color', 'string'),
 		WTF.roField('tags', 'string'),
-		WTF.roField('folderName', 'string'),
 		WTF.roField('isAllDay', 'boolean'),
-		WTF.roField('isRecurring', 'boolean'),
-		WTF.roField('isBroken', 'boolean'),
 		WTF.calcField('duration', 'int', ['startDate', 'endDate', 'isAllDay'], function(v, rec, start, end, ad) {
 			var SoD = Sonicle.Date, diff;
 			if (ad === true) {
@@ -63,7 +66,28 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 				diff = SoD.diff(start, end, Ext.Date.SECOND, true);
 			}
 			return diff ? Math.abs(diff) : 0;
-		})
-		//TODO: unire i campi isRecurring e isBroken nel campo recurringInfo... vedi JsEvent
-	]
+		}),
+		
+		WTF.roField('hasRecur', 'boolean'),
+		
+		WTF.roField('_owPid', 'string'),
+		WTF.roField('_orDN', 'string'),
+		WTF.roField('_foPerms', 'string'),
+		WTF.roField('_itPerms', 'string')
+	],
+	
+	isSeriesMaster: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('eventId')) && me.get('hasRecur');
+	},
+	
+	isSeriesItem: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('eventId')) && me.get('hasRecur');
+	},
+	
+	isSeriesBroken: function() {
+		var me = this;
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('eventId'));
+	}
 });

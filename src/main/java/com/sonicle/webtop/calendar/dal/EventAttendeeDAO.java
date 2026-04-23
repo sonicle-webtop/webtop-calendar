@@ -39,8 +39,12 @@ import com.sonicle.webtop.calendar.jooq.tables.records.EventsAttendeesRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.joda.time.DateTime;
 import org.jooq.DSLContext;
+import org.jooq.UpdateSetMoreStep;
 import org.jooq.impl.DSL;
 
 /**
@@ -108,25 +112,21 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateAttendeeResponseByIdEvent(Connection con, String responseStatus, String attendeeId, String eventId) throws DAOException {
+	public int updateAttendeeResponseByIdsEvent(Connection con, String responseStatus, Optional<DateTime> responseTimestamp, List<String> attendeeIds, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		return dsl
+		UpdateSetMoreStep update = dsl
 			.update(EVENTS_ATTENDEES)
-			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, responseStatus)
-			.where(
-				EVENTS_ATTENDEES.ATTENDEE_ID.equal(attendeeId)
-				.and(EVENTS_ATTENDEES.EVENT_ID.equal(eventId))
-			)
-			.execute();
-	}
-	
-	public int updateAttendeeResponseByIds(Connection con, String responseStatus, List<String> attendeeIds) throws DAOException {
-		DSLContext dsl = getDSL(con);
-		return dsl
-			.update(EVENTS_ATTENDEES)
-			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, responseStatus)
+			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, responseStatus);
+		
+		if (responseTimestamp.isPresent()) {
+			update = update
+				.set(EVENTS_ATTENDEES.RESPONSE_TIMESTAMP, responseTimestamp);
+		}
+		
+		return update
 			.where(
 				EVENTS_ATTENDEES.ATTENDEE_ID.in(attendeeIds)
+				.and(EVENTS_ATTENDEES.EVENT_ID.equal(eventId))
 			)
 			.execute();
 	}
@@ -139,11 +139,25 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int deleteByEvent(Connection con, String eventId) throws DAOException {
+	public int deleteByIdEvent(Connection con, String attendeeId, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.delete(EVENTS_ATTENDEES)
-			.where(EVENTS_ATTENDEES.EVENT_ID.equal(eventId))
+			.where(
+				EVENTS_ATTENDEES.ATTENDEE_ID.equal(attendeeId)
+				.and(EVENTS_ATTENDEES.EVENT_ID.equal(eventId))
+			)
+			.execute();
+	}
+	
+	public int deleteByIdsEvent(Connection con, Collection<String> attendeeIds, String eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.delete(EVENTS_ATTENDEES)
+			.where(
+				EVENTS_ATTENDEES.ATTENDEE_ID.in(attendeeIds)
+				.and(EVENTS_ATTENDEES.EVENT_ID.equal(eventId))
+			)
 			.execute();
 	}
 	

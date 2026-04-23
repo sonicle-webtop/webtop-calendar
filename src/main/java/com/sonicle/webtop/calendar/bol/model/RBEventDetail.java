@@ -87,10 +87,10 @@ public class RBEventDetail {
 		this.calendarName = calendar.getName();
 		this.calendarColor = calendar.getColor();
 		this.calendarColorImage = JRHelper.colorAsImage(Calendar.getHexColor(calendar.getColor()));
-		this.eventKey = event.getKey();
-		this.eventId = event.getEventId();
-		this.startDate = event.getStartDate().toDate();
-		this.endDate = event.getEndDate().toDate();
+		this.eventKey = event.getId().toString();
+		this.eventId = event.getOriginalEventId();
+		this.startDate = event.getStart().toDate();
+		this.endDate = event.getEnd().toDate();
 		this.timezone = event.getTimezone();
 		this.allDay = event.getAllDay();
 		this.title = event.getTitle();
@@ -100,21 +100,21 @@ public class RBEventDetail {
 		this.recurrenceDescription = null;
 		
 		if (event.hasRecurrence()) {
-			this.recurrenceType = rrStringify.toHumanReadableFrequencyQuietly(event.getRecurrenceRule());
-			this.recurrenceDescription = rrStringify.toHumanReadableTextQuietly(event.getRecurrenceRule());
+			this.recurrenceType = rrStringify.toHumanReadableFrequencyQuietly(event.getRecurrence().getRule());
+			this.recurrenceDescription = rrStringify.toHumanReadableTextQuietly(event.getRecurrence().getRule());
 		}
 		
-		this.isPrivate = event.getIsPrivate();
-		this.isBusy = event.getBusy();
+		this.isPrivate = EventInstance.Visibility.PRIVATE.equals(event.getVisibility());
+		this.isBusy = EventInstance.Transparency.OPAQUE.equals(event.getTransparency());
 		this.reminder = EventInstance.Reminder.getMinutesValue(event.getReminder());
-		this.activityId = event.getActivityId();
-		this.activityDescription = lookupActivityDescription(coreMgr, this.activityId);
-		this.masterDataId = event.getMasterDataId();
-		this.masterDataDescription = lookupMasterDataDescription(coreMgr, this.masterDataId);
-		this.statMasterDataId = event.getStatMasterDataId();
-		this.statMasterDataDescription = lookupMasterDataDescription(coreMgr, this.statMasterDataId);
-		this.causalId = event.getCausalId();
-		this.causalDescription = lookupCausalDescription(coreMgr, this.causalId);
+		this.activityId = null;
+		this.activityDescription = "";
+		this.masterDataId = null;
+		this.masterDataDescription = "";
+		this.statMasterDataId = null;
+		this.statMasterDataDescription = "";
+		this.causalId = null;
+		this.causalDescription = "";
 		this.organizer = event.getOrganizer();
 		
 		if (event.getAttendees() != null) {

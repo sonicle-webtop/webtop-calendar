@@ -32,15 +32,11 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
-import com.sonicle.webtop.calendar.bol.OEventICalendar;
-import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ICALENDARS;
-import com.sonicle.webtop.calendar.jooq.tables.records.EventsIcalendarsRecord;
 import com.sonicle.webtop.core.dal.BaseDAO;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import org.jooq.DSLContext;
-import org.jooq.impl.DSL;
 
 /**
  *
@@ -63,24 +59,41 @@ public class EventICalendarDAO extends BaseDAO {
 			.fetchOne(0, Integer.class) == 1;
 	}
 	
-	public OEventICalendar selectById(Connection con, String eventId) throws DAOException {
+	public String selectRawDataById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.select()
+			.select(
+				EVENTS_ICALENDARS.RAW_DATA
+			)
 			.from(EVENTS_ICALENDARS)
 			.where(
 				EVENTS_ICALENDARS.EVENT_ID.equal(eventId)
 			)
-			.fetchOneInto(OEventICalendar.class);
+			.fetchOneInto(String.class);
 	}
 	
-	public int insert(Connection con, OEventICalendar item) throws DAOException {
+	public int insert(Connection con, String eventId, String rawData) throws DAOException {
 		DSLContext dsl = getDSL(con);
-		EventsIcalendarsRecord record = dsl.newRecord(EVENTS_ICALENDARS, item);
 		return dsl
 			.insertInto(EVENTS_ICALENDARS)
-			.set(record)
+			.set(EVENTS_ICALENDARS.EVENT_ID, eventId)
+			.set(EVENTS_ICALENDARS.RAW_DATA, rawData)
 			.execute();
+	}
+	
+	public int update(Connection con, String eventId, String rawData) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.update(EVENTS_ICALENDARS)
+			.set(EVENTS_ICALENDARS.RAW_DATA, rawData)
+			.where(EVENTS_ICALENDARS.EVENT_ID.equal(eventId))
+			.execute();
+	}
+	
+	public int upsert(Connection con, String eventId, String rawData) throws DAOException {
+		int ret = update(con, eventId, rawData);
+		if (ret == 0) ret = insert(con, eventId, rawData);
+		return ret;
 	}
 	
 	public int deleteById(Connection con, String eventId) throws DAOException {

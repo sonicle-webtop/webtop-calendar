@@ -34,19 +34,19 @@ package com.sonicle.webtop.calendar.bol.js;
 
 import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarUtils;
-import com.sonicle.webtop.calendar.bol.VVEventInstance;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
-import com.sonicle.webtop.calendar.model.SchedEventInstance;
+import com.sonicle.webtop.calendar.model.EventLookupInstance;
 import com.sonicle.webtop.core.model.Meeting;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
+import com.sonicle.webtop.calendar.model.EventBounds;
 
 /**
  *
@@ -55,140 +55,75 @@ import org.joda.time.format.DateTimeFormatter;
 public class JsSchedulerEvent {
 	public String id;
 	public String eventId;
-	public String originalEventId;
 	public Integer calendarId;
 	public String calendarName;
+	public String color;
+	public String org;
 	public String startDate;
 	public String endDate;
 	public String timezone;
 	public Boolean isAllDay;
 	public String title;
-	public String color;
+	
 	public String location;
+	public String description;
 	public String meeting;
 	public Boolean isPrivate;
 	public Integer reminder;
 	public Boolean isReadOnly;
-	public Boolean hideData;
 	public Boolean hasTz;
 	public Boolean hasAtts;
 	public Boolean isNtf;
-	public Boolean isRecurring;
-	public Boolean isBroken;
-	public Boolean hasCmts;
+	public Boolean hasDesc;
 	public String tags;
-	public String folderName;
-	public String org;
-	public String _owner;
-	public String _rights;
-	public String _profileId;
-	public String description;
+	
+	public Boolean hasRecur;
+	public String _owPid;
+	public String _orDN;
+	public String _foPerms;
+	public String _itPerms;
 	
 	public JsSchedulerEvent() {}
 	
-	public JsSchedulerEvent(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, SchedEventInstance event, UserProfileId profileId, DateTimeZone profileTz, Pattern meetingUrlPattern) {
+	public JsSchedulerEvent(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, EventLookupInstance event, UserProfileId profileId, DateTimeZone profileTz, Pattern meetingUrlPattern) {
 		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(profileTz);
 		Calendar calendar = folder.getCalendar();
 		
-		// Determine if keep event data private
-		/*
-		boolean keepDataPrivate = false;
-		if (event.getIsPrivate()) {
-			if (!calendar.getProfileId().equals(profileId)) {
-				keepDataPrivate = true;
-			}
-		}
-		*/
-		
-		id = event.getKey();
-		eventId = event.getEventId();
-		originalEventId = event.getEventId();
+		id = event.getId().toString();
+		eventId = event.getOriginalEventId();
 		calendarId = event.getCalendarId();
 		calendarName = calendar.getName();
+		color = calendar.getColor();
+		if (folderProps != null) color = folderProps.getColorOrDefault(color);
+		org = event.getOrganizerCN();
 		
-		CalendarUtils.EventBoundary eventBoundary = CalendarUtils.getEventBoundary(event);
-		isAllDay = eventBoundary.allDay;
-		startDate = ymdhmsZoneFmt.print(eventBoundary.start);
-		endDate = ymdhmsZoneFmt.print(eventBoundary.end);
+		EventBounds eventBoundary = CalendarUtils.toEventBounds(event);
+		isAllDay = eventBoundary.isAllDay();
+		startDate = ymdhmsZoneFmt.print(eventBoundary.getStart());
+		endDate = ymdhmsZoneFmt.print(eventBoundary.getEnd());
 		timezone = event.getTimezone();
 		
 		title = event.getTitle();
-		color = calendar.getColor();
-		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		location = event.getLocation();
+		hasDesc = !StringUtils.isBlank(event.getDescription());
+		if (hasDesc) description = (event.getDescription().length() > 200) ? event.getDescription().substring(0, 200) : event.getDescription();
 		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
-		isPrivate = event.getIsPrivate();
+		isPrivate = event.isVisibilityPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getMinutesValue();
 		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
 		isReadOnly = calendar.isProviderRemote() || event.isCensorized(); // Maybe it's better to call this isLocked (no actions will be avail in client scheduler component)
-		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
+		hasTz = !event.getTimezoneObject().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getTimezoneObject(), profileTz, event.getStart());
 		hasAtts = event.hasAttendees();
 		isNtf = event.hasNotifyableAttendees();
-		isRecurring = event.isEventRecurring();
-		isBroken = event.isEventBroken();
-		hasCmts = !StringUtils.isBlank(event.getDescription());
+		
 		tags = event.getTags();
+		hasRecur = event.getHasRecurrence();
 		
-		if (hasCmts) {
-			description = event.getDescription().length() > 200 ? event.getDescription().substring(0, 200) : event.getDescription();
-		}
-		
-		folderName = calendar.getName();
-		org = event.getOrganizerCN();
-		_owner = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
-		_rights = event.isCensorized() ? "" : ("m" + folder.getPermissions().getItemsPermissions().toString());
-		_profileId = calendar.getProfileId().toString();
-	}
-	
-	public JsSchedulerEvent(CalendarFSOrigin origin, CalendarFSFolder folder, CalendarPropSet folderProps, VVEventInstance event, UserProfileId profileId, DateTimeZone profileTz) {
-		DateTimeFormatter ymdhmsZoneFmt = JodaTimeUtils.createFormatterYMDHMS(profileTz);
-		Calendar calendar = folder.getCalendar();
-		
-		// Determine if keep event data private
-		boolean keepDataPrivate = false;
-		if (event.getIsPrivate()) {
-			if (!calendar.getProfileId().equals(profileId)) {
-				keepDataPrivate = true;
-			}
-		}
-		
-		id = event.getKey();
-		eventId = event.getEventId();
-		originalEventId = event.getEventId();
-		calendarId = event.getCalendarId();
-		calendarName = calendar.getName();
-		
-		// Source field is already in UTC, we need only to display it
-		// in the timezone choosen by user in his settings.
-		// Formatter will be instantiated specifying desired timezone.
-		startDate = ymdhmsZoneFmt.print(event.getStartDate());
-		endDate = ymdhmsZoneFmt.print(event.getEndDate());
-		timezone = event.getTimezone();
-		isAllDay = event.getAllDay();
-		
-		title = (keepDataPrivate) ? "***" : event.getTitle();
-		color = calendar.getColor();
-		if (folderProps != null) color = folderProps.getColorOrDefault(color);
-		location = (keepDataPrivate) ? "" : event.getLocation();
-		isPrivate = event.getIsPrivate();
-		reminder = (event.getReminder() == null) ? -1 : event.getReminder();
-		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = event.getReadOnly() || keepDataPrivate;
-		hasTz = !event.getDateTimeZone().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getDateTimeZone(), profileTz, event.getStartDate());
-		hasAtts = event.hasAttendees();
-		isNtf = event.hasNotifyableAttendees();
-		isRecurring = event.isEventRecurring();
-		isBroken = event.isEventBroken();
-		hasCmts = !StringUtils.isBlank(event.getDescription());
-		
-		if (!keepDataPrivate && hasCmts) {
-			description = event.getDescription().length() > 200 ? event.getDescription().substring(0, 200) : event.getDescription();
-		}
-		
-		folderName = calendar.getName();
-		_owner = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
-		_rights = folder.getPermissions().getItemsPermissions().toString();
-		_profileId = calendar.getProfileId().toString();
+		_owPid = calendar.getProfileId().toString();
+		_orDN = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
+        _foPerms = folder.getPermissions().getFolderPermissions().toString();
+		_itPerms = folder.getPermissions().getItemsPermissions().toString();
+		//_rights = event.isCensorized() ? "" : ("m" + folder.getPermissions().getItemsPermissions().toString());
 	}
 	
 	public static class Update {

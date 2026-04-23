@@ -36,6 +36,8 @@ import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.CalendarPropSet;
+import com.sonicle.webtop.calendar.model.EventBase.Transparency;
+import com.sonicle.webtop.calendar.model.EventBase.Visibility;
 import com.sonicle.webtop.core.app.model.FolderShare;
 
 /**
@@ -59,8 +61,8 @@ public class JsCalendarLkp {
 		this.calendarId = calendar.getCalendarId();
 		this.name = calendar.getName();
 		this.color = calendar.getColor();
-		this.evtPrivate = calendar.getIsPrivate();
-		this.evtBusy = calendar.getDefaultBusy();
+		this.evtPrivate = Visibility.PRIVATE.equals(calendar.getDefaultVisibility());
+		this.evtBusy = Transparency.OPAQUE.equals(calendar.getDefaultTransparency());
 		this.evtReminder = calendar.getDefaultReminder();
 		this._default = isDefault;
 		this._profileId = calendar.getProfileId().toString();

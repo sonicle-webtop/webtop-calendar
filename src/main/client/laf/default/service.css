@@ -15,6 +15,7 @@
 .wtcal-icon-newEvent { background-image: url('event-new_16.svg') !important; background-size: contain; }
 .wtcal-icon-addEvent { background-image: url('event-add_16.svg') !important; background-size: contain; }
 .wtcal-icon-openEvent { background-image: url('event-open_16.svg') !important; background-size: contain; }
+.wtcal-icon-openSeries { background-image: url('event-openSeries_16.svg') !important; background-size: contain; }
 .wtcal-icon-rejoinSeries { background-image: url('event-rejoinSeries_16.svg') !important; background-size: contain; }
 .wtcal-icon-importEvents { background-image: url('event-import_16.svg') !important; background-size: contain; }
 .wtcal-icon-exportEvents { background-image: url('event-export_16.svg') !important; background-size: contain; }
@@ -32,6 +33,10 @@
 .wtcal-icon-event-single { background-image: url('event_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-recurring { background-image: url('event-recurring_16.svg') !important; background-size: contain; }
 .wtcal-icon-event-broken { background-image: url('event-broken_16.svg') !important; background-size: contain; }
+.wtcal-icon-eventType-default { background-image: url('eventtype-default_16.svg') !important; background-size: contain; }
+.wtcal-icon-eventType-seriesMaster { background-image: url('eventtype-series-master_16.svg') !important; background-size: contain; }
+.wtcal-icon-eventType-seriesItem { background-image: url('eventtype-series-item_16.svg') !important; background-size: contain; }
+.wtcal-icon-eventType-seriesBroken { background-image: url('eventtype-series-broken_16.svg') !important; background-size: contain; }
 .wtcal-icon-sectionAttachments { background-size: contain; } .wtcal-icon-sectionAttachments:before { content: '\f0c6'; font: var(--fa-font-solid); }
 .wtcal-icon-sectionAttendees { background-size: contain; } .wtcal-icon-sectionAttendees:before { content: 'f0c0'; font: var(--fa-font-solid); }
 .wtcal-icon-sectionDateTime { background-size: contain; } .wtcal-icon-sectionDateTime:before { content: '\f017'; font: var(--fa-font-solid); }

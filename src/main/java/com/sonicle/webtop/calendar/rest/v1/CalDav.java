@@ -295,7 +295,7 @@ public class CalDav extends CaldavApi {
 				if (since == null) return respErrorBadRequest();
 			}
 			
-			Delta<EventObject> delta = manager.listEventsDelta(calendarId, since, EventObjectOutputType.STAT);
+			Delta<EventObject> delta = manager.listEventObjectsDelta(calendarId, since, /*limit,*/ EventObjectOutputType.STAT);
 			return respOk(createCalObjectsChanges(revisions.get(calendarId), delta));
 			
 		} catch(Exception ex) {

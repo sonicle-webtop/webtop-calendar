@@ -49,7 +49,7 @@ CASE WHEN eve0.busy IS true THEN 'OP' ELSE 'TP' END AS transparency,
 eve0.href, 
 eve0.etag, 
 eve0.reminder, 
-eve0.reminded_on, 
+eve0.reminded_at, 
 eve0.handle_invitation
 FROM "calendar_old"."events" AS eve0
 INNER JOIN "calendar_old"."calendars" AS cal1 ON eve0.calendar_id = cal1.calendar_id

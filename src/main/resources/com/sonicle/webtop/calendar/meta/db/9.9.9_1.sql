@@ -91,16 +91,16 @@ CREATE TABLE "calendar"."events" (
 "href" varchar(255),
 "etag" varchar(255),
 "reminder" int4,
-"reminded_on" timestamptz(6),
+"reminded_at" timestamptz(6),
 "handle_invitation" bool DEFAULT false
 );
 
 ALTER TABLE "calendar"."events" ADD PRIMARY KEY ("event_id");
 ALTER TABLE "calendar"."events" ADD FOREIGN KEY ("series_event_id") REFERENCES "calendar"."events" ("event_id") ON DELETE CASCADE ON UPDATE CASCADE;
 CREATE UNIQUE INDEX "events_ak1" ON "calendar"."events" ("series_event_id", "series_instance_id") WHERE "revision_status" NOT IN ('D');
-CREATE INDEX "events_ak2" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "start", "end", "reminder", "reminded_on");
+CREATE INDEX "events_ak2" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "start", "end", "reminder", "reminded_at");
 CREATE INDEX "events_ak3" ON "calendar"."events" USING btree ("calendar_id", "revision_status", "href");
-CREATE INDEX "events_ak4" ON "calendar"."events" USING btree ("revision_status", "start", "reminder", "reminded_on");
+CREATE INDEX "events_ak4" ON "calendar"."events" USING btree ("revision_status", "start", "reminder", "reminded_at");
 CREATE INDEX "events_ak99" ON "calendar"."events" USING btree ("handle_invitation");
 
 -- ----------------------------

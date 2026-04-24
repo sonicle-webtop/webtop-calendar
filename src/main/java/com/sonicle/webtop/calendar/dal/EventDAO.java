@@ -458,7 +458,7 @@ public class EventDAO extends BaseDAO {
 		
 		if (clearRemindedOn) {
 			update = update
-				.set(EVENTS.REMINDED_ON, (DateTime)null);
+				.set(EVENTS.REMINDED_AT, (DateTime)null);
 		}
 		
 		return update
@@ -508,7 +508,7 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.REMINDED_ON, remindedOn)
+			.set(EVENTS.REMINDED_AT, remindedOn)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
 			)
@@ -519,10 +519,10 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.update(EVENTS)
-			.set(EVENTS.REMINDED_ON, remindedOn)
+			.set(EVENTS.REMINDED_AT, remindedOn)
 			.where(
 				EVENTS.EVENT_ID.equal(eventId)
-				.and(EVENTS.REMINDED_ON.isNull())
+				.and(EVENTS.REMINDED_AT.isNull())
 			)
 			.execute();
 	}
@@ -1339,7 +1339,7 @@ public class EventDAO extends BaseDAO {
 			)
 			.select(
 				EVENTS.REMINDER,
-				EVENTS.REMINDED_ON // Important for recurring events, see WHERE part below!
+				EVENTS.REMINDED_AT // Important for recurring events, see WHERE part below!
 			)
 			.select(
 				tags,
@@ -1363,8 +1363,8 @@ public class EventDAO extends BaseDAO {
 				.and(EVENTS.START.isNotNull())
 				.and(
 					EVENTS.REMINDER.isNotNull().and(
-						EVENTS.EVENT_ID.isNull().and(EVENTS.REMINDED_ON.isNull()) // Normal events: REMINDED_ON must be null!
-						.or(EVENTS.EVENT_ID.isNotNull()) // Recurring events: REMINDED_ON can be null or not, calling code will check it!
+						EVENTS.EVENT_ID.isNull().and(EVENTS.REMINDED_AT.isNull()) // Normal events: REMINDED_AT must be null!
+						.or(EVENTS.EVENT_ID.isNotNull()) // Recurring events: REMINDED_AT can be null or not, calling code will check it!
 					)
 				)
 				.and(overlaps)

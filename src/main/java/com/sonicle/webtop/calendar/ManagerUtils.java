@@ -276,7 +276,7 @@ public class ManagerUtils {
 	static <T extends EventAlertLookup> T fillEventAlertLookup(T tgt, VEventLookup src) {
 		fillEvent((EventBase)tgt, src);
 		if ((tgt != null) && (src != null)) {
-			tgt.setRemindedOn(src.getRemindedOn());
+			tgt.setRemindedAt(src.getRemindedAt());
 			tgt.setHasRecurrence(src.getHasRecurrence());
 			tgt.setCalendarName(src.getCalendarName());
 			tgt.setCalendarDomainId(src.getCalendarDomainId());

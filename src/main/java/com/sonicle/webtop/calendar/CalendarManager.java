@@ -3134,10 +3134,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 						continue; // Skip if now is not after remindOn
 					}
 					
-					if (instance.getRemindedOn() != null) { // Instance could have been reminded in the past (only for series)
-						final DateTime lastRemindedOn = instance.getRemindedOn().withZone(pdata.getTimeZone());
-						if (remindOn.compareTo(lastRemindedOn) <= 0) {
-							if (shouldLog) logger.debug("[reminders][{}] Skipped: remind instant '{}' is in past [{}]", i, remindOn, lastRemindedOn, instance.getId().toString());
+					if (instance.getRemindedAt() != null) { // Instance could have been reminded in the past (only for series)
+						final DateTime lastRemindedAt = instance.getRemindedAt().withZone(pdata.getTimeZone());
+						if (remindOn.compareTo(lastRemindedAt) <= 0) {
+							if (shouldLog) logger.debug("[reminders][{}] Skipped: remind instant '{}' is in past [{}]", i, remindOn, lastRemindedAt, instance.getId().toString());
 							continue; // Skip if remindOn is not after last remindOn
 						}
 					}
@@ -4233,7 +4233,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (reminderOpts.has(EventReminderOption.IGNORE)) {
 				oevent.setReminder(null);
 			} else if (reminderOpts.has(EventReminderOption.DISARM_PAST) && oevent.getStart().isBeforeNow()) {
-				oevent.setRemindedOn(revisionTimestamp);
+				oevent.setRemindedAt(revisionTimestamp);
 			}
 		}
 		

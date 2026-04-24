@@ -74,7 +74,7 @@ CREATE TABLE "calendar"."events" (
 "revision_timestamp" timestamptz(6) NOT NULL,
 "revision_sequence" int4 NOT NULL DEFAULT 0,
 "creation_timestamp" timestamptz(6) NOT NULL DEFAULT now(),
-"record_status" varchar(2) NOT NULL DEFAULT 'DF'::character varying,
+"row_status" varchar(2) NOT NULL DEFAULT 'DF'::character varying,
 "status" varchar(2) NOT NULL DEFAULT 'CF'::character varying,
 "organizer" varchar(650),
 "organizer_id" varchar(100),

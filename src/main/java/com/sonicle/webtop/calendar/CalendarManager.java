@@ -1239,7 +1239,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} finally {
 			DbUtils.closeQuietly(con);
 		}
-		deleteEventInstance(UpdateEventTarget.ALL_SERIES, EventInstanceId.buildMaster(eventId), notifyOptions);
+		deleteEventInstance(UpdateEventTarget.WHOLE_SERIES, EventInstanceId.buildMaster(eventId), notifyOptions);
 	}
 	
 	/*
@@ -1985,7 +1985,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			event.ensureCoherence();
 			
 			Set<String> validTags = processOpts.has(EventProcessOpt.TAGS) ? coreMgr.listTagIds() : null;
-			doEventInstanceUpdateAndCommit(con, UpdateEventTarget.ALL_SERIES, info, event, processOpts, notifyOptions, validTags);
+			doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, info, event, processOpts, notifyOptions, validTags);
 			
 		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
@@ -2106,7 +2106,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				EventInsertResult insertResult = null;
 				try {
-					insertResult = doEventInstanceUpdateAndCommit(con, UpdateEventTarget.ALL_SERIES, info, targetEvent, processOpts, notifyOpts, availTags);
+					insertResult = doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, info, targetEvent, processOpts, notifyOpts, availTags);
 				} catch (IOException ex1) {/* Due configuration here this will never happen! */}
 				
 				// Audit: record activities...
@@ -2176,7 +2176,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 					EventInsertResult insertResult = null;
 					try {
-						insertResult = doEventInstanceUpdateAndCommit(con, UpdateEventTarget.ALL_SERIES, info, targetEvent, processOpts, notifyOpts, availTags);
+						insertResult = doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, info, targetEvent, processOpts, notifyOpts, availTags);
 					} catch (IOException ex1) {/* Due configuration here this will never happen! */}
 
 					if (auditBatch != null) {
@@ -2226,7 +2226,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			EventInstanceId instanceId = EventInstanceId.buildMaster(eventId);
 			InstanceInfo info = new InstanceInfo(instanceId, evtDao.selectInstanceInfo(con, instanceId));
 			
-			doEventInstanceDeleteAndCommit(con, UpdateEventTarget.ALL_SERIES, info, notifyOptions, true);
+			doEventInstanceDeleteAndCommit(con, UpdateEventTarget.WHOLE_SERIES, info, notifyOptions, true);
 			
 		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
@@ -2252,7 +2252,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				con = WT.getConnection(SERVICE_ID, false);
 				InstanceInfo info = new InstanceInfo(instanceId, evtDao.selectInstanceInfo(con, instanceId));
 				Integer calendarId = evtDao.selectCalendarById(con, info.originalEventId());
-				if (calendarId == null) throw new WTNotFoundException("Event calendar not found [{}]", info.originalEventId());
+				if (calendarId == null) throw new WTException("Calendar missing [{}]", info.originalEventId());
+				
 				checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.DELETE);
 				
 				//TODO: should we block on privates?
@@ -2530,7 +2531,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					eventInput.mergeFieldsForInvitation(oldEvent);
 					
 					BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.ATTENDEES);
-					doEventInstanceUpdateAndCommit(con, UpdateEventTarget.ALL_SERIES, instanceInfo, oldEvent, updateOpts, EventNotifyOption.withoutAnyAttendeesNotifications(), null);
+					doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, oldEvent, updateOpts, EventNotifyOption.withoutAnyAttendeesNotifications(), null);
 					
 					return null;
 				}
@@ -2586,7 +2587,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					EventInstanceId masterInstanceId = EventInstanceId.buildMaster(lookupEventId);
 					InstanceInfo instanceInfo = doEventGetInstanceInfo(con, masterInstanceId);
 					
-					doEventInstanceDeleteAndCommit(con, UpdateEventTarget.ALL_SERIES, instanceInfo, EventNotifyOption.withoutAnyAttendeesNotifications(), false);
+					doEventInstanceDeleteAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, EventNotifyOption.withoutAnyAttendeesNotifications(), false);
 					
 					//if (eventInput.exRefersToPublicUid != null) {
 						//TODO: add support to single event instance (of recurrence) cancellation
@@ -4652,7 +4653,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// modification as an update to the whole series.
 			if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) {
 				boolean thisIsTheFirstInstance = isThisEventInstanceTheFirstInstance(con, info);
-				if (thisIsTheFirstInstance) target = UpdateEventTarget.ALL_SERIES;
+				if (thisIsTheFirstInstance) target = UpdateEventTarget.WHOLE_SERIES;
 			}
 			
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
@@ -4691,7 +4692,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				DateTime origRecurStart = orec.getStart(); // Dump orig start!
 				Recur origRecur = orec.getRecurrenceObject(); // Dump orig recur!
 				
-				EventBounds itemBoundary = event.toEventBoundary();
+				EventBounds itemBoundary = event.getEventBounds();
 				LocalTime origNewUntilTime = masterBoundary.isAllDay() ? JodaTimeUtils.TIME_AT_STARTOFDAY : masterBoundary.getStart().withZone(masterBoundary.getTimezoneObject()).toLocalTime();
 				orec.resize(info.seriesInstanceDate.minusDays(1), origNewUntilTime, masterBoundary.getTimezoneObject());
 				ret = recDao.updateRecurrence(con, orec);
@@ -4729,7 +4730,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				eventDump = doEventInstanceGet(con, info, getOpts);
 				
-			} else if (UpdateEventTarget.ALL_SERIES.equals(target)) { // Changes are valid for all the instances (whole recurrence)
+			} else if (UpdateEventTarget.WHOLE_SERIES.equals(target)) { // Changes are valid for all the instances (whole recurrence)
 				// We want to apply modifications directly to the whole series
 				// So, restore restore original dates because current start/end refers to instance and not to the master!
 				EventBounds masterBoundary = evtDao.selectBounds(con, info.masterEventId);
@@ -4807,11 +4808,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			// 1 - Logically delete this event (the broken)
 			ret = doEventDelete(con, info.eventId, true);
-			if (ret != 1) throw new WTException("Unable to update event [{}]", info.eventId);
+			if (ret != 1) throw new WTNotFoundException("Unable to update event [{}]", info.eventId);
 			
 			// 2 - Updates revision of master event
 			ret = evtDao.updateRevision(con, info.masterEventId, BaseDAO.createRevisionTimestamp());
-			if (ret != 1) throw new WTException("Unable to update master event [{}]", info.masterEventId);
+			if (ret != 1) throw new WTNotFoundException("Unable to update master event [{}]", info.masterEventId);
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
@@ -4825,17 +4826,17 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			// modification as an update to the whole series.
 			if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) {
 				boolean thisIsTheFirstInstance = isThisEventInstanceTheFirstInstance(con, info);
-				if (thisIsTheFirstInstance) target = UpdateEventTarget.ALL_SERIES;
+				if (thisIsTheFirstInstance) target = UpdateEventTarget.WHOLE_SERIES;
 			}
 			
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts an exception on deleted date (no broken item is created)
 				ret = doRecurrenceAddExcludedDate(con, info.masterEventId, info.seriesInstanceDate);
-				if (ret != 1) throw new WTException("Unable to update master recurrence [{}]", info.masterEventId);
+				if (ret != 1) throw new WTNotFoundException("Unable to update master recurrence [{}]", info.masterEventId);
 				
 				// 2 - Updates revision of master event
 				ret = evtDao.updateRevision(con, info.masterEventId, BaseDAO.createRevisionTimestamp());
-				if (ret != 1) throw new WTException("Unable to update master event [{}]", info.masterEventId);
+				if (ret != 1) throw new WTNotFoundException("Unable to update master event [{}]", info.masterEventId);
 
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
@@ -4846,7 +4847,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 			} else if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) { // Changes are valid from this instance onward
 				EventBounds masterBoundary = evtDao.selectBounds(con, info.masterEventId);
-				if (masterBoundary == null) throw new WTException("Unable to get master event [{}]", info.masterEventId);
+				if (masterBoundary == null) throw new WTNotFoundException("Unable to get master event [{}]", info.masterEventId);
 				
 				// 1 - Resize original recurrence (sets until date at the day before date)
 				OEventRecurrence orec = recDao.selectRecurrenceByEvent(con, info.masterEventId);
@@ -4859,7 +4860,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				// 2 - Updates revision of original event
 				ret = evtDao.updateRevision(con, info.masterEventId, BaseDAO.createRevisionTimestamp());
-				if (ret != 1) throw new WTException("Unable to update master event [{}]", info.masterEventId);
+				if (ret != 1) throw new WTNotFoundException("Unable to update master event [{}]", info.masterEventId);
 				
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
@@ -4868,12 +4869,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				eventDump = doEventInstanceGet(con, info, getOpts);
 				
-			} else if (UpdateEventTarget.ALL_SERIES.equals(target)) { // Changes are valid for all the instances (whole recurrence)
+			} else if (UpdateEventTarget.WHOLE_SERIES.equals(target)) { // Changes are valid for all the instances (whole recurrence)
 				eventDump = doEventInstanceGet(con, info, getOpts); // Save for later use!
 				
 				// 1 - logically delete master event
 				ret = doEventDelete(con, info.masterEventId, true);
-				if (ret != 1) throw new WTException("Unable to update master event [{}]", info.masterEventId);
+				if (ret != 1) throw new WTNotFoundException("Unable to update master event [{}]", info.masterEventId);
 
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
@@ -4886,7 +4887,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			// 1 - Deletes (logically) this event
 			ret = doEventDelete(con, info.eventId, true);
-			if (ret != 1) throw new WTException("Unable to update event [{}]", info.eventId);
+			if (ret != 1) throw new WTNotFoundException("Unable to update event [{}]", info.eventId);
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {

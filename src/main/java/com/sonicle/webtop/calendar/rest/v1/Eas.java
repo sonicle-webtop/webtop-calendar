@@ -243,7 +243,7 @@ public class Eas extends EasApi {
 			
 			mergeEvent(event, body.getData(), false);
 			BitFlags<EventUpdateOption> updateOpts = BitFlags.with(EventUpdateOption.ATTENDEES);
-			manager.updateEventInstance(UpdateEventTarget.ALL_SERIES, instanceId, event, updateOpts, EventNotifyOption.withAllAttendeesNotifications());
+			manager.updateEventInstance(UpdateEventTarget.WHOLE_SERIES, instanceId, event, updateOpts, EventNotifyOption.withAllAttendeesNotifications());
 			
 			ArrayList<EventObject> evtobjs = new ArrayList<>();
 			EventObject evtobj = manager.getEventObject(folderId, String.valueOf(id), EventObjectOutputType.STAT);
@@ -285,7 +285,7 @@ public class Eas extends EasApi {
 		
 		try {
 			EventInstanceId instanceId = EventInstanceId.buildMaster(String.valueOf(id));
-			manager.deleteEventInstance(UpdateEventTarget.ALL_SERIES, instanceId, EventNotifyOption.withAllAttendeesNotifications());
+			manager.deleteEventInstance(UpdateEventTarget.WHOLE_SERIES, instanceId, EventNotifyOption.withAllAttendeesNotifications());
 			return respOkNoContent();
 			
 		} catch (WTNotFoundException ex) {

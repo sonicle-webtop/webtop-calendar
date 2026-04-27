@@ -33,7 +33,7 @@
 Ext.define('Sonicle.webtop.calendar.EventInstanceId', {
 	singleton: true,
 	
-	MASTER_INSTANCE_DATE: '00000000',
+	NO_INSTANCE_DATE: '00000000',
 	
 	/**
 	 * Builds a Event instance ID from passed parameters.
@@ -45,7 +45,7 @@ Ext.define('Sonicle.webtop.calendar.EventInstanceId', {
 		if (Ext.isString(yyyymmdd)) {
 			return eventId + '.' + Sonicle.String.left(yyyymmdd, 8);
 		} else {
-			return eventId + '.'+this.MASTER_INSTANCE_DATE;
+			return eventId + '.'+this.NO_INSTANCE_DATE;
 		}
 	},
 	
@@ -55,17 +55,17 @@ Ext.define('Sonicle.webtop.calendar.EventInstanceId', {
 	 * @returns {String}
 	 */
 	instanceIdToMasterId: function(iid) {
-		return Sonicle.String.substrBefore(iid, '.') + '.'+this.MASTER_INSTANCE_DATE;
+		return Sonicle.String.substrBefore(iid, '.') + '.'+this.NO_INSTANCE_DATE;
 	},
 	
 	isSeriesMaster: function(iid, eventId) {
 		var SoS = Sonicle.String;
-		return !Ext.isEmpty(iid) && SoS.startsWith(iid, eventId+'.') && SoS.endsWith(iid, '.'+this.MASTER_INSTANCE_DATE);
+		return !Ext.isEmpty(iid) && SoS.startsWith(iid, eventId+'.') && SoS.endsWith(iid, '.'+this.NO_INSTANCE_DATE);
 	},
 	
 	isSeriesBroken: function(iid, eventId) {
 		var SoS = Sonicle.String;
-		return !Ext.isEmpty(iid) && !SoS.startsWith(iid, eventId+'.') && !SoS.endsWith(iid, '.'+this.MASTER_INSTANCE_DATE);
+		return !Ext.isEmpty(iid) && !SoS.startsWith(iid, eventId+'.') && !SoS.endsWith(iid, '.'+this.NO_INSTANCE_DATE);
 	},
 	
 	isSeriesItem: function(iid, eventId) {

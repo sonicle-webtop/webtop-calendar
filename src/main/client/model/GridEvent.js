@@ -42,20 +42,29 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 	
 	fields: [
 		WTF.roField('id', 'string'),
-		WTF.roField('eventId', 'string'),
+		WTF.roField('oid', 'string'),
 		WTF.roField('calendarId', 'string'),
 		WTF.roField('calendarName', 'string'),
 		WTF.roField('color', 'string'),
 		WTF.roField('org', 'string'),
-		WTF.roField('startDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
-		WTF.roField('endDate', 'date', {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.roField('allDay', 'boolean'),
+		WTF.roField('start', 'date', {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.roField('end', 'date', {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.roField('timezone', 'string'),
 		WTF.roField('title', 'string'),
 		WTF.roField('location', 'string'),
-		WTF.roField('meeting', 'string'),
+		WTF.roField('isPrivate', 'boolean'),
+		WTF.roField('isReadOnly', 'boolean'),
 		WTF.roField('tags', 'string'),
-		WTF.roField('isAllDay', 'boolean'),
-		WTF.calcField('duration', 'int', ['startDate', 'endDate', 'isAllDay'], function(v, rec, start, end, ad) {
+		WTF.roField('hasRecur', 'boolean'),
+		WTF.roField('hasTz', 'boolean'),
+		WTF.roField('hasAtts', 'boolean'),
+		WTF.roField('_owPid', 'string'),
+		WTF.roField('_orDN', 'string'),
+		WTF.roField('_foPerms', 'string'),
+		WTF.roField('_itPerms', 'string'),
+		
+		WTF.calcField('duration', 'int', ['start', 'end', 'allDay'], function(v, rec, start, end, ad) {
 			var SoD = Sonicle.Date, diff;
 			if (ad === true) {
 				if (end.getHours() === 23 && end.getMinutes() === 59) {
@@ -66,28 +75,21 @@ Ext.define('Sonicle.webtop.calendar.model.GridEvent', {
 				diff = SoD.diff(start, end, Ext.Date.SECOND, true);
 			}
 			return diff ? Math.abs(diff) : 0;
-		}),
-		
-		WTF.roField('hasRecur', 'boolean'),
-		
-		WTF.roField('_owPid', 'string'),
-		WTF.roField('_orDN', 'string'),
-		WTF.roField('_foPerms', 'string'),
-		WTF.roField('_itPerms', 'string')
+		})
 	],
 	
 	isSeriesMaster: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('eventId')) && me.get('hasRecur');
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('oid')) && me.get('hasRecur');
 	},
 	
 	isSeriesItem: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('eventId')) && me.get('hasRecur');
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('oid')) && me.get('hasRecur');
 	},
 	
 	isSeriesBroken: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('eventId'));
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('oid'));
 	}
 });

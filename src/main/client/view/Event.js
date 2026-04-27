@@ -1092,8 +1092,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 											}
 										}
 									]
-								},
-								{
+								}, {
 									xtype: 'soformactionfeedback',
 									bind: {
 										hidden: '{!foIsSeriesBroken}'

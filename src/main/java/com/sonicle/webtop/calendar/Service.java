@@ -76,6 +76,7 @@ import com.sonicle.webtop.calendar.bol.js.JsCalendarSharing;
 import com.sonicle.webtop.calendar.bol.js.JsContact;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode;
 import com.sonicle.webtop.calendar.bol.js.JsFolderNode.JsFolderNodeList;
+import com.sonicle.webtop.calendar.bol.js.JsGridEvent;
 import com.sonicle.webtop.calendar.bol.js.JsPletEvents;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSFolder;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
@@ -1243,7 +1244,6 @@ public class Service extends BaseService {
 	}
 	
 	public void processManageGridEvents(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
-		ArrayList<JsSchedulerEvent> items = new ArrayList<>();
 		UserProfile userProfile = getEnv().getProfile();
 		DateTimeZone userTimeZone = userProfile.getTimeZone();
 		
@@ -1259,6 +1259,7 @@ public class Service extends BaseService {
 				
 				Map<String, CustomField.Type> map = cacheSearchableCustomFieldType.shallowCopy();
 				Set<Integer> activeCalIds = getActiveFolderIds();
+				ArrayList<JsGridEvent> items = new ArrayList<>();
 				List<EventLookupInstance> instances = manager.listEventInstances(activeCalIds, EventQueryUI.build(queryObj, map, userTimeZone), true, userTimeZone);
 				for (EventLookupInstance instance : instances) {
 					final CalendarFSOrigin origin = foldersTreeCache.getOriginByFolder(instance.getCalendarId());
@@ -1267,7 +1268,7 @@ public class Service extends BaseService {
 					if (folder == null) continue;
 					
 					final CalendarPropSet props = foldersPropsCache.get(folder.getFolderId()).orElse(null);
-					items.add(new JsSchedulerEvent(origin, folder, props, instance, userProfile.getId(), userTimeZone, MEETING_PROVIDERS_URLS_PATTERN));
+					items.add(new JsGridEvent(origin, folder, props, instance, userProfile.getId(), userTimeZone));
 				}
 				
 				new JsonResult("events", items).printTo(out);

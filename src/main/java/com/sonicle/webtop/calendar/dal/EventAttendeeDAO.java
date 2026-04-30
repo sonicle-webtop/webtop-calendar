@@ -112,13 +112,13 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateAttendeeResponseByIdsEvent(Connection con, String responseStatus, Optional<DateTime> responseTimestamp, List<String> attendeeIds, String eventId) throws DAOException {
+	public int updateAttendeeResponseByIdsEvent(Connection con, String responseStatus, /*@Nullable*/ DateTime responseTimestamp, List<String> attendeeIds, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		UpdateSetMoreStep update = dsl
 			.update(EVENTS_ATTENDEES)
 			.set(EVENTS_ATTENDEES.RESPONSE_STATUS, responseStatus);
 		
-		if (responseTimestamp.isPresent()) {
+		if (responseTimestamp != null) {
 			update = update
 				.set(EVENTS_ATTENDEES.RESPONSE_TIMESTAMP, responseTimestamp);
 		}

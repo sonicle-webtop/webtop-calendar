@@ -4076,7 +4076,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		// Update responses
-		Optional<DateTime> responseTimestamp = setTimestamp ? Optional.of(BaseDAO.createRevisionTimestamp()) : Optional.empty();
+		DateTime responseTimestamp = setTimestamp ? BaseDAO.createRevisionTimestamp() : null;
 		int ret = attDao.updateAttendeeResponseByIdsEvent(con, EnumUtils.toSerializedName(responseStatus), responseTimestamp, matchingIds, eventId);
 		if (ret > 0) evtDao.updateRevision(con, eventId, BaseDAO.createRevisionTimestamp());
 		if (matchingIds.size() == ret) {
@@ -4090,7 +4090,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		EventDAO evtDao = EventDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 		
-		Optional<DateTime> responseTimestamp = setTimestamp ? Optional.of(BaseDAO.createRevisionTimestamp()) : Optional.empty();	
+		DateTime responseTimestamp = setTimestamp ? BaseDAO.createRevisionTimestamp() : null;	
 		int ret = attDao.updateAttendeeResponseByIdsEvent(con, EnumUtils.toSerializedName(responseStatus), responseTimestamp, Arrays.asList(attendeeId), eventId);
 		if (ret == 1) evtDao.updateRevision(con, eventId, BaseDAO.createRevisionTimestamp());
 		return ret;

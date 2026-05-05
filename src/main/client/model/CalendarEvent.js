@@ -37,26 +37,20 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 		'WTA.sdk.mixin.ItemWithinFolder'
 	],
 	
-	allDayField: 'isAllDay',
-	startField: 'startDate',
-	endField: 'endDate',
-	
 	identifier: 'sequential',
 	idProperty: 'id',
 	fields: [
 		WTF.field('id', 'string', false),
-		WTF.field('eventId', 'string', false),
+		WTF.field('oid', 'string', false),
 		WTF.field('calendarId', 'int', false),
 		WTF.field('calendarName', 'string', false),
 		WTF.field('color', 'string', false),
 		WTF.field('org', 'string', false),
-		
-		WTF.field('startDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
-		WTF.field('endDate', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.field('allDay', 'boolean', false, {defaultValue: false}),
+		WTF.field('start', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
+		WTF.field('end', 'date', false, {dateFormat: 'Y-m-d H:i:s'}),
 		WTF.field('timezone', 'string', false),
-		WTF.field('isAllDay', 'boolean', false, {defaultValue: false}),
 		WTF.field('title', 'string', false),
-		
 		WTF.field('location', 'string', true),
 		WTF.field('description', 'string', false),
 		WTF.field('meeting', 'string', true),
@@ -80,17 +74,17 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 	
 	isSeriesMaster: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('eventId')) && me.get('hasRecur');
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('oid')) && me.get('hasRecur');
 	},
 	
 	isSeriesItem: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('eventId')) && me.get('hasRecur');
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('oid')) && me.get('hasRecur');
 	},
 	
 	isSeriesBroken: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('eventId'));
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('oid'));
 	},
 	
 	privates: {
@@ -101,7 +95,7 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 		},
 		
 		fcIsEditable: function() {
-			return !this.get('isReadOnly') && !this.isSeriesItem();
+			return !this.get('isReadOnly');
 		},
 
 		fcPrepareEventExtendedProps: function() {

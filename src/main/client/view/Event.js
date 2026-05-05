@@ -906,8 +906,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								{
 									xtype: 'datefield',
 									bind: {
-										value: '{startDate}',
-										disabled: '{foIsSeriesItem}'
+										value: '{startDate}'
 									},
 									startDay: WT.getStartDay(),
 									format: WT.getShortDateFmt(),
@@ -943,8 +942,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 								}, {
 									xtype: 'datefield',
 									bind: {
-										value: '{endDate}',
-										disabled: '{foIsSeriesItem}'
+										value: '{endDate}'
 									},
 									startDay: WT.getStartDay(),
 									format: WT.getShortDateFmt(),

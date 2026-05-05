@@ -54,15 +54,15 @@ import com.sonicle.webtop.calendar.model.EventBounds;
  */
 public class JsSchedulerEvent {
 	public String id;
-	public String eventId;
+	public String oid;
 	public Integer calendarId;
 	public String calendarName;
 	public String color;
 	public String org;
-	public String startDate;
-	public String endDate;
+	public Boolean allDay;
+	public String start;
+	public String end;
 	public String timezone;
-	public Boolean isAllDay;
 	public String title;
 	
 	public String location;
@@ -90,7 +90,7 @@ public class JsSchedulerEvent {
 		Calendar calendar = folder.getCalendar();
 		
 		id = event.getId().toString();
-		eventId = event.getOriginalEventId();
+		oid = event.getOriginalEventId();
 		calendarId = event.getCalendarId();
 		calendarName = calendar.getName();
 		color = calendar.getColor();
@@ -98,9 +98,9 @@ public class JsSchedulerEvent {
 		org = event.getOrganizerCN();
 		
 		EventBounds eventBoundary = CalendarUtils.toEventBounds(event);
-		isAllDay = eventBoundary.isAllDay();
-		startDate = ymdhmsZoneFmt.print(eventBoundary.getStart());
-		endDate = ymdhmsZoneFmt.print(eventBoundary.getEnd());
+		allDay = eventBoundary.isAllDay();
+		start = ymdhmsZoneFmt.print(eventBoundary.getStart());
+		end = ymdhmsZoneFmt.print(eventBoundary.getEnd());
 		timezone = event.getTimezone();
 		
 		title = event.getTitle();

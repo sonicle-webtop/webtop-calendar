@@ -1125,7 +1125,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				tooltip: null,
 				handler: function(s, e) {
 					var rec = e.menuData.event;
-					me.openAuditUI(rec.get('eventId'), 'EVENT');
+					me.openAuditUI(rec.get('oid'), 'EVENT');
 				},
 				scope: me
 			});
@@ -1671,25 +1671,37 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	},
 	
 	updateSchedEventUI: function(rec, newStartDate, newEndDate, newTitle) {
+		var me = this;
+		
+		if (rec.isSeriesItem()) {
+			me.confirmOnRecurringFor('save', rec.get('title'), function(bid, value) {
+				if (bid === 'ok') me._updateSchedEventUI(rec, newStartDate, newEndDate, newTitle, value);
+			}, me);
+		} else {
+			me._updateSchedEventUI(rec, newStartDate, newEndDate, newTitle, 'all');
+		}
+	},
+	
+	_updateSchedEventUI: function(rec, newStartDate, newEndDate, newTitle, target) {
 		var me = this,
-				doFn = function(notify) {
-					me.updateEvent(rec.getId(), newStartDate, newEndDate, newTitle, null, notify, {
-						callback: function(success) {
-							if (success) me.reloadEvents();
-						}
-					});
-				};
+			doFn = function(target, notify) {
+				me.updateEvent(rec.getId(), newStartDate, newEndDate, newTitle, target, notify, {
+					callback: function(success) {
+						if (success) me.reloadEvents();
+					}
+				});
+			};
 		
 		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
 			me.confirmOnInvitationFor('update', function(bid) {
 				if (bid === 'yes') {
-					doFn(true);
+					doFn(target, true);
 				} else if (bid === 'no') {
-					doFn(false);
+					doFn(target, false);
 				}
 			});
 		} else {
-			doFn(null);
+			doFn(target, null);
 		}
 	},
 	
@@ -1711,13 +1723,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 	
 	_deleteSchedEventUI: function(rec, target) {
 		var me = this,
-				doFn = function(notify) {
-					me.deleteEvent(rec.getId(), target, notify, {
-						callback: function(success) {
-							if (success) me.reloadEvents();
-						}
-					});
-				};
+			doFn = function(notify) {
+				me.deleteEvent(rec.getId(), target, notify, {
+					callback: function(success) {
+						if (success) me.reloadEvents();
+					}
+				});
+			};
 		
 		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
 			me.confirmOnInvitationFor('update', function(bid) {

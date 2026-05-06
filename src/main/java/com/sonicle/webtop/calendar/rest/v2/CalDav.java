@@ -91,7 +91,7 @@ public class CalDav extends CaldavApi {
 	private static final DateTimeFormatter ETAG_FORMATTER = JodaTimeUtils.createFormatter("yyyyMMddHHmmssSSS", DateTimeZone.UTC);
 	
 	@Override
-	public Response getCalendars() {
+	public Response getDavCalendars() {
 		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		List<ApiDavCalendar> items = new ArrayList<>();
@@ -127,7 +127,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response getCalendar(String calendarUid) {
+	public Response getDavCalendar(String calendarUid) {
 		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		
@@ -157,7 +157,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response addCalendar(ApiDavCalendarNew body) {
+	public Response addDavCalendar(ApiDavCalendarNew body) {
 		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		
@@ -181,7 +181,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response updateCalendar(String calendarUid, ApiDavCalendarUpdate body) {
+	public Response updateDavCalendar(String calendarUid, ApiDavCalendarUpdate body) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -216,7 +216,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response deleteCalendar(String calendarUid) {
+	public Response deleteDavCalendar(String calendarUid) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -242,7 +242,7 @@ public class CalDav extends CaldavApi {
 	}
 	
 	@Override
-	public Response getCalObjects(String calendarUid, List<String> hrefs) {
+	public Response getDavCalObjects(String calendarUid, List<String> hrefs) {
 		CalendarManager manager = getManager();
 		List<ApiDavCalObject> items = new ArrayList<>();
 		
@@ -278,7 +278,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response getCalObjectsChanges(String calendarUid, String syncToken, Integer limit) {
+	public Response getDavCalObjectsChanges(String calendarUid, String syncToken, Integer limit) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -309,7 +309,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response getCalObject(String calendarUid, String href) {
+	public Response getDavCalObject(String calendarUid, String href) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -336,7 +336,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response addCalObject(String calendarUid, ApiDavCalObjectNew body) {
+	public Response addDavCalObject(String calendarUid, ApiDavCalObjectNew body) {
 		CalendarManager manager = getManager();
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
@@ -360,7 +360,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response updateCalObject(String calendarUid, String href, String body) {
+	public Response updateDavCalObject(String calendarUid, String href, String body) {
 		CalendarManager manager = getManager();
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
@@ -386,7 +386,7 @@ public class CalDav extends CaldavApi {
 	}
 
 	@Override
-	public Response deleteCalObject(String calendarUid, String href) {
+	public Response deleteDavCalObject(String calendarUid, String href) {
 		CalendarManager manager = getManager();
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		

@@ -14,28 +14,27 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-/**
- * Bean for carry event&#39;s stat fields
- **/
-@ApiModel(description = "Bean for carry event's stat fields")
-@JsonTypeName("EasSyncEventStat")
+
+
+@JsonTypeName("Event_allOf")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
-public class ApiEasSyncEventStat   {
+public class ApiEventAllOf   {
   private @Valid String id;
   private @Valid String etag;
+  private @Valid String createdAt;
+  private @Valid String updatedAt;
 
   /**
-   * Event ID (internal)
+   * The event&#39;s unique ID.
    **/
-  public ApiEasSyncEventStat id(String id) {
+  public ApiEventAllOf id(String id) {
     this.id = id;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "Event ID (internal)")
+  @ApiModelProperty(value = "The event's unique ID.")
   @JsonProperty("id")
-  @NotNull
   public String getId() {
     return id;
   }
@@ -46,17 +45,16 @@ public class ApiEasSyncEventStat   {
   }
 
   /**
-   * Revision tag
+   * The revision identifier that refers to the last modification.
    **/
-  public ApiEasSyncEventStat etag(String etag) {
+  public ApiEventAllOf etag(String etag) {
     this.etag = etag;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "Revision tag")
+  @ApiModelProperty(value = "The revision identifier that refers to the last modification.")
   @JsonProperty("etag")
-  @NotNull
   public String getEtag() {
     return etag;
   }
@@ -64,6 +62,46 @@ public class ApiEasSyncEventStat   {
   @JsonProperty("etag")
   public void setEtag(String etag) {
     this.etag = etag;
+  }
+
+  /**
+   * Creation timestamp in ISO 8601 format and UTC time.
+   **/
+  public ApiEventAllOf createdAt(String createdAt) {
+    this.createdAt = createdAt;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "Creation timestamp in ISO 8601 format and UTC time.")
+  @JsonProperty("createdAt")
+  public String getCreatedAt() {
+    return createdAt;
+  }
+
+  @JsonProperty("createdAt")
+  public void setCreatedAt(String createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  /**
+   * Modification timestamp in ISO 8601 format and UTC time.
+   **/
+  public ApiEventAllOf updatedAt(String updatedAt) {
+    this.updatedAt = updatedAt;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "Modification timestamp in ISO 8601 format and UTC time.")
+  @JsonProperty("updatedAt")
+  public String getUpdatedAt() {
+    return updatedAt;
+  }
+
+  @JsonProperty("updatedAt")
+  public void setUpdatedAt(String updatedAt) {
+    this.updatedAt = updatedAt;
   }
 
 
@@ -75,23 +113,27 @@ public class ApiEasSyncEventStat   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiEasSyncEventStat easSyncEventStat = (ApiEasSyncEventStat) o;
-    return Objects.equals(this.id, easSyncEventStat.id) &&
-        Objects.equals(this.etag, easSyncEventStat.etag);
+    ApiEventAllOf eventAllOf = (ApiEventAllOf) o;
+    return Objects.equals(this.id, eventAllOf.id) &&
+        Objects.equals(this.etag, eventAllOf.etag) &&
+        Objects.equals(this.createdAt, eventAllOf.createdAt) &&
+        Objects.equals(this.updatedAt, eventAllOf.updatedAt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag);
+    return Objects.hash(id, etag, createdAt, updatedAt);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiEasSyncEventStat {\n");
+    sb.append("class ApiEventAllOf {\n");
     
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    etag: ").append(toIndentedString(etag)).append("\n");
+    sb.append("    createdAt: ").append(toIndentedString(createdAt)).append("\n");
+    sb.append("    updatedAt: ").append(toIndentedString(updatedAt)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -13,6 +13,7 @@ import io.swagger.annotations.*;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
@@ -21,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Bean for carry event's fields")
 @JsonTypeName("EasSyncEvent")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-11-04T12:39:39.410+01:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
 public class ApiEasSyncEvent   {
   private @Valid String id;
   private @Valid String etag;
@@ -38,7 +39,7 @@ public class ApiEasSyncEvent   {
   private @Valid Integer reminder;
   private @Valid String recRule;
   private @Valid String recStart;
-  private @Valid List<String> exDates = null;
+  private @Valid List<String> exDates;
   private @Valid List<ApiEasSyncEventDataAttendee> attendees = new ArrayList<>();
 
   /**
@@ -496,4 +497,3 @@ public class ApiEasSyncEvent   {
 
 
 }
-

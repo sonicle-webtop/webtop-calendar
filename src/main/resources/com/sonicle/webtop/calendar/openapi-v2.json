@@ -32,7 +32,7 @@
           "dav"
         ],
         "summary": "List all calendars",
-        "operationId": "getCalendars",
+        "operationId": "getDavCalendars",
         "responses": {
           "200": {
             "description": "Success",
@@ -55,7 +55,7 @@
           "dav"
         ],
         "summary": "Adds a new calendar",
-        "operationId": "addCalendar",
+        "operationId": "addDavCalendar",
         "requestBody": {
           "content": {
             "application/json": {
@@ -88,7 +88,7 @@
           "dav"
         ],
         "summary": "Gets a single calendar",
-        "operationId": "getCalendar",
+        "operationId": "getDavCalendar",
         "responses": {
           "200": {
             "description": "Success",
@@ -116,7 +116,7 @@
           "dav"
         ],
         "summary": "Updates a calendar",
-        "operationId": "updateCalendar",
+        "operationId": "updateDavCalendar",
         "requestBody": {
           "content": {
             "application/json": {
@@ -149,7 +149,7 @@
           "dav"
         ],
         "summary": "Deletes a calendar",
-        "operationId": "deleteCalendar",
+        "operationId": "deleteDavCalendar",
         "responses": {
           "204": {
             "description": "Success",
@@ -189,7 +189,7 @@
           "dav"
         ],
         "summary": "List all calendar objects belonging to a specific calendar",
-        "operationId": "getCalObjects",
+        "operationId": "getDavCalObjects",
         "parameters": [
           {
             "name": "hrefs",
@@ -226,7 +226,7 @@
           "dav"
         ],
         "summary": "Adds a new calendar object",
-        "operationId": "addCalObject",
+        "operationId": "addDavCalObject",
         "requestBody": {
           "content": {
             "application/json": {
@@ -265,7 +265,7 @@
         ],
         "summary": "Get calendar object changes",
         "description": "Returns changed CalendarObjects (added/modified/deleted) since the specified syncToken. If token is not provided, the initial sync configuration will be returned.",
-        "operationId": "getCalObjectsChanges",
+        "operationId": "getDavCalObjectsChanges",
         "parameters": [
           {
             "name": "syncToken",
@@ -321,7 +321,7 @@
           "dav"
         ],
         "summary": "Get a single calendar object",
-        "operationId": "getCalObject",
+        "operationId": "getDavCalObject",
         "responses": {
           "200": {
             "description": "Success",
@@ -349,7 +349,7 @@
           "dav"
         ],
         "summary": "Updates a calendar object",
-        "operationId": "updateCalObject",
+        "operationId": "updateDavCalObject",
         "requestBody": {
           "content": {
             "text/calendar": {
@@ -382,7 +382,7 @@
           "dav"
         ],
         "summary": "Deletes a calendar object",
-        "operationId": "deleteCalObject",
+        "operationId": "deleteDavCalObject",
         "responses": {
           "204": {
             "description": "Success",
@@ -427,7 +427,7 @@
           "eas"
         ],
         "summary": "List all folders",
-        "operationId": "getFolders",
+        "operationId": "getEasFolders",
         "responses": {
           "200": {
             "description": "Success",
@@ -452,7 +452,7 @@
           "eas"
         ],
         "summary": "List all messages for a specific folder",
-        "operationId": "getMessagesStats",
+        "operationId": "getEasMessagesStats",
         "parameters": [
           {
             "name": "cutoffDate",
@@ -504,7 +504,7 @@
           "eas"
         ],
         "summary": "Adds a message",
-        "operationId": "addMessage",
+        "operationId": "addEasMessage",
         "requestBody": {
           "content": {
             "application/json": {
@@ -549,7 +549,7 @@
           "eas"
         ],
         "summary": "Get a single message",
-        "operationId": "getMessage",
+        "operationId": "getEasMessage",
         "responses": {
           "200": {
             "description": "Success",
@@ -577,7 +577,7 @@
           "eas"
         ],
         "summary": "Updates a message",
-        "operationId": "updateMessage",
+        "operationId": "updateEasMessage",
         "requestBody": {
           "content": {
             "application/json": {
@@ -619,7 +619,7 @@
           "eas"
         ],
         "summary": "Deletes a message",
-        "operationId": "deleteMessage",
+        "operationId": "deleteEasMessage",
         "responses": {
           "204": {
             "description": "Success",
@@ -658,6 +658,696 @@
           "example": "1234"
         }
       ]
+    },
+    "/me/calendars": {
+      "get": {
+        "summary": "List Calendars",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarsResult"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "operationId": "listCalendars",
+        "description": "Returns a list of Calendars readable by the current user: this includes both personal and incoming shared categories.\n\nParam *_filter* supports the following fields in RSQL condition:\nid, createdAt, updatedAt, userId, builtIn, provider, name, description, color, easSync\n\nParam *_select* supports the following fields:\nprovider, builtIn, name, description, color, easSync, defSensitivity, defShowAs, defReminder, remoteSyncFrequency, remoteSyncTimestamp, remoteSyncToken",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/_filter"
+          },
+          {
+            "$ref": "#/components/parameters/_select"
+          },
+          {
+            "$ref": "#/components/parameters/_orderBy"
+          },
+          {
+            "$ref": "#/components/parameters/_pageNo"
+          },
+          {
+            "$ref": "#/components/parameters/_pageSize"
+          },
+          {
+            "$ref": "#/components/parameters/_returnCount"
+          }
+        ]
+      },
+      "post": {
+        "summary": "Add a Calendar",
+        "operationId": "addCalendar",
+        "responses": {
+          "201": {
+            "description": "Calendar created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Calendar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "user_id",
+            "description": "The ID of a user"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarBase"
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Adds new category specifying the owning user ID. If no user ID is provided, the owner will be the current user."
+      }
+    },
+    "/me/calendars/{calendar_id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "calendar_id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Get a Calendar",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Calendar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Calendar not found"
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "operationId": "getCalendar",
+        "description": "Gets the specified Calendar given its ID."
+      },
+      "put": {
+        "summary": "Update a Calendar",
+        "operationId": "updateCalendar",
+        "responses": {
+          "200": {
+            "description": "Calendar updated"
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Calendar not found"
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "x-codegen-request-body-name": "body",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarBase"
+              }
+            }
+          }
+        },
+        "description": "Update the specified Calendar given its ID. You can choose to update the entire object or only a subset of data."
+      },
+      "delete": {
+        "summary": "Delete a Calendar",
+        "operationId": "deleteCalendar",
+        "responses": {
+          "204": {
+            "description": "Calendar deleted"
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Calendar not found"
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "description": "Delete a Calendar given its ID."
+      }
+    },
+    "/me/calendars/{calendar_id}/events": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "calendar_id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "List Events of a Calendar",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Calendar not found"
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "operationId": "listCalendarEvents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/_filter"
+          },
+          {
+            "$ref": "#/components/parameters/_select"
+          },
+          {
+            "$ref": "#/components/parameters/_orderBy"
+          },
+          {
+            "$ref": "#/components/parameters/_pageNo"
+          },
+          {
+            "$ref": "#/components/parameters/_pageSize"
+          },
+          {
+            "$ref": "#/components/parameters/_returnCount"
+          }
+        ],
+        "description": "Returns a list of Events from specified Calendar.\n\nParam *_filter* supports the following fields in RSQL query conditions:\nid, createdAt, updatedAt, rowStatus, status, organizer, organizerId, title, location, description, timezone, allDay, start, end, visibility, transparency, tagId\n\nParam *_select* supports the following fields:\npublicUid, location, description, visibility, transparency, href, reminder"
+      },
+      "post": {
+        "summary": "Add an Event into Calendar",
+        "tags": [
+          "me"
+        ],
+        "operationId": "addCalendarEvent",
+        "responses": {
+          "201": {
+            "description": "Event created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Calendar not Found"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventEx"
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body",
+        "description": "Adds new Event into given Calendar."
+      }
+    },
+    "/me/calendars/{calendar_id}/events/delta": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "calendar_id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "List changes on Events collection",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsResultDelta"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "listCalendarEventsDelta",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/_syncToken"
+          },
+          {
+            "$ref": "#/components/parameters/_select"
+          }
+        ],
+        "description": "Get a set of Events that have been added, deleted, or updated in a specified Calendar, starting from a precise instant identified by a given syncToken.\n\nParam *_select* supports the following fields:\nlocation, description, visibility, transparency, href, reminder"
+      }
+    },
+    "/me/events": {
+      "post": {
+        "summary": "Add an Event",
+        "operationId": "addEvent",
+        "responses": {
+          "201": {
+            "description": "Event created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "calendar_id",
+            "required": true,
+            "description": "The Calendar ID where the event will be added into"
+          }
+        ],
+        "x-codegen-request-body-name": "body",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventEx"
+              }
+            }
+          }
+        },
+        "description": "Adds new Event into specified Calendar."
+      }
+    },
+    "/me/events/instances": {
+      "get": {
+        "summary": "List Event instances in a specific time-range.",
+        "operationId": "listEventInstances",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventLkpInstance"
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "description": "Returns a list of Event instances from specified calendars.\n\nParam *_filter* supports the following fields in RSQL query conditions:\nid, createdAt, updatedAt, rowStatus, status, organizer, organizerId, title, location, description, timezone, allDay, start, end, visibility, transparency, tagId\n\nParam *_select* supports the following fields:\npublicUid, location, description, visibility, transparency, href, reminder",
+        "tags": [
+          "me"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "calendar_ids",
+            "description": "List (comma-separated) of Calendar IDs whose contacts should be included in the results.",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "rangeStart",
+            "description": "The start date and time (inclusive) of the time range, represented in ISO 8601 format and UTC time.",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "rangeEnd",
+            "description": "The end date and time (exclusive) of the time range, represented in ISO 8601 format and UTC time.",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "in": "query",
+            "name": "sort",
+            "description": "Specified wheather to sort results by date"
+          },
+          {
+            "$ref": "#/components/parameters/_filter"
+          },
+          {
+            "$ref": "#/components/parameters/_select"
+          }
+        ]
+      }
+    },
+    "/me/event/instances/dates": {
+      "get": {
+        "summary": "List dates in a specific time-range within Event instances.",
+        "operationId": "listEventInstancesDates",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Not allowed"
+          }
+        },
+        "description": "Returns a list of dates that contains any Event instances according to specified calendars.\n\nParam *_filter* supports the following fields in RSQL query conditions:\nid, createdAt, updatedAt, rowStatus, status, organizer, organizerId, title, location, description, timezone, allDay, start, end, visibility, transparency, tagId",
+        "tags": [
+          "me"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "calendar_ids",
+            "description": "List (comma-separated) of Calendar IDs whose contacts should be included in the results.",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "rangeStart",
+            "description": "The start date and time (inclusive) of the time range, represented in ISO 8601 format and UTC time.",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "rangeEnd",
+            "description": "The end date and time (exclusive) of the time range, represented in ISO 8601 format and UTC time.",
+            "required": true
+          },
+          {
+            "$ref": "#/components/parameters/_filter"
+          }
+        ]
+      }
+    },
+    "/me/events/instances/{event_instance_id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "event_instance_id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Get an Event instance",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "operationId": "getEventInstance",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/_select"
+          }
+        ],
+        "description": "Retrieve a specific event instance identified by its instance ID.\n\nThe event_instance_id uses the format {eventId}.{date} and determines what is returned:\n\n- {eventId}.00000000 — targets a single event or the master event of a recurring series. Returns the event object with its recurrence rules, but does not expand the individual occurrences of the series.\n- {eventId}.{YYYYMMDD} — targets a single occurrence or an exception. Returns the resolved instance for that date, merging the master event data with any exception overrides applicable to that occurrence.\n\nParam *_select* supports the following fields:\ndisplayName, title, firstName, lastName, nickname, mobile, pager1, pager2, email1, email2, email3, im1, im2, im3, workAddress, workPostalCode, workCity, workState, workCountry, workTelephone1, workTelephone2, workFax, homeAddress, homePostalCode, homeCity, homeState, homeCountry, homeTelephone1, homeTelephone2, homeFax, otherAddress, otherPostalCode, otherCity, otherState, otherCountry, taxCode, vatNumber, eInvoicingCode"
+      },
+      "put": {
+        "summary": "Update an Event instance",
+        "operationId": "updateEventInstance",
+        "responses": {
+          "200": {
+            "description": "Event updated",
+            "content": {}
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventEx"
+              }
+            }
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/modify_since"
+          },
+          {
+            "$ref": "#/components/parameters/notify"
+          },
+          {
+            "$ref": "#/components/parameters/_update"
+          }
+        ],
+        "x-codegen-request-body-name": "body",
+        "description": "Update a specific Event instance identified by its instance ID.\n\nThe event_instance_id uses the format {eventId}.{date} and determines the scope of the update:\n- {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions.\n- {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.\n\nWhen targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update:\n- modify_since=false (default) — updates only the specified instance\n- modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged\n\nNote: modify_since is ignored for single events and master events.\nYou can update the entire event object or a subset of its fields."
+      },
+      "delete": {
+        "summary": "Delete an Event instance",
+        "operationId": "deleteEventInstance",
+        "responses": {
+          "204": {
+            "description": "Event deleted"
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "description": "Delete a specific Event instance identified by its instance ID.\n\nThe event_instance_id uses the format {eventId}.{date} and determines the scope of the deletion:\n- {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the event is permanently deleted. For master events, the entire series is deleted including all its instances and exceptions.\n- {eventId}.{YYYYMMDD} — targets a single occurrence; the occurrence is removed from the series and added to the exclusion list of the master event, leaving the rest of the series unaffected.\n\nWhen targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the deletion:\n- modify_since=false (default) — deletes only the specified instance\n- modify_since=true — splits the series at the specified date; all occurrences from that date onward are deleted, while earlier occurrences remain unchanged. This operation truncates the master event's recurrence rule accordingly.\n\nNote: modify_since is ignored for single events and master events.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/modify_since"
+          },
+          {
+            "$ref": "#/components/parameters/notify"
+          }
+        ]
+      }
+    },
+    "/me/events/instances/{event_instance_id}/quick": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "event_instance_id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "put": {
+        "summary": "Update an Event instance quickly",
+        "operationId": "updateEventInstanceQuick",
+        "responses": {
+          "200": {
+            "description": "Event updated",
+            "content": {}
+          },
+          "400": {
+            "description": "Invalid parameter"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventQuick"
+              }
+            }
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/modify_since"
+          },
+          {
+            "$ref": "#/components/parameters/notify"
+          }
+        ],
+        "x-codegen-request-body-name": "body",
+        "description": "Update the specified Event instance given its instance ID. This is the quick version of the update operation where you can specify fresh values for some main fields."
+      }
+    },
+    "/me/events/instances/{event_instance_id}/response": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "event_instance_id",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "put": {
+        "summary": "Update the response to an Event invitation",
+        "operationId": "updateEventInstanceResponse",
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "404": {
+            "description": "Event or invitation not found"
+          }
+        },
+        "tags": [
+          "me"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventResponse"
+              }
+            }
+          }
+        },
+        "description": "Update the invitation response for the specified Event instance."
+      }
     }
   },
   "components": {
@@ -1178,6 +1868,990 @@
           }
         },
         "description": "Bean for carry attendee's fields"
+      },
+      "CalendarBase": {
+        "title": "CalendarBase",
+        "x-stoplight": {
+          "id": "i5rv41qhzbqj2"
+        },
+        "type": "object",
+        "description": "Represent a Calendar object with base updateable fields.",
+        "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "mye3a0yxjxtq8"
+            },
+            "enum": [
+              "local",
+              "webcal",
+              "caldav"
+            ],
+            "description": "Specifies the data provider. Defaults to `local`.",
+            "default": "local"
+          },
+          "builtIn": {
+            "type": "boolean",
+            "x-stoplight": {
+              "id": "e4eshmtvc48ei"
+            },
+            "description": "Specifies whether the calendar is built-in.",
+            "default": false,
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "w6gj7gcll6aaf"
+            },
+            "description": "The name of the calendar."
+          },
+          "description": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "9bbsvfjn007nc"
+            },
+            "description": "Optional description of the calendar."
+          },
+          "color": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "w764qr2pno4d5"
+            },
+            "description": "The color associated to the calendar.",
+            "default": "#F3F4F6"
+          },
+          "easSync": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "t4iypo144a8oc"
+            },
+            "enum": [
+              "off",
+              "read",
+              "read-write"
+            ],
+            "description": "Sets the EAS synchronization status."
+          },
+          "defVisibility": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "lxzshexvtgtkn"
+            },
+            "description": "Default visibility value for new events.",
+            "enum": [
+              "PU",
+              "PV"
+            ]
+          },
+          "defTransparency": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "bgzpgmtxt2ayl"
+            },
+            "description": "Default transparency value for new events.",
+            "enum": [
+              "TP",
+              "OP"
+            ]
+          },
+          "defReminder": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "t0kjevqck6as7"
+            },
+            "format": "int32",
+            "description": "Default reminder value for new events."
+          },
+          "remoteSyncFrequency": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "8vkva58zkm2zm"
+            },
+            "description": "Sync frequency (in minutes) for remote calendars (webcal, caldav).",
+            "minimum": 0
+          },
+          "remoteSyncTimestamp": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "pe2kj2sq0njqc"
+            },
+            "description": "The last remote sync execution timestamp, in ISO 8601 format and UTC time.",
+            "readOnly": true
+          },
+          "remoteSyncToken": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "ofbyh51vsi29c"
+            },
+            "description": "The sync-token returned by the last remote sync.",
+            "readOnly": true
+          },
+          "providerParams": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "3yjyhm6kzeqsd"
+            },
+            "description": "Configuration params for non-local calendars in JSON form."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Calendar": {
+        "title": "Calendar",
+        "x-stoplight": {
+          "id": "1z7jqaci22ev0"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The calendar ID.",
+                "readOnly": true
+              },
+              "etag": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "6hd5a4dj2sit0"
+                },
+                "description": "The revision identifier that refers to the last modification.",
+                "readOnly": true
+              },
+              "itemsETag": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "6vi83rfvu3i93"
+                },
+                "description": "The revision identifier that refers to the last modification of the items.",
+                "readOnly": true
+              },
+              "createdAt": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "9abtyvwkehyn7"
+                },
+                "description": "Creation timestamp in ISO 8601 format and UTC time.",
+                "readOnly": true
+              },
+              "updatedAt": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "i8mrmcvtsm31p"
+                },
+                "description": "Modification timestamp in ISO 8601 format and UTC time.",
+                "readOnly": true
+              },
+              "owner": {
+                "$ref": "#/components/schemas/OwnerInfo"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/CalendarBase"
+          }
+        ],
+        "description": "Represent a Calendar that contains Events."
+      },
+      "CalendarsResult": {
+        "title": "CalendarsResult",
+        "x-stoplight": {
+          "id": "syh3tp8v76buh"
+        },
+        "type": "object",
+        "description": "Represents a response object for a collection of Calendars.",
+        "properties": {
+          "totalCount": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "tqc5s0xit14li"
+            },
+            "description": "Items total count, usually used for pagination.",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "x-stoplight": {
+              "id": "oqi94av87i3k0"
+            },
+            "items": {
+              "$ref": "#/components/schemas/Calendar"
+            }
+          }
+        },
+        "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)"
+      },
+      "EventBase": {
+        "title": "EventBase",
+        "x-stoplight": {
+          "id": "9ipu3t9xjop1k"
+        },
+        "type": "object",
+        "description": "Represent an Event object with base updateable fields.",
+        "properties": {
+          "publicUid": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "2hmakkywlrde3"
+            }
+          },
+          "rowStatus": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "tcfy3zyqw9itj"
+            },
+            "enum": [
+              "DF",
+              "RO"
+            ],
+            "description": "Status of the event row: DF=default, RO=read-only."
+          },
+          "status": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "9q3oqvo303qb9"
+            },
+            "description": "Status of the event: CF=confirmed.",
+            "enum": [
+              "CO"
+            ]
+          },
+          "organizer": {
+            "$ref": "#/components/schemas/EventOrganizer"
+          },
+          "timezone": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "d2sa2zoa12fkf"
+            },
+            "description": "The timezone ID. (Formatted as an IANA Time Zone Database name, e.g. \"Europe/Zurich\".)"
+          },
+          "allDay": {
+            "type": "boolean",
+            "x-stoplight": {
+              "id": "pyktgd8ep0fks"
+            },
+            "description": "Set to true if the event lasts all day."
+          },
+          "start": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "pjodp7ccaecvq"
+            },
+            "description": "The (inclusive) start time of the event. For a recurring event, this is the start time of the first instance."
+          },
+          "end": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "44mxfdw129dfr"
+            },
+            "description": "The (exclusive) end time of the event. For a recurring event, this is the end time of the first instance."
+          },
+          "title": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "kpn69aukatk6y"
+            },
+            "description": "Title of the event."
+          },
+          "location": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "kultsun88f9zc"
+            },
+            "description": "The location of the event. Optional."
+          },
+          "descriptionType": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "by5w818flvage"
+            },
+            "enum": [
+              "text"
+            ],
+            "description": "Specifies the data format of the description."
+          },
+          "description": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "iryr85jxwwhqj"
+            },
+            "description": "Description of the event. Optional."
+          },
+          "visibility": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "oxij1f2yct3ey"
+            },
+            "description": "Visibility of the event: PU=public, PV=private",
+            "enum": [
+              "PU",
+              "PV"
+            ]
+          },
+          "transparency": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "1w7g3r0d2w3zn"
+            },
+            "description": "Whether the event blocks time on the calendar: TP=transparent, OP=opaque.",
+            "enum": [
+              "TP",
+              "OP"
+            ]
+          },
+          "reminder": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "o2qin2tyffblz"
+            },
+            "minimum": 0
+          },
+          "href": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "di64xj9xy4wmh"
+            }
+          }
+        },
+        "required": [
+          "timezone",
+          "allDay",
+          "start",
+          "end",
+          "title"
+        ]
+      },
+      "EventEx": {
+        "title": "EventEx",
+        "x-stoplight": {
+          "id": "dyn1h9544yz53"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "x-stoplight": {
+              "id": "db1bqotmbw9qy"
+            },
+            "properties": {
+              "recurrence": {
+                "$ref": "#/components/schemas/EventRecurrence"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/EventBase"
+          }
+        ],
+        "description": "Represent an Event object with extended data."
+      },
+      "Event": {
+        "title": "Event",
+        "x-stoplight": {
+          "id": "zrzyriw5s6b0q"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The event's unique ID.",
+                "readOnly": true
+              },
+              "etag": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "a646fb3kmz1pl"
+                },
+                "description": "The revision identifier that refers to the last modification.",
+                "readOnly": true
+              },
+              "createdAt": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "ssoqz88gghn9e"
+                },
+                "description": "Creation timestamp in ISO 8601 format and UTC time.",
+                "readOnly": true
+              },
+              "updatedAt": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "ymkgl2ue66fza"
+                },
+                "description": "Modification timestamp in ISO 8601 format and UTC time.",
+                "readOnly": true
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/EventEx"
+          }
+        ],
+        "description": "Represent an Event, a scheduled occurrence on a calendar, such as a meeting, holiday, or time block."
+      },
+      "EventInstance": {
+        "title": "EventInstance",
+        "x-stoplight": {
+          "id": "ub8xsqhg2iszw"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "x-stoplight": {
+              "id": "s498jmjey4j4m"
+            },
+            "properties": {
+              "iid": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "ytuc27nqicxa8"
+                },
+                "description": "The event's unique ID that identifies an instance.",
+                "readOnly": true
+              },
+              "instanceType": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "lk0dtlwdgxdzf"
+                },
+                "description": "The event instance type. The possible values are: SI=single, MA=master, OC=occurrence, EX=exception.",
+                "readOnly": true
+              },
+              "originalEventId": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "8ump7kqtbtbai"
+                },
+                "description": "The ID of the event.",
+                "readOnly": true
+              },
+              "seriesEventId": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "z6o9k513n2yqt"
+                },
+                "description": "The ID for the recurring series master item, if this event is part of a recurring series (master too).",
+                "readOnly": true
+              },
+              "etag": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "hap4jn9wliqav"
+                },
+                "description": "The revision identifier that refers to the last modification.",
+                "readOnly": true
+              },
+              "createdAt": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "j8e6pp9ypwn20"
+                },
+                "description": "Creation timestamp in ISO 8601 format and UTC time."
+              },
+              "updatedAt": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "fwt1yjvuqygza"
+                },
+                "description": "Modification timestamp in ISO 8601 format and UTC time."
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/EventEx"
+          }
+        ],
+        "description": "Represent an Event instance, a scheduled occurrence on a calendar, such as a meeting, holiday, or time block."
+      },
+      "EventQuick": {
+        "title": "EventQuick",
+        "x-stoplight": {
+          "id": "20ja4d4fnc8fl"
+        },
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "The (inclusive) start time of the event. For a recurring event, this is the start time of the first instance."
+          },
+          "end": {
+            "type": "string",
+            "description": "The (exclusive) end time of the event. For a recurring event, this is the end time of the first instance."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the event."
+          }
+        }
+      },
+      "EventRecurrence": {
+        "title": "EventRecurrence",
+        "x-stoplight": {
+          "id": "hjh3a5gdndi6u"
+        },
+        "type": "object",
+        "description": "Defines for a recurring Event the repetition pattern and optionally the exceptions.",
+        "properties": {
+          "start": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "bsi4zmnbzxuxc"
+            },
+            "description": "The (inclusive) start time of the recurrence."
+          },
+          "rrule": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "32ss0iuyyifxi"
+            },
+            "description": "The rule that define repeating pattern for recurring event instances."
+          },
+          "exDates": {
+            "type": "array",
+            "x-stoplight": {
+              "id": "nc6yzryaf0pwy"
+            },
+            "description": "Set of date/time exceptions of the recurrence.",
+            "items": {
+              "x-stoplight": {
+                "id": "c41o4lri08vnh"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "start",
+          "rrule"
+        ]
+      },
+      "EventAttendeeBase": {
+        "title": "EventAttendeeBase",
+        "x-stoplight": {
+          "id": "7hkc881pwni9j"
+        },
+        "type": "object",
+        "description": "Represent an Attendee object with base updateable fields.",
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/Recipient"
+          },
+          "userId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "cl48uv80qkfa4"
+            },
+            "description": "The Recipient's user ID, to bound this role to a specific User. Optional."
+          },
+          "type": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "vzhgxlknz7ufc"
+            },
+            "enum": [
+              "IND",
+              "RES"
+            ],
+            "description": "The type of attendee: IND=individual, RES=resource. Defaults to IND."
+          },
+          "role": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "w3yh4a6wlq2z7"
+            },
+            "description": "The role of attendee: CHA=chair, OPT=optional, REQ=required. Defaults to REQ.",
+            "enum": [
+              "CHA",
+              "OPT",
+              "REQ"
+            ]
+          }
+        },
+        "required": [
+          "address"
+        ]
+      },
+      "EventAttendee": {
+        "title": "EventAttendee",
+        "x-stoplight": {
+          "id": "mop2hmyp3d2ae"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "readOnly": true
+              },
+              "responseStatus": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "kc9svj7irn67u"
+                },
+                "enum": [
+                  "NA",
+                  "DE",
+                  "TE",
+                  "AC"
+                ],
+                "description": "The response type: NA=needsAction, DE=declined, TE=tentative, AC=accepted.",
+                "readOnly": true
+              },
+              "responseTimestamp": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "1ad4wpsfxmo13"
+                },
+                "description": "The date and time when the response was returned. It uses ISO 8601 format and UTC time.",
+                "readOnly": true
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/EventAttendeeBase"
+          }
+        ],
+        "description": "An event attendee that can be a person or resource such as a meeting room or equipment, that has been set up as a resource on the server configuration."
+      },
+      "EventOrganizer": {
+        "title": "EventOrganizer",
+        "x-stoplight": {
+          "id": "6qrr7swwegx2q"
+        },
+        "type": "object",
+        "description": "The organizer of the event.",
+        "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "d1mm901i5frfq"
+            },
+            "description": "The Organizer's user ID, to bound this role to a specific User. Optional."
+          },
+          "emailAddress": {
+            "$ref": "#/components/schemas/Recipient"
+          }
+        }
+      },
+      "EventLkp": {
+        "title": "EventLkp",
+        "x-stoplight": {
+          "id": "9oszzp7et6j4a"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "x-stoplight": {
+              "id": "8pae0r48vedh5"
+            },
+            "properties": {
+              "tags": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "c9t85lt142o71"
+                },
+                "readOnly": true
+              },
+              "hasRecurrence": {
+                "type": "boolean",
+                "x-stoplight": {
+                  "id": "r904e03ftnp2e"
+                },
+                "readOnly": true
+              },
+              "attendeesCount": {
+                "type": "integer",
+                "x-stoplight": {
+                  "id": "ufl1fcv7j4l4o"
+                },
+                "readOnly": true
+              },
+              "notifyableAttendeesCount": {
+                "type": "integer",
+                "x-stoplight": {
+                  "id": "sy0nw5rac2zk3"
+                },
+                "readOnly": true
+              },
+              "calendarName": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "61x2hqxs41um6"
+                },
+                "readOnly": true
+              },
+              "calendarDomainId": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "xiluxee12x6tf"
+                },
+                "readOnly": true
+              },
+              "calendarUserId": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "e1xm5nubcoo8f"
+                },
+                "readOnly": true
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/EventBase"
+          }
+        ]
+      },
+      "EventLkpInstance": {
+        "title": "EventLkpInstance",
+        "x-stoplight": {
+          "id": "gte30b1t6duph"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "iid": {
+                "type": "string",
+                "description": "The event's unique ID that identifies an instance.",
+                "readOnly": true
+              },
+              "instanceType": {
+                "type": "string",
+                "description": "The event instance type. The possible values are: SI=single, MA=master, OC=occurrence, EX=exception.",
+                "readOnly": true
+              },
+              "originalEventId": {
+                "type": "string",
+                "description": "The ID of the event.",
+                "readOnly": true
+              },
+              "seriesEventId": {
+                "type": "string",
+                "description": "The ID for the recurring series master item, if this event is part of a recurring series (master too).",
+                "readOnly": true
+              },
+              "etag": {
+                "type": "string",
+                "description": "The revision identifier that refers to the last modification.",
+                "readOnly": true
+              },
+              "createdAt": {
+                "type": "string",
+                "description": "Creation timestamp in ISO 8601 format and UTC time."
+              },
+              "updatedAt": {
+                "type": "string",
+                "description": "Modification timestamp in ISO 8601 format and UTC time."
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/EventLkp"
+          }
+        ]
+      },
+      "EventChanged": {
+        "title": "EventChanged",
+        "x-stoplight": {
+          "id": "4q8t6h6ku2884"
+        },
+        "allOf": [
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "$added": {
+                    "type": "boolean",
+                    "readOnly": true
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "$updated": {
+                    "type": "boolean",
+                    "readOnly": true
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "$deleted": {
+                    "type": "boolean",
+                    "readOnly": true
+                  }
+                }
+              }
+            ],
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/Event"
+          }
+        ],
+        "description": "Represent an intermediate object for better organizing changes."
+      },
+      "EventResponse": {
+        "title": "EventResponse",
+        "x-stoplight": {
+          "id": "hqxpsholsa073"
+        },
+        "type": "object",
+        "description": "Represent a base response object to an Event invitation.",
+        "properties": {
+          "status": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "vdgkv9ac88ekv"
+            },
+            "enum": [
+              "NA",
+              "DE",
+              "TE",
+              "AC"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "jfesg6nujsotq"
+            },
+            "description": "Text included in the response. Optional. (for future use)"
+          },
+          "notify": {
+            "type": "boolean",
+            "x-stoplight": {
+              "id": "v9fna45g04r0x"
+            },
+            "default": true,
+            "description": "Specifies if a response is to be sent to the organizer. Default is true. For declined response the notification is always sent."
+          },
+          "proposedNewTime": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "v4zqwm32zjfbc"
+            },
+            "description": "Only for tentative response. (for future use)"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "EventsResultDelta": {
+        "title": "EventsResultDelta",
+        "x-stoplight": {
+          "id": "qztz8xdd1zuai"
+        },
+        "type": "object",
+        "description": "Represent a response object that returns a collection of Events.",
+        "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)",
+        "properties": {
+          "nextSyncToken": {
+            "type": "string",
+            "description": "The syncToken that identifies the instant in past since to get changes.",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventChanged"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "EventsResult": {
+        "title": "EventsResult",
+        "x-stoplight": {
+          "id": "rprcuxy308k3p"
+        },
+        "type": "object",
+        "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)",
+        "properties": {
+          "totalCount": {
+            "type": "integer",
+            "description": "Items total count, usually used for pagination.",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          }
+        },
+        "description": "Represent a response object that returns a collection of Events."
+      },
+      "OwnerInfo": {
+        "title": "OwnerInfo",
+        "x-stoplight": {
+          "id": "fexe4bviwmqsj"
+        },
+        "type": "object",
+        "description": "Represent a user owning an item.",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "z9arwtt6pqpgb"
+            },
+            "description": "User profile ID.",
+            "readOnly": true
+          },
+          "displayName": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "hb0ljnapp2zd7"
+            },
+            "description": "User profile display-name.",
+            "readOnly": true
+          },
+          "emailAddress": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "m07gh0a6ommrh"
+            },
+            "description": "User profile personal email address.",
+            "readOnly": true
+          }
+        },
+        "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)"
+      },
+      "Recipient": {
+        "title": "Recipient",
+        "x-stoplight": {
+          "id": "30dw4mbmfq1qm"
+        },
+        "type": "object",
+        "description": "The name and email address of a contact or message recipient.",
+        "properties": {
+          "address": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "b1x83injs1169"
+            },
+            "description": "The email address of the person or entity."
+          },
+          "name": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "eeml9j8oimiwt"
+            },
+            "description": "The display name of the person or entity."
+          }
+        },
+        "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)"
       }
     },
     "securitySchemes": {
@@ -1201,6 +2875,123 @@
         "name": "X-Auth-Username",
         "description": "API-Key Authentication: specifies target username (bearer and username are both required)"
       }
+    },
+    "parameters": {
+      "_syncToken": {
+        "name": "_sync_token",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        },
+        "description": "Token exchanged between client and server that tracks changes from a precise state."
+      },
+      "_select": {
+        "name": "_select",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "name, description"
+        },
+        "description": "List (comma-separated) of field names to include in resulting items. Optional, if omitted all available field will be taken into account."
+      },
+      "_orderBy": {
+        "name": "_order_by",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "name ASC, year DESC"
+        },
+        "description": "List (comma-separated) of field names and direction (ASC or DESC) to sort resulting items. Optional."
+      },
+      "_pageNo": {
+        "name": "_page_no",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": "The page number to return, providing a value actually activates pagination. Optional."
+      },
+      "_pageSize": {
+        "name": "_page_size",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": "How many items to return when paginating. Defaults to 50."
+      },
+      "_returnCount": {
+        "name": "_return_count",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean"
+        },
+        "description": "Specifies whether to compute and return the full count of a list of items. Useful when dealing with paginated data. Optional."
+      },
+      "_filter": {
+        "name": "_filter",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "description": "A RSQL filter query to filter out resulting items. Optional."
+      },
+      "_test": {
+        "name": "_test",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "description": "Dummy parameter. Do not use!"
+      },
+      "_update": {
+        "name": "_update",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "displayName"
+        },
+        "description": "List (comma-separated) of field names to update. Optional, if omitted all available field will be taken into account."
+      },
+      "modify_since": {
+        "name": "modify_since",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": "For recurring events specifies that the change affects instances from the current onward."
+      },
+      "notify": {
+        "name": "notify",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "none",
+            "individual",
+            "resource",
+            "all"
+          ],
+          "default": "all"
+        },
+        "description": "Attendees who should receive notifications about the creation/modification of the new event."
+      }
     }
   },
   "tags": [
@@ -1209,6 +3000,9 @@
     },
     {
       "name": "eas"
+    },
+    {
+      "name": "me"
     }
   ]
 }

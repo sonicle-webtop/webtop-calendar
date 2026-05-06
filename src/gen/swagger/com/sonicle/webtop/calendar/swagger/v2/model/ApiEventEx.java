@@ -1,6 +1,9 @@
 package com.sonicle.webtop.calendar.swagger.v2.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventBase;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventOrganizer;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventRecurrence;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import javax.validation.constraints.*;
@@ -15,55 +18,31 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * Bean for carry event&#39;s stat fields
+ * Represent an Event object with extended data.
  **/
-@ApiModel(description = "Bean for carry event's stat fields")
-@JsonTypeName("EasSyncEventStat")
+@ApiModel(description = "Represent an Event object with extended data.")
+@JsonTypeName("EventEx")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
-public class ApiEasSyncEventStat   {
-  private @Valid String id;
-  private @Valid String etag;
+public class ApiEventEx extends ApiEventBase  {
+  private @Valid ApiEventRecurrence recurrence;
 
   /**
-   * Event ID (internal)
    **/
-  public ApiEasSyncEventStat id(String id) {
-    this.id = id;
+  public ApiEventEx recurrence(ApiEventRecurrence recurrence) {
+    this.recurrence = recurrence;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "Event ID (internal)")
-  @JsonProperty("id")
-  @NotNull
-  public String getId() {
-    return id;
+  @ApiModelProperty(value = "")
+  @JsonProperty("recurrence")
+  public ApiEventRecurrence getRecurrence() {
+    return recurrence;
   }
 
-  @JsonProperty("id")
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  /**
-   * Revision tag
-   **/
-  public ApiEasSyncEventStat etag(String etag) {
-    this.etag = etag;
-    return this;
-  }
-
-  
-  @ApiModelProperty(required = true, value = "Revision tag")
-  @JsonProperty("etag")
-  @NotNull
-  public String getEtag() {
-    return etag;
-  }
-
-  @JsonProperty("etag")
-  public void setEtag(String etag) {
-    this.etag = etag;
+  @JsonProperty("recurrence")
+  public void setRecurrence(ApiEventRecurrence recurrence) {
+    this.recurrence = recurrence;
   }
 
 
@@ -75,23 +54,22 @@ public class ApiEasSyncEventStat   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiEasSyncEventStat easSyncEventStat = (ApiEasSyncEventStat) o;
-    return Objects.equals(this.id, easSyncEventStat.id) &&
-        Objects.equals(this.etag, easSyncEventStat.etag);
+    ApiEventEx eventEx = (ApiEventEx) o;
+    return Objects.equals(this.recurrence, eventEx.recurrence) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag);
+    return Objects.hash(recurrence, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiEasSyncEventStat {\n");
-    
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    etag: ").append(toIndentedString(etag)).append("\n");
+    sb.append("class ApiEventEx {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    recurrence: ").append(toIndentedString(recurrence)).append("\n");
     sb.append("}");
     return sb.toString();
   }

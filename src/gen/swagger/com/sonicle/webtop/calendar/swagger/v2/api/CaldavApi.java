@@ -20,7 +20,7 @@ import javax.validation.Valid;
 
 @Path("/caldav/calendars")
 @Api(description = "the caldav API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2024-11-04T12:39:39.410+01:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
 public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -28,14 +28,18 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Consumes({ "application/json" })
     @ApiOperation(value = "Adds a new calendar object", notes = "Creates new CalendarObject into specified Calendar.", response = Void.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 201, message = "Success", response = Void.class)
     })
-    public Response addCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@Valid @NotNull ApiDavCalObjectNew body) {
+    public Response addDavCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@Valid @NotNull ApiDavCalObjectNew body) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -44,14 +48,18 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Produces({ "application/json" })
     @ApiOperation(value = "Adds a new calendar", notes = "Creates new Calendar.", response = ApiDavCalendar.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 201, message = "Success", response = ApiDavCalendar.class)
     })
-    public Response addCalendar(@Valid @NotNull ApiDavCalendarNew body) {
+    public Response addDavCalendar(@Valid @NotNull ApiDavCalendarNew body) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -59,16 +67,20 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Path("/{calendarUid}/objects/{href}")
     @ApiOperation(value = "Deletes a calendar object", notes = "Deletes specified CalendarObject.", response = Void.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 204, message = "Success", response = Void.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Object not found", response = Void.class)
     })
-    public Response deleteCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href) {
+    public Response deleteDavCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -76,9 +88,13 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Path("/{calendarUid}")
     @ApiOperation(value = "Deletes a calendar", notes = "Deletes specified Calendar.", response = Void.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 204, message = "Success", response = Void.class),
@@ -86,7 +102,7 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
         @ApiResponse(code = 404, message = "Calendar not found", response = Void.class),
         @ApiResponse(code = 405, message = "Delete operation is not allowed", response = Void.class)
     })
-    public Response deleteCalendar(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid) {
+    public Response deleteDavCalendar(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -95,16 +111,20 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Produces({ "application/json" })
     @ApiOperation(value = "Get a single calendar object", notes = "Gets specified CalendarObject.", response = ApiDavCalObject.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = ApiDavCalObject.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Object not found", response = Void.class)
     })
-    public Response getCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href) {
+    public Response getDavCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -113,14 +133,18 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Produces({ "application/json" })
     @ApiOperation(value = "List all calendar objects belonging to a specific calendar", notes = "List all CalendarObjects of specified Calendar.", response = ApiDavCalObject.class, responseContainer = "List", authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = ApiDavCalObject.class, responseContainer = "List")
     })
-    public Response getCalObjects(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("hrefs")   List<String> hrefs) {
+    public Response getDavCalObjects(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("hrefs")   List<String> hrefs) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -129,15 +153,19 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Produces({ "application/json" })
     @ApiOperation(value = "Get calendar object changes", notes = "Returns changed CalendarObjects (added/modified/deleted) since the specified syncToken. If token is not provided, the initial sync configuration will be returned.", response = ApiDavCalObjectsChanges.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = ApiDavCalObjectsChanges.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class)
     })
-    public Response getCalObjectsChanges(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("syncToken")  @ApiParam("Marks changes starting point")  String syncToken,@QueryParam("limit")  @ApiParam("Limits the number of returned results")  Integer limit) {
+    public Response getDavCalObjectsChanges(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("syncToken")  @ApiParam("Marks changes starting point")  String syncToken,@QueryParam("limit")  @ApiParam("Limits the number of returned results")  Integer limit) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -146,16 +174,20 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Produces({ "application/json" })
     @ApiOperation(value = "Gets a single calendar", notes = "Gets specified Calendar.", response = ApiDavCalendar.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = ApiDavCalendar.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Calendar not found", response = Void.class)
     })
-    public Response getCalendar(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid) {
+    public Response getDavCalendar(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -163,14 +195,18 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Produces({ "application/json" })
     @ApiOperation(value = "List all calendars", notes = "List available Calendars.", response = ApiDavCalendar.class, responseContainer = "List", authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = ApiDavCalendar.class, responseContainer = "List")
     })
-    public Response getCalendars() {
+    public Response getDavCalendars() {
         return Response.ok().entity("magic!").build();
     }
 
@@ -179,16 +215,20 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Consumes({ "text/calendar" })
     @ApiOperation(value = "Updates a calendar object", notes = "Updates specified CalendarObject.", response = Void.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = Void.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Object not found", response = Void.class)
     })
-    public Response updateCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href,@Valid @NotNull String body) {
+    public Response updateDavCalObject(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@PathParam("href") @ApiParam("CalObject reference URI") String href,@Valid @NotNull String body) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -197,16 +237,20 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @Consumes({ "application/json" })
     @ApiOperation(value = "Updates a calendar", notes = "Updates specified Calendar.", response = Void.class, authorizations = {
         
-        @Authorization(value = "auth-basic"),
+        @Authorization(value = "auth-bearer"),
         
-        @Authorization(value = "auth-bearer")
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
          }, tags={ "dav" })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = Void.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Calendar not found", response = Void.class)
     })
-    public Response updateCalendar(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@Valid @NotNull ApiDavCalendarUpdate body) {
+    public Response updateDavCalendar(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@Valid @NotNull ApiDavCalendarUpdate body) {
         return Response.ok().entity("magic!").build();
     }
 }

@@ -15,55 +15,54 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * Bean for carry event&#39;s stat fields
+ * The name and email address of a contact or message recipient.
  **/
-@ApiModel(description = "Bean for carry event's stat fields")
-@JsonTypeName("EasSyncEventStat")
+@ApiModel(description = "The name and email address of a contact or message recipient.")
+@JsonTypeName("Recipient")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
-public class ApiEasSyncEventStat   {
-  private @Valid String id;
-  private @Valid String etag;
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ApiRecipient   {
+  private @Valid String address;
+  private @Valid String name;
 
   /**
-   * Event ID (internal)
+   * The email address of the person or entity.
    **/
-  public ApiEasSyncEventStat id(String id) {
-    this.id = id;
+  public ApiRecipient address(String address) {
+    this.address = address;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "Event ID (internal)")
-  @JsonProperty("id")
-  @NotNull
-  public String getId() {
-    return id;
+  @ApiModelProperty(value = "The email address of the person or entity.")
+  @JsonProperty("address")
+  public String getAddress() {
+    return address;
   }
 
-  @JsonProperty("id")
-  public void setId(String id) {
-    this.id = id;
+  @JsonProperty("address")
+  public void setAddress(String address) {
+    this.address = address;
   }
 
   /**
-   * Revision tag
+   * The display name of the person or entity.
    **/
-  public ApiEasSyncEventStat etag(String etag) {
-    this.etag = etag;
+  public ApiRecipient name(String name) {
+    this.name = name;
     return this;
   }
 
   
-  @ApiModelProperty(required = true, value = "Revision tag")
-  @JsonProperty("etag")
-  @NotNull
-  public String getEtag() {
-    return etag;
+  @ApiModelProperty(value = "The display name of the person or entity.")
+  @JsonProperty("name")
+  public String getName() {
+    return name;
   }
 
-  @JsonProperty("etag")
-  public void setEtag(String etag) {
-    this.etag = etag;
+  @JsonProperty("name")
+  public void setName(String name) {
+    this.name = name;
   }
 
 
@@ -75,23 +74,23 @@ public class ApiEasSyncEventStat   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ApiEasSyncEventStat easSyncEventStat = (ApiEasSyncEventStat) o;
-    return Objects.equals(this.id, easSyncEventStat.id) &&
-        Objects.equals(this.etag, easSyncEventStat.etag);
+    ApiRecipient recipient = (ApiRecipient) o;
+    return Objects.equals(this.address, recipient.address) &&
+        Objects.equals(this.name, recipient.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag);
+    return Objects.hash(address, name);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ApiEasSyncEventStat {\n");
+    sb.append("class ApiRecipient {\n");
     
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    etag: ").append(toIndentedString(etag)).append("\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");
     return sb.toString();
   }

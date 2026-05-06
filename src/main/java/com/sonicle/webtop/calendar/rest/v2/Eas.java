@@ -100,7 +100,7 @@ public class Eas extends EasApi {
 	private static final DateTimeFormatter ISO_DATETIME_FMT = JodaTimeUtils.createFormatter("yyyyMMdd'T'HHmmss'Z'", DateTimeZone.UTC);
 	
 	@Override
-	public Response getFolders() {
+	public Response getEasFolders() {
 		UserProfileId currentProfileId = RunContext.getRunProfileId();
 		CalendarManager manager = getManager();
 		List<ApiEasSyncFolder> items = new ArrayList<>();
@@ -147,7 +147,7 @@ public class Eas extends EasApi {
 	}
 
 	@Override
-	public Response getMessagesStats(String folderId, String cutoffDate) {
+	public Response getEasMessagesStats(String folderId, String cutoffDate) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -176,7 +176,7 @@ public class Eas extends EasApi {
 	}
 	
 	@Override
-	public Response getMessage(String folderId, String id) {
+	public Response getEasMessage(String folderId, String id) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -202,7 +202,7 @@ public class Eas extends EasApi {
 	}
 
 	@Override
-	public Response addMessage(String folderId, ApiEasSyncEventUpdate body) {
+	public Response addEasMessage(String folderId, ApiEasSyncEventUpdate body) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -227,7 +227,7 @@ public class Eas extends EasApi {
 	}
 
 	@Override
-	public Response updateMessage(String folderId, String id, ApiEasSyncEventUpdate body) {
+	public Response updateEasMessage(String folderId, String id, ApiEasSyncEventUpdate body) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
@@ -276,7 +276,7 @@ public class Eas extends EasApi {
 	}
 
 	@Override
-	public Response deleteMessage(String folderId, String id) {
+	public Response deleteEasMessage(String folderId, String id) {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {

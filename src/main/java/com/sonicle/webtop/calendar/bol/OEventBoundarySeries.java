@@ -32,9 +32,9 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.commons.Check;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import net.fortuna.ical4j.model.Recur;
-import net.sf.qualitycheck.Check;
 import org.joda.time.DateTime;
 import com.sonicle.webtop.calendar.model.EventBoundsSeries;
 

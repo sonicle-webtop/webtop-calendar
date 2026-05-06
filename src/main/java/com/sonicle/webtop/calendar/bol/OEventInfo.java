@@ -32,7 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import net.sf.qualitycheck.Check;
+import com.sonicle.commons.Check;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 

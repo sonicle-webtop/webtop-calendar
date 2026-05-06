@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar;
 
 import com.sonicle.commons.Base58;
+import com.sonicle.commons.Check;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
 import com.sonicle.webtop.calendar.bol.OCalendar;
@@ -68,7 +69,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import jakarta.mail.internet.InternetAddress;
-import net.sf.qualitycheck.Check;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;

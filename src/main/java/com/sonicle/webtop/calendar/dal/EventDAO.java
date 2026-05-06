@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
+import com.sonicle.commons.Check;
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.bol.OEvent;
 import com.sonicle.webtop.calendar.bol.OEventBoundary;
@@ -78,7 +79,6 @@ import org.jooq.impl.DSL;
 import static org.jooq.impl.DSL.*;
 import com.sonicle.webtop.calendar.model.EventBounds;
 import com.sonicle.webtop.calendar.model.EventBoundsSeries;
-import net.sf.qualitycheck.Check;
 
 /**
  *

@@ -1674,7 +1674,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		
 		if (rec.isSeriesItem()) {
-			me.confirmOnRecurringFor('save', rec.get('title'), function(bid, value) {
+			me.confirmOnRecurringFor('save', rec.isFirstInstance(), rec.get('title'), function(bid, value) {
 				if (bid === 'ok') me._updateSchedEventUI(rec, newStartDate, newEndDate, newTitle, value);
 			}, me);
 		} else {
@@ -1692,7 +1692,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				});
 			};
 		
-		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+		if (rec.hasNotifyableAttendees()) {
 			me.confirmOnInvitationFor('update', function(bid) {
 				if (bid === 'yes') {
 					doFn(target, true);
@@ -1709,7 +1709,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		var me = this;
 		
 		if (rec.isSeriesItem()) {
-			me.confirmOnRecurringFor('delete', rec.get('title'), function(bid, value) {
+			me.confirmOnRecurringFor('delete', true, rec.get('title'), function(bid, value) {
 				if (bid === 'ok') me._deleteSchedEventUI(rec, value);
 			}, me);
 		} else {
@@ -1731,7 +1731,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				});
 			};
 		
-		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+		if (rec.hasNotifyableAttendees()) {
 			me.confirmOnInvitationFor('update', function(bid) {
 				if (bid === 'yes') {
 					doFn(true);
@@ -1754,7 +1754,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					});
 				};
 		
-		if (rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+		if (rec.hasNotifyableAttendees()) {
 			me.confirmOnInvitationFor('save', function(bid) {
 				if (bid === 'yes') {
 					doFn(true);
@@ -1779,7 +1779,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			vct = me.createCalendarChooser(copy);
 		
 		vct.on('viewok', function(s, data) {
-			if (copy && rec.get('isNtf')) { // TODO: convert 'isNtf' into a flag
+			if (copy && rec.hasNotifyableAttendees()) {
 				me.confirmOnInvitationFor('save', function(bid) {
 					if (bid === 'yes') {
 						doFn(true, data.calendarId);
@@ -2432,9 +2432,9 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}, cfg);
 		},
 		
-		confirmOnRecurringFor: function(type, eventTitle, cb, scope) {
+		confirmOnRecurringFor: function(type, showAll, eventTitle, cb, scope) {
 			var me = this,
-				bopts = me.confirmOnRecurringOpts(),
+				bopts = me.confirmOnRecurringOpts(showAll),
 				msg = me.res('event.confirm.'+type+'.recurring', WT.resEllipsis(eventTitle));
 			
 			if ('delete' === type) {
@@ -2447,12 +2447,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			}
 		},
 		
-		confirmOnRecurringOpts: function() {
+		confirmOnRecurringOpts: function(showAll) {
 			var me = this;
 			return {
 				buttons: Ext.Msg.OKCANCEL,
 				instClass: 'Sonicle.webtop.calendar.ux.RecurringConfirmBox',
 				instConfig: {
+					showAll: showAll,
 					thisText: me.res('event.confirm.recurrence.this'),
 					sinceText: me.res('event.confirm.recurrence.since'),
 					allText: me.res('event.confirm.recurrence.all')

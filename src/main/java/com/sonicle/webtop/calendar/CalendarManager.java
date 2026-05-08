@@ -3021,7 +3021,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			for (Integer calendarId : listMyCalendarIds()) {
 				for (VEventLookup vel : edao.viewOnlineByCalendarRangeCondition(con, Arrays.asList(calendarId), toDate, toDate, null)) {
 					if (vel.getHasRecurrence()) {
-						EventLookupInstance eli = new EventLookupInstance(vel.createInstanceId(), vel.getEventId());
+						EventLookupInstance eli = new EventLookupInstance(vel.createInstanceId(), vel.getEventId(), /* unused here */ false);
 						try {
 							map = new HashMap<>();
 							map.put("userId", pid.getUserId());
@@ -4694,9 +4694,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				OEventRecurrence orec = recDao.selectRecurrenceByEvent(con, info.masterEventId);
 				if (orec == null) throw new WTException("Unable to get master recurrence [{}]", info.masterEventId);
 				
-				DateTime origRecurStart = orec.getStart(); // Dump orig start!
-				Recur origRecur = orec.getRecurrenceObject(); // Dump orig recur!
-				Set<LocalDate> origExDates = recDao.selectRecurrenceExByEvent(con, info.masterEventId); // Dump orig ex dates!
+				final DateTime origRecurStart = orec.getStart(); // Dump orig start!
+				final Recur origRecur = orec.getRecurrenceObject(); // Dump orig recur!
+				final Set<LocalDate> origExDates = recDao.selectRecurrenceExByEvent(con, info.masterEventId); // Dump orig ex dates!
 				
 				EventBounds itemBoundary = event.getEventBounds();
 				LocalTime origNewUntilTime = masterBoundary.isAllDay() ? JodaTimeUtils.TIME_AT_STARTOFDAY : masterBoundary.getStart().withZone(masterBoundary.getTimezoneObject()).toLocalTime();
@@ -4714,40 +4714,44 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				//event.setStart(itemBoundary.getStart().withDate(info.seriesInstanceDate));
 				//event.setEnd(itemBoundary.getEnd().withDate(info.seriesInstanceDate.plusDays(itemDaysBetween)));
 				
-				String newRecRule = origRecur.toString();
+				String newRecur = origRecur.toString();
 				DateTime newRecStart = itemBoundary.getStart();
 				Set<LocalDate> newExDates = EventRecurrence.filterExDates(origExDates, newRecStart.toLocalDate());
 				
-				if (ICal4jUtils.recurHasCount(origRecur)) {
+				if (ICal4jUtils.recurHasCount(origRecur)) { // When we have a Count configured...
 					boolean transformToUntil = true;
+					
+					// If count is limited, try to keep count configuration recalculating 
+					// its value based on remaining instances starting from the break.
 					if (origRecur.getCount() < 365) {
 						List<LocalDate> origDates = ICal4jUtils.calculateRecurrenceSet(origRecur, masterBoundary.getStart(), itemBoundary.isAllDay(), origExDates, masterBoundary.getStart(), masterBoundary.getEnd(), itemBoundary.getTimezoneObject(), null, null, -1);
 						int iof = origDates.indexOf(info.seriesInstanceDate);
 						if (iof != -1) {
 							int remainingCount = origDates.size() - iof;
-							newRecRule = ICal4jUtils.setRecurCount(ICal4jUtils.cloneRecur(origRecur), remainingCount).toString();
+							newRecur = ICal4jUtils.setRecurCount(ICal4jUtils.cloneRecur(origRecur), remainingCount).toString();
 							transformToUntil = false;
 						}
 					}
 					
+					// Otherwise fallback on UntilDate
 					if (transformToUntil) {
-						LocalTime untilTime = itemBoundary.isAllDay() ? JodaTimeUtils.TIME_AT_STARTOFDAY : itemBoundary.getStart().withZone(itemBoundary.getTimezoneObject()).toLocalTime();
-						int daysDelta = JodaTimeUtils.calendarDaysDelta(info.seriesInstanceDate.toDateTime(untilTime, itemBoundary.getTimezoneObject()), itemBoundary.getStart());
+						final LocalTime recurUntilTime = EventRecurrence.getRecurUntilTime(itemBoundary);
+						final int daysDelta = JodaTimeUtils.calendarDaysDelta(info.seriesInstanceDate.toDateTime(recurUntilTime, itemBoundary.getTimezoneObject()), itemBoundary.getStart());
 						
 						DateTime origUntil = ICal4jUtils.calculateRecurrenceEnd(origRecur, origRecurStart, masterBoundary.getStart(), masterBoundary.getEnd(), masterBoundary.getTimezoneObject());
-						DateTime newUntil = origUntil.plusDays(daysDelta).withTime(untilTime);
-						newRecRule = ICal4jUtils.setRecurUntilDate(ICal4jUtils.cloneRecur(origRecur), newUntil).toString();
+						DateTime newUntil = origUntil.plusDays(daysDelta).withTime(recurUntilTime);
+						newRecur = ICal4jUtils.setRecurUntilDate(ICal4jUtils.cloneRecur(origRecur), newUntil).toString();
 					}	
 					
-				} else if (ICal4jUtils.recurHasUntilDate(origRecur)) { // Adjust until date...
-					LocalTime untilTime = itemBoundary.isAllDay() ? JodaTimeUtils.TIME_AT_STARTOFDAY : itemBoundary.getStart().withZone(itemBoundary.getTimezoneObject()).toLocalTime();
-					int daysDelta = JodaTimeUtils.calendarDaysDelta(info.seriesInstanceDate.toDateTime(untilTime, itemBoundary.getTimezoneObject()), itemBoundary.getStart());
+				} else if (ICal4jUtils.recurHasUntilDate(origRecur)) { // When we have an UntilDate configured...
+					final LocalTime recurUntilTime = EventRecurrence.getRecurUntilTime(itemBoundary);
+					final int daysDelta = JodaTimeUtils.calendarDaysDelta(info.seriesInstanceDate.toDateTime(recurUntilTime, itemBoundary.getTimezoneObject()), itemBoundary.getStart());
+					final LocalDate origRecurUntilDate = EventRecurrence.getRecurUntilDate(origRecur, itemBoundary.getTimezoneObject());
 					
-					DateTime origUntil = ICal4jUtils.toJodaDateTime(origRecur.getUntil(), DateTimeZone.UTC).withZone(itemBoundary.getTimezoneObject());
-					DateTime newUntil = origUntil.plusDays(daysDelta);
-					newRecRule = ICal4jUtils.setRecurUntilDate(ICal4jUtils.cloneRecur(origRecur), newUntil).toString();
+					DateTime newRecurUntil = EventRecurrence.toRecurUntilDate(origRecurUntilDate.plusDays(daysDelta), recurUntilTime, itemBoundary.getTimezoneObject());
+					newRecur = ICal4jUtils.setRecurUntilDate(ICal4jUtils.cloneRecur(origRecur), newRecurUntil).toString();
 				}
-				event.setRecurrence(new EventRecurrence(newRecRule, newRecStart, newExDates));
+				event.setRecurrence(new EventRecurrence(newRecur, newRecStart, newExDates));
 				
 				BitFlags<EventProcessOpt> insertOpts = processOpts.copy()
 					.set(EventProcessOpt.RECUR)
@@ -4764,20 +4768,42 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				eventDump = doEventInstanceGet(con, info, getOpts);
 				
-			} else if (UpdateEventTarget.WHOLE_SERIES.equals(target)) { // Changes are valid for all the instances (whole recurrence)
-				// We want to apply modifications directly to the whole series
-				// So, restore restore original dates because current start/end refers to instance and not to the master!
-				//EventBounds masterBoundary = evtDao.selectBounds(con, info.masterEventId);
-				//if (masterBoundary == null) throw new WTException("Unable to get master event [{}]", info.masterEventId);
+			} else if (UpdateEventTarget.WHOLE_SERIES.equals(target)) { // Changes are valid for all the instances
+				EventBounds masterBoundary = evtDao.selectBounds(con, info.masterEventId);
+				if (masterBoundary == null) throw new WTException("Unable to get master event [{}]", info.masterEventId);
 				
 				// 1 - Updates master event with new data
-				//event.setTimezone(masterBoundary.getTimezone());
-				//event.setAllDay(masterBoundary.isAllDay());
-				//event.setStart(masterBoundary.getStart());
-				//event.setEnd(masterBoundary.getEnd());
+				OEventRecurrence orec = recDao.selectRecurrenceByEvent(con, info.masterEventId);
+				if (orec == null) throw new WTException("Unable to get master recurrence [{}]", info.masterEventId);
+				
+				EventBounds itemBoundary = event.getEventBounds();
+				
+				// If we have an UntilDate, there may be a need to update it 
+				// according to the day-shift possibly included in che change!
+				EventRecurrence newRecurrence = null;
+				if (ICal4jUtils.recurHasUntilDate(orec.getRecurrenceObject())) {
+					final DateTime origRecurStart = orec.getStart(); // Dump orig start!
+					final Recur origRecur = orec.getRecurrenceObject(); // Dump orig recur!
+					
+					final LocalTime recurUntilTime = EventRecurrence.getRecurUntilTime(itemBoundary);
+					final DateTime newRecStart = itemBoundary.getStart();
+					final int daysDelta = JodaTimeUtils.calendarDaysDelta(origRecurStart, newRecStart);
+					if (daysDelta != 0) {
+						final Set<LocalDate> origExDates = recDao.selectRecurrenceExByEvent(con, info.masterEventId); // Dump orig ex dates!
+						final LocalDate origRecurUntilDate = EventRecurrence.getRecurUntilDate(origRecur, itemBoundary.getTimezoneObject());
+						
+						DateTime newRecurUntil = EventRecurrence.toRecurUntilDate(origRecurUntilDate.plusDays(daysDelta), recurUntilTime, itemBoundary.getTimezoneObject());
+						String newRecur = ICal4jUtils.setRecurUntilDate(ICal4jUtils.cloneRecur(origRecur), newRecurUntil).toString();
+						newRecurrence = new EventRecurrence(newRecur, newRecStart, EventRecurrence.traslateExDates(origExDates, daysDelta));
+					}
+				}
 				
 				BitFlags<EventProcessOpt> updateOpts = processOpts.copy()
 					.unset(EventProcessOpt.RECUR_EX, EventProcessOpt.RAW_ICAL);
+				if (newRecurrence != null) {
+					event.setRecurrence(newRecurrence);
+					updateOpts.set(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX);
+				}
 				eventUpdate = doEventUpdate(con, info.masterEventId, event, null, updateOpts, validTags);
 				
 				DbUtils.commitQuietly(con);
@@ -5601,6 +5627,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		private final boolean censorize;
 		private final OEventRecurrence eventRecurrence;
 		private final Set<LocalDate> recurrenceExclDates;
+		private final LocalDate firstInstanceDate;
 		
 		public VEL2ELI_RRContext(Connection con, VEventLookup event, boolean censorize) {
 			this.event = event;
@@ -5608,6 +5635,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
 			this.eventRecurrence = recDao.selectRecurrenceByEvent(con, event.getEventId());
 			this.recurrenceExclDates = recDao.selectRecurrenceExByEvent(con, event.getEventId());
+			this.firstInstanceDate = calculateRecurrenceStart(event, eventRecurrence.getRecurrenceObject(), eventRecurrence.getStart(), recurrenceExclDates);
+		}
+		
+		private LocalDate calculateRecurrenceStart(VEventLookup event, Recur recurrenceObject, DateTime recurenceStart, Set<LocalDate> recurrenceExDates) {
+			List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recurrenceObject, recurenceStart, true, recurrenceExDates, event.getStart(), event.getEnd(), event.getTimezoneObject(), null, null, 1);
+			return (dates != null && !dates.isEmpty()) ? dates.get(0) : null;
 		}
 		
 		@Override
@@ -5652,7 +5685,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 		@Override
 		public EventLookupInstance createInstance(EventInstanceId id, DateTime start, DateTime end, String legacyKey) {
-			EventLookupInstance item = ManagerUtils.fillEventLookup(new EventLookupInstance(id, event.getEventId()), event);
+			EventLookupInstance item = ManagerUtils.fillEventLookup(new EventLookupInstance(id, event.getEventId(), id.getInstanceAsDate().equals(firstInstanceDate)), event);
 			item.setStart(start);
 			item.setEnd(end);
 			if (censorize) item.censorize();

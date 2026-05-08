@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.commons.Check;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.EventsRecurrences;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import net.fortuna.ical4j.model.Recur;
@@ -46,25 +47,16 @@ import org.joda.time.LocalTime;
  */
 public class OEventRecurrence extends EventsRecurrences {
 	
-	public void set(Recur recur, DateTime recurStart, DateTime eventStart, DateTimeZone eventTimezone) {
-		DateTime newStart = (recurStart != null) ? recurStart : eventStart;
-		DateTime newUntil = null;
-		if (ICal4jUtils.recurHasCount(recur)) {
-			DateTime untilDate = ICal4jUtils.calculateRecurrenceEnd(recur, newStart, eventStart, null, eventTimezone);
-			newUntil = untilDate.withTimeAtStartOfDay().plusDays(1);
-		} else if (ICal4jUtils.recurHasUntilDate(recur)) {
-			DateTime untilDate = ICal4jUtils.toJodaDateTime(recur.getUntil(), DateTimeZone.UTC).withZone(eventTimezone);
-			newUntil = untilDate.withTimeAtStartOfDay().plusDays(1);
-		} else {
-			newUntil = ICal4jUtils.ifiniteDate(eventTimezone);
-		}
-		this.setStart(newStart);
-		this.setUntil(newUntil);
-		this.setRule(recur.toString());
+	public void set(Recur recur, LocalDate recurStart, DateTime eventStart, DateTimeZone eventTimezone) {
+		set(recur, (recurStart != null) ? recurStart.toDateTimeAtStartOfDay(eventTimezone) : null, eventStart, eventTimezone);
 	}
 	
-	public void set(Recur recur, LocalDate recurStart, DateTime eventStart, DateTimeZone eventTimezone) {
-		DateTime newStart = (recurStart != null) ? recurStart.toDateTimeAtStartOfDay(eventTimezone) : eventStart;
+	public void set(Recur recur, DateTime recurStart, DateTime eventStart, DateTimeZone eventTimezone) {
+		Check.notNull(recur, "recur");
+		Check.notNull(eventStart, "eventStart");
+		Check.notNull(eventTimezone, "eventTimezone");
+		
+		DateTime newStart = (recurStart != null) ? recurStart : eventStart;
 		DateTime newUntil = null;
 		if (ICal4jUtils.recurHasCount(recur)) {
 			DateTime untilDate = ICal4jUtils.calculateRecurrenceEnd(recur, newStart, eventStart, null, eventTimezone);

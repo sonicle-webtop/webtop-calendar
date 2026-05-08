@@ -32,8 +32,12 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.flags.BitFlags;
+import com.sonicle.commons.flags.BitFlagsEnum;
 import com.sonicle.commons.time.JodaTimeUtils;
+import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarUtils;
+import com.sonicle.webtop.calendar.ICalendarManager;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
@@ -47,6 +51,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import com.sonicle.webtop.calendar.model.EventBounds;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
 
 /**
  *
@@ -70,14 +75,9 @@ public class JsSchedulerEvent {
 	public String meeting;
 	public Boolean isPrivate;
 	public Integer reminder;
-	public Boolean isReadOnly;
-	public Boolean hasTz;
-	public Boolean hasAtts;
-	public Boolean isNtf;
-	public Boolean hasDesc;
 	public String tags;
 	
-	public Boolean hasRecur;
+	public Long flags;
 	public String _owPid;
 	public String _orDN;
 	public String _foPerms;
@@ -105,20 +105,13 @@ public class JsSchedulerEvent {
 		
 		title = event.getTitle();
 		location = event.getLocation();
-		hasDesc = !StringUtils.isBlank(event.getDescription());
-		if (hasDesc) description = (event.getDescription().length() > 200) ? event.getDescription().substring(0, 200) : event.getDescription();
+		if (!StringUtils.isBlank(event.getDescription())) description = (event.getDescription().length() > 200) ? event.getDescription().substring(0, 200) : event.getDescription();
 		meeting = Meeting.extractMeetingUrl(meetingUrlPattern, event.getLocation(), event.getDescription());
 		isPrivate = event.isVisibilityPrivate();
 		reminder = (event.getReminder() == null) ? -1 : event.getReminder().getMinutesValue();
-		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = calendar.isProviderRemote() || event.isCensorized(); // Maybe it's better to call this isLocked (no actions will be avail in client scheduler component)
-		hasTz = !event.getTimezoneObject().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getTimezoneObject(), profileTz, event.getStart());
-		hasAtts = event.hasAttendees();
-		isNtf = event.hasNotifyableAttendees();
-		
 		tags = event.getTags();
-		hasRecur = event.getHasRecurrence();
 		
+		flags = computeFlags(calendar, event, profileTz);
 		_owPid = calendar.getProfileId().toString();
 		_orDN = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
         _foPerms = folder.getPermissions().getFolderPermissions().toString();
@@ -132,5 +125,31 @@ public class JsSchedulerEvent {
 		public String endDate;
 		public String timezone;
 		public String title;
+	}
+	
+	public static long computeFlags(Calendar calendar, EventLookupInstance event, DateTimeZone profileTz) {
+		BitFlags<EventFlag> bf = BitFlags.noneOf(EventFlag.class);
+		
+		//TODO: handle locked events: admins can edit?
+		if (calendar.isProviderRemote() || event.isCensorized()) bf.set(EventFlag.IS_LOCKED);
+		if (!event.getTimezoneObject().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getTimezoneObject(), profileTz, event.getStart()))  bf.set(EventFlag.HAS_OTHER_TZ);
+		if (!StringUtils.isBlank(event.getDescription())) bf.set(EventFlag.HAS_DESCRIPTION);
+		if (event.hasAttendees()) bf.set(EventFlag.HAS_ATTENDEES);
+		if (event.hasNotifyableAttendees()) bf.set(EventFlag.HAS_NOTIFIABLE_ATTENDEES);
+		if (event.getHasRecurrence()) {
+			bf.set(EventFlag.HAS_RECURRENCE);
+			if (event.isFirstInstance()) bf.set(EventFlag.IS_FIRST_INSTANCE);
+		}
+		
+		return bf.getValue();
+	}
+	
+	public static enum EventFlag implements BitFlagsEnum<EventFlag> {
+		IS_LOCKED(1<<0), HAS_OTHER_TZ(1<<1), HAS_DESCRIPTION(1<<2), HAS_RECURRENCE(1<<3), HAS_ATTENDEES(1<<4), HAS_NOTIFIABLE_ATTENDEES(1<<5), IS_FIRST_INSTANCE(1<<6);
+		
+		private long mask = 0;
+		private EventFlag(long mask) { this.mask = mask; }
+		@Override
+		public long mask() { return this.mask; }
 	}
 }

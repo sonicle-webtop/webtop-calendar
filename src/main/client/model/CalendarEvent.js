@@ -56,16 +56,9 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 		WTF.field('meeting', 'string', true),
 		WTF.field('isPrivate', 'boolean', false, {defaultValue: false}),
 		WTF.field('reminder', 'int', true),
-		WTF.field('isReadOnly', 'boolean', false, {defaultValue: false}),
-		WTF.field('hasTz', 'boolean', false, {defaultValue: false}),
-		WTF.field('hasAtts', 'boolean', false, {defaultValue: false}),
-		WTF.field('isNtf', 'boolean', false, {defaultValue: false}),
-		
-		WTF.field('hasDesc', 'boolean', false, {defaultValue: false}),
 		WTF.field('tags', 'string', true),
 		
-		WTF.roField('hasRecur', 'boolean'),
-		
+		WTF.roField('flags', 'int'),
 		WTF.roField('_owPid', 'string'),
 		WTF.roField('_orDN', 'string'),
 		WTF.roField('_foPerms', 'string'),
@@ -74,17 +67,45 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 	
 	isSeriesMaster: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('oid')) && me.get('hasRecur');
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesMaster(me.getId(), me.get('oid')) && me.hasRecurrence();
 	},
 	
 	isSeriesItem: function() {
 		var me = this;
-		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('oid')) && me.get('hasRecur');
+		return Sonicle.webtop.calendar.EventInstanceId.isSeriesItem(me.getId(), me.get('oid')) && me.hasRecurrence();
 	},
 	
 	isSeriesBroken: function() {
 		var me = this;
 		return Sonicle.webtop.calendar.EventInstanceId.isSeriesBroken(me.getId(), me.get('oid'));
+	},
+	
+	isLocked: function() {
+		return Sonicle.Number.hasFlag(this.get('flags'), 1<<0);
+	},
+	
+	hasOtherTz: function() {
+		return Sonicle.Number.hasFlag(this.get('flags'), 1<<1);
+	},
+	
+	hasDescription: function() {
+		return Sonicle.Number.hasFlag(this.get('flags'), 1<<2);
+	},
+	
+	hasRecurrence: function() {
+		return Sonicle.Number.hasFlag(this.get('flags'), 1<<3);
+	},
+	
+	hasAttendees: function() {
+		return Sonicle.Number.hasFlag(this.get('flags'), 1<<4);
+	},
+	
+	hasNotifiableAttendees: function() {
+		return Sonicle.Number.hasFlag(this.get('flags'), 1<<5);
+	},
+	
+	isFirstInstance: function() {
+		return Sonicle.Number.hasFlag(this.get('flags'), 1<<6);
 	},
 	
 	privates: {
@@ -95,7 +116,7 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 		},
 		
 		fcIsEditable: function() {
-			return !this.get('isReadOnly');
+			return !this.isLocked();
 		},
 
 		fcPrepareEventExtendedProps: function() {
@@ -117,9 +138,9 @@ Ext.define('Sonicle.webtop.calendar.model.CalendarEvent', {
 				isRecurring: me.isSeriesItem(),
 				isBroken: me.isSeriesBroken(),
 				isPrivate: me.get('isPrivate'),
-				hasOtherTz: me.get('hasTz'),
-				hasBody: me.get('hasDesc'),
-				hasAttendees: me.get('hasAtts'),
+				hasOtherTz: me.hasOtherTz(),
+				hasBody: me.hasDescription(),
+				hasAttendees: me.hasAttendees(),
 				hasMeeting: !Ext.isEmpty(me.get('meeting')),
 				hasReminder: SoO.numberValue(me.get('reminder'), -1) >= 0
 			});

@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol.js;
 
+import com.sonicle.commons.flags.BitFlagsEnum;
 import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarUtils;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
@@ -42,7 +43,6 @@ import com.sonicle.webtop.calendar.model.CalendarPropSet;
 import com.sonicle.webtop.calendar.model.EventBounds;
 import com.sonicle.webtop.calendar.model.EventLookupInstance;
 import com.sonicle.webtop.core.sdk.UserProfileId;
-import java.util.regex.Pattern;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -64,11 +64,8 @@ public class JsGridEvent {
 	public String title;
 	public String location;
 	public Boolean isPrivate;
-	public Boolean isReadOnly;
 	public String tags;
-	public Boolean hasRecur;
-	public Boolean hasTz;
-	public Boolean hasAtts;
+	public Long flags;
 	public String _owPid;
 	public String _orDN;
 	public String _foPerms;
@@ -95,13 +92,9 @@ public class JsGridEvent {
 		title = event.getTitle();
 		location = event.getLocation();
 		isPrivate = event.isVisibilityPrivate();
-		//TODO: gestire eventi readonly...(utenti admin devono poter editare)
-		isReadOnly = calendar.isProviderRemote() || event.isCensorized(); // Maybe it's better to call this isLocked (no actions will be avail in client scheduler component)
-		
 		tags = event.getTags();
-		hasRecur = event.getHasRecurrence();
-		hasTz = !event.getTimezoneObject().getID().equals(profileTz.getID()) && !JodaTimeUtils.isTimeZoneCompatible(event.getTimezoneObject(), profileTz, event.getStart());
-		hasAtts = event.hasAttendees();
+		
+		flags = JsSchedulerEvent.computeFlags(calendar, event, profileTz);
 		_owPid = calendar.getProfileId().toString();
 		_orDN = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
         _foPerms = folder.getPermissions().getFolderPermissions().toString();

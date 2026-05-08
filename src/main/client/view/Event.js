@@ -471,7 +471,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 			mo = me.getModel();
 		
 		if (!mo.isNewlyCreated() && mo.isSeriesItem()) {
-			me.mys.confirmOnRecurringFor('save', mo.get('title'), function(bid, value) {
+			me.mys.confirmOnRecurringFor('save', true, mo.get('title'), function(bid, value) {
 				if (bid === 'ok') me.doSaveEvent(mo, value);
 			}, me);
 		} else {
@@ -485,7 +485,7 @@ Ext.define('Sonicle.webtop.calendar.view.Event', {
 		
 		if (mo.isNewlyCreated()) return;
 		if (mo.isSeriesItem()) {
-			me.mys.confirmOnRecurringFor('delete', mo.get('title'), function(bid, value) {
+			me.mys.confirmOnRecurringFor('delete', true, mo.get('title'), function(bid, value) {
 				if (bid === 'ok') me.doDeleteEvent(mo, value);
 			}, me);
 		} else {

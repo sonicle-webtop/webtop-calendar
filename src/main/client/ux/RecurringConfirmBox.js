@@ -33,6 +33,7 @@
 Ext.define('Sonicle.webtop.calendar.ux.RecurringConfirmBox', {
 	extend: 'WTA.ux.window.CustomPromptMsgBox',
 	
+	showAll: true,
 	thisText: '',
 	sinceText: '',
 	allText: '',
@@ -45,16 +46,37 @@ Ext.define('Sonicle.webtop.calendar.ux.RecurringConfirmBox', {
 			simpleValue: true,
 			vertical: true,
 			columns: 1,
-			items: [{
-				inputValue: 'this',
-				boxLabel: me.thisText
-			}, {
-				inputValue: 'since',
-				boxLabel: me.sinceText
-			}, {
-				inputValue: 'all',
-				boxLabel: me.allText
-			}]
+			items: Ext.Array.join(
+				[
+					{
+						inputValue: 'this',
+						boxLabel: me.thisText
+					}, {
+						inputValue: 'since',
+						boxLabel: me.sinceText
+					}
+				],
+				me.showAll ? [
+					{
+						inputValue: 'all',
+						boxLabel: me.allText
+					}
+				] : undefined
+			)
+			/*
+			items: [
+				{
+					inputValue: 'this',
+					boxLabel: me.thisText
+				}, {
+					inputValue: 'since',
+					boxLabel: me.sinceText
+				}, {
+					inputValue: 'all',
+					boxLabel: me.allText
+				}
+			]
+			*/
 		};
 	},
 	

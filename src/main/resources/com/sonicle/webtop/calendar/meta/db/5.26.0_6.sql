@@ -177,3 +177,10 @@ DROP TRIGGER IF EXISTS "history_events_trg_prune" ON "calendar"."history_events"
 CREATE TRIGGER "history_events_trg_prune" AFTER INSERT ON "calendar"."history_events"
 FOR EACH ROW
 EXECUTE PROCEDURE "calendar"."prune_events_history_on"();
+
+-- ----------------------------
+-- Clear deprecated settings
+-- ----------------------------
+@DataSource[default@com.sonicle.webtop.core]
+DELETE FROM "core"."settings" WHERE "service_id" = 'com.sonicle.webtop.calendar' AND "key" = 'event.statistic.fields.visible';
+DELETE FROM "core"."domain_settings" WHERE "service_id" = 'com.sonicle.webtop.calendar' AND "key" = 'event.statistic.fields.visible';

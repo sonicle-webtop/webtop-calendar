@@ -2002,7 +2002,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				swapReturn: true,
 				viewCfg: {
 					uploadTag: opts.uploadTag,
-					showStatisticFields: me.getVar('eventStatFieldsVisible') === true,
 					hideDescriptionOnNew: me.getVar('eventHideDescriptionOnNew') === true
 				}
 			});
@@ -2035,7 +2034,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				swapReturn: true,
 				viewCfg: {
 					uploadTag: opts.uploadTag,
-					showStatisticFields: me.getVar('eventStatFieldsVisible') === true,
 					hideDescriptionOnNew: me.getVar('eventHideDescriptionOnNew') === true
 				}
 			});
@@ -2069,8 +2067,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			vw = WT.createView(me.ID, 'view.Event', {
 				swapReturn: true,
 				viewCfg: {
-					uploadTag: opts.uploadTag,
-					showStatisticFields: me.getVar('eventStatFieldsVisible') === true
+					uploadTag: opts.uploadTag
 				}
 			}),
 			mode = edit ? 'edit' : 'view';

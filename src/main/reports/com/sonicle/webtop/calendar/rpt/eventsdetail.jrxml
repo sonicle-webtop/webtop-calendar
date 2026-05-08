@@ -78,10 +78,6 @@
 	<field name="reminder" class="java.lang.Integer"/>
 	<field name="isPrivate" class="java.lang.Boolean"/>
 	<field name="isBusy" class="java.lang.Boolean"/>
-	<field name="activityDescription" class="java.lang.String"/>
-	<field name="masterDataDescription" class="java.lang.String"/>
-	<field name="statMasterDataDescription" class="java.lang.String"/>
-	<field name="causalDescription" class="java.lang.String"/>
 	<field name="organizer" class="java.lang.String"/>
 	<field name="attendees" class="java.util.List"/>
 	<background>
@@ -221,46 +217,6 @@
 			<textField>
 				<reportElement style="FieldValue" x="90" y="28" width="300" height="14" uuid="eb2301b7-d186-4236-aa59-55a99bb9efb8"/>
 				<textFieldExpression><![CDATA[IF($F{isBusy},$R{boolean.true},$R{boolean.false})]]></textFieldExpression>
-			</textField>
-		</band>
-		<band height="82">
-			<textField>
-				<reportElement key="" style="Section" x="0" y="0" width="556" height="14" uuid="38744c75-1d09-458b-8955-d156d42046b5">
-					<property name="com.jaspersoft.studio.unit.height" value="cm"/>
-				</reportElement>
-				<textFieldExpression><![CDATA[$R{section.details}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldCaption" x="0" y="18" width="90" height="14" uuid="d3534543-cf3f-442e-a2f0-bd9a191ff9bb"/>
-				<textFieldExpression><![CDATA[$R{fld.activity}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldValue" x="90" y="18" width="300" height="14" uuid="435d1c86-0efe-44c0-b352-8199d6c7d8c0"/>
-				<textFieldExpression><![CDATA[$F{activityDescription}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldCaption" x="0" y="32" width="90" height="14" uuid="2df76896-dcfe-485b-b3ce-d28e66f0c5a1"/>
-				<textFieldExpression><![CDATA[$R{fld.masterData}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldValue" x="90" y="32" width="300" height="14" uuid="423d8a26-dcd7-4cd1-b7b4-f3c786e63d92"/>
-				<textFieldExpression><![CDATA[$F{masterDataDescription}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldCaption" x="0" y="46" width="90" height="14" uuid="c8474e80-9e15-4b2f-af9a-e5622436b263"/>
-				<textFieldExpression><![CDATA[$R{fld.statMasterData}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldValue" x="90" y="46" width="300" height="14" uuid="c0b15b19-4327-42c1-83e8-9d0094877d37"/>
-				<textFieldExpression><![CDATA[$F{statMasterDataDescription}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldCaption" x="0" y="60" width="90" height="14" uuid="890e2782-7172-425a-91d0-435f5ac48d16"/>
-				<textFieldExpression><![CDATA[$R{fld.causal}]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement style="FieldValue" x="90" y="60" width="300" height="14" uuid="6d8b70eb-c5e1-4f71-b978-48a3a68147ce"/>
-				<textFieldExpression><![CDATA[$F{causalDescription}]]></textFieldExpression>
 			</textField>
 		</band>
 		<band height="80">

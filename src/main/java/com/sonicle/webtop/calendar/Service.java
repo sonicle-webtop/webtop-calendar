@@ -250,7 +250,6 @@ public class Service extends BaseService {
 		DateTimeFormatter hmf = JodaTimeUtils.createFormatterHM();
 		ServiceVars co = new ServiceVars();
 		co.put("calendarRemoteSyncEnabled", ss.getCalendarRemoteAutoSyncEnabled());
-		co.put("eventStatFieldsVisible", ss.getEventStatisticFieldsVisible());
 		co.put("eventHideDescriptionOnNew", us.getEventDescriptionFieldStartHidden());
 		co.put("defaultCalendarSync", EnumUtils.toSerializedName(ss.getDefaultCalendarSync()));
 		co.put("view", us.getView());

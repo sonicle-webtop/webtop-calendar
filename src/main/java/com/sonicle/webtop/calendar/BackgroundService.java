@@ -76,6 +76,6 @@ public class BackgroundService extends BaseBackgroundService {
 	
 	private CronScheduleBuilder historyCleanupTaskScheduleBuilder() {
 		LocalTime time = new CalendarServiceSettings(SERVICE_ID, "*").getHistoryCleanupTime();
-		return CronScheduleBuilder.monthlyOnDayAndHourAndMinute(1, time.getHourOfDay(), time.getMinuteOfHour());
+		return CronScheduleBuilder.monthlyOnDayAndHourAndMinute(HistoryCleanupTask.RETENTION_YEARS, time.getHourOfDay(), time.getMinuteOfHour());
 	}
 }

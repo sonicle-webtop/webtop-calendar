@@ -319,7 +319,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	public Result<Integer[]> cleanupHistory(int retentionYears) {
+	public Result<Integer[]> cleanupHistory(final int retentionYears) {
 		HistoryDAO hisDao = HistoryDAO.getInstance();
 		Connection con = null;
 		

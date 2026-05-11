@@ -59,7 +59,7 @@ public class HistoryCleanupTask extends BaseBackgroundServiceTask {
 		BackgroundService bs = ((BackgroundService)getBackgroundService(jec));
 		CalendarManager calMgr = (CalendarManager)WT.getServiceManager(bs.SERVICE_ID);
 		
-		Result<Integer[]> result = calMgr.cleanupHistory(1);
+		Result<Integer[]> result = calMgr.cleanupHistory(RETENTION_YEARS);
 		if (result.hasExceptions()) LOGGER.warn("Cleanup process return errors: {}", result.collectExceptionsMessages());
 		LOGGER.debug("Calendars history: cleaned {} rows", result.getObject()[0]);
 		LOGGER.debug("Events history: cleaned {} rows", result.getObject()[1]);

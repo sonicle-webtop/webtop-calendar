@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HistoryCleanupTask extends BaseBackgroundServiceTask {
 	private static final Logger LOGGER = (Logger)LoggerFactory.getLogger(HistoryCleanupTask.class);
+	public static final int RETENTION_YEARS = 1;
 	
 	@Override
 	public Logger getLogger() {

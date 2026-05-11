@@ -251,6 +251,8 @@ import java.util.zip.ZipOutputStream;
 import org.joda.time.LocalDateTime;
 import com.sonicle.webtop.calendar.model.EventBounds;
 import com.sonicle.webtop.calendar.model.EventBoundsSeries;
+import com.sonicle.webtop.core.app.model.HomedThrowable;
+import com.sonicle.webtop.core.app.sdk.Result;
 import com.sonicle.webtop.core.app.sdk.WTEmailSendException;
 import com.sonicle.webtop.core.model.CustomField;
 import java.util.Optional;
@@ -315,6 +317,25 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} else {
 			return CalDavFactory.begin();
 		}
+	}
+	
+	public Result<Integer[]> cleanupHistory(int retentionYears) {
+		HistoryDAO hisDao = HistoryDAO.getInstance();
+		Connection con = null;
+		
+		HomedThrowable exc = null;
+		Integer[] ret = new Integer[2];
+		try {
+			con = WT.getConnection(SERVICE_ID);
+			ret[0] = hisDao.deleteCalendarsHistoryByAge(con, retentionYears);
+			ret[1] = hisDao.deleteEventsHistoryByAge(con, retentionYears);
+			
+		} catch (Exception ex) {
+			exc = HomedThrowable.wrap(SERVICE_ID, ExceptionUtils.wrapThrowable(ex));
+		} finally {
+			DbUtils.closeQuietly(con);
+		}
+		return new Result<>(ret, exc);
 	}
 	
 	@Override

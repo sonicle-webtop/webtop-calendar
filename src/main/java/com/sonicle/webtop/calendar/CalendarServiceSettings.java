@@ -47,6 +47,10 @@ public class CalendarServiceSettings extends BaseServiceSettings {
 		super(serviceId, domainId);
 	}
 	
+	public LocalTime getHistoryCleanupTime() {
+		return getTime(HISTORY_CLEANUP_TIME, "00:30", "HH:mm");
+	}
+	
 	public boolean getCalendarRemoteAutoSyncEnabled() {
 		return getBoolean(CALENDAR_REMOTE_AUTOSYNC_ENABLED, false);
 	}

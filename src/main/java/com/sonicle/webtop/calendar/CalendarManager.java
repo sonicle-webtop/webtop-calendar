@@ -3137,16 +3137,16 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					UserProfile.Data pdata = WT.getProfileData(instance.getCalendarProfileId());
 					if (pdata == null) throw new WTException("UserData is null [{}]", instance.getCalendarProfileId());
 					final DateTime profileNow = now.withZone(pdata.getTimeZone());
-					final DateTime remindOn = instance.getStart().withZone(pdata.getTimeZone()).minusMinutes(EventBase.Reminder.getMinutesValue(instance.getReminder()));
-					if (profileNow.compareTo(remindOn) < 0) {
-						if (shouldLog) logger.debug("[reminders][{}] Skipped: remind instant '{}' not yet reached [{}]", i, remindOn, instance.getId().toString());
+					final DateTime remindAt = instance.getStart().withZone(pdata.getTimeZone()).minusMinutes(EventBase.Reminder.getMinutesValue(instance.getReminder()));
+					if (profileNow.compareTo(remindAt) < 0) {
+						if (shouldLog) logger.debug("[reminders][{}] Skipped: remind instant '{}' not yet reached [{}]", i, remindAt, instance.getId().toString());
 						continue; // Skip if now is not after remindOn
 					}
 					
 					if (instance.getRemindedAt() != null) { // Instance could have been reminded in the past (only for series)
 						final DateTime lastRemindedAt = instance.getRemindedAt().withZone(pdata.getTimeZone());
-						if (remindOn.compareTo(lastRemindedAt) <= 0) {
-							if (shouldLog) logger.debug("[reminders][{}] Skipped: remind instant '{}' is in past [{}]", i, remindOn, lastRemindedAt, instance.getId().toString());
+						if (remindAt.compareTo(lastRemindedAt) <= 0) {
+							if (shouldLog) logger.debug("[reminders][{}] Skipped: remind instant '{}' is in past [{}]", i, remindAt, lastRemindedAt, instance.getId().toString());
 							continue; // Skip if remindOn is not after last remindOn
 						}
 					}
@@ -3170,7 +3170,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					if (byEmailCache.get(instance.getCalendarProfileId())) {
 						alert = createEventReminderAlertEmail(pdata.toProfileI18n(), instance.getId().toString(), instance, event, pdata.getPersonalEmailAddress());
 					} else {
-						alert = createEventReminderAlertWeb(pdata.toProfileI18n(), instance.getId().toString(), instance, event, remindOn);
+						alert = createEventReminderAlertWeb(pdata.toProfileI18n(), instance.getId().toString(), instance, event);
 					}
 					
 					if (shouldLog) logger.debug("[reminders][{}] Updating event record [{}]", i, instance.getId().toString());
@@ -5558,11 +5558,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	private ReminderInApp createEventReminderAlertWeb(ProfileI18n profileI18n, String eventInstanceId, EventAlertLookup eventLookup, EventEx event, DateTime reminderDate) {
+	private ReminderInApp createEventReminderAlertWeb(ProfileI18n profileI18n, String eventInstanceId, EventAlertLookupInstance eventLookup, EventEx event) {
 		String type = eventLookup.getHasRecurrence() ? "event" /*"event-recurring"*/ : "event";
 		ReminderInApp alert = new ReminderInApp(SERVICE_ID, eventLookup.getCalendarProfileId(), type, eventInstanceId);
 		alert.setTitle(event.getTitle());
-		alert.setDate(reminderDate);
+		alert.setDate(eventLookup.getStart().withZone(profileI18n.getTimezone()));
 		alert.setTimezone(profileI18n.getTimezone().getID());
 		return alert;
 	}

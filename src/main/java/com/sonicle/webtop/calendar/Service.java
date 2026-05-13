@@ -2112,7 +2112,7 @@ public class Service extends BaseService {
 					this.internalClear(Target.FOLDERS);
 					for (CalendarFSOrigin origin : this.origins.values()) {
 						if (origin instanceof MyCalendarFSOrigin) {
-							for (Calendar calendar : manager.listCalendars().values()) {
+							for (Calendar calendar : manager.listMyCalendars().values()) {
 								final MyCalendarFSFolder folder = new MyCalendarFSFolder(calendar.getCalendarId(), calendar);
 								this.folders.put(folder.getFolderId(), folder);
 								this.foldersByOrigin.put(origin.getProfileId(), folder);

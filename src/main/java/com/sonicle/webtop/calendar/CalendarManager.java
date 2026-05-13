@@ -285,24 +285,6 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 	}
 	
-	/**
-	 * @deprecated Use listMyCalendarIds() instead.
-	 */
-	@Deprecated
-	@Override
-	public Set<Integer> listCalendarIds() throws WTException {
-		return listMyCalendarIds();
-	}
-	
-	/**
-	 * @deprecated Use listMyCalendar() instead.
-	 */
-	@Deprecated
-	@Override
-	public Map<Integer, Calendar> listCalendars() throws WTException {
-		return listCalendars(getTargetProfileId(), null, true);
-	}
-	
 	private CoreManager getCoreManager() {
 		return WT.getCoreManager(getTargetProfileId());
 	}

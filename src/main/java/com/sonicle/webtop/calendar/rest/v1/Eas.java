@@ -111,7 +111,7 @@ public class Eas extends EasApi {
 		
 		try {
 			Integer defltCalendarId = manager.getDefaultCalendarId();
-			Map<Integer, Calendar> calendars = manager.listCalendars();
+			Map<Integer, Calendar> calendars = manager.listMyCalendars();
 			Map<Integer, DateTime> revisions = manager.getCalendarsItemsLastRevision(calendars.keySet());
 			for (Calendar calendar : calendars.values()) {
 				if (calendar.isProviderRemote()) continue;

@@ -324,7 +324,7 @@ public class ApiUtils {
 	
 	public static ApiEventLkp fillApiEventLkp(final ApiEventLkp tgt, final Set<String> fields2set, final EventLookup src) {
 		fillApiEventBase(tgt, fields2set, src);
-		tgt.tags(src.getTags());
+		if (shouldSet(fields2set, "tags")) tgt.tags(src.getTags());
 		tgt.hasRecurrence(src.getHasRecurrence());
 		tgt.attendeesCount(src.getAttendeesCount());
 		tgt.notifyableAttendeesCount(src.getNotifyableAttendeesCount());

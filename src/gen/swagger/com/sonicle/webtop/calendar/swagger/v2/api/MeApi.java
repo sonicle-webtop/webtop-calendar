@@ -24,7 +24,7 @@ import javax.validation.Valid;
 
 @Path("/me")
 @Api(description = "the me API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T14:19:21.068+02:00[Europe/Berlin]")
 public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -117,7 +117,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
 
     @DELETE
     @Path("/events/instances/{event_instance_id}")
-    @ApiOperation(value = "Delete an Event instance", notes = "Delete an Event instance given its instance ID.", response = Void.class, authorizations = {
+    @ApiOperation(value = "Delete an Event instance", notes = "Delete a specific Event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines the scope of the deletion: - {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the event is permanently deleted. For master events, the entire series is deleted including all its instances and exceptions. - {eventId}.{YYYYMMDD} — targets a single occurrence; the occurrence is removed from the series and added to the exclusion list of the master event, leaving the rest of the series unaffected.  When targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the deletion: - modify_since=false (default) — deletes only the specified instance - modify_since=true — splits the series at the specified date; all occurrences from that date onward are deleted, while earlier occurrences remain unchanged. This operation truncates the master event's recurrence rule accordingly.  Note: modify_since is ignored for single events and master events.", response = Void.class, authorizations = {
         
         @Authorization(value = "auth-bearer"),
         
@@ -162,7 +162,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
     @GET
     @Path("/events/instances/{event_instance_id}")
     @Produces({ "application/json" })
-    @ApiOperation(value = "Get an Event instance", notes = "Gets the specified Event instance given its instance ID.  Param *_select* supports the following fields: displayName, title, firstName, lastName, nickname, mobile, pager1, pager2, email1, email2, email3, im1, im2, im3, workAddress, workPostalCode, workCity, workState, workCountry, workTelephone1, workTelephone2, workFax, homeAddress, homePostalCode, homeCity, homeState, homeCountry, homeTelephone1, homeTelephone2, homeFax, otherAddress, otherPostalCode, otherCity, otherState, otherCountry, taxCode, vatNumber, eInvoicingCode", response = ApiEvent.class, authorizations = {
+    @ApiOperation(value = "Get an Event instance", notes = "Retrieve a specific event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines what is returned:  - {eventId}.00000000 — targets a single event or the master event of a recurring series. Returns the event object with its recurrence rules, but does not expand the individual occurrences of the series. - {eventId}.{YYYYMMDD} — targets a single occurrence or an exception. Returns the resolved instance for that date, merging the master event data with any exception overrides applicable to that occurrence.  Param *_select* supports the following fields: displayName, title, firstName, lastName, nickname, mobile, pager1, pager2, email1, email2, email3, im1, im2, im3, workAddress, workPostalCode, workCity, workState, workCountry, workTelephone1, workTelephone2, workFax, homeAddress, homePostalCode, homeCity, homeState, homeCountry, homeTelephone1, homeTelephone2, homeFax, otherAddress, otherPostalCode, otherCity, otherState, otherCountry, taxCode, vatNumber, eInvoicingCode", response = ApiEvent.class, authorizations = {
         
         @Authorization(value = "auth-bearer"),
         
@@ -177,7 +177,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Event not found", response = Void.class)
     })
-    public Response getEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("_select")  @ApiParam("List (comma-separated) of field names to include in resulting items. Optional, if omitted all available field will be taken into account.")  String select) {
+    public Response getEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("get_options") @Min(0) @DefaultValue("1")  @ApiParam("Bitmask that specifies which parts of the event must be updated. Multiple options can be combined by summing their values.  Flags: 1&#x3D;Attendees")  Integer getOptions,@QueryParam("_select")  @ApiParam("List (comma-separated) of field names to include in resulting items. Optional, if omitted all available field will be taken into account.")  String select) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -312,7 +312,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
     @PUT
     @Path("/events/instances/{event_instance_id}")
     @Consumes({ "application/json" })
-    @ApiOperation(value = "Update an Event instance", notes = "Update the specified Event instance given its instance ID. You can choose to update the entire object or only a subset of data.", response = Void.class, authorizations = {
+    @ApiOperation(value = "Update an Event instance", notes = "Update a specific Event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines the scope of the update: - {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions. - {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.  When targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update: - modify_since=false (default) — updates only the specified instance - modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged  Note: modify_since is ignored for single events and master events. You can update the entire event object or a subset of its fields.", response = Void.class, authorizations = {
         
         @Authorization(value = "auth-bearer"),
         
@@ -327,7 +327,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Event not found", response = Void.class)
     })
-    public Response updateEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event.")  String notify,@QueryParam("_update")  @ApiParam("List (comma-separated) of field names to update. Optional, if omitted all available field will be taken into account.")  String update,@Valid ApiEventEx body) {
+    public Response updateEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("update_options") @Min(0) @DefaultValue("1")  @ApiParam("Bitmask that specifies which parts of the event must be updated. Multiple options can be combined by summing their values.  Flags: 1&#x3D;Attendees")  Integer updateOptions,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event.")  String notify,@QueryParam("_update")  @ApiParam("List (comma-separated) of field names to update. Optional, if omitted all available field will be taken into account.")  String update,@Valid ApiEventEx body) {
         return Response.ok().entity("magic!").build();
     }
 

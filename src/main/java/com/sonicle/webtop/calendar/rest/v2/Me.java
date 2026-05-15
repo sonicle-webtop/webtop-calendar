@@ -324,10 +324,31 @@ public class Me extends MeApi {
 			LOGGER.error("[{}] addEvent({})", RunContext.getRunProfileId(), calendarId, t);
 			return respError(t);
 		}
-	}	
+	}
+
+	@Override
+	public Response getEventInstance(String eventInstanceId, Integer getOptions, String select) {
+		CalendarManager manager = getManager();
+		
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("[{}] getEventInstance({})", RunContext.getRunProfileId(), eventInstanceId);
+		}
+		
+		try {
+			EventInstanceId iid = EventInstanceId.parse(eventInstanceId);
+			BitFlags<EventGetOption> getOpts = BitFlags.newFrom(EventGetOption.class, getOptions);
+			EventInstance event = manager.getEventInstance(iid, getOpts);
+			
+			return respOk(ApiUtils.fillApiEvent(new ApiEvent(), null, event));
+			
+		} catch (Throwable t) {
+			LOGGER.error("[{}] getEventInstance({})", RunContext.getRunProfileId(), eventInstanceId, t);
+			return respError(t);
+		}
+	}
 	
 	@Override
-	public Response updateEventInstance(String eventInstanceId, Boolean modifySince, String notify, String _update, ApiEventEx body) {
+	public Response updateEventInstance(String eventInstanceId, Boolean modifySince, Integer updateOptions, String notify, String _update, ApiEventEx body) {
 		CalendarManager manager = getManager();
 		
 		if (LOGGER.isDebugEnabled()) {
@@ -336,17 +357,15 @@ public class Me extends MeApi {
 		
 		try {
 			EventInstanceId iid = EventInstanceId.parse(eventInstanceId);
+			BitFlags<EventUpdateOption> updateOpts = BitFlags.newFrom(EventUpdateOption.class, updateOptions);
 			BitFlags<EventNotifyOption> notifyOpts = ApiUtils.parseEventNotifyOption(notify);
-			BitFlags<EventGetOption> getOpts = BitFlags.noneOf(EventGetOption.class);
+			BitFlags<EventGetOption> getOpts = EventGetOption.parseEventUpdateOptions(updateOpts);
 			EventInstance event = manager.getEventInstance(iid, getOpts);
 			if (event == null) return respErrorNotFound();
 			
 			ApiUtils.fillEventEx(event, BaseRestApiUtils.parseStringSet(_update), body);
 			
 			UpdateEventTarget target = ApiUtils.toUpdateEventTarget(iid, modifySince);
-			BitFlags<EventUpdateOption> updateOpts = BitFlags.with(
-				EventUpdateOption.ATTENDEES
-			);
 			manager.updateEventInstance(target, iid, event, updateOpts, notifyOpts);
 			return respOk();
 			

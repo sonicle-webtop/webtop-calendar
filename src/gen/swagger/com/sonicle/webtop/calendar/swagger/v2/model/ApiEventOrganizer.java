@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "The organizer of the event.")
 @JsonTypeName("EventOrganizer")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T14:19:21.068+02:00[Europe/Berlin]")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiEventOrganizer   {
   private @Valid String userId;

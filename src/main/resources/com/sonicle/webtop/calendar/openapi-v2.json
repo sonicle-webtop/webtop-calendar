@@ -1188,6 +1188,9 @@
         "operationId": "getEventInstance",
         "parameters": [
           {
+            "$ref": "#/components/parameters/eventGetOpts"
+          },
+          {
             "$ref": "#/components/parameters/_select"
           }
         ],
@@ -1222,7 +1225,10 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/modify_since"
+            "$ref": "#/components/parameters/modifySince"
+          },
+          {
+            "$ref": "#/components/parameters/eventUpdateOpts"
           },
           {
             "$ref": "#/components/parameters/notify"
@@ -1254,7 +1260,7 @@
         "description": "Delete a specific Event instance identified by its instance ID.\n\nThe event_instance_id uses the format {eventId}.{date} and determines the scope of the deletion:\n- {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the event is permanently deleted. For master events, the entire series is deleted including all its instances and exceptions.\n- {eventId}.{YYYYMMDD} — targets a single occurrence; the occurrence is removed from the series and added to the exclusion list of the master event, leaving the rest of the series unaffected.\n\nWhen targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the deletion:\n- modify_since=false (default) — deletes only the specified instance\n- modify_since=true — splits the series at the specified date; all occurrences from that date onward are deleted, while earlier occurrences remain unchanged. This operation truncates the master event's recurrence rule accordingly.\n\nNote: modify_since is ignored for single events and master events.",
         "parameters": [
           {
-            "$ref": "#/components/parameters/modify_since"
+            "$ref": "#/components/parameters/modifySince"
           },
           {
             "$ref": "#/components/parameters/notify"
@@ -1302,7 +1308,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/modify_since"
+            "$ref": "#/components/parameters/modifySince"
           },
           {
             "$ref": "#/components/parameters/notify"
@@ -2966,7 +2972,7 @@
         },
         "description": "List (comma-separated) of field names to update. Optional, if omitted all available field will be taken into account."
       },
-      "modify_since": {
+      "modifySince": {
         "name": "modify_since",
         "in": "query",
         "required": false,
@@ -2991,6 +2997,28 @@
           "default": "all"
         },
         "description": "Attendees who should receive notifications about the creation/modification of the new event."
+      },
+      "eventUpdateOpts": {
+        "name": "update_options",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1
+        },
+        "description": "Bitmask that specifies which parts of the event must be updated. Multiple options can be combined by summing their values.\n\nFlags: 1=Attendees"
+      },
+      "eventGetOpts": {
+        "name": "get_options",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1
+        },
+        "description": "Bitmask that specifies which parts of the event must be updated. Multiple options can be combined by summing their values.\n\nFlags: 1=Attendees"
       }
     }
   },

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Defines for a recurring Event the repetition pattern and optionally the exceptions.")
 @JsonTypeName("EventRecurrence")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-06T10:50:03.275+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T14:19:21.068+02:00[Europe/Berlin]")
 public class ApiEventRecurrence   {
   private @Valid String start;
   private @Valid String rrule;

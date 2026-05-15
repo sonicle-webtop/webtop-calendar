@@ -19,17 +19,19 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 
 @JsonTypeName("EventLkp")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T14:19:21.068+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T16:34:35.908+02:00[Europe/Berlin]")
 public class ApiEventLkp extends ApiEventBase  {
   private @Valid String tags;
   private @Valid Boolean hasRecurrence;
   private @Valid Integer attendeesCount;
   private @Valid Integer notifyableAttendeesCount;
+  private @Valid String calendarId;
   private @Valid String calendarName;
   private @Valid String calendarDomainId;
   private @Valid String calendarUserId;
 
   /**
+   * Pipe separated list of associated tag IDs.
    **/
   public ApiEventLkp tags(String tags) {
     this.tags = tags;
@@ -37,7 +39,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Pipe separated list of associated tag IDs.")
   @JsonProperty("tags")
   public String getTags() {
     return tags;
@@ -49,6 +51,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   /**
+   * Specified if 
    **/
   public ApiEventLkp hasRecurrence(Boolean hasRecurrence) {
     this.hasRecurrence = hasRecurrence;
@@ -56,7 +59,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Specified if ")
   @JsonProperty("hasRecurrence")
   public Boolean getHasRecurrence() {
     return hasRecurrence;
@@ -68,6 +71,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   /**
+   * The total attendees count in the event.
    **/
   public ApiEventLkp attendeesCount(Integer attendeesCount) {
     this.attendeesCount = attendeesCount;
@@ -75,7 +79,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "The total attendees count in the event.")
   @JsonProperty("attendeesCount")
   public Integer getAttendeesCount() {
     return attendeesCount;
@@ -87,6 +91,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   /**
+   * The count of attendees for which notification is required.
    **/
   public ApiEventLkp notifyableAttendeesCount(Integer notifyableAttendeesCount) {
     this.notifyableAttendeesCount = notifyableAttendeesCount;
@@ -94,7 +99,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "The count of attendees for which notification is required.")
   @JsonProperty("notifyableAttendeesCount")
   public Integer getNotifyableAttendeesCount() {
     return notifyableAttendeesCount;
@@ -106,6 +111,27 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   /**
+   * The Calendar ID.
+   **/
+  public ApiEventLkp calendarId(String calendarId) {
+    this.calendarId = calendarId;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "The Calendar ID.")
+  @JsonProperty("calendarId")
+  public String getCalendarId() {
+    return calendarId;
+  }
+
+  @JsonProperty("calendarId")
+  public void setCalendarId(String calendarId) {
+    this.calendarId = calendarId;
+  }
+
+  /**
+   * The Calendar name.
    **/
   public ApiEventLkp calendarName(String calendarName) {
     this.calendarName = calendarName;
@@ -113,7 +139,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "The Calendar name.")
   @JsonProperty("calendarName")
   public String getCalendarName() {
     return calendarName;
@@ -125,6 +151,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   /**
+   * The Calendar&#39;s owner domain ID.
    **/
   public ApiEventLkp calendarDomainId(String calendarDomainId) {
     this.calendarDomainId = calendarDomainId;
@@ -132,7 +159,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "The Calendar's owner domain ID.")
   @JsonProperty("calendarDomainId")
   public String getCalendarDomainId() {
     return calendarDomainId;
@@ -144,6 +171,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   /**
+   * The Calendar&#39;s owner user ID.
    **/
   public ApiEventLkp calendarUserId(String calendarUserId) {
     this.calendarUserId = calendarUserId;
@@ -151,7 +179,7 @@ public class ApiEventLkp extends ApiEventBase  {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "The Calendar's owner user ID.")
   @JsonProperty("calendarUserId")
   public String getCalendarUserId() {
     return calendarUserId;
@@ -176,6 +204,7 @@ public class ApiEventLkp extends ApiEventBase  {
         Objects.equals(this.hasRecurrence, eventLkp.hasRecurrence) &&
         Objects.equals(this.attendeesCount, eventLkp.attendeesCount) &&
         Objects.equals(this.notifyableAttendeesCount, eventLkp.notifyableAttendeesCount) &&
+        Objects.equals(this.calendarId, eventLkp.calendarId) &&
         Objects.equals(this.calendarName, eventLkp.calendarName) &&
         Objects.equals(this.calendarDomainId, eventLkp.calendarDomainId) &&
         Objects.equals(this.calendarUserId, eventLkp.calendarUserId) &&
@@ -184,7 +213,7 @@ public class ApiEventLkp extends ApiEventBase  {
 
   @Override
   public int hashCode() {
-    return Objects.hash(tags, hasRecurrence, attendeesCount, notifyableAttendeesCount, calendarName, calendarDomainId, calendarUserId, super.hashCode());
+    return Objects.hash(tags, hasRecurrence, attendeesCount, notifyableAttendeesCount, calendarId, calendarName, calendarDomainId, calendarUserId, super.hashCode());
   }
 
   @Override
@@ -196,6 +225,7 @@ public class ApiEventLkp extends ApiEventBase  {
     sb.append("    hasRecurrence: ").append(toIndentedString(hasRecurrence)).append("\n");
     sb.append("    attendeesCount: ").append(toIndentedString(attendeesCount)).append("\n");
     sb.append("    notifyableAttendeesCount: ").append(toIndentedString(notifyableAttendeesCount)).append("\n");
+    sb.append("    calendarId: ").append(toIndentedString(calendarId)).append("\n");
     sb.append("    calendarName: ").append(toIndentedString(calendarName)).append("\n");
     sb.append("    calendarDomainId: ").append(toIndentedString(calendarDomainId)).append("\n");
     sb.append("    calendarUserId: ").append(toIndentedString(calendarUserId)).append("\n");

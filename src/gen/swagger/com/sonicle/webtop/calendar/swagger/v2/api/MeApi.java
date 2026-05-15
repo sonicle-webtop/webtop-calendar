@@ -24,7 +24,7 @@ import javax.validation.Valid;
 
 @Path("/me")
 @Api(description = "the me API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T14:19:21.068+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T16:34:35.908+02:00[Europe/Berlin]")
 public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -247,7 +247,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
     @GET
     @Path("/events/instances")
     @Produces({ "application/json" })
-    @ApiOperation(value = "List Event instances in a specific time-range.", notes = "Returns a list of Event instances from specified calendars.  Param *_filter* supports the following fields in RSQL query conditions: id, createdAt, updatedAt, rowStatus, status, organizer, organizerId, title, location, description, timezone, allDay, start, end, visibility, transparency, tagId  Param *_select* supports the following fields: publicUid, location, description, visibility, transparency, href, reminder", response = ApiEventLkpInstance.class, responseContainer = "List", authorizations = {
+    @ApiOperation(value = "List Event instances in a specific time-range.", notes = "Returns a list of Event instances from specified calendars.  Param *_filter* supports the following fields in RSQL query conditions: id, createdAt, updatedAt, rowStatus, status, organizer, organizerId, title, location, description, timezone, allDay, start, end, visibility, transparency, tagId  Param *_select* supports the following fields: publicUid, location, description, visibility, transparency, href, reminder, calendarId, calendarName, calendarDomainId, calendarUserId", response = ApiEventLkpInstance.class, responseContainer = "List", authorizations = {
         
         @Authorization(value = "auth-bearer"),
         

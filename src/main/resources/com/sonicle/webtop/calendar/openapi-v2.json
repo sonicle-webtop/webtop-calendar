@@ -1041,7 +1041,7 @@
             "description": "Not allowed"
           }
         },
-        "description": "Returns a list of Event instances from specified calendars.\n\nParam *_filter* supports the following fields in RSQL query conditions:\nid, createdAt, updatedAt, rowStatus, status, organizer, organizerId, title, location, description, timezone, allDay, start, end, visibility, transparency, tagId\n\nParam *_select* supports the following fields:\npublicUid, location, description, visibility, transparency, href, reminder",
+        "description": "Returns a list of Event instances from specified calendars.\n\nParam *_filter* supports the following fields in RSQL query conditions:\nid, createdAt, updatedAt, rowStatus, status, organizer, organizerId, title, location, description, timezone, allDay, start, end, visibility, transparency, tagId\n\nParam *_select* supports the following fields:\npublicUid, location, description, visibility, transparency, href, reminder, calendarId, calendarName, calendarDomainId, calendarUserId",
         "tags": [
           "me"
         ],
@@ -2564,6 +2564,7 @@
                 "x-stoplight": {
                   "id": "c9t85lt142o71"
                 },
+                "description": "Pipe separated list of associated tag IDs.",
                 "readOnly": true
               },
               "hasRecurrence": {
@@ -2571,6 +2572,7 @@
                 "x-stoplight": {
                   "id": "r904e03ftnp2e"
                 },
+                "description": "Specified if ",
                 "readOnly": true
               },
               "attendeesCount": {
@@ -2578,6 +2580,7 @@
                 "x-stoplight": {
                   "id": "ufl1fcv7j4l4o"
                 },
+                "description": "The total attendees count in the event.",
                 "readOnly": true
               },
               "notifyableAttendeesCount": {
@@ -2585,13 +2588,22 @@
                 "x-stoplight": {
                   "id": "sy0nw5rac2zk3"
                 },
+                "description": "The count of attendees for which notification is required.",
                 "readOnly": true
+              },
+              "calendarId": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "lxlrk3cd5z4u3"
+                },
+                "description": "The Calendar ID."
               },
               "calendarName": {
                 "type": "string",
                 "x-stoplight": {
                   "id": "61x2hqxs41um6"
                 },
+                "description": "The Calendar name.",
                 "readOnly": true
               },
               "calendarDomainId": {
@@ -2599,6 +2611,7 @@
                 "x-stoplight": {
                   "id": "xiluxee12x6tf"
                 },
+                "description": "The Calendar's owner domain ID.",
                 "readOnly": true
               },
               "calendarUserId": {
@@ -2606,6 +2619,7 @@
                 "x-stoplight": {
                   "id": "e1xm5nubcoo8f"
                 },
+                "description": "The Calendar's owner user ID.",
                 "readOnly": true
               }
             }

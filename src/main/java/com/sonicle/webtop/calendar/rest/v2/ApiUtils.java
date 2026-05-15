@@ -114,6 +114,10 @@ public class ApiUtils {
 		}
 	}
 	
+	public static String asCalendarId(final Integer calendarId) {
+		return (calendarId != null) ? String.valueOf(calendarId) : null;
+	}
+	
 	public static int parseCalendar(final String calendarId) throws WTParseException {
 		try {
 			return Integer.valueOf(calendarId);
@@ -320,7 +324,14 @@ public class ApiUtils {
 	
 	public static ApiEventLkp fillApiEventLkp(final ApiEventLkp tgt, final Set<String> fields2set, final EventLookup src) {
 		fillApiEventBase(tgt, fields2set, src);
+		tgt.tags(src.getTags());
 		tgt.hasRecurrence(src.getHasRecurrence());
+		tgt.attendeesCount(src.getAttendeesCount());
+		tgt.notifyableAttendeesCount(src.getNotifyableAttendeesCount());
+		if (shouldSet(fields2set, "calendarId")) tgt.calendarId(asCalendarId(src.getCalendarId()));
+		if (shouldSet(fields2set, "calendarName")) tgt.calendarName(src.getCalendarName());
+		if (shouldSet(fields2set, "calendarDomainId")) tgt.calendarDomainId(src.getCalendarDomainId());
+		if (shouldSet(fields2set, "calendarUserId")) tgt.calendarUserId(src.getCalendarUserId());
 		return tgt;
 	}
 	

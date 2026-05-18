@@ -59,6 +59,7 @@ import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarsResult;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiError;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEvent;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventEx;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventInstance;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventQuick;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventResponse;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventsResult;
@@ -327,7 +328,7 @@ public class Me extends MeApi {
 	}
 
 	@Override
-	public Response getEventInstance(String eventInstanceId, Integer getOptions, String select) {
+	public Response getEventInstance(String eventInstanceId, Integer getOptions, String _select) {
 		CalendarManager manager = getManager();
 		
 		if (LOGGER.isDebugEnabled()) {
@@ -339,7 +340,7 @@ public class Me extends MeApi {
 			BitFlags<EventGetOption> getOpts = BitFlags.newFrom(EventGetOption.class, getOptions);
 			EventInstance event = manager.getEventInstance(iid, getOpts);
 			
-			return respOk(ApiUtils.fillApiEvent(new ApiEvent(), null, event));
+			return respOk(ApiUtils.fillApiEventInstance(new ApiEventInstance(), BaseRestApiUtils.parseStringSet(_select), event));
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] getEventInstance({})", RunContext.getRunProfileId(), eventInstanceId, t);

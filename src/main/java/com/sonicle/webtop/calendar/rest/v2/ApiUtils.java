@@ -203,6 +203,7 @@ public class ApiUtils {
 	}
 	
 	public static EventEx fillEventEx(final EventEx tgt, final Set<String> fields2set, final ApiEventEx src) {
+		fillEventBase(tgt, fields2set, src);
 		if (src.getRecurrence() != null) {
 			ApiEventRecurrence aer = src.getRecurrence();
 			tgt.setRecurrence(new EventRecurrence(aer.getRrule(), JodaTimeUtils.parseDateTimeISO(aer.getStart()), parseExcludedDates(aer.getExDates())));

@@ -42,6 +42,7 @@ import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarBase;
 import com.sonicle.webtop.calendar.model.CalendarRemoteParameters;
 import com.sonicle.webtop.calendar.model.Event;
+import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.EventBase;
 import com.sonicle.webtop.calendar.model.EventEx;
 import com.sonicle.webtop.calendar.model.EventInstance;
@@ -56,6 +57,8 @@ import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendar;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarBase;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarsResult;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEvent;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventAttendee;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventAttendeeBase;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventBase;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventChanged;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventEx;
@@ -82,6 +85,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
@@ -110,7 +114,7 @@ public class ApiUtils {
 		} else if ("resource".equals(notify)) {
 			return BitFlags.with(EventNotifyOption.NOTIFY_RESOURCE_ATTENDEE);
 		} else {
-			return BitFlags.allOf(EventNotifyOption.class);
+			return EventNotifyOption.withAll();
 		}
 	}
 	
@@ -161,25 +165,26 @@ public class ApiUtils {
 		return tgt;
 	}
 	
-	public static ApiCalendarsResult fillApiCalendarsResult(final ApiCalendarsResult tgt, final Set<String> fields2set, final ItemsListResult<Calendar> result, final Map<Integer, DateTime> itemsLastRevisionMap) {
+	public static ApiCalendarsResult fillApiCalendarsResult(final ApiCalendarsResult tgt, final Set<String> fields2set, final ItemsListResult<Calendar> result, final Integer defaultCalendarId, final Map<Integer, DateTime> itemsLastRevisionMap) {
 		tgt.setTotalCount(result.getFullCount());
 		ArrayList<ApiCalendar> items = new ArrayList<>(result.getItems().size());
 		for (Calendar item : result.getItems()) {
 			DateTime itemsLastRevision = (itemsLastRevisionMap != null) ? itemsLastRevisionMap.get(item.getCalendarId()) : null;
-			items.add(fillApiCalendar(new ApiCalendar(), fields2set, item, itemsLastRevision));
+			items.add(fillApiCalendar(new ApiCalendar(), fields2set, item, defaultCalendarId, itemsLastRevision));
 		}
 		tgt.items(items);
 		return tgt;
 	}
 	
-	public static ApiCalendar fillApiCalendar(final ApiCalendar tgt, final Set<String> fields2set, final Calendar src, final DateTime itemsRevisionTimestamp) {
+	public static ApiCalendar fillApiCalendar(final ApiCalendar tgt, final Set<String> fields2set, final Calendar src, final Integer defaultCalendarId, final DateTime itemsRevisionTimestamp) {
 		fillApiCalendarBase(tgt, fields2set, src);
-		tgt.id(String.valueOf(src.getCalendarId()));
+		tgt.id(asCalendarId(src.getCalendarId()));
 		tgt.etag(BaseRestApiUtils.buildETag(src.getRevisionTimestamp()));
 		tgt.itemsETag(BaseRestApiUtils.buildETag(itemsRevisionTimestamp));
 		tgt.createdAt(JodaTimeUtils.printISO(src.getCreationTimestamp()));
 		tgt.updatedAt(JodaTimeUtils.printISO(src.getRevisionTimestamp()));
 		tgt.owner(fillApiOwnerInfo(new ApiOwnerInfo(), src.getProfileId()));
+		tgt.isDefault(StringUtils.equals(tgt.getId(), asCalendarId(defaultCalendarId)));
 		return tgt;
 	}
 	
@@ -208,6 +213,35 @@ public class ApiUtils {
 			ApiEventRecurrence aer = src.getRecurrence();
 			tgt.setRecurrence(new EventRecurrence(aer.getRrule(), JodaTimeUtils.parseDateTimeISO(aer.getStart()), parseExcludedDates(aer.getExDates())));
 		}
+		if (src.getAttendees() != null) {
+			for (ApiEventAttendee aee : src.getAttendees()) {
+				tgt.addAttendee(fillEventAttendee(new EventAttendee(), aee));
+			}
+		}
+		return tgt;
+	}
+	
+	public static EventAttendee fillEventAttendee(final EventAttendee tgt, final ApiEventAttendee src) {
+		fillEventAttendee(tgt, (ApiEventAttendeeBase)src);
+		tgt.setAttendeeId(src.getId());
+		tgt.setResponseStatus(EnumUtils.forSerializedName(src.getResponseStatus(), EventAttendee.ResponseStatus.class));
+		return tgt;
+	}
+	
+	public static EventAttendee fillEventAttendee(final EventAttendee tgt, final ApiEventAttendeeBase src) {
+		if (!StringUtils.isBlank(src.getAddress().getAddress())) {
+			tgt.setRecipient(InternetAddressUtils.toFullAddress(src.getAddress().getAddress(), src.getAddress().getName()));
+			tgt.setRecipientUserId(src.getUserProfileId());
+		} else if (!StringUtils.isBlank(src.getUserProfileId())) {
+			InternetAddress ia = WT.getProfilePersonalAddress(UserProfileId.parse(src.getUserProfileId()));
+			if (ia != null) {
+				tgt.setRecipient(InternetAddressUtils.toFullAddress(ia));
+				tgt.setRecipientUserId(src.getUserProfileId());
+			}
+		}
+		tgt.setRecipientType(EnumUtils.forSerializedName(src.getType(), EventAttendee.RecipientType.class));
+		tgt.setRecipientRole(EnumUtils.forSerializedName(src.getRole(), EventAttendee.RecipientRole.class));
+		tgt.setNotify(true);
 		return tgt;
 	}
 	

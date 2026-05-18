@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 
 @JsonTypeName("Calendar_allOf")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T16:34:35.908+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
 public class ApiCalendarAllOf   {
   private @Valid String id;
   private @Valid String etag;
@@ -26,6 +26,7 @@ public class ApiCalendarAllOf   {
   private @Valid String createdAt;
   private @Valid String updatedAt;
   private @Valid ApiOwnerInfo owner;
+  private @Valid Boolean isDefault;
 
   /**
    * The calendar ID.
@@ -146,6 +147,26 @@ public class ApiCalendarAllOf   {
     this.owner = owner;
   }
 
+  /**
+   * Specifies if the calendar is markes as &#x60;default&#x60; one.
+   **/
+  public ApiCalendarAllOf isDefault(Boolean isDefault) {
+    this.isDefault = isDefault;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "Specifies if the calendar is markes as `default` one.")
+  @JsonProperty("isDefault")
+  public Boolean getIsDefault() {
+    return isDefault;
+  }
+
+  @JsonProperty("isDefault")
+  public void setIsDefault(Boolean isDefault) {
+    this.isDefault = isDefault;
+  }
+
 
   @Override
   public boolean equals(Object o) {
@@ -161,12 +182,13 @@ public class ApiCalendarAllOf   {
         Objects.equals(this.itemsETag, calendarAllOf.itemsETag) &&
         Objects.equals(this.createdAt, calendarAllOf.createdAt) &&
         Objects.equals(this.updatedAt, calendarAllOf.updatedAt) &&
-        Objects.equals(this.owner, calendarAllOf.owner);
+        Objects.equals(this.owner, calendarAllOf.owner) &&
+        Objects.equals(this.isDefault, calendarAllOf.isDefault);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag, itemsETag, createdAt, updatedAt, owner);
+    return Objects.hash(id, etag, itemsETag, createdAt, updatedAt, owner, isDefault);
   }
 
   @Override
@@ -180,6 +202,7 @@ public class ApiCalendarAllOf   {
     sb.append("    createdAt: ").append(toIndentedString(createdAt)).append("\n");
     sb.append("    updatedAt: ").append(toIndentedString(updatedAt)).append("\n");
     sb.append("    owner: ").append(toIndentedString(owner)).append("\n");
+    sb.append("    isDefault: ").append(toIndentedString(isDefault)).append("\n");
     sb.append("}");
     return sb.toString();
   }

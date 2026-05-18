@@ -1,11 +1,14 @@
 package com.sonicle.webtop.calendar.swagger.v2.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventAttendee;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventEx;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventOrganizer;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventRecurrence;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 
@@ -22,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Represent an Event instance, a scheduled occurrence on a calendar, such as a meeting, holiday, or time block.")
 @JsonTypeName("EventInstance")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T16:34:35.908+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
 public class ApiEventInstance extends ApiEventEx  {
   private @Valid String iid;
   private @Valid String instanceType;

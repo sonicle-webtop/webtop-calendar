@@ -405,6 +405,7 @@ public class ManagerUtils {
 		if ((tgt != null) && (src != null)) {
 			tgt.setAttendeeId(src.getAttendeeId());
 			tgt.setRecipient(src.getRecipient());
+			tgt.setRecipientUserId(src.getRecipientUserId());
 			tgt.setRecipientType(EnumUtils.forSerializedName(src.getRecipientType(), EventAttendee.RecipientType.class));
 			tgt.setRecipientRole(EnumUtils.forSerializedName(src.getRecipientRole(), EventAttendee.RecipientRole.class));
 			tgt.setResponseStatus(EnumUtils.forSerializedName(src.getResponseStatus(), EventAttendee.ResponseStatus.class));
@@ -437,6 +438,7 @@ public class ManagerUtils {
 		if ((tgt != null) && (src != null)) {
 			tgt.setAttendeeId(src.getAttendeeId());
 			tgt.setRecipient(src.getRecipient());
+			tgt.setRecipientUserId(src.getRecipientUserId());
 			tgt.setRecipientType(EnumUtils.toSerializedName(src.getRecipientType()));
 			tgt.setRecipientRole(EnumUtils.toSerializedName(src.getRecipientRole()));
 			tgt.setResponseStatus(EnumUtils.toSerializedName(src.getResponseStatus()));

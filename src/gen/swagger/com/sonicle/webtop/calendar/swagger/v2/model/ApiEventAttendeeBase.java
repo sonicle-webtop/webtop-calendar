@@ -20,10 +20,10 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Represent an Attendee object with base updateable fields.")
 @JsonTypeName("EventAttendeeBase")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T16:34:35.908+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
 public class ApiEventAttendeeBase   {
   private @Valid ApiRecipient address;
-  private @Valid String userId;
+  private @Valid String userProfileId;
   public enum TypeEnum {
 
     IND(String.valueOf("IND")), RES(String.valueOf("RES"));
@@ -142,23 +142,23 @@ public class ApiEventAttendeeBase   {
   }
 
   /**
-   * The Recipient&#39;s user ID, to bound this role to a specific User. Optional.
+   * The Recipient&#39;s profile ID (user@domain), to bound this role to a specific User. Optional.
    **/
-  public ApiEventAttendeeBase userId(String userId) {
-    this.userId = userId;
+  public ApiEventAttendeeBase userProfileId(String userProfileId) {
+    this.userProfileId = userProfileId;
     return this;
   }
 
   
-  @ApiModelProperty(value = "The Recipient's user ID, to bound this role to a specific User. Optional.")
-  @JsonProperty("userId")
-  public String getUserId() {
-    return userId;
+  @ApiModelProperty(value = "The Recipient's profile ID (user@domain), to bound this role to a specific User. Optional.")
+  @JsonProperty("userProfileId")
+  public String getUserProfileId() {
+    return userProfileId;
   }
 
-  @JsonProperty("userId")
-  public void setUserId(String userId) {
-    this.userId = userId;
+  @JsonProperty("userProfileId")
+  public void setUserProfileId(String userProfileId) {
+    this.userProfileId = userProfileId;
   }
 
   /**
@@ -212,14 +212,14 @@ public class ApiEventAttendeeBase   {
     }
     ApiEventAttendeeBase eventAttendeeBase = (ApiEventAttendeeBase) o;
     return Objects.equals(this.address, eventAttendeeBase.address) &&
-        Objects.equals(this.userId, eventAttendeeBase.userId) &&
+        Objects.equals(this.userProfileId, eventAttendeeBase.userProfileId) &&
         Objects.equals(this.type, eventAttendeeBase.type) &&
         Objects.equals(this.role, eventAttendeeBase.role);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, userId, type, role);
+    return Objects.hash(address, userProfileId, type, role);
   }
 
   @Override
@@ -228,7 +228,7 @@ public class ApiEventAttendeeBase   {
     sb.append("class ApiEventAttendeeBase {\n");
     
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
-    sb.append("    userId: ").append(toIndentedString(userId)).append("\n");
+    sb.append("    userProfileId: ").append(toIndentedString(userProfileId)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    role: ").append(toIndentedString(role)).append("\n");
     sb.append("}");

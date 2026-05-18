@@ -118,7 +118,8 @@ public class Me extends MeApi {
 					})
 					.collect(Collectors.toList())
 			);
-			return respOk(ApiUtils.fillApiCalendarsResult(new ApiCalendarsResult(), BaseRestApiUtils.parseStringSet(_select), result, itemsLastRevisionMap));
+			Integer defaultCalendarId = manager.getDefaultCalendarId();
+			return respOk(ApiUtils.fillApiCalendarsResult(new ApiCalendarsResult(), BaseRestApiUtils.parseStringSet(_select), result, defaultCalendarId, itemsLastRevisionMap));
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] listCalendars()", RunContext.getRunProfileId(), t);
@@ -135,11 +136,11 @@ public class Me extends MeApi {
 		}
 		
 		try {
-			Calendar category = manager.getCalendar(ApiUtils.parseCalendar(calendarId));
-			if (category == null) return respErrorNotFound();
-			Map<Integer, DateTime> itemsLastRevisionMap = manager.getCalendarsItemsLastRevision(Arrays.asList(category.getCalendarId()));
-			
-			return respOk(ApiUtils.fillApiCalendar(new ApiCalendar(), null, category, itemsLastRevisionMap.get(category.getCalendarId())));
+			Calendar calendar = manager.getCalendar(ApiUtils.parseCalendar(calendarId));
+			if (calendar == null) return respErrorNotFound();
+			Map<Integer, DateTime> itemsLastRevisionMap = manager.getCalendarsItemsLastRevision(Arrays.asList(calendar.getCalendarId()));
+			Integer defaultCalendarId = manager.getDefaultCalendarId();
+			return respOk(ApiUtils.fillApiCalendar(new ApiCalendar(), null, calendar, defaultCalendarId, itemsLastRevisionMap.get(calendar.getCalendarId())));
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] getCalendar({})", RunContext.getRunProfileId(), calendarId, t);
@@ -159,7 +160,8 @@ public class Me extends MeApi {
 			CalendarBase calendar = ApiUtils.fillCalendarBase(new CalendarBase(), null, body);
 			calendar.setUserId(userIdOrDefault(userId));
 			Calendar newCalendar = manager.addCalendar(calendar);
-			return respOkCreated(ApiUtils.fillApiCalendar(new ApiCalendar(), null, newCalendar, null));
+			Integer defaultCalendarId = manager.getDefaultCalendarId();
+			return respOkCreated(ApiUtils.fillApiCalendar(new ApiCalendar(), null, newCalendar, defaultCalendarId, null));
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] addCalendar({})", RunContext.getRunProfileId(), userId, t);
@@ -358,7 +360,8 @@ public class Me extends MeApi {
 		
 		try {
 			EventInstanceId iid = EventInstanceId.parse(eventInstanceId);
-			BitFlags<EventUpdateOption> updateOpts = BitFlags.newFrom(EventUpdateOption.class, updateOptions);
+			BitFlags<EventUpdateOption> updateOpts = BitFlags.newFrom(EventUpdateOption.class, updateOptions)
+				.unset(EventUpdateOption.ATTENDEE_RESPONSE);
 			BitFlags<EventNotifyOption> notifyOpts = ApiUtils.parseEventNotifyOption(notify);
 			BitFlags<EventGetOption> getOpts = EventGetOption.parseEventUpdateOptions(updateOpts);
 			EventInstance event = manager.getEventInstance(iid, getOpts);

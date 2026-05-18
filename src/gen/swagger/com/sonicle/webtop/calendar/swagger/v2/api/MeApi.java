@@ -5,6 +5,7 @@ import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarBase;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarsResult;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEvent;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventEx;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventInstance;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventLkpInstance;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventQuick;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventResponse;
@@ -24,7 +25,7 @@ import javax.validation.Valid;
 
 @Path("/me")
 @Api(description = "the me API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-15T16:34:35.908+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
 public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -162,7 +163,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
     @GET
     @Path("/events/instances/{event_instance_id}")
     @Produces({ "application/json" })
-    @ApiOperation(value = "Get an Event instance", notes = "Retrieve a specific event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines what is returned:  - {eventId}.00000000 — targets a single event or the master event of a recurring series. Returns the event object with its recurrence rules, but does not expand the individual occurrences of the series. - {eventId}.{YYYYMMDD} — targets a single occurrence or an exception. Returns the resolved instance for that date, merging the master event data with any exception overrides applicable to that occurrence.  Param *_select* supports the following fields: displayName, title, firstName, lastName, nickname, mobile, pager1, pager2, email1, email2, email3, im1, im2, im3, workAddress, workPostalCode, workCity, workState, workCountry, workTelephone1, workTelephone2, workFax, homeAddress, homePostalCode, homeCity, homeState, homeCountry, homeTelephone1, homeTelephone2, homeFax, otherAddress, otherPostalCode, otherCity, otherState, otherCountry, taxCode, vatNumber, eInvoicingCode", response = ApiEvent.class, authorizations = {
+    @ApiOperation(value = "Get an Event instance", notes = "Retrieve a specific event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines what is returned:  - {eventId}.00000000 — targets a single event or the master event of a recurring series. Returns the event object with its recurrence rules, but does not expand the individual occurrences of the series. - {eventId}.{YYYYMMDD} — targets a single occurrence or an exception. Returns the resolved instance for that date, merging the master event data with any exception overrides applicable to that occurrence.  Param *_select* supports the following fields: publicUid, location, description, visibility, transparency, href, reminder", response = ApiEventInstance.class, authorizations = {
         
         @Authorization(value = "auth-bearer"),
         
@@ -173,7 +174,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
         @Authorization(value = "auth-basic")
          }, tags={ "me" })
     @ApiResponses(value = { 
-        @ApiResponse(code = 200, message = "Success", response = ApiEvent.class),
+        @ApiResponse(code = 200, message = "Success", response = ApiEventInstance.class),
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Event not found", response = Void.class)
     })
@@ -312,7 +313,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
     @PUT
     @Path("/events/instances/{event_instance_id}")
     @Consumes({ "application/json" })
-    @ApiOperation(value = "Update an Event instance", notes = "Update a specific Event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines the scope of the update: - {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions. - {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.  When targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update: - modify_since=false (default) — updates only the specified instance - modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged  Note: modify_since is ignored for single events and master events. You can update the entire event object or a subset of its fields.", response = Void.class, authorizations = {
+    @ApiOperation(value = "Update an Event instance", notes = "Update a specific Event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines the scope of the update: - {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions. - {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.  When targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update: - modify_since=false (default) — updates only the specified instance - modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged  Note: modify_since is ignored for single events and master events. You can update the entire event object or a subset of its fields.  Param *_update* supports the following fields: publicUid, publicUid, status, organizer, timezone, allDay, start, endm title, location, descriptionType, description, visibility, transparency, href, reminder", response = Void.class, authorizations = {
         
         @Authorization(value = "auth-bearer"),
         

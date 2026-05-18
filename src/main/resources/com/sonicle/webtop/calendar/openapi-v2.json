@@ -2054,6 +2054,14 @@
               },
               "owner": {
                 "$ref": "#/components/schemas/OwnerInfo"
+              },
+              "isDefault": {
+                "type": "boolean",
+                "x-stoplight": {
+                  "id": "1enk99o3sh682"
+                },
+                "description": "Specifies if the calendar is markes as `default` one.",
+                "readOnly": true
               }
             }
           },
@@ -2246,6 +2254,16 @@
             "properties": {
               "recurrence": {
                 "$ref": "#/components/schemas/EventRecurrence"
+              },
+              "attendees": {
+                "type": "array",
+                "x-stoplight": {
+                  "id": "b23athq0sig1m"
+                },
+                "description": "The collection of attendees for the event.",
+                "items": {
+                  "$ref": "#/components/schemas/EventAttendee"
+                }
               }
             }
           },
@@ -2448,12 +2466,12 @@
           "address": {
             "$ref": "#/components/schemas/Recipient"
           },
-          "userId": {
+          "userProfileId": {
             "type": "string",
             "x-stoplight": {
               "id": "cl48uv80qkfa4"
             },
-            "description": "The Recipient's user ID, to bound this role to a specific User. Optional."
+            "description": "The Recipient's profile ID (user@domain), to bound this role to a specific User. Optional."
           },
           "type": {
             "type": "string",

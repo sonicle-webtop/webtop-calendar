@@ -242,7 +242,7 @@ public class Eas extends EasApi {
 			if (event == null) return respErrorNotFound();
 			
 			mergeEvent(event, body.getData(), false);
-			BitFlags<EventUpdateOption> updateOpts = BitFlags.with(EventUpdateOption.ATTENDEES, EventUpdateOption.ATTENDEE_RESPONSE);
+			BitFlags<EventUpdateOption> updateOpts = BitFlags.with(EventUpdateOption.ATTENDEES);
 			manager.updateEventInstance(UpdateEventTarget.WHOLE_SERIES, instanceId, event, updateOpts, EventNotifyOption.withAllAttendeesNotifications());
 			
 			ArrayList<EventObject> evtobjs = new ArrayList<>();

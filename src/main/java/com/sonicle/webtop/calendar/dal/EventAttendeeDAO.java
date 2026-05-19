@@ -97,7 +97,7 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int update(Connection con, OEventAttendee item, boolean response) throws DAOException {
+	public int update(Connection con, OEventAttendee item, boolean ignoreResponse, boolean ignoreNotify) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		
 		UpdateSetMoreStep update = dsl
@@ -105,12 +105,15 @@ public class EventAttendeeDAO extends BaseDAO {
 			.set(EVENTS_ATTENDEES.RECIPIENT, item.getRecipient())
 			.set(EVENTS_ATTENDEES.RECIPIENT_USER_ID, item.getRecipientUserId())
 			.set(EVENTS_ATTENDEES.RECIPIENT_ROLE, item.getRecipientRole())
-			.set(EVENTS_ATTENDEES.RECIPIENT_TYPE, item.getRecipientType())
-			.set(EVENTS_ATTENDEES.NOTIFY, item.getNotify());
+			.set(EVENTS_ATTENDEES.RECIPIENT_TYPE, item.getRecipientType());
 		
-		if (response) {
+		if (!ignoreResponse) {
 			update = update
 				.set(EVENTS_ATTENDEES.RESPONSE_STATUS, item.getResponseStatus());
+		}
+		if (!ignoreNotify) {
+			update = update
+				.set(EVENTS_ATTENDEES.NOTIFY, item.getNotify());
 		}
 		
 		return update

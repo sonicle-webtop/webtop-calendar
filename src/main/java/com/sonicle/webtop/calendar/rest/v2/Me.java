@@ -361,7 +361,7 @@ public class Me extends MeApi {
 		try {
 			EventInstanceId iid = EventInstanceId.parse(eventInstanceId);
 			BitFlags<EventUpdateOption> updateOpts = BitFlags.newFrom(EventUpdateOption.class, updateOptions)
-				.unset(EventUpdateOption.ATTENDEE_RESPONSE);
+				.set(EventUpdateOption.IGNORE_ATTENDEE_RESPONSE, EventUpdateOption.IGNORE_ATTENDEE_NOTIFY);
 			BitFlags<EventNotifyOption> notifyOpts = ApiUtils.parseEventNotifyOption(notify);
 			BitFlags<EventGetOption> getOpts = EventGetOption.parseEventUpdateOptions(updateOpts);
 			EventInstance event = manager.getEventInstance(iid, getOpts);

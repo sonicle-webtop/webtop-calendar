@@ -1032,7 +1032,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			checkRightsOnCalendar(calendarId, FolderShare.FolderRight.READ);
 			
 			Map<String, String> tagNamesByIdMap = coreMgr.listTagNamesById();
-			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.TAGS);
+			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.TAGS);
 			final ArrayList<ChangedItem<EventObject>> items = new ArrayList<>();
 			con = WT.getConnection(SERVICE_ID);
 			if (fullSync) {
@@ -1154,7 +1154,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			input.event.setHref(href);
 			
 			con = WT.getConnection(SERVICE_ID, false);
-			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.RAW_ICAL);
+			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.RAW_ICAL);
 			EventInsertResult result = doEventInputInsert(con, input, processOpts, BitFlags.with(EventReminderOption.IGNORE), coreMgr.listTagIds());
 			newEventId = result.oevent.getEventId();
 			
@@ -1651,7 +1651,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (Calendar.isProviderRemote(provider)) throw new WTException("Calendar is remote and therefore read-only [{}]", event.getCalendarId());
 			
 			Set<String> availTags = coreMgr.listTagIds();
-			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
+			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
 			if (!StringUtils.isBlank(rawICalendar)) processOpts.set(EventProcessOpt.RAW_ICAL);
 			
 			EventInsertResult result = doEventInsert(con, event, null, null, rawICalendar, processOpts, BitFlags.noneOf(EventReminderOption.class), availTags);
@@ -1708,7 +1708,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			input.event.setCalendarId(calendarId);
 			
 			con = WT.getConnection(SERVICE_ID, false);
-			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.RAW_ICAL);
+			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.RAW_ICAL);
 			EventInsertResult result = doEventInputInsert(con, input, processOpts, BitFlags.with(EventReminderOption.IGNORE), validTags, new HashMap<>());
 			newEventId = result.oevent.getEventId();
 			
@@ -1836,7 +1836,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			// Retrieve event instance
 			BitFlags<EventProcessOpt> processOpts = BitFlags.with(
-				EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES
+				EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES
 			);
 			EventInstance event = doEventInstanceGet(con, sourceInstanceId, processOpts);
 			if (event == null) throw new WTNotFoundException("Event not found [{}]", sourceInstanceId);
@@ -1898,7 +1898,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	@Override
 	public void updateEventInstance(final UpdateEventTarget target, final EventInstanceId instanceId, final EventEx event, final BitFlags<EventNotifyOption> notifyOptions) throws WTException {
-		BitFlags<EventUpdateOption> updateOpts = BitFlags.with(EventUpdateOption.ATTENDEES, EventUpdateOption.ATTENDEE_RESPONSE, EventUpdateOption.ATTACHMENTS, EventUpdateOption.TAGS, EventUpdateOption.CUSTOM_VALUES);
+		BitFlags<EventUpdateOption> updateOpts = BitFlags.with(EventUpdateOption.ATTENDEES, EventUpdateOption.ATTACHMENTS, EventUpdateOption.TAGS, EventUpdateOption.CUSTOM_VALUES);
 		updateEventInstance(target, instanceId, event, updateOpts, notifyOptions);
 	}
 	
@@ -1964,7 +1964,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			// Retrieve event instance
 			BitFlags<EventProcessOpt> processOpts = BitFlags.with(
-				EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES
+				EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES
 			);
 			EventInstance event = doEventInstanceGet(con, instanceId, processOpts);
 			if (event == null) throw new WTNotFoundException("Event not found [{}]", instanceId);
@@ -2022,7 +2022,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			if (notifyOrganizer) {
 				BitFlags<EventProcessOpt> processOpts = BitFlags.with(
-					EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE
+					EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES
 				);
 				Event event = doEventGet(con, info.originalEventId(), processOpts);
 				if (event == null) throw new WTException("Unable to notify organizer: event is null [{}]", info.originalEventId());
@@ -2057,7 +2057,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			if (notifyOrganizer) {
 				BitFlags<EventProcessOpt> processOpts = BitFlags.with(
-					EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE
+					EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES
 				);
 				Event event = doEventGet(con, info.originalEventId(), processOpts);
 				if (event == null) throw new WTException("Unable to notify organizer: event is null [{}]", info.originalEventId());
@@ -2474,7 +2474,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				String lookupEventId = doEventLookupId(con, scope, eventInput.event.getPublicUid());
 				//TODO: add support to recurrence
 				// Get saved appointment event, if any...
-				BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE);
+				BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
 				EventInstance oldEvent = null;
 				if (lookupEventId != null) {
 					EventInstanceId masterInstanceId = EventInstanceId.buildMaster(lookupEventId);
@@ -2539,7 +2539,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					InstanceInfo instanceInfo = new InstanceInfo(oldEvent);
 					eventInput.mergeFieldsForInvitation(oldEvent);
 					
-					BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE);
+					BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.ATTENDEES);
 					doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, oldEvent, updateOpts, EventNotifyOption.withoutAnyAttendeesNotifications(), null);
 					
 					return null;
@@ -2947,7 +2947,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		int count = 0;
 		
 		EventInputConsumerImpl(Connection con, Integer calendarId, HashMap<String, OEvent> uidMap, Map<String, String> tagNamesById, Map<String, List<String>> tagIdsByName, LogEntries log) {
-			this.processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
+			this.processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
 			this.reminderOpts = BitFlags.with(EventReminderOption.DISARM_PAST);
 			this.con = con;
 			this.calendarId = calendarId;
@@ -3159,7 +3159,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					
 					if (shouldLog) logger.debug("[reminders][{}] Building alert [{}]", i, instance.getId().toString());
 					
-					BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE);
+					BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
 					EventInstance event = doEventInstanceGet(con, instance.getId(), processOpts);
 					if (event == null) {
 						if (shouldLog) logger.debug("[reminders][{}] Unable to get instance data [{}]", i, instance.getId().toString());
@@ -3229,7 +3229,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			con = WT.getConnection(SERVICE_ID);
 			
 			Map<String, String> tagNamesByIdMap = coreMgr.listTagNamesById();
-			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
+			BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
 			String prodId = ICalendarUtils.buildProdId(ManagerUtils.getProductName());
 			String icalPre = "BEGIN:VCALENDAR\r\n"+ICalendarUtils.newCalendar(prodId, null).getProperties();
 			String icalEnd = "END:VCALENDAR\r\n";
@@ -3346,7 +3346,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (params.url == null) throw new WTException("Remote URL is undefined [{}]", calendarId);
 			
 			final Set<String> validTags = coreMgr.listTagIds();
-			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
+			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
 			final BitFlags<EventReminderOption> reminderOpts = BitFlags.noneOf(EventReminderOption.class);
 			
 			if (Calendar.Provider.WEBCAL.equals(cal.getProvider())) {
@@ -3846,7 +3846,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	
 	private EventObject doEventObjectPrepare(Connection con, VEventObject vevent, EventObjectOutputType outputType, Map<String, String> tagNamesByIdMap) throws WTException {
-		BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.TAGS);
+		BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.TAGS);
 		return doEventObjectPrepare(con, vevent, outputType, processOpts, tagNamesByIdMap);
 	}
 	
@@ -4154,7 +4154,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	
 	// Rename to doEventLookup
 	private Event doEventGet(Connection con, GetEventScope scope, String publicUid) throws WTException {
-		BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.CUSTOM_VALUES);
+		BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.CUSTOM_VALUES);
 		return doEventLookup(con, scope, publicUid, processOpts);
 	}
 	
@@ -4390,13 +4390,15 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		ChangeSet<EventAttendee> attendeeChanges = null;
 		if (processOpts.has(EventProcessOpt.ATTENDEES)) {
-			final boolean updateResponse = processOpts.has(EventProcessOpt.ATTENDEE_RESPONSE);
+			final boolean ignoreResponse = processOpts.has(EventProcessOpt.IGNORE_ATTENDEE_RESPONSE);
+			final boolean ignoreNotify = processOpts.has(EventProcessOpt.IGNORE_ATTENDEE_NOTIFY);
 			EventAttendeeDAO atteDao = EventAttendeeDAO.getInstance();
 			List<EventAttendee> oldAttendees = ManagerUtils.createEventAttendeeList(atteDao.selectByEvent(con, eventId));
 			ChangeSet<EventAttendee> changeSet = LangUtils.computeChangeSet(oldAttendees, event.getAttendeesOrEmpty());
 			
 			if (changeSet.hasAdded()) {
 				for (EventAttendee attendee : changeSet.getAdded()) {
+					// Evaluate to provide defaults for response and notify!
 					if (!ManagerUtils.validateForInsert(attendee)) continue;
 					final OEventAttendee oattendee = ManagerUtils.fillOEventAttendee(new OEventAttendee(), attendee);
 					oattendee.setAttendeeId(IdentifierUtils.getUUIDTimeBased(true));
@@ -4406,9 +4408,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			if (changeSet.hasUpdated()) {
 				for (EventAttendee attendee : changeSet.getUpdated()) {
-					if (!ManagerUtils.validateForUpdate(attendee)) continue;
+					if (!ManagerUtils.validateForUpdate(attendee, ignoreResponse, ignoreNotify)) continue;
 					final OEventAttendee oattendee = ManagerUtils.fillOEventAttendee(new OEventAttendee(), attendee);
-					atteDao.update(con, oattendee, updateResponse);
+					atteDao.update(con, oattendee, ignoreResponse, ignoreNotify);
 				}
 			}
 			if (changeSet.hasRemoved()) atteDao.deleteByIdsEvent(con, changeSet.getRemoved().stream().map(att -> att.getAttendeeId()).collect(Collectors.toList()), eventId);
@@ -4637,7 +4639,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		int ret;
 		
 		EventInstance eventDump = null;
-		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE);
+		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
 		EventUpdateResult eventUpdate = null;
 		event.setTimezone(info.eventTimezone);
 		if (info.belongsToSeries && info.isSeriesException) { // -> BROKEN INSTANCE
@@ -4669,7 +4671,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts new broken item (RR is not supported here)
 				BitFlags<EventProcessOpt> insertOpts = processOpts.copy()
-					.unset(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
+					.unset(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
 				EventInsertResult insert = doEventInsert(con, event, info.masterEventId, info.seriesInstance, null, insertOpts, BitFlags.noneOf(EventReminderOption.class), validTags);
 				
 				// 2 - Inserts an exception on modified date
@@ -4759,7 +4761,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				
 				BitFlags<EventProcessOpt> insertOpts = processOpts.copy()
 					.set(EventProcessOpt.RECUR)
-					.unset(EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE, EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
+					.unset(EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
 				EventInsertResult insert = doEventInsert(con, event, null, null, null, insertOpts, BitFlags.noneOf(EventReminderOption.class), validTags);
 
 				DbUtils.commitQuietly(con);
@@ -4864,7 +4866,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
 		int ret;
 		
-		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE);
+		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
 		EventInstance eventDump = null;
 		if (info.belongsToSeries && info.isSeriesException) { // -> BROKEN INSTANCE
 			eventDump = doEventInstanceGet(con, info, getOpts); // Save for later use!
@@ -5028,7 +5030,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
 		int ret;
 		
-		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE);
+		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
 		EventInstance eventDump = null;
 		if (info.belongsToSeries && info.isSeriesException) { // -> BROKEN INSTANCE
 			eventDump = doEventInstanceGet(con, info, getOpts); // Save for later use!
@@ -6343,7 +6345,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private enum EventProcessOpt implements BitFlagsEnum<EventProcessOpt> {
-		RECUR(1<<0), RECUR_EX(1<<1), ATTENDEES(1<<2), ATTACHMENTS(1<<3), TAGS(1<<4), CUSTOM_VALUES(1<<5), RAW_ICAL(1<<6), ATTENDEE_RESPONSE(1<<7);
+		RECUR(1<<0), RECUR_EX(1<<1), ATTENDEES(1<<2), ATTACHMENTS(1<<3), TAGS(1<<4), CUSTOM_VALUES(1<<5), RAW_ICAL(1<<6), IGNORE_ATTENDEE_RESPONSE(1<<7), IGNORE_ATTENDEE_NOTIFY(1<<8);
 		
 		private int mask = 0;
 		private EventProcessOpt(int mask) { this.mask = mask; }
@@ -6352,7 +6354,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		
 		public static BitFlags<EventProcessOpt> parseEventGetOptions(BitFlags<EventGetOption> flags) {
 			BitFlags<EventProcessOpt> ret = new BitFlags<>(EventProcessOpt.class);
-			if (flags.has(EventGetOption.ATTENDEES)) ret.set(EventProcessOpt.ATTENDEES, EventProcessOpt.ATTENDEE_RESPONSE);
+			if (flags.has(EventGetOption.ATTENDEES)) ret.set(EventProcessOpt.ATTENDEES);
 			if (flags.has(EventGetOption.ATTACHMENTS)) ret.set(EventProcessOpt.ATTACHMENTS);
 			if (flags.has(EventGetOption.TAGS)) ret.set(EventProcessOpt.TAGS);
 			if (flags.has(EventGetOption.CUSTOM_VALUES)) ret.set(EventProcessOpt.CUSTOM_VALUES);
@@ -6365,7 +6367,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (flags.has(EventUpdateOption.ATTACHMENTS)) ret.set(EventProcessOpt.ATTACHMENTS);
 			if (flags.has(EventUpdateOption.TAGS)) ret.set(EventProcessOpt.TAGS);
 			if (flags.has(EventUpdateOption.CUSTOM_VALUES)) ret.set(EventProcessOpt.CUSTOM_VALUES);
-			if (flags.has(EventUpdateOption.ATTENDEE_RESPONSE)) ret.set(EventProcessOpt.ATTENDEE_RESPONSE);
+			if (flags.has(EventUpdateOption.IGNORE_ATTENDEE_RESPONSE)) ret.set(EventProcessOpt.IGNORE_ATTENDEE_RESPONSE);
+			if (flags.has(EventUpdateOption.IGNORE_ATTENDEE_NOTIFY)) ret.set(EventProcessOpt.IGNORE_ATTENDEE_NOTIFY);
 			return ret;
 		}
 	}

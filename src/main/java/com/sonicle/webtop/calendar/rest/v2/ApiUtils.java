@@ -221,30 +221,6 @@ public class ApiUtils {
 		return tgt;
 	}
 	
-	public static EventAttendee fillEventAttendee(final EventAttendee tgt, final ApiEventAttendee src) {
-		fillEventAttendee(tgt, (ApiEventAttendeeBase)src);
-		tgt.setAttendeeId(src.getId());
-		tgt.setResponseStatus(EnumUtils.forSerializedName(src.getResponseStatus(), EventAttendee.ResponseStatus.class));
-		return tgt;
-	}
-	
-	public static EventAttendee fillEventAttendee(final EventAttendee tgt, final ApiEventAttendeeBase src) {
-		if (!StringUtils.isBlank(src.getAddress().getAddress())) {
-			tgt.setRecipient(InternetAddressUtils.toFullAddress(src.getAddress().getAddress(), src.getAddress().getName()));
-			tgt.setRecipientUserId(src.getUserProfileId());
-		} else if (!StringUtils.isBlank(src.getUserProfileId())) {
-			InternetAddress ia = WT.getProfilePersonalAddress(UserProfileId.parse(src.getUserProfileId()));
-			if (ia != null) {
-				tgt.setRecipient(InternetAddressUtils.toFullAddress(ia));
-				tgt.setRecipientUserId(src.getUserProfileId());
-			}
-		}
-		tgt.setRecipientType(EnumUtils.forSerializedName(src.getType(), EventAttendee.RecipientType.class));
-		tgt.setRecipientRole(EnumUtils.forSerializedName(src.getRole(), EventAttendee.RecipientRole.class));
-		tgt.setNotify(true);
-		return tgt;
-	}
-	
 	public static EventBase fillEventBase(final EventBase tgt, final Set<String> fields2set, final ApiEventBase src) {
 		if (shouldSet(fields2set, "publicUid")) tgt.setPublicUid(src.getPublicUid());
 		if (shouldSet(fields2set, "rowStatus")) tgt.setRowStatus(EnumUtils.forName(src.getVisibility(), EventBase.RowStatus.class));
@@ -273,6 +249,30 @@ public class ApiUtils {
 		if (shouldSet(fields2set, "transparency")) tgt.setTransparency(EnumUtils.forSerializedName(src.getTransparency(), EventBase.Transparency.class));
 		if (shouldSet(fields2set, "href")) tgt.setHref(src.getHref());
 		if (shouldSet(fields2set, "reminder")) tgt.setReminder(EventBase.Reminder.valueOf(src.getReminder()));
+		return tgt;
+	}
+	
+	public static EventAttendee fillEventAttendee(final EventAttendee tgt, final ApiEventAttendee src) {
+		fillEventAttendee(tgt, (ApiEventAttendeeBase)src);
+		tgt.setAttendeeId(src.getId());
+		tgt.setResponseStatus(EnumUtils.forSerializedName(src.getResponseStatus(), EventAttendee.ResponseStatus.class));
+		return tgt;
+	}
+	
+	public static EventAttendee fillEventAttendee(final EventAttendee tgt, final ApiEventAttendeeBase src) {
+		if (!StringUtils.isBlank(src.getAddress().getAddress())) {
+			tgt.setRecipient(InternetAddressUtils.toFullAddress(src.getAddress().getAddress(), src.getAddress().getName()));
+			tgt.setRecipientUserId(src.getUserProfileId());
+		} else if (!StringUtils.isBlank(src.getUserProfileId())) {
+			InternetAddress ia = WT.getProfilePersonalAddress(UserProfileId.parse(src.getUserProfileId()));
+			if (ia != null) {
+				tgt.setRecipient(InternetAddressUtils.toFullAddress(ia));
+				tgt.setRecipientUserId(src.getUserProfileId());
+			}
+		}
+		tgt.setRecipientType(EnumUtils.forSerializedName(src.getType(), EventAttendee.RecipientType.class));
+		tgt.setRecipientRole(EnumUtils.forSerializedName(src.getRole(), EventAttendee.RecipientRole.class));
+		tgt.setNotify(true);
 		return tgt;
 	}
 	
@@ -395,6 +395,11 @@ public class ApiUtils {
 	public static ApiEventEx fillApiEventEx(final ApiEventEx tgt, final Set<String> fields2set, final EventEx src) {
 		fillApiEventBase(tgt, fields2set, src);
 		if (src.hasRecurrence()) tgt.recurrence(fillApiEventRecurrence(new ApiEventRecurrence(), src.getRecurrence()));
+		if (src.hasAttendees()) {
+			for (EventAttendee attendee : src.getAttendeesOrEmpty()) {
+				tgt.addAttendeesItem(fillApiEventAttendee(new ApiEventAttendee(), attendee));
+			}
+		}
 		return tgt;
 	}
 	
@@ -417,6 +422,22 @@ public class ApiUtils {
 		if (shouldSet(fields2set, "transparency")) tgt.transparency(ApiEventBase.TransparencyEnum.fromValue(EnumUtils.toSerializedName(src.getTransparency())));
 		if (shouldSet(fields2set, "href")) tgt.href(src.getHref());
 		if (shouldSet(fields2set, "reminder")) tgt.reminder(EventBase.Reminder.getMinutesValue(src.getReminder()));
+		return tgt;
+	}
+	
+	public static ApiEventAttendee fillApiEventAttendee(final ApiEventAttendee tgt, final EventAttendee src) {
+		fillApiEventAttendee((ApiEventAttendeeBase)tgt, src);
+		tgt.id(src.getAttendeeId());
+		tgt.responseStatus(ApiEventAttendee.ResponseStatusEnum.fromValue(EnumUtils.toSerializedName(src.getResponseStatus())));
+		tgt.responseTimestamp(JodaTimeUtils.printISO(src.getResponseTimestamp()));
+		return tgt;
+	}
+	
+	public static ApiEventAttendeeBase fillApiEventAttendee(final ApiEventAttendeeBase tgt, final EventAttendee src) {
+		tgt.address(fillApiRecipient(new ApiRecipient(), src.getRecipientInternetAddress()));
+		tgt.userProfileId(src.getRecipientUserId());
+		tgt.type(ApiEventAttendee.TypeEnum.fromValue(EnumUtils.toSerializedName(src.getRecipientType())));
+		tgt.role(ApiEventAttendee.RoleEnum.fromValue(EnumUtils.toSerializedName(src.getRecipientRole())));
 		return tgt;
 	}
 	

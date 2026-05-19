@@ -424,13 +424,13 @@ public class ManagerUtils {
 		return true;
 	}
 	
-	static boolean validateForUpdate(EventAttendee src) {
+	static boolean validateForUpdate(EventAttendee src, boolean ignoreResponse, boolean ignoreNotify) {
 		if (StringUtils.isBlank(src.getAttendeeId())) return false;
 		if (StringUtils.isBlank(src.getRecipient())) return false;
 		if (src.getRecipientType() == null) return false;
 		//if (src.getRecipientRole() == null) return false;
-		if (src.getResponseStatus() == null) return false;
-		if (src.getNotify() == null) return false;
+		if (!ignoreResponse && src.getResponseStatus() == null) return false;
+		if (!ignoreNotify && src.getNotify() == null) return false;
 		return true;
 	}
 	

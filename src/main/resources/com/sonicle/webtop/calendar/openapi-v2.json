@@ -1238,7 +1238,7 @@
           }
         ],
         "x-codegen-request-body-name": "body",
-        "description": "Update a specific Event instance identified by its instance ID.\n\nThe event_instance_id uses the format {eventId}.{date} and determines the scope of the update:\n- {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions.\n- {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.\n\nWhen targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update:\n- modify_since=false (default) — updates only the specified instance\n- modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged\n\nNote: modify_since is ignored for single events and master events.\nYou can update the entire event object or a subset of its fields.\n\nParam *_update* supports the following fields:\npublicUid, publicUid, status, organizer, timezone, allDay, start, endm title, location, descriptionType, description, visibility, transparency, href, reminder"
+        "description": "Update a specific Event instance identified by its instance ID.\n\nThe event_instance_id uses the format {eventId}.{date} and determines the scope of the update:\n- {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions.\n- {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.\n\nWhen targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update:\n- modify_since=false (default) — updates only the specified instance\n- modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged\n\nNote: modify_since is ignored for single events and master events.\nYou can update the entire event object or a subset of its fields.\n\nParam *_update* supports the following fields:\npublicUid, status, organizer, timezone, allDay, start, end, title, location, descriptionType, description, visibility, transparency, href, reminder"
       },
       "delete": {
         "summary": "Delete an Event instance",
@@ -2512,6 +2512,7 @@
             "properties": {
               "id": {
                 "type": "string",
+                "description": "The attendee ID.",
                 "readOnly": true
               },
               "responseStatus": {
@@ -2536,7 +2537,10 @@
                 "description": "The date and time when the response was returned. It uses ISO 8601 format and UTC time.",
                 "readOnly": true
               }
-            }
+            },
+            "required": [
+              "id"
+            ]
           },
           {
             "$ref": "#/components/schemas/EventAttendeeBase"
@@ -3028,7 +3032,7 @@
           ],
           "default": "all"
         },
-        "description": "Attendees who should receive notifications about the creation/modification of the new event."
+        "description": "Attendees who should receive notifications about the creation/modification of the new event. Possible values are: none, individual, resource, all. Defaults to `all`."
       },
       "eventUpdateOpts": {
         "name": "update_options",

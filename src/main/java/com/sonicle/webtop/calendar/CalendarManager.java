@@ -255,7 +255,6 @@ import com.sonicle.webtop.core.app.model.HomedThrowable;
 import com.sonicle.webtop.core.app.sdk.Result;
 import com.sonicle.webtop.core.app.sdk.WTEmailSendException;
 import com.sonicle.webtop.core.model.CustomField;
-import java.util.Optional;
 
 /**
  *

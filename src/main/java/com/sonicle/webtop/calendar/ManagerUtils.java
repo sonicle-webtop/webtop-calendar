@@ -338,7 +338,7 @@ public class ManagerUtils {
 			if (tgt.getRevisionTimestamp()== null) tgt.setRevisionTimestamp(defaultTimestamp);
 			if (tgt.getRevisionSequence() == null) tgt.setRevisionSequence(0);
 			if (tgt.getCreationTimestamp() == null) tgt.setCreationTimestamp(defaultTimestamp);
-			if (tgt.getRowStatus()== null) tgt.setRowStatus(EnumUtils.toSerializedName(EventBase.RowStatus.DEFAULT));
+			if (tgt.getRowStatus() == null) tgt.setRowStatus(EnumUtils.toSerializedName(EventBase.RowStatus.DEFAULT));
 			if (tgt.getStatus() == null) tgt.setStatus(EnumUtils.toSerializedName(EventBase.Status.CONFIRMED));
 			if (StringUtils.isBlank(tgt.getOrganizer())) {
 				tgt.setOrganizer(buildOrganizer(targetProfile));
@@ -349,6 +349,8 @@ public class ManagerUtils {
 				if (pdata != null) tgt.setTimezone(pdata.getTimeZoneId());
 			}
 			if (tgt.getDescriptionType() == null) tgt.setDescriptionType(EnumUtils.toSerializedName(EventBase.BodyType.TEXT));
+			if (tgt.getVisibility() == null) tgt.setVisibility(EnumUtils.toSerializedName(EventBase.Visibility.PUBLIC));
+			if (tgt.getTransparency() == null) tgt.setTransparency(EnumUtils.toSerializedName(EventBase.Transparency.OPAQUE));
 			if (StringUtils.isBlank(tgt.getHref())) tgt.setHref(ManagerUtils.buildHref(tgt.getEventId(), WT.getPrimaryDomainName(targetProfile.getDomainId())));
 		}
 		return tgt;

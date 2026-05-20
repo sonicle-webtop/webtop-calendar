@@ -1692,7 +1692,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				});
 			};
 		
-		if (rec.hasNotifyableAttendees()) {
+		if (rec.hasNotifiableAttendees()) {
 			me.confirmOnInvitationFor('update', function(bid) {
 				if (bid === 'yes') {
 					doFn(target, true);
@@ -1731,7 +1731,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				});
 			};
 		
-		if (rec.hasNotifyableAttendees()) {
+		if (rec.hasNotifiableAttendees()) {
 			me.confirmOnInvitationFor('update', function(bid) {
 				if (bid === 'yes') {
 					doFn(true);
@@ -1754,7 +1754,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					});
 				};
 		
-		if (rec.hasNotifyableAttendees()) {
+		if (rec.hasNotifiableAttendees()) {
 			me.confirmOnInvitationFor('save', function(bid) {
 				if (bid === 'yes') {
 					doFn(true);
@@ -1779,7 +1779,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			vct = me.createCalendarChooser(copy);
 		
 		vct.on('viewok', function(s, data) {
-			if (copy && rec.hasNotifyableAttendees()) {
+			if (copy && rec.hasNotifiableAttendees()) {
 				me.confirmOnInvitationFor('save', function(bid) {
 					if (bid === 'yes') {
 						doFn(true, data.calendarId);

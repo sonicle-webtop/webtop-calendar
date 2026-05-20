@@ -419,7 +419,7 @@ public class Me extends MeApi {
 			
 			UpdateEventTarget target = ApiUtils.toUpdateEventTarget(iid, modifySince);
 			manager.deleteEventInstance(target, iid, notifyOpts);
-			return respOk();
+			return respOkNoContent();
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] deleteEventInstance({})", RunContext.getRunProfileId(), eventInstanceId, t);

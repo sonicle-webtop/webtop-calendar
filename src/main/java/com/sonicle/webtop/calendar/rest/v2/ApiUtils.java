@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar.rest.v2;
 
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
+import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.beans.ItemsListResult;
 import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.JodaTimeUtils;
@@ -81,9 +82,12 @@ import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import jakarta.mail.internet.InternetAddress;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -213,11 +217,33 @@ public class ApiUtils {
 			ApiEventRecurrence aer = src.getRecurrence();
 			tgt.setRecurrence(new EventRecurrence(aer.getRrule(), JodaTimeUtils.parseDateTimeISO(aer.getStart()), parseExcludedDates(aer.getExDates())));
 		}
+		return tgt;
+	}
+	
+	public static EventEx mergeEventExAttendees(final EventEx tgt, final ApiEventEx src) {
+		List<EventAttendee> newList = null;
 		if (src.getAttendees() != null) {
+			Map<String, EventAttendee> oldMap = tgt.getAttendeesOrEmpty().stream()
+				.collect(Collectors.toMap(item -> item.getAttendeeId(), item -> item, (ov, nv) -> nv, LinkedHashMap::new));
+			
+			newList = new ArrayList<>(src.getAttendees().size());
+			Set<String> seenIds = new LinkedHashSet<>();
 			for (ApiEventAttendee aee : src.getAttendees()) {
-				tgt.addAttendee(fillEventAttendee(new EventAttendee(), aee));
+				if (aee == null) continue;
+				
+				String attendeeId = aee.getId();
+				EventAttendee attendee = null;
+				if (!StringUtils.isBlank(attendeeId)) {
+					if (!seenIds.add(attendeeId)) continue;
+					attendee = oldMap.get(attendeeId);
+				}
+				if (attendee == null) {
+					attendee = new EventAttendee();
+				}
+				newList.add(fillEventAttendee(attendee, aee));
 			}
 		}
+		tgt.setAttendees(newList);
 		return tgt;
 	}
 	
@@ -272,7 +298,6 @@ public class ApiUtils {
 		}
 		tgt.setRecipientType(EnumUtils.forSerializedName(src.getType(), EventAttendee.RecipientType.class));
 		tgt.setRecipientRole(EnumUtils.forSerializedName(src.getRole(), EventAttendee.RecipientRole.class));
-		tgt.setNotify(true);
 		return tgt;
 	}
 	

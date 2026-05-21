@@ -4397,7 +4397,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			if (changeSet.hasAdded()) {
 				for (EventAttendee attendee : changeSet.getAdded()) {
-					// Evaluate to provide defaults for response and notify!
+					ManagerUtils.fillWithDefaults(attendee);
 					if (!ManagerUtils.validateForInsert(attendee)) continue;
 					final OEventAttendee oattendee = ManagerUtils.fillOEventAttendee(new OEventAttendee(), attendee);
 					oattendee.setAttendeeId(IdentifierUtils.getUUIDTimeBased(true));
@@ -4407,6 +4407,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			}
 			if (changeSet.hasUpdated()) {
 				for (EventAttendee attendee : changeSet.getUpdated()) {
+					ManagerUtils.fillWithDefaults(attendee);
 					if (!ManagerUtils.validateForUpdate(attendee, ignoreResponse, ignoreNotify)) continue;
 					final OEventAttendee oattendee = ManagerUtils.fillOEventAttendee(new OEventAttendee(), attendee);
 					atteDao.update(con, oattendee, ignoreResponse, ignoreNotify);

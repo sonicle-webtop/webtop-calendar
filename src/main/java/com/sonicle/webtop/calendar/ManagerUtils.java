@@ -417,6 +417,13 @@ public class ManagerUtils {
 		return tgt;
 	}
 	
+	static void fillWithDefaults(EventAttendee src) {
+		if (src.getRecipientType() == null) src.setRecipientType(EventAttendee.RecipientType.INDIVIDUAL);
+		if (src.getRecipientRole() == null) src.setRecipientRole(EventAttendee.RecipientRole.OPTIONAL);
+		if (src.getResponseStatus() == null) src.setResponseStatus(EventAttendee.ResponseStatus.NEEDS_ACTION);
+		if (src.getNotify() == null) src.setNotify(true);
+	}
+	
 	static boolean validateForInsert(EventAttendee src) {
 		if (StringUtils.isBlank(src.getRecipient())) return false;
 		if (src.getRecipientType() == null) return false;
@@ -430,7 +437,7 @@ public class ManagerUtils {
 		if (StringUtils.isBlank(src.getAttendeeId())) return false;
 		if (StringUtils.isBlank(src.getRecipient())) return false;
 		if (src.getRecipientType() == null) return false;
-		//if (src.getRecipientRole() == null) return false;
+		if (src.getRecipientRole() == null) return false;
 		if (!ignoreResponse && src.getResponseStatus() == null) return false;
 		if (!ignoreNotify && src.getNotify() == null) return false;
 		return true;

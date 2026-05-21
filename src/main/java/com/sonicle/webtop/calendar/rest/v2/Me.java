@@ -319,6 +319,7 @@ public class Me extends MeApi {
 		
 		try {
 			EventEx event = ApiUtils.fillEventEx(new EventEx(), null, body);
+			ApiUtils.mergeEventExAttendees(event, body);
 			event.setCalendarId(ApiUtils.parseCalendar(calendarId));
 			Event newEvent = manager.addEvent(event);
 			return respOkCreated(ApiUtils.fillApiEvent(new ApiEvent(), null, newEvent));
@@ -368,6 +369,9 @@ public class Me extends MeApi {
 			if (event == null) return respErrorNotFound();
 			
 			ApiUtils.fillEventEx(event, BaseRestApiUtils.parseStringSet(_update), body);
+			if (updateOpts.has(EventUpdateOption.ATTENDEES)) {
+				ApiUtils.mergeEventExAttendees(event, body);
+			}
 			
 			UpdateEventTarget target = ApiUtils.toUpdateEventTarget(iid, modifySince);
 			manager.updateEventInstance(target, iid, event, updateOpts, notifyOpts);

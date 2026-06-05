@@ -1104,7 +1104,7 @@ public class Service extends BaseService {
 				EventInstance evt = manager.getEventInstance(instanceId);
 				UserProfileId ownerId = manager.getCalendarOwner(evt.getCalendarId());
 				
-				Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, evt.getTags());
+				Map<String, CustomPanel> cpanels = coreMgr.listCustomPanelsUsedBy(SERVICE_ID, evt.getTagsOrEmpty());
 				Map<String, CustomField> cfields = new HashMap<>();
 				for (CustomPanel cpanel : cpanels.values()) {
 					for (String fieldId : cpanel.getFields()) {

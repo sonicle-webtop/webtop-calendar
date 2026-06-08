@@ -3458,8 +3458,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								ei.event.setEtag(eiHash);
 								
 								if (matchingEventId != null) {
-									if (logger.isTraceEnabled()) logger.trace("[{}] Updating event '{}'", logPrefix, matchingEventId);
-									boolean updated = doEventInputUpdate(con, matchingEventId, Arrays.asList(ei), processOpts, validTags);
+									if (logger.isTraceEnabled()) logger.trace("[{}] Updating event '{}'", logPrefix, matchingEventId);									
+									boolean updated = doEventInputUpdate(con, matchingEventId, new ArrayList(Arrays.asList(ei)), processOpts, validTags);
 									if (!updated) throw new WTException("Event not found [{}]", matchingEventId);
 									
 								} else {
@@ -3658,7 +3658,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 									if (matchingEventId == null) {
 										doEventInputInsert(con, ei, processOpts, reminderOpts, validTags);
 									} else {
-										boolean updated = doEventInputUpdate(con, matchingEventId, Arrays.asList(ei), processOpts, validTags);
+										boolean updated = doEventInputUpdate(con, matchingEventId, new ArrayList(Arrays.asList(ei)), processOpts, validTags);
 										if (!updated) throw new WTException("Event not found [{}]", matchingEventId);
 									}
 								}

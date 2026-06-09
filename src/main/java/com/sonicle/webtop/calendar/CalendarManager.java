@@ -3345,7 +3345,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			if (params.url == null) throw new WTException("Remote URL is undefined [{}]", calendarId);
 			
 			final Set<String> validTags = coreMgr.listTagIds();
-			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
+			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, /*EventProcessOpt.ATTACHMENTS,*/ EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
 			final BitFlags<EventReminderOption> reminderOpts = BitFlags.noneOf(EventReminderOption.class);
 			
 			if (Calendar.Provider.WEBCAL.equals(cal.getProvider())) {

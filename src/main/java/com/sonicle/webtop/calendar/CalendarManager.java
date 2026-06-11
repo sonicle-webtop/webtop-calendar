@@ -3907,8 +3907,25 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				ICalendarOutput output = new ICalendarOutput(ICalendarUtils.buildProdId(ManagerUtils.getProductName()), tagNamesByIdMap);
 				try {
 					ret.setIcalendar(output.writeICalendar(null, event, extraProps));
-				} catch (IOException ex) {
-					logger.debug("writeICalendar", ex);
+				} catch (Exception ex) {
+					// Extra properties carried over from external clients (eg. DavX5/ical4j) can make
+					// ical4j's output validation fail, surfacing here as a (wrapped) exception and leaving
+					// the iCalendar body null: that null then breaks the CalDAV calendar-query on the client.
+					// Fall back to the pre-refactor behaviour and regenerate the body from the model only,
+					// so a valid, parseable iCalendar is always produced. The cached raw_data is left
+					// untouched, preserving merge-on-write fidelity.
+					if (extraProps != null) {
+						logger.warn("writeICalendar failed for event {} ({}); retrying without extra properties", vevent.getEventId(), vevent.getPublicUid(), ex);
+						try {
+							ret.setIcalendar(output.writeICalendar(null, event, null));
+						} catch (Exception ex2) {
+							logger.error("writeICalendar failed for event {} ({}) even without extra properties; iCalendar body will be empty", vevent.getEventId(), vevent.getPublicUid(), ex2);
+						}
+					} else {
+						// No extra properties to drop: the failure is in the base event itself, so a retry
+						// would fail identically. Log the offending event id rather than failing silently.
+						logger.error("writeICalendar failed for event {} ({}); iCalendar body will be empty", vevent.getEventId(), vevent.getPublicUid(), ex);
+					}
 				}
 				return ret;
 				

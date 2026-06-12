@@ -3979,7 +3979,21 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	}
 	
 	private boolean doEventInputUpdate(Connection con, String eventId, List<EventInput> inputs, BitFlags<EventProcessOpt> processOpts, Set<String> validTags) throws IOException, WTException {
-		EventInput input1 = inputs.remove(0);
+		// Google may not place the master in first element, so:
+		// pick the master = the (single) VEVENT without a RECURRENCE-ID
+		int masterIdx = -1;
+		for (int i = 0; i < inputs.size(); i++) {
+			EventInput ei = inputs.get(i);
+			boolean isOverride = ei.recurringRefs != null && ei.recurringRefs.exRefersToMasterUid != null;
+			if (!isOverride) { masterIdx = i; break; }
+		}
+		if (masterIdx < 0) {
+			// no master in payload — Google sent only override instances
+			// -> fetch/locate existing master by UID, or skip/handle accordingly
+			// ...
+			return false;
+		}
+		EventInput input1 = inputs.remove(masterIdx);		
 		
 		if (StringUtils.isEmpty(input1.event.getPublicUid())) throw new WTException("Public ID not set");
 		if (input1.recurringRefs != null && input1.recurringRefs.exRefersToMasterUid != null) throw new WTException("First VEVENT should not have a RECURRENCE-ID set");

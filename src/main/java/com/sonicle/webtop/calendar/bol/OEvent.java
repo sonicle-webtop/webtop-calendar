@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.commons.EnumUtils;
 import com.sonicle.webtop.calendar.jooq.tables.pojos.Events;
 import com.sonicle.webtop.calendar.IEvent;
 import com.sonicle.webtop.calendar.model.EventBase;
@@ -46,7 +47,7 @@ import org.joda.time.DateTimeZone;
 public class OEvent extends Events implements IEvent {
 	
 	public boolean isRecordStatusReadOnly() {
-		return EventBase.RowStatus.READ_ONLY.equals(getRowStatus());
+		return EventBase.RowStatus.READ_ONLY.equals(EnumUtils.forSerializedName(getRowStatus(), EventBase.RowStatus.class));
 	}
 	
 	public DateTimeZone getTimezoneObject() {
@@ -54,7 +55,7 @@ public class OEvent extends Events implements IEvent {
 	}
 	
 	public boolean isVisibilityPrivate() {
-		return EventBase.Visibility.PRIVATE.equals(getVisibility());
+		return EventBase.Visibility.PRIVATE.equals(EnumUtils.forSerializedName(getVisibility(), EventBase.Visibility.class));
 	}
 	
 	public void ensureCoherence() {

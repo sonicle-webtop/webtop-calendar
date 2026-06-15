@@ -115,7 +115,7 @@ public class JsSchedulerEvent {
 		_owPid = calendar.getProfileId().toString();
 		_orDN = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
         _foPerms = folder.getPermissions().getFolderPermissions().toString();
-		_itPerms = folder.getPermissions().getItemsPermissions().toString();
+		_itPerms = event.isCensorized() ? "" : folder.getPermissions().getItemsPermissions().toString();
 		//_rights = event.isCensorized() ? "" : ("m" + folder.getPermissions().getItemsPermissions().toString());
 	}
 	

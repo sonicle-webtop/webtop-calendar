@@ -790,9 +790,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			Calendar cal = ManagerUtils.createCalendar(calDao.selectById(con, calendarId));
 			if (cal == null) throw new WTNotFoundException("Calendar not found [{}]", calendarId);
 			
-			int ret = calDao.deleteById(con, calendarId);
-			psetDao.deleteByCalendar(con, calendarId);
 			doEventDeleteByCalendar(con, calendarId, !cal.isProviderRemote());
+			psetDao.deleteByCalendar(con, calendarId);
+			int ret = calDao.deleteById(con, calendarId);
 			
 			// Cleanup sharing, if necessary
 			if ((configurations != null) && !configurations.isEmpty()) {

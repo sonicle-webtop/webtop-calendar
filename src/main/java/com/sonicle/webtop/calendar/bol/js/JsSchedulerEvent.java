@@ -94,10 +94,10 @@ public class JsSchedulerEvent {
 		if (folderProps != null) color = folderProps.getColorOrDefault(color);
 		org = event.getOrganizerCN();
 		
-		EventBounds eventBoundary = CalendarUtils.toEventBounds(event);
-		allDay = eventBoundary.isAllDay();
-		start = ymdhmsZoneFmt.print(eventBoundary.getStart());
-		end = ymdhmsZoneFmt.print(eventBoundary.getEnd());
+		EventBounds bounds = CalendarUtils.toNormalizedEventBounds(event);
+		allDay = bounds.isAllDay();
+		start = ymdhmsZoneFmt.print(bounds.getStart());
+		end = ymdhmsZoneFmt.print(bounds.getEnd());
 		timezone = event.getTimezone();
 		
 		title = event.getTitle();

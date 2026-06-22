@@ -104,7 +104,7 @@ public class JsEvent {
 		eventId = event.getOriginalEventId();
 		calendarId = event.getCalendarId();
 		
-		EventBounds eventBoundary = CalendarUtils.toEventBoundsForRead(event.getAllDay(), event.getStart(), event.getEnd(), event.getTimezoneObject());
+		EventBounds eventBoundary = CalendarUtils.toEventBoundsForUIRead(event.getAllDay(), event.getStart(), event.getEnd(), event.getTimezoneObject());
 		start = ymdhmsZoneFmt.print(eventBoundary.getStart());
 		end = ymdhmsZoneFmt.print(eventBoundary.getEnd());
 		timezone = eventBoundary.getTimezoneObject().getID();
@@ -191,7 +191,7 @@ public class JsEvent {
 		// Then DateTime objects are automatically translated to UTC
 		DateTime dtStart = JodaTimeUtils.parseDateTime(fmtYmdHms, start);
 		DateTime dtEnd = JodaTimeUtils.parseDateTime(fmtYmdHms, end);
-		EventBounds eventBoundary = CalendarUtils.toEventBoundsForWrite(allDay, dtStart, dtEnd, tz);
+		EventBounds eventBoundary = CalendarUtils.toEventBoundsForUIWrite(allDay, dtStart, dtEnd, tz);
 		item.setDatesAndTimes(eventBoundary.isAllDay(), eventBoundary.getTimezoneObject().getID(), eventBoundary.getStart(), eventBoundary.getEnd());
 		
 		item.setTitle(title);

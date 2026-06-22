@@ -1366,7 +1366,7 @@ public class Service extends BaseService {
 			DateTime eventStartDt = JodaTimeUtils.parseDateTime(ymdHmFmt, eventStartDate);
 			DateTime eventEndDt = JodaTimeUtils.parseDateTime(ymdHmFmt, eventEndDate);
 			
-			EventBounds bounds = CalendarUtils.toEventBoundsForWrite(eventAllDay, eventStartDt, eventEndDt, eventTz);
+			EventBounds bounds = CalendarUtils.toEventBoundsForUIWrite(eventAllDay, eventStartDt, eventEndDt, eventTz);
 			DateTime viewFrom = bounds.getStart().withTimeAtStartOfDay();
 			DateTime viewEnd = bounds.getEnd().withTimeAtStartOfDay().plusDays(7-1); // Display 7days in total
 			//DateTime viewEnd = viewFrom.plusDays(7-1); // Display 7days in total

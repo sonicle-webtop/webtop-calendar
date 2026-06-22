@@ -35,9 +35,7 @@ package com.sonicle.webtop.calendar.bol.js;
 import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.flags.BitFlagsEnum;
 import com.sonicle.commons.time.JodaTimeUtils;
-import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarUtils;
-import com.sonicle.webtop.calendar.ICalendarManager;
 import com.sonicle.webtop.calendar.bol.model.MyCalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.Calendar;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
@@ -51,7 +49,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import com.sonicle.webtop.calendar.model.EventBounds;
-import com.sonicle.webtop.calendar.model.EventInstanceId;
 
 /**
  *
@@ -116,7 +113,6 @@ public class JsSchedulerEvent {
 		_orDN = (origin instanceof MyCalendarFSOrigin) ? "" : origin.getDisplayName();
         _foPerms = folder.getPermissions().getFolderPermissions().toString();
 		_itPerms = event.isCensorized() ? "" : folder.getPermissions().getItemsPermissions().toString();
-		//_rights = event.isCensorized() ? "" : ("m" + folder.getPermissions().getItemsPermissions().toString());
 	}
 	
 	public static class Update {

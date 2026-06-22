@@ -346,12 +346,12 @@ public class Eas extends EasApi {
 			saas.add(createSyncEventDataAttendee(attendee));
 		}
 		
-		EventBounds eventBoundary = CalendarUtils.toEventBounds(event);
+		EventBounds bounds = CalendarUtils.toNormalizedEventBounds(event);
 		return new ApiEasSyncEvent()
 			.id(String.valueOf(evtobj.getEventId()))
 			.etag(buildEtag(evtobj.getRevisionTimestamp()))
-			.start(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.getStart()))
-			.end(JodaTimeUtils.print(ISO_DATETIME_FMT, eventBoundary.getEnd()))
+			.start(JodaTimeUtils.print(ISO_DATETIME_FMT, bounds.getStart()))
+			.end(JodaTimeUtils.print(ISO_DATETIME_FMT, bounds.getEnd()))
 			.tz(event.getTimezone())
 			.allDay(event.getAllDay())
 			.organizer(event.getOrganizer())

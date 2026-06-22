@@ -654,7 +654,7 @@ public class EventDAO extends BaseDAO {
 		// New field: overlaps
 		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
 		
 		return dsl
 			.selectCount()
@@ -678,14 +678,14 @@ public class EventDAO extends BaseDAO {
 		
 		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
 		Condition overlapsCndt = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, null)
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null)
 			.isTrue();
 		
 		/*
 		Condition overlapsCndt = DSL.trueCondition();
 		if (since != null) {
 			Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-				.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, DSL.value(since), null);
+				.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, DSL.value(since), null);
 			overlapsCndt = overlaps.isTrue();
 		}
 		*/
@@ -694,7 +694,7 @@ public class EventDAO extends BaseDAO {
 		// New field: overlaps
 		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
 		*/
 		
 		// New field: tags list
@@ -893,14 +893,14 @@ public class EventDAO extends BaseDAO {
 		
 		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
 		Condition overlapsCndt = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, null)
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null)
 			.isTrue();
 		
 		/*
 		Condition overlapsCndt = DSL.trueCondition();
 		if (since != null) {
 			Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-				.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, DSL.value(since), null);
+				.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, DSL.value(since), null);
 			overlapsCndt = overlaps.isTrue();
 		}
 		*/
@@ -909,7 +909,7 @@ public class EventDAO extends BaseDAO {
 		// New field: overlaps
 		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
 		*/
 		
 		// New field: tags list
@@ -1143,7 +1143,7 @@ public class EventDAO extends BaseDAO {
 		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
 		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
 		
 		// New field: tags list
 		Field<String> tags = DSL
@@ -1237,7 +1237,7 @@ public class EventDAO extends BaseDAO {
 		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
 		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
 		
 		return dsl
 			.select(
@@ -1284,7 +1284,7 @@ public class EventDAO extends BaseDAO {
 		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
 		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
 		
 		// New field: tags list
 		Field<String> tags = DSL

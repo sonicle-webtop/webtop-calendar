@@ -652,8 +652,6 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				//},
 				eventdblclick: function(s, rec) {
 					//console.log('eventdblclick [id:'+rec.getId()+']');
-					//var er = WTA.util.FoldersTree2.toRightsObj(rec.get('_rights'));
-					//if (er.MANAGE) me.openEventUI(er.UPDATE, rec.get('id'));
 					var edit = rec.getItemsRights().UPDATE;
 					if (edit) me.openEventUI(edit, rec.getId());
 				},

@@ -32,12 +32,19 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.webtop.core.util.ICal4jUtils;
+import net.fortuna.ical4j.model.Recur;
+import org.joda.time.DateTime;
+
 /**
  * We extend OEvent for convenience, not all fields are needed!
  * @author malbinola
  */
 public class VEventObjectBase extends OEvent {
 	protected Boolean hasRecurrence;
+	protected Boolean hasRecurrenceEx;
+	protected DateTime recurrenceStart;
+	protected String recurrenceRule;
 	
 	public Boolean getHasRecurrence() {
 		return hasRecurrence;
@@ -45,5 +52,33 @@ public class VEventObjectBase extends OEvent {
 
 	public void setHasRecurrence(Boolean hasRecurrence) {
 		this.hasRecurrence = hasRecurrence;
+	}
+
+	public Boolean getHasRecurrenceEx() {
+		return hasRecurrenceEx;
+	}
+
+	public void setHasRecurrenceEx(Boolean hasRecurrenceEx) {
+		this.hasRecurrenceEx = hasRecurrenceEx;
+	}
+	
+	public DateTime getRecurrenceStart() {
+		return recurrenceStart;
+	}
+
+	public void setRecurrenceStart(DateTime recurrenceStart) {
+		this.recurrenceStart = recurrenceStart;
+	}
+	
+	public String getRecurrenceRule() {
+		return recurrenceRule;
+	}
+
+	public void setRecurrenceRule(String recurrenceRule) {
+		this.recurrenceRule = recurrenceRule;
+	}
+	
+	public Recur getRecurrenceObject() {
+		return ICal4jUtils.parseRRule(getRecurrenceRule());
 	}
 }

@@ -53,6 +53,7 @@ public class VEventBounds {
 	protected Boolean allDay;
 	protected DateTime recurrenceStart;
 	protected String recurrenceRule;
+	protected String recurrenceExceptions;
 	protected String calendarDomainId;
 	protected String calendarUserId;
 
@@ -142,6 +143,14 @@ public class VEventBounds {
 
 	public void setRecurrenceRule(String recurrenceRule) {
 		this.recurrenceRule = recurrenceRule;
+	}
+	
+	public String getRecurrenceExceptions() {
+		return recurrenceExceptions;
+	}
+
+	public void setRecurrenceExceptions(String recurrenceExceptions) {
+		this.recurrenceExceptions = recurrenceExceptions;
 	}
 
 	public String getCalendarDomainId() {

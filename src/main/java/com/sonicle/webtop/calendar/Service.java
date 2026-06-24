@@ -980,7 +980,9 @@ public class Service extends BaseService {
 				
 				Set<Integer> activeCalIds = getActiveFolderIds();
 				DateTimeWindow dateTimeWindow = DateTimeWindow.builder().with(fromDate, toDate).build();
+				long t0 = System.nanoTime();
 				List<EventLookupInstance> instances = manager.listEventInstances(activeCalIds, dateTimeWindow, (String)null, false, utz);
+				long t1 = System.nanoTime();
 				for (EventLookupInstance instance : instances) {
 					final CalendarFSOrigin origin = foldersTreeCache.getOriginByFolder(instance.getCalendarId());
 					if (origin == null) continue;
@@ -990,8 +992,13 @@ public class Service extends BaseService {
 					final CalendarPropSet props = foldersPropsCache.get(folder.getFolderId()).orElse(null);
 					items.add(new JsSchedulerEvent(origin, folder, props, instance, up.getId(), utz, MEETING_PROVIDERS_URLS_PATTERN));
 				}
-				
+				long t2 = System.nanoTime();
 				new JsonResult("events", items).printTo(out);
+				long t3 = System.nanoTime();
+				
+				logger.debug("manager.listEventInstances -> {}ms", (t1-t0)/1_000_000);
+				logger.debug("items for -> {}ms", (t2-t1)/1_000_000);
+				logger.debug("new JsonResult -> {}ms", (t3-t2)/1_000_000);
 				
 			}/* else if (crud.equals(Crud.CREATE)) {
 				Payload<MapItem, JsSchedulerEvent> pl = ServletUtils.getPayload(request, JsSchedulerEvent.class);

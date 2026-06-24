@@ -34,6 +34,8 @@ package com.sonicle.webtop.calendar.bol;
 
 import com.sonicle.webtop.calendar.model.EventInstanceId;
 import com.sonicle.webtop.core.sdk.UserProfileId;
+import com.sonicle.webtop.core.sdk.WTException;
+import java.sql.Connection;
 
 /**
  *
@@ -74,5 +76,9 @@ public class VEventLookup extends VEventObject {
 	
 	public EventInstanceId createInstanceId() {
 		return EventInstanceId.build(getEventId(), getSeriesEventId(), getSeriesInstanceId());
+	}
+	
+	public interface Consumer {
+		public void consume(final VEventLookup vel, final Connection con) throws WTException;
 	}
 }

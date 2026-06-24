@@ -35,7 +35,6 @@ package com.sonicle.webtop.calendar;
 import com.sonicle.commons.qbuilders.conditions.Condition;
 import com.sonicle.webtop.core.app.util.EmailNotification;
 import com.sonicle.webtop.calendar.model.GetEventScope;
-import com.rits.cloning.Cloner;
 import com.sonicle.commons.Check;
 import com.sonicle.webtop.core.util.ICal4jUtils;
 import com.sonicle.commons.EnumUtils;
@@ -181,7 +180,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import jakarta.mail.Session;
 import jakarta.mail.internet.AddressException;
 import java.util.concurrent.TimeUnit;
 import net.fortuna.ical4j.data.ParserException;
@@ -250,6 +248,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.joda.time.LocalDateTime;
 import com.sonicle.webtop.calendar.model.EventBounds;
+import com.sonicle.webtop.calendar.model.EventBoundsImpl;
 import com.sonicle.webtop.calendar.model.EventBoundsSeries;
 import com.sonicle.webtop.core.app.model.HomedThrowable;
 import com.sonicle.webtop.core.app.sdk.Result;
@@ -1422,6 +1421,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			con = WT.getConnection(SERVICE_ID);
 			HashSet<LocalDate> dates = new HashSet<>();
+			for (VEventBounds veb : evtDao.viewOnlineBoundsByCalendarRangeCondition(con, okCalendarIds, from, to, null)) {
+				if (!veb.hasRecurrence()) {
+					dates.addAll(CalendarUtils.getDisplayDatesSpan(veb.getAllDay(), veb.getStart(), veb.getEnd(), veb.getTimezoneObject()));
+					
+				} else {
+					for (EventBounds eb : calculateRecurringInstances(new VEB2EB_RRContext(veb), from, to, noOfRecurringInst)) {
+						dates.addAll(CalendarUtils.getDisplayDatesSpan(eb.isAllDay(), eb.getStart(), eb.getEnd(), eb.getTimezoneObject()));
+					}
+				}
+			}
+			// DEPRECATED: old lookup reusing viewOnlineByCalendarRangeCondition
+			/*
 			for (VEventLookup vevt : evtDao.viewOnlineByCalendarRangeCondition(con, okCalendarIds, from, to, null)) {
 				if (!vevt.getHasRecurrence()) {
 					dates.addAll(CalendarUtils.getDisplayDatesSpan(vevt.getAllDay(), vevt.getStart(), vevt.getEnd(), vevt.getTimezoneObject()));
@@ -1433,6 +1444,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					}
 				}
 			}
+			*/
+			// -----------------
 			return dates;
 		
 		} catch (Exception ex) {
@@ -1472,14 +1485,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			con = WT.getConnection(SERVICE_ID);
 			HashSet<LocalDate> dates = new HashSet<>();
-			for (VEventLookup vevt : evtDao.viewOnlineByCalendarRangeCondition(con, okCalendarIds, from, to, queryCondition)) {
-				if (!vevt.getHasRecurrence()) {
-					dates.addAll(CalendarUtils.getDisplayDatesSpan(vevt.getAllDay(), vevt.getStart(), vevt.getEnd(), vevt.getTimezoneObject()));
+			for (VEventBounds veb : evtDao.viewOnlineBoundsByCalendarRangeCondition(con, okCalendarIds, from, to, queryCondition)) {
+				if (!veb.hasRecurrence()) {
+					dates.addAll(CalendarUtils.getDisplayDatesSpan(veb.getAllDay(), veb.getStart(), veb.getEnd(), veb.getTimezoneObject()));
 					
 				} else {
-					final List<EventLookupInstance> items = calculateRecurringInstances(new VEL2ELI_RRContext(con, vevt, false), from, to, noOfRecurringInst);
-					for (EventLookupInstance item : items) {
-						dates.addAll(CalendarUtils.getDisplayDatesSpan(item.getAllDay(), item.getStart(), item.getEnd(), item.getTimezoneObject()));
+					for (EventBounds eb : calculateRecurringInstances(new VEB2EB_RRContext(veb), from, to, noOfRecurringInst)) {
+						dates.addAll(CalendarUtils.getDisplayDatesSpan(eb.isAllDay(), eb.getStart(), eb.getEnd(), eb.getTimezoneObject()));
 					}
 				}
 			}
@@ -5659,24 +5671,98 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		SKIP, UPDATE
 	}
 	
+	private class VEB2EB_RRContext implements RecurringInstanceContext<EventBounds> {
+		private final VEventBounds bounds;
+		private final Set<LocalDate> recurrenceExclDates;
+		
+		public VEB2EB_RRContext(VEventBounds bounds) {
+			this.bounds = bounds;
+			this.recurrenceExclDates = lookupExceptions(bounds);
+		}
+		
+		private Set<LocalDate> lookupExceptions(VEventBounds bounds) {
+			if (!StringUtils.isBlank(bounds.getRecurrenceExceptions())) {
+				LinkedHashSet<LocalDate> set = new LinkedHashSet<>();
+				for (String s : StringUtils.split(bounds.getRecurrenceExceptions(), "|")) {
+					LocalDate ld = JodaTimeUtils.parseLocalDateYMD(s);
+					if (ld != null) set.add(ld);
+				}
+				return set;
+			} else {
+				return null;
+			}
+		}
+		
+		@Override
+		public String getEventId() {
+			return bounds.getEventId();
+		}
+		
+		@Override
+		public DateTimeZone getTimezone() {
+			return bounds.getTimezoneObject();
+		}
+		
+		@Override
+		public boolean isEventAllDay() {
+			return bounds.getAllDay();
+		}
+
+		@Override
+		public DateTime getEventStart() {
+			return bounds.getStart();
+		}
+
+		@Override
+		public DateTime getEventEnd() {
+			return bounds.getEnd();
+		}
+
+		@Override
+		public DateTime getRecurrenceStart() {
+			return bounds.getRecurrenceStart();
+		}
+
+		@Override
+		public Recur getRecurrenceDefinition() {
+			return bounds.getRecurrenceObject();
+		}
+
+		@Override
+		public Set<LocalDate> getRecurrenceExclDates() {
+			return recurrenceExclDates;
+		}
+		
+		@Override
+		public EventBounds createInstance(EventInstanceId id, DateTime start, DateTime end, String legacyKey) {
+			return new EventBoundsImpl(bounds.getAllDay(), start, end, bounds.getTimezoneObject());
+		}
+	}
+	
 	private class VEL2ELI_RRContext implements RecurringInstanceContext<EventLookupInstance> {
 		private final VEventLookup event;
 		private final boolean censorize;
-		private final OEventRecurrence eventRecurrence;
 		private final Set<LocalDate> recurrenceExclDates;
 		private final LocalDate firstInstanceDate;
 		
 		public VEL2ELI_RRContext(Connection con, VEventLookup event, boolean censorize) {
 			this.event = event;
 			this.censorize = censorize;
-			EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
-			this.eventRecurrence = recDao.selectRecurrenceByEvent(con, event.getEventId());
-			this.recurrenceExclDates = recDao.selectRecurrenceExByEvent(con, event.getEventId());
-			this.firstInstanceDate = calculateRecurrenceStart(event, eventRecurrence.getRecurrenceObject(), eventRecurrence.getStart(), recurrenceExclDates);
+			this.recurrenceExclDates = lookupExceptions(con, event);
+			this.firstInstanceDate = calculateRecurrenceStart(event, recurrenceExclDates);
 		}
 		
-		private LocalDate calculateRecurrenceStart(VEventLookup event, Recur recurrenceObject, DateTime recurenceStart, Set<LocalDate> recurrenceExDates) {
-			List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(recurrenceObject, recurenceStart, true, recurrenceExDates, event.getStart(), event.getEnd(), event.getTimezoneObject(), null, null, 1);
+		private Set<LocalDate> lookupExceptions(Connection con, VEventLookup event) {
+			if (event.getHasRecurrenceEx()) {
+				EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
+				return recDao.selectRecurrenceExByEvent(con, event.getEventId());
+			} else {
+				return null;
+			}
+		}
+		
+		private LocalDate calculateRecurrenceStart(VEventLookup event, Set<LocalDate> recurrenceExDates) {
+			List<LocalDate> dates = ICal4jUtils.calculateRecurrenceSet(event.getRecurrenceObject(), event.getRecurrenceStart(), true, recurrenceExDates, event.getStart(), event.getEnd(), event.getTimezoneObject(), null, null, 1);
 			return (dates != null && !dates.isEmpty()) ? dates.get(0) : null;
 		}
 		
@@ -5707,12 +5793,12 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 		@Override
 		public DateTime getRecurrenceStart() {
-			return eventRecurrence != null ? eventRecurrence.getStart(): null;
+			return event.getRecurrenceStart();
 		}
 
 		@Override
 		public Recur getRecurrenceDefinition() {
-			return eventRecurrence != null ? eventRecurrence.getRecurrenceObject(): null;
+			return event.getRecurrenceObject();
 		}
 
 		@Override

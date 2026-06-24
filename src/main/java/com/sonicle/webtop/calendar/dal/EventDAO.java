@@ -79,6 +79,7 @@ import org.jooq.impl.DSL;
 import static org.jooq.impl.DSL.*;
 import com.sonicle.webtop.calendar.model.EventBounds;
 import com.sonicle.webtop.calendar.model.EventBoundsSeries;
+import org.jooq.Table;
 
 /**
  *
@@ -652,9 +653,11 @@ public class EventDAO extends BaseDAO {
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		// New field: overlaps
+		/*
 		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
 			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
+		*/
 		
 		return dsl
 			.selectCount()
@@ -666,7 +669,8 @@ public class EventDAO extends BaseDAO {
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
-				.and(overlaps)
+				.and(toTimeWindowCondition(since, null))
+				//.and(overlaps)
 				.and(filterCndt)
 			)
 			.fetchOne(0, Integer.class);
@@ -676,10 +680,12 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
+		/*
 		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
 		Condition overlapsCndt = com.sonicle.webtop.core.jooq.public_.Routines
 			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null)
 			.isTrue();
+		*/
 		
 		/*
 		Condition overlapsCndt = DSL.trueCondition();
@@ -705,8 +711,15 @@ public class EventDAO extends BaseDAO {
 				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
 			).asField("tags");
 		
-		// New field: has recurrence reference
+		// New field: has recurrence
 		Field<Boolean> hasRecurrence = DSL.nvl2(EVENTS_RECURRENCES.EVENT_ID, true, false).as("has_recurrence");
+		
+		// New field: has exceptions 
+		Field<Boolean> hasRecurrenceEx = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_RECURRENCES_EX)
+				.where(EVENTS_RECURRENCES_EX.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_recurrence_ex");
 		
 		// New field: attendees count
 		Field<Integer> attendeesCount = DSL.field(
@@ -751,6 +764,9 @@ public class EventDAO extends BaseDAO {
 			.select(
 				tags,
 				hasRecurrence,
+				hasRecurrenceEx,
+				EVENTS_RECURRENCES.START.as("recurrence_start"),
+				EVENTS_RECURRENCES.RULE.as("recurrence_rule"),
 				attendeesCount,
 				notifyableAttendeesCount,
 				hasAttachments,
@@ -767,7 +783,8 @@ public class EventDAO extends BaseDAO {
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
-				.and(overlapsCndt)
+				.and(toTimeWindowCondition(since, null))
+				//.and(overlapsCndt)
 				//.and(overlaps)
 				.and(filterCndt)
 			)
@@ -804,8 +821,15 @@ public class EventDAO extends BaseDAO {
 				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
 			).asField("tags");
 		
-		// New field: has recurrence reference
+		// New field: has recurrence
 		Field<Boolean> hasRecurrence = DSL.nvl2(EVENTS_RECURRENCES.EVENT_ID, true, false).as("has_recurrence");
+		
+		// New field: has exceptions 
+		Field<Boolean> hasRecurrenceEx = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_RECURRENCES_EX)
+				.where(EVENTS_RECURRENCES_EX.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_recurrence_ex");
 		
 		// New field: attendees count
 		Field<Integer> attendeesCount = DSL.field(
@@ -850,6 +874,9 @@ public class EventDAO extends BaseDAO {
 			.select(
 				tags,
 				hasRecurrence,
+				hasRecurrenceEx,
+				EVENTS_RECURRENCES.START.as("recurrence_start"),
+				EVENTS_RECURRENCES.RULE.as("recurrence_rule"),
 				attendeesCount,
 				notifyableAttendeesCount,
 				hasAttachments,
@@ -923,6 +950,13 @@ public class EventDAO extends BaseDAO {
 		// New field: has recurrence reference
 		Field<Boolean> hasRecurrence = DSL.nvl2(EVENTS_RECURRENCES.EVENT_ID, true, false).as("has_recurrence");
 		
+		// New field: has exceptions 
+		Field<Boolean> hasRecurrenceEx = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_RECURRENCES_EX)
+				.where(EVENTS_RECURRENCES_EX.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_recurrence_ex");
+		
 		// New field: attendees count
 		Field<Integer> attendeesCount = DSL.field(
 			selectCount()
@@ -966,6 +1000,9 @@ public class EventDAO extends BaseDAO {
 			.select(
 				tags,
 				hasRecurrence,
+				hasRecurrenceEx,
+				EVENTS_RECURRENCES.START.as("recurrence_start"),
+				EVENTS_RECURRENCES.RULE.as("recurrence_rule"),
 				attendeesCount,
 				notifyableAttendeesCount,
 				hasAttachments,
@@ -983,7 +1020,8 @@ public class EventDAO extends BaseDAO {
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
 				.and(inHrefsCndt)
-				.and(overlapsCndt)
+				.and(toTimeWindowCondition(since, null))
+				//.and(overlapsCndt)
 				//.and(overlaps)
 			)
 			.orderBy(
@@ -1006,6 +1044,13 @@ public class EventDAO extends BaseDAO {
 		
 		// New field: has recurrence reference
 		Field<Boolean> hasRecurrence = DSL.nvl2(EVENTS_RECURRENCES.EVENT_ID, true, false).as("has_recurrence");
+		
+		// New field: has exceptions 
+		Field<Boolean> hasRecurrenceEx = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_RECURRENCES_EX)
+				.where(EVENTS_RECURRENCES_EX.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_recurrence_ex");
 		
 		// New field: attendees count
 		Field<Integer> attendeesCount = DSL.field(
@@ -1054,6 +1099,9 @@ public class EventDAO extends BaseDAO {
 			.select(
 				tags,
 				hasRecurrence,
+				hasRecurrenceEx,
+				EVENTS_RECURRENCES.RULE.as("recurrence_rule"),
+				EVENTS_RECURRENCES.START.as("recurrence_start"),
 				attendeesCount,
 				notifyableAttendeesCount,
 				hasAttachments,
@@ -1131,6 +1179,26 @@ public class EventDAO extends BaseDAO {
 		);
 	}
 	
+	private Condition toTimeWindowCondition(DateTime rangeFrom, DateTime rangeTo) {
+		Condition cndt = DSL.trueCondition();
+		
+		if (rangeTo != null) {
+			cndt = cndt.and(EVENTS.START.lessOrEqual(rangeTo));
+		}
+		if (rangeFrom != null) {
+			cndt = cndt.and(EVENTS_RECURRENCES.EVENT_ID.isNotNull()).or(EVENTS.END.greaterOrEqual(rangeFrom));
+			cndt = cndt.and(EVENTS_RECURRENCES.UNTIL.isNull().or(EVENTS_RECURRENCES.UNTIL.greaterOrEqual(rangeFrom)));
+		}
+		
+		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
+		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
+		Condition overlapsCndt = com.sonicle.webtop.core.jooq.public_.Routines
+			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar)
+			.isTrue();
+		
+		return cndt.and(overlapsCndt);
+	}
+	
 	public List<VEventLookup> viewOnlineByCalendarRangeCondition(Connection con, Collection<Integer> calendarIds, DateTime rangeFrom, DateTime rangeTo, Condition condition) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		//https://gitlab.com/davical-project/davical/-/blob/master/dba/rrule_functions.sql
@@ -1140,10 +1208,12 @@ public class EventDAO extends BaseDAO {
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		// New field: overlaps
+		/*
 		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
 		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
 			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
+		*/
 		
 		// New field: tags list
 		Field<String> tags = DSL
@@ -1153,9 +1223,29 @@ public class EventDAO extends BaseDAO {
 				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
 			).asField("tags");
 		
-		// New field: has recurrence reference
+		// New field: has recurrence
 		Field<Boolean> hasRecurrence = DSL.nvl2(EVENTS_RECURRENCES.EVENT_ID, true, false).as("has_recurrence");
 		
+		// New field: has exceptions 
+		Field<Boolean> hasRecurrenceEx = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_RECURRENCES_EX)
+				.where(EVENTS_RECURRENCES_EX.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_recurrence_ex");
+		
+		// New table: attendee_stats
+		Table<?> attendeeStats = lateral(
+			select(
+				count().as("attendees_count"),
+				count().filterWhere(EVENTS_ATTENDEES.NOTIFY.isTrue()).as("notifyable_attendees_count")
+			)
+			.from(EVENTS_ATTENDEES)
+			.where(EVENTS_ATTENDEES.EVENT_ID.equal(EVENTS.EVENT_ID))
+		).asTable("attendee_stats");
+		Field<Integer> attendeesCount = attendeeStats.field("attendees_count", Integer.class);
+		Field<Integer> notifyableAttendeesCount = attendeeStats.field("notifyable_attendees_count", Integer.class);
+		
+		/*
 		// New field: attendees count
 		Field<Integer> attendeesCount = DSL.field(
 			selectCount()
@@ -1174,6 +1264,7 @@ public class EventDAO extends BaseDAO {
 				.and(EVENTS_ATTENDEES.NOTIFY.isTrue())
 			)
 		).as("notifyable_attendees_count");
+		*/
 		
 		// New field: has attachments
 		Field<Boolean> hasAttachments = DSL.field(DSL.exists(
@@ -1199,6 +1290,9 @@ public class EventDAO extends BaseDAO {
 			.select(
 				tags,
 				hasRecurrence,
+				hasRecurrenceEx,
+				EVENTS_RECURRENCES.RULE.as("recurrence_rule"),
+				EVENTS_RECURRENCES.START.as("recurrence_start"),
 				attendeesCount,
 				notifyableAttendeesCount,
 				hasAttachments,
@@ -1212,13 +1306,15 @@ public class EventDAO extends BaseDAO {
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
 			.leftOuterJoin(EVENTS_RECURRENCES).on(EVENTS.EVENT_ID.equal(EVENTS_RECURRENCES.EVENT_ID))
 			.leftOuterJoin(EVENTS_ICALENDARS).on(EVENTS.EVENT_ID.equal(EVENTS_ICALENDARS.EVENT_ID))
+			.leftJoin(attendeeStats).on(trueCondition())  // LATERAL correlation happens inside the subquery
 			.where(
-				CALENDARS.CALENDAR_ID.in(calendarIds)
+				EVENTS.CALENDAR_ID.in(calendarIds)
 				.and(
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
-				.and(overlaps)
+				.and(toTimeWindowCondition(rangeFrom, rangeTo))
+				//.and(overlaps)
 				.and(filterCndt)
 			)
 			.orderBy(
@@ -1234,10 +1330,20 @@ public class EventDAO extends BaseDAO {
 		Condition filterCndt = (condition != null) ? condition : DSL.trueCondition();
 		
 		// New field: overlaps
+		/*
 		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
 		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
 			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
+		*/
+		
+		// New field: recurrence exceptions
+		Field<String> exceptions = DSL
+			.select(DSL.groupConcat(EVENTS_RECURRENCES_EX.DATE, "|"))
+			.from(EVENTS_RECURRENCES_EX)
+			.where(
+				EVENTS_RECURRENCES_EX.EVENT_ID.equal(EVENTS.EVENT_ID)
+			).asField("recurrence_exceptions");
 		
 		return dsl
 			.select(
@@ -1253,7 +1359,8 @@ public class EventDAO extends BaseDAO {
 			)
 			.select(
 				EVENTS_RECURRENCES.START.as("recurrence_start"),
-				EVENTS_RECURRENCES.RULE.as("recurrence_rule")
+				EVENTS_RECURRENCES.RULE.as("recurrence_rule"),
+				exceptions
 			)
 			.select(
 				CALENDARS.DOMAIN_ID.as("calendar_domain_id"),
@@ -1263,12 +1370,13 @@ public class EventDAO extends BaseDAO {
 			.join(CALENDARS).on(EVENTS.CALENDAR_ID.equal(CALENDARS.CALENDAR_ID))
 			.leftOuterJoin(EVENTS_RECURRENCES).on(EVENTS.EVENT_ID.equal(EVENTS_RECURRENCES.EVENT_ID))
 			.where(
-				CALENDARS.CALENDAR_ID.in(calendarIds)
+				EVENTS.CALENDAR_ID.in(calendarIds)
 				.and(
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
 					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
 				)
-				.and(overlaps)
+				.and(toTimeWindowCondition(rangeFrom, rangeTo))
+				//.and(overlaps)
 				.and(filterCndt)
 			)
 			.orderBy(
@@ -1281,10 +1389,12 @@ public class EventDAO extends BaseDAO {
 		DSLContext dsl = getDSL(con);
 		
 		// New field: overlaps
+		/*
 		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
 		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
 		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
 			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar);
+		*/
 		
 		// New field: tags list
 		Field<String> tags = DSL
@@ -1294,8 +1404,15 @@ public class EventDAO extends BaseDAO {
 				EVENTS_TAGS.EVENT_ID.equal(EVENTS.EVENT_ID)
 			).asField("tags");
 		
-		// New field: has recurrence reference
+		// New field: has recurrence
 		Field<Boolean> hasRecurrence = DSL.nvl2(EVENTS_RECURRENCES.EVENT_ID, true, false).as("has_recurrence");
+		
+		// New field: has exceptions 
+		Field<Boolean> hasRecurrenceEx = DSL.field(DSL.exists(
+			DSL.selectOne()
+				.from(EVENTS_RECURRENCES_EX)
+				.where(EVENTS_RECURRENCES_EX.EVENT_ID.equal(EVENTS.EVENT_ID))
+			)).as("has_recurrence_ex");
 		
 		// New field: attendees count
 		Field<Integer> attendeesCount = DSL.field(
@@ -1344,6 +1461,8 @@ public class EventDAO extends BaseDAO {
 			.select(
 				tags,
 				hasRecurrence,
+				hasRecurrenceEx,
+				EVENTS_RECURRENCES.RULE.as("recurrence_rule"),
 				attendeesCount,
 				notifyableAttendeesCount,
 				hasAttachments,
@@ -1367,7 +1486,8 @@ public class EventDAO extends BaseDAO {
 						.or(EVENTS.EVENT_ID.isNotNull()) // Recurring events: REMINDED_AT can be null or not, calling code will check it!
 					)
 				)
-				.and(overlaps)
+				.and(toTimeWindowCondition(rangeFrom, rangeTo))
+				//.and(overlaps)
 			)
 			.fetchInto(VEventLookup.class);
 	}

@@ -3908,7 +3908,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					String rawICalendar = icalDao.selectRawDataById(con, vevent.getEventId());
 					if (rawICalendar != null) {
 						try {
-							extraProps = ICalendarUtils.extractProperties(ICalendarUtils.parse(rawICalendar), net.fortuna.ical4j.model.component.VEvent.class);
+							extraProps = ICalendarUtils.extractProperties(ICalendarUtils.parse(rawICalendar), net.fortuna.ical4j.model.component.VEvent.class, ICalendarOutput.FORBIDDEN_EXTRA_PROPS);
 						} catch (IOException | ParserException ex) {
 							logger.debug("ICalendarUtils.extractProperties", ex);
 						}

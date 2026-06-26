@@ -32,6 +32,7 @@
  */
 package com.sonicle.webtop.calendar.dal;
 
+import com.sonicle.commons.db.PostgresUtils;
 import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_EVENTS;
 import com.sonicle.webtop.core.dal.BaseDAO;
@@ -48,6 +49,25 @@ public class HistoryDAO extends BaseDAO {
 	private final static HistoryDAO INSTANCE = new HistoryDAO();
 	public static HistoryDAO getInstance() {
 		return INSTANCE;
+	}
+	
+	public static final String PARAM_SKIP_CALENDARS_HISTORY = "calendar.skip_calendars_history";
+	public static final String PARAM_SKIP_EVENTS_HISTORY = "calendar.skip_events_history";
+	
+	public boolean stopIgnoringCalendarHistory(final Connection con) {
+		return PostgresUtils.resetGUCParameter(con, "webtop", PARAM_SKIP_CALENDARS_HISTORY);
+	}
+	
+	public boolean stopIgnoringEventsHistory(final Connection con) {
+		return PostgresUtils.resetGUCParameter(con, "webtop", PARAM_SKIP_EVENTS_HISTORY);
+	}
+	
+	public boolean ignoreCalendarHistoryForCurrentTransaction(final Connection con) {
+		return PostgresUtils.setGUCParameter(con, true, "webtop", PARAM_SKIP_CALENDARS_HISTORY, "on");
+	}
+	
+	public boolean ignoreEventsHistoryForCurrentTransaction(final Connection con) {
+		return PostgresUtils.setGUCParameter(con, true, "webtop", PARAM_SKIP_EVENTS_HISTORY, "on");
 	}
 	
 	public int deleteCalendarsHistoryByAge(Connection con, int retentionYears) throws DAOException {

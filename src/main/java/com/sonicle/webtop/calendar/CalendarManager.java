@@ -3340,6 +3340,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			//checkRightsOnCalendarFolder(calendarId, "READ");
 			
 			con = WT.getConnection(SERVICE_ID, false);
+			HistoryDAO.getInstance().ignoreEventsHistoryForCurrentTransaction(con);
+			
 			Calendar cal = ManagerUtils.createCalendar(calDao.selectById(con, calendarId));
 			if (cal == null) throw new WTException("Calendar not found [{}]", calendarId);
 			if (!Calendar.Provider.WEBCAL.equals(cal.getProvider()) && !Calendar.Provider.CALDAV.equals(cal.getProvider())) {
@@ -3358,7 +3360,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			
 			final Set<String> validTags = coreMgr.listTagIds();
 			final BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, /*EventProcessOpt.ATTACHMENTS,*/ EventProcessOpt.TAGS, EventProcessOpt.CUSTOM_VALUES);
-			final BitFlags<EventReminderOption> reminderOpts = BitFlags.noneOf(EventReminderOption.class);
+			final BitFlags<EventReminderOption> reminderOpts = BitFlags.with(EventReminderOption.IGNORE);
 			
 			if (Calendar.Provider.WEBCAL.equals(cal.getProvider())) {
 				final String PREFIX = "webcal-";
@@ -3377,8 +3379,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					final DateTime newLastSync = JodaTimeUtils.now();
 					tempFile = WT.createTempFile(PREFIX, null);
 					
-					// Retrieve webcal content (iCalendar) from the specified URL 
-					// and save it locally
+					// Retrieve webcal content (iCalendar) from the specified URL and save it locally
 					logger.debug("[{}] Downloading iCalendar file from URL [{}]", logPrefix, newUrl);
 					HttpClient httpCli = null;
 					FileOutputStream os = null;
@@ -3428,7 +3429,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 					try {
 						String autoUidPrefix = DigestUtils.md5Hex(newUrl.toString()); // auto-gen base prefix in case of missing UID
 						HashSet<String> hrefs = new HashSet<>();
-						HashMap<String, OEvent> cache = new HashMap<>();
+						Map<String, String> eventIdByPublicIdMap = new HashMap<>();
 						int i = 0;
 						for (EventInput ei : input) {
 							if (StringUtils.isBlank(ei.event.getPublicUid())) {
@@ -3470,13 +3471,14 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 								ei.event.setEtag(eiHash);
 								
 								if (matchingEventId != null) {
-									if (logger.isTraceEnabled()) logger.trace("[{}] Updating event '{}'", logPrefix, matchingEventId);									
-									boolean updated = doEventInputUpdate(con, matchingEventId, new ArrayList(Arrays.asList(ei)), processOpts, validTags);
+									if (logger.isTraceEnabled()) logger.trace("[{}] Updating event '{}'", logPrefix, matchingEventId);
+									boolean updated = doEventInputUpdateLegacy(con, matchingEventId, ei, processOpts, reminderOpts, validTags, eventIdByPublicIdMap);
+									//boolean updated = doEventInputUpdate(con, matchingEventId, new ArrayList(Arrays.asList(ei)), processOpts, validTags);
 									if (!updated) throw new WTException("Event not found [{}]", matchingEventId);
 									
 								} else {
 									if (logger.isTraceEnabled()) logger.trace("[{}] Inserting event '{}'", logPrefix, href);
-									doEventInputInsert(con, ei, processOpts, reminderOpts, validTags);
+									doEventInputInsert(con, ei, processOpts, reminderOpts, validTags, eventIdByPublicIdMap);
 								}
 							}
 							
@@ -3494,7 +3496,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							}
 						}
 						
-						cache.clear();
+						eventIdByPublicIdMap.clear();
 						calDao.updateRemoteSyncById(con, calendarId, newLastSync, null);
 						DbUtils.commitQuietly(con);
 
@@ -3562,7 +3564,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 
 								// Inserts/Updates data...
 								logger.debug("[{}] Inserting/Updating events", logPrefix);
-								HashMap<String, OEvent> cache = new HashMap<>();
+								Map<String, String> eventIdByPublicIdMap = new HashMap<>();
 								for (DavCalendarEvent devt : devts) {
 									String href = FilenameUtils.getName(devt.getPath());
 									//String href = devt.getPath();
@@ -3582,7 +3584,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 									ei.event.setCalendarId(calendarId);
 									ei.event.setHref(href);
 									ei.event.setEtag(devt.geteTag());
-									doEventInputInsert(con, ei, processOpts, reminderOpts, validTags);
+									doEventInputInsert(con, ei, processOpts, reminderOpts, validTags, eventIdByPublicIdMap);
 								}
 							}
 							
@@ -3623,7 +3625,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 							// Define a simple map in order to check duplicates.
 							// eg. SOGo passes same card twice :(
 							HashSet<String> hrefs = new HashSet<>();
-							HashMap<String, OEvent> cache = new HashMap<>();
+							Map<String, String> eventIdByPublicIdMap = new HashMap<>();
 							for (DavCalendarEvent devt : devts) {
 								String href = PathUtils.getFileName(devt.getPath());
 								//String href = devt.getPath();
@@ -3668,9 +3670,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 									ei.event.setEtag(etag);
 									
 									if (matchingEventId == null) {
-										doEventInputInsert(con, ei, processOpts, reminderOpts, validTags);
+										doEventInputInsert(con, ei, processOpts, reminderOpts, validTags, eventIdByPublicIdMap);
 									} else {
-										boolean updated = doEventInputUpdate(con, matchingEventId, new ArrayList(Arrays.asList(ei)), processOpts, validTags);
+										boolean updated = doEventInputUpdateLegacy(con, matchingEventId, ei, processOpts, reminderOpts, validTags, eventIdByPublicIdMap);
+										//boolean updated = doEventInputUpdate(con, matchingEventId, new ArrayList(Arrays.asList(ei)), processOpts, validTags);
 										if (!updated) throw new WTException("Event not found [{}]", matchingEventId);
 									}
 								}
@@ -3988,6 +3991,13 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		}
 		
 		return insert;
+	}
+	
+	@Deprecated
+	private boolean doEventInputUpdateLegacy(Connection con, String eventId, EventInput input, BitFlags<EventProcessOpt> processOpts, BitFlags<EventReminderOption> reminderOpts, Set<String> validTags, Map<String, String> eventIdByPublicIdMap) throws DAOException, IOException {
+		doEventDelete(con, eventId, false);
+		doEventInputInsert(con, input, processOpts, reminderOpts, validTags, eventIdByPublicIdMap);
+		return true;
 	}
 	
 	private boolean doEventInputUpdate(Connection con, String eventId, List<EventInput> inputs, BitFlags<EventProcessOpt> processOpts, Set<String> validTags) throws IOException, WTException {

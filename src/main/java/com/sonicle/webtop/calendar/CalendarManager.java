@@ -3340,6 +3340,8 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 			//checkRightsOnCalendarFolder(calendarId, "READ");
 			
 			con = WT.getConnection(SERVICE_ID, false);
+			HistoryDAO.getInstance().ignoreEventsHistoryForCurrentTransaction(con);
+			
 			Calendar cal = ManagerUtils.createCalendar(calDao.selectById(con, calendarId));
 			if (cal == null) throw new WTException("Calendar not found [{}]", calendarId);
 			if (!Calendar.Provider.WEBCAL.equals(cal.getProvider()) && !Calendar.Provider.CALDAV.equals(cal.getProvider())) {

@@ -99,14 +99,16 @@ Ext.define('Sonicle.webtop.calendar.view-public.Event', {
 							items: [
 								{
 									xtype: 'displayfield',
-									bind: '{record.when}'
+									bind: '{record.when}',
+									htmlEncode: true
 								}, {
 									xtype: 'displayfield',
 									value: '-',
 									margin: '0 5 0 5'
 								}, {
 									xtype: 'displayfield',
-									bind: '{record.timezone}'
+									bind: '{record.timezone}',
+									htmlEncode: true
 								}
 							]
 						}, {
@@ -117,7 +119,8 @@ Ext.define('Sonicle.webtop.calendar.view-public.Event', {
 								{
 									xtype: 'displayfield',
 									bind: '{record.where}',
-									margin: '0 5 0 0'
+									htmlEncode: true,
+									margin: '0 5 0 0',
 								}, {
 									xtype: 'fieldcontainer',
 									layout: 'hbox',
@@ -142,11 +145,13 @@ Ext.define('Sonicle.webtop.calendar.view-public.Event', {
 						}, {
 							xtype: 'displayfield',
 							bind: '{record.calendar}',
-							fieldLabel: me.res('pub.event.fld-calendar.lbl')
+							fieldLabel: me.res('pub.event.fld-calendar.lbl'),
+							htmlEncode: true
 						}, {
 							xtype: 'displayfield',
 							bind: '{record.organizer}',
-							fieldLabel:  me.res('pub.event.fld-organizer.lbl')
+							fieldLabel:  me.res('pub.event.fld-organizer.lbl'),
+							htmlEncode: true
 						}, {
 							xtype: 'fieldcontainer',
 							layout: 'fit',

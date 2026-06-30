@@ -3983,10 +3983,10 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 				//TODO: warn no publicid
 			}
 		} else {
-			if (input.recurringRefs != null && eventIdByPublicIdMap.containsKey(input.recurringRefs.exRefersToMasterUid)) {
+			if (input.recurringInstanceInfo != null && eventIdByPublicIdMap.containsKey(input.recurringInstanceInfo.masterUid)) {
 				EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
-				String eventId = eventIdByPublicIdMap.get(input.recurringRefs.exRefersToMasterUid);
-				recDao.insertRecurrenceEx(con, eventId, input.recurringRefs.exRefersToDate);
+				String eventId = eventIdByPublicIdMap.get(input.recurringInstanceInfo.masterUid);
+				recDao.insertRecurrenceEx(con, eventId, input.recurringInstanceInfo.instanceDate);
 			}
 		}
 		
@@ -4006,7 +4006,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		int masterIdx = -1;
 		for (int i = 0; i < inputs.size(); i++) {
 			EventInput ei = inputs.get(i);
-			boolean isOverride = ei.recurringRefs != null && ei.recurringRefs.exRefersToMasterUid != null;
+			boolean isOverride = ei.recurringInstanceInfo != null && ei.recurringInstanceInfo.masterUid != null;
 			if (!isOverride) { masterIdx = i; break; }
 		}
 		if (masterIdx < 0) {
@@ -4018,7 +4018,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		EventInput input1 = inputs.remove(masterIdx);		
 		
 		if (StringUtils.isEmpty(input1.event.getPublicUid())) throw new WTException("Public ID not set");
-		if (input1.recurringRefs != null && input1.recurringRefs.exRefersToMasterUid != null) throw new WTException("First VEVENT should not have a RECURRENCE-ID set");
+		if (input1.recurringInstanceInfo != null && input1.recurringInstanceInfo.masterUid != null) throw new WTException("First VEVENT should not have a RECURRENCE-ID set");
 		
 		Map<String, String> eventIdByPublicIdMap = new HashMap<>();
 		eventIdByPublicIdMap.put(eventId, input1.event.getPublicUid());
@@ -4027,11 +4027,11 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		ArrayList<EventInput> exInputs = new ArrayList<>();
 		LinkedHashSet<LocalDate> exDates = new LinkedHashSet<>();
 		for (EventInput ei : inputs) {
-			if (ei.recurringRefs == null) continue;
-			if (!StringUtils.equals(ei.recurringRefs.exRefersToMasterUid, input1.event.getPublicUid())) continue;
-			if (exDates.contains(ei.recurringRefs.exRefersToDate)) continue;
+			if (ei.recurringInstanceInfo == null) continue;
+			if (!StringUtils.equals(ei.recurringInstanceInfo.masterUid, input1.event.getPublicUid())) continue;
+			if (exDates.contains(ei.recurringInstanceInfo.instanceDate)) continue;
 
-			exDates.add(ei.recurringRefs.exRefersToDate);
+			exDates.add(ei.recurringInstanceInfo.instanceDate);
 			//if (!ti.isSourceEventCancelled()) tiExs.add(ti);
 			exInputs.add(ei);
 		}

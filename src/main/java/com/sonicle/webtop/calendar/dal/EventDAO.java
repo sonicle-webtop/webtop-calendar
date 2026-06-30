@@ -1193,7 +1193,7 @@ public class EventDAO extends BaseDAO {
 		Param<DateTime> rangeFromPar = (rangeFrom != null) ? DSL.value(rangeFrom) : null;
 		Param<DateTime> rangeToPar = (rangeTo != null) ? DSL.value(rangeTo) : null;
 		Condition overlapsCndt = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar)
+			.rruleEventOverlaps(EVENTS.START, EVENTS.END, EVENTS_RECURRENCES.RULE, rangeFromPar, rangeToPar)
 			.isTrue();
 		
 		return cndt.and(overlapsCndt);

@@ -65,6 +65,9 @@ public class EventConditionBuildingVisitor extends JOOQConditionBuildingVisitorW
 		if (EventQuery.ID.equals(fieldName)) {
 			return defaultCondition(EVENTS.EVENT_ID, operator, values);
 			
+		} else if (EventQuery.HREF.equals(fieldName)) {
+			return defaultCondition(EVENTS.HREF, operator, values);
+			
 		} else if (EventQuery.CREATED_AT.equals(fieldName)) {
 			return defaultCondition(EVENTS.CREATION_TIMESTAMP, operator, values);
 			

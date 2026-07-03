@@ -32,12 +32,17 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
+import com.sonicle.commons.LangUtils;
+import com.sonicle.webtop.calendar.model.EventInstanceId;
+
 /**
  *
  * @author malbinola
  */
 public class VEventHrefSync {
 	private String eventId;
+	private String seriesEventId;
+	private String seriesInstanceId;
 	private String href;
 	private String etag;
 
@@ -47,6 +52,22 @@ public class VEventHrefSync {
 
 	public void setEventId(String eventId) {
 		this.eventId = eventId;
+	}
+
+	public String getSeriesEventId() {
+		return seriesEventId;
+	}
+
+	public void setSeriesEventId(String seriesEventId) {
+		this.seriesEventId = seriesEventId;
+	}
+
+	public String getSeriesInstanceId() {
+		return seriesInstanceId;
+	}
+
+	public void setSeriesInstanceId(String seriesInstanceId) {
+		this.seriesInstanceId = seriesInstanceId;
 	}
 
 	public String getHref() {

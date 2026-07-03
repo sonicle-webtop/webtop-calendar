@@ -43,6 +43,7 @@ import com.sonicle.webtop.calendar.bol.VEventHrefSync;
 import com.sonicle.webtop.calendar.bol.VEventLookup;
 import com.sonicle.webtop.calendar.bol.VEventObjectChanged;
 import com.sonicle.webtop.calendar.bol.VEventBounds;
+import com.sonicle.webtop.calendar.io.EventInput;
 import static com.sonicle.webtop.calendar.jooq.Tables.CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_ATTACHMENTS;
@@ -79,6 +80,7 @@ import org.jooq.impl.DSL;
 import static org.jooq.impl.DSL.*;
 import com.sonicle.webtop.calendar.model.EventBounds;
 import com.sonicle.webtop.calendar.model.EventBoundsSeries;
+import java.util.function.Function;
 import org.jooq.Table;
 
 /**
@@ -251,7 +253,7 @@ public class EventDAO extends BaseDAO {
 			).fetchOneInto(OEventInstanceInfo.class);
 	}
 	
-	public String selectOnlineIdBySeriesInstance(Connection con, String seriesEventkId, String seriesInstance) throws DAOException {
+	public String selectOnlineIdBySeriesInstance(Connection con, String seriesEventId, String seriesInstance) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select(
@@ -259,7 +261,7 @@ public class EventDAO extends BaseDAO {
 			)
 			.from(EVENTS)
 			.where(
-				EVENTS.SERIES_EVENT_ID.in(seriesEventkId)
+				EVENTS.SERIES_EVENT_ID.in(seriesEventId)
 				.and(EVENTS.SERIES_INSTANCE_ID.in(seriesInstance))
 				.and(
 					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
@@ -269,12 +271,27 @@ public class EventDAO extends BaseDAO {
 			.fetchOne(0, String.class);
 	}
 	
+	public String selectPublicUidById(Connection con, String eventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.PUBLIC_UID
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.EVENT_ID.in(eventId)
+			)
+			.fetchOne(0, String.class);
+	}
+	
 	public OEvent selectEventById(Connection con, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
 			.select()
 			.from(EVENTS)
-			.where(EVENTS.EVENT_ID.equal(eventId))
+			.where(
+				EVENTS.EVENT_ID.equal(eventId)
+			)
 			.fetchOneInto(OEvent.class);
 	}
 	
@@ -1536,6 +1553,8 @@ public class EventDAO extends BaseDAO {
 		return dsl
 			.select(
 				EVENTS.EVENT_ID,
+				EVENTS.SERIES_EVENT_ID,
+				EVENTS.SERIES_INSTANCE_ID,
 				EVENTS.HREF,
 				EVENTS.ETAG
 			)
@@ -1548,6 +1567,82 @@ public class EventDAO extends BaseDAO {
 				)
 			)
 			.fetchMap(EVENTS.HREF, VEventHrefSync.class);
+	}
+	
+	public Map<String, VEventHrefSync> viewOnlineHrefsSyncDataByCalendarHref(Connection con, int calendarId, String href) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.SERIES_EVENT_ID,
+				EVENTS.SERIES_INSTANCE_ID,
+				EVENTS.HREF,
+				EVENTS.ETAG
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+				.and(EVENTS.HREF.equal(href))
+			)
+			.fetchInto(VEventHrefSync.class).stream()
+				.collect(
+					Collectors.toMap(
+						(vehs) -> {
+							return EventInput.buildUidGroupKey(vehs.getSeriesInstanceId());
+						},
+						Function.identity(),
+						// Merge function: on duplicate key, log and keep the most recently seen entry
+						(existing, incoming) -> {
+							// This merge function circumvent the error "java.lang.IllegalStateException: Duplicate key",
+							// the key duplication is caused by the old implementation of eventInputInsert!
+							//TODO: should we return the master element instead of last?
+							return incoming;
+						}
+					)
+				);
+	}
+	
+	public Map<String, Map<String, VEventHrefSync>> viewOnlineHrefsSyncDataByCalendar(Connection con, int calendarId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl
+			.select(
+				EVENTS.EVENT_ID,
+				EVENTS.SERIES_EVENT_ID,
+				EVENTS.SERIES_INSTANCE_ID,
+				EVENTS.HREF,
+				EVENTS.ETAG
+			)
+			.from(EVENTS)
+			.where(
+				EVENTS.CALENDAR_ID.equal(calendarId)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+			)
+			// Not supported (in our JOOQ) yet
+			// .fetchMap(EVENTS.HREF, EVENTS.EVENT_ID, VEventHrefSync.class);
+			.fetchInto(VEventHrefSync.class).stream()
+				.collect(Collectors.groupingBy(
+					VEventHrefSync::getHref,
+					Collectors.toMap(
+						(vehs) -> {
+							return EventInput.buildUidGroupKey(vehs.getSeriesInstanceId());
+						},
+						Function.identity(),
+						// Merge function: on duplicate key, log and keep the most recently seen entry
+						(existing, incoming) -> {
+							// This merge function circumvent the error "java.lang.IllegalStateException: Duplicate key",
+							// the key duplication is caused by the old implementation of eventInputInsert!
+							//TODO: should we return the master element instead of last?
+							return incoming;
+						}
+					)
+				));
 	}
 	
 	public static Condition createTransparencyCondition(EventBase.Transparency transparency) {

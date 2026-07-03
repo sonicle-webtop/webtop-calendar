@@ -47,6 +47,7 @@ import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
+import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.swagger.v2.api.CaldavApi;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObject;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObjectChanged;
@@ -257,6 +258,8 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			if ((hrefs == null) || hrefs.isEmpty()) {
+				//TODO: Alternative implementation...
+				//List<EventObject> eventObjects = manager.listEventObjects(Arrays.asList(calendarId), null, null, EventObjectOutputType.ICALENDAR).getItems();
 				List<EventObject> eventObjects = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR);
 				for (EventObject eventObject : eventObjects) {
 					items.add(createCalObject((EventObjectWithICalendar)eventObject));
@@ -321,6 +324,15 @@ public class CalDav extends CaldavApi {
 			com.sonicle.webtop.calendar.model.Calendar cal = manager.getCalendar(calendarId);
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
+			
+			//TODO: Alternative implementation...
+			//List<EventObject> eventObjects = manager.getEventObjects(calendarId, Arrays.asList(href), EventObjectOutputType.ICALENDAR);
+			//EventObject eventObject = !eventObjects.isEmpty() ? eventObjects.get(0) : null;
+			//if (eventObject != null) {
+			//	return respOk(createCalObject((EventObjectWithICalendar)eventObject));
+			//} else {
+			//	return respErrorNotFound();
+			//}
 			
 			EventObject eventObject = manager.getEventObject(calendarId, href, EventObjectOutputType.ICALENDAR);
 			if (eventObject != null) {

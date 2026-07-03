@@ -79,7 +79,7 @@ public class RemoteCalendarSyncTask extends BaseBackgroundServiceTask {
 				LOGGER.debug("Sync required. Last sync at: {}", cal.getRemoteSyncTimestamp());
 				try {
 					CalendarManager manager = (CalendarManager)WT.getServiceManager(bs.SERVICE_ID, true, cal.getProfileId());
-					manager.syncRemoteCalendar(cal.getCalendarId(), false);
+					manager.syncRemoteCalendarNEW(cal.getCalendarId(), false);
 				} catch (ConcurrentSyncException ex1) {
 					LOGGER.trace("Remote sync skipped", ex1);
 				} catch (Throwable t) {

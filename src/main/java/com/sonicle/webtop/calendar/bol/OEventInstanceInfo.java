@@ -32,7 +32,6 @@
  */
 package com.sonicle.webtop.calendar.bol;
 
-import com.sonicle.webtop.calendar.model.EventBase;
 import com.sonicle.webtop.calendar.model.EventBase.Visibility;
 import org.joda.time.DateTimeZone;
 

@@ -219,7 +219,7 @@ public class Me extends MeApi {
 		
 		try {
 			boolean returnFullCount = _returnCount == null ? false : _returnCount;
-			ItemsListResult<EventObject> result = manager.listEventObjects2(Arrays.asList(ApiUtils.parseCalendar(calendarId)), null, _filter, _pageNo, BaseRestApiUtils.pageSizeOrDefault(_pageNo, _pageSize), returnFullCount, EventObjectOutputType.BEAN);
+			ItemsListResult<EventObject> result = manager.listEventObjects(Arrays.asList(ApiUtils.parseCalendar(calendarId)), null, _filter, _pageNo, BaseRestApiUtils.pageSizeOrDefault(_pageNo, _pageSize), returnFullCount, EventObjectOutputType.BEAN);
 			return respOk(ApiUtils.fillApiEventsResult(new ApiEventsResult(), BaseRestApiUtils.parseStringSet(_select), result));
 			
 		} catch (Throwable t) {

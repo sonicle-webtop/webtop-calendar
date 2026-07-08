@@ -46,7 +46,7 @@ import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
-import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
+import com.sonicle.webtop.calendar.model.EventObjectWithICalendarRaw;
 import com.sonicle.webtop.calendar.model.EventQuery;
 import com.sonicle.webtop.calendar.swagger.v2.api.CaldavApi;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiDavCalObject;
@@ -98,7 +98,7 @@ public class CalDav extends CaldavApi {
 		List<ApiDavCalendar> items = new ArrayList<>();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] getCalendars()", currentProfileId);
+			logger.debug("[{}] getDavCalendars()", currentProfileId);
 		}
 		
 		try {
@@ -122,7 +122,7 @@ public class CalDav extends CaldavApi {
 			return respOk(items);
 			
 		} catch(Exception ex) {
-			logger.error("[{}] getCalendars()", ex, currentProfileId);
+			logger.error("[{}] getDavCalendars()", ex, currentProfileId);
 			return respError(ex);
 		}
 	}
@@ -133,7 +133,7 @@ public class CalDav extends CaldavApi {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] getCalendar({})", currentProfileId, calendarUid);
+			logger.debug("[{}] getDavCalendar({})", currentProfileId, calendarUid);
 		}
 		
 		try {
@@ -152,7 +152,7 @@ public class CalDav extends CaldavApi {
 			}
 			
 		} catch(Exception ex) {
-			logger.error("[{}] getCalendar({})", ex, currentProfileId, calendarUid);
+			logger.error("[{}] getDavCalendar({})", ex, currentProfileId, calendarUid);
 			return respError(ex);
 		}
 	}
@@ -163,7 +163,7 @@ public class CalDav extends CaldavApi {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] addCalendar(...)", currentProfileId);
+			logger.debug("[{}] addDavCalendar(...)", currentProfileId);
 			logger.debug("{}", body);
 		}
 		
@@ -176,7 +176,7 @@ public class CalDav extends CaldavApi {
 			return respOkCreated(createCalendar(currentProfileId, calendar, false, null, FolderShare.Permissions.full()));
 			
 		} catch(Exception ex) {
-			logger.error("[{}] addCalendar(...)", ex, currentProfileId);
+			logger.error("[{}] addDavCalendar(...)", ex, currentProfileId);
 			return respError(ex);
 		}
 	}
@@ -186,7 +186,7 @@ public class CalDav extends CaldavApi {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] updateCalendar({}, ...)", RunContext.getRunProfileId(), calendarUid);
+			logger.debug("[{}] updateDavCalendar({}, ...)", RunContext.getRunProfileId(), calendarUid);
 			logger.debug("{}", body);
 		}
 		
@@ -211,7 +211,7 @@ public class CalDav extends CaldavApi {
 		} catch (WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch (Exception ex) {
-			logger.error("[{}] updateCalendar({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] updateDavCalendar({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -221,7 +221,7 @@ public class CalDav extends CaldavApi {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] deleteCalendar({})", RunContext.getRunProfileId(), calendarUid);
+			logger.debug("[{}] deleteDavCalendar({})", RunContext.getRunProfileId(), calendarUid);
 		}
 		
 		try {
@@ -237,7 +237,7 @@ public class CalDav extends CaldavApi {
 		} catch (WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch (Exception ex) {
-			logger.error("[{}] deleteCalendar({})", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] deleteDavCalendar({})", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -248,7 +248,7 @@ public class CalDav extends CaldavApi {
 		List<ApiDavCalObject> items = new ArrayList<>();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] getCalObjects({})", RunContext.getRunProfileId(), calendarUid);
+			logger.debug("[{}] getDavCalObjects({})", RunContext.getRunProfileId(), calendarUid);
 		}
 		
 		try {
@@ -258,24 +258,22 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			if ((hrefs == null) || hrefs.isEmpty()) {
-				//TODO: Alternative implementation...
-				//List<EventObject> eventObjects = manager.listEventObjects(Arrays.asList(calendarId), null, null, EventObjectOutputType.ICALENDAR).getItems();
-				List<EventObject> eventObjects = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR);
+				List<EventObject> eventObjects = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR_RAW);
 				for (EventObject eventObject : eventObjects) {
-					items.add(createCalObject((EventObjectWithICalendar)eventObject));
+					items.add(createCalObject((EventObjectWithICalendarRaw)eventObject));
 				}
 				return respOk(items);
 				
 			} else {
-				List<EventObject> eventObjects = manager.getEventObjects(calendarId, hrefs, EventObjectOutputType.ICALENDAR);
+				List<EventObject> eventObjects = manager.getEventObjects(calendarId, hrefs, EventObjectOutputType.ICALENDAR_RAW);
 				for (EventObject eventObject : eventObjects) {
-					items.add(createCalObject((EventObjectWithICalendar)eventObject));
+					items.add(createCalObject((EventObjectWithICalendarRaw)eventObject));
 				}
 				return respOk(items);
 			}
 			
 		} catch(Exception ex) {
-			logger.error("[{}] getCalObjects({})", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] getDavCalObjects({})", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -285,7 +283,7 @@ public class CalDav extends CaldavApi {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] getCalObjectsChanges({}, {}, {})", RunContext.getRunProfileId(), calendarUid, syncToken, limit);
+			logger.debug("[{}] getDavCalObjectsChanges({}, {}, {})", RunContext.getRunProfileId(), calendarUid, syncToken, limit);
 		}
 		
 		try {
@@ -306,7 +304,7 @@ public class CalDav extends CaldavApi {
 			return respOk(createCalObjectsChanges(revisions.get(calendarId), delta));
 			
 		} catch(Exception ex) {
-			logger.error("[{}] getCalObjectsChanges({}, {}, {})", ex, RunContext.getRunProfileId(), calendarUid, syncToken, limit);
+			logger.error("[{}] getDavCalObjectsChanges({}, {}, {})", ex, RunContext.getRunProfileId(), calendarUid, syncToken, limit);
 			return respError(ex);
 		}
 	}
@@ -316,7 +314,7 @@ public class CalDav extends CaldavApi {
 		CalendarManager manager = getManager();
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] getCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href);
+			logger.debug("[{}] getDavCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href);
 		}
 		
 		try {
@@ -325,16 +323,8 @@ public class CalDav extends CaldavApi {
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			//TODO: Alternative implementation...
-			//List<EventObject> eventObjects = manager.getEventObjects(calendarId, Arrays.asList(href), EventObjectOutputType.ICALENDAR);
-			//EventObject eventObject = !eventObjects.isEmpty() ? eventObjects.get(0) : null;
-			//if (eventObject != null) {
-			//	return respOk(createCalObject((EventObjectWithICalendar)eventObject));
-			//} else {
-			//	return respErrorNotFound();
-			//}
-			
-			EventObject eventObject = manager.getEventObject(calendarId, href, EventObjectOutputType.ICALENDAR);
+			List<EventObject> eventObjects = manager.getEventObjects(calendarId, Arrays.asList(href), EventObjectOutputType.ICALENDAR_RAW);
+			EventObject eventObject = !eventObjects.isEmpty() ? eventObjects.get(0) : null;
 			if (eventObject != null) {
 				return respOk(createCalObject(eventObject));
 			} else {
@@ -342,7 +332,7 @@ public class CalDav extends CaldavApi {
 			}
 			
 		} catch(Exception ex) {
-			logger.error("[{}] getCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
+			logger.error("[{}] getDavCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
 			return respError(ex);
 		}
 	}
@@ -353,7 +343,7 @@ public class CalDav extends CaldavApi {
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] addCalObject({}, ...)", RunContext.getRunProfileId(), calendarUid);
+			logger.debug("[{}] addDavCalObject({}, ...)", RunContext.getRunProfileId(), calendarUid);
 			logger.debug("{}", body);
 		}
 		
@@ -362,11 +352,11 @@ public class CalDav extends CaldavApi {
 			int calendarId = ManagerUtils.decodeAsCalendarId(calendarUid);
 			// Manager's call is already ro protected for remoteProviders
 			net.fortuna.ical4j.model.Calendar iCalendar = parseICalendar(body.getIcalendar());
-			manager.addEventObject(calendarId, body.getHref(), iCalendar, notifyAttendees);
+			manager.addEventObject(calendarId, body.getHref(), iCalendar, true, notifyAttendees);
 			return respOk();
 			
 		} catch(Exception ex) {
-			logger.error("[{}] addCalObject({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
+			logger.error("[{}] addDavCalObject({}, ...)", ex, RunContext.getRunProfileId(), calendarUid);
 			return respError(ex);
 		}
 	}
@@ -377,7 +367,7 @@ public class CalDav extends CaldavApi {
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] updateCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href);
+			logger.debug("[{}] updateDavCalObject({}, {}, ...)", RunContext.getRunProfileId(), calendarUid, href);
 			logger.debug("{}", body);
 		}
 		
@@ -392,7 +382,7 @@ public class CalDav extends CaldavApi {
 		} catch (WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch (Exception ex) {
-			logger.error("[{}] updateCalObject({}, {}, ...)", ex, RunContext.getRunProfileId(), calendarUid, href);
+			logger.error("[{}] updateDavCalObject({}, {}, ...)", ex, RunContext.getRunProfileId(), calendarUid, href);
 			return respError(ex);
 		}
 	}
@@ -403,7 +393,7 @@ public class CalDav extends CaldavApi {
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("[{}] deleteCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href);
+			logger.debug("[{}] deleteDavCalObject({}, {})", RunContext.getRunProfileId(), calendarUid, href);
 		}
 		
 		try {
@@ -415,7 +405,7 @@ public class CalDav extends CaldavApi {
 		} catch (WTNotFoundException ex) {
 			return respErrorNotFound();
 		} catch (Exception ex) {
-			logger.error("[{}] deleteCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
+			logger.error("[{}] deleteDavCalObject({}, {})", ex, RunContext.getRunProfileId(), calendarUid, href);
 			return respError(ex);
 		}
 	}
@@ -452,8 +442,8 @@ public class CalDav extends CaldavApi {
 			.lastModified(obj.getRevisionTimestamp().withZone(DateTimeZone.UTC).getMillis()/1000)
 			.etag(buildEtag(obj.getRevisionTimestamp()));
 		
-		if (obj instanceof EventObjectWithICalendar) {
-			EventObjectWithICalendar objic = (EventObjectWithICalendar)obj;
+		if (obj instanceof EventObjectWithICalendarRaw) {
+			EventObjectWithICalendarRaw objic = (EventObjectWithICalendarRaw)obj;
 			return ret.size(objic.getSize())
 				.icalendar(objic.getIcalendar());
 		} else if (obj instanceof EventObjectWithBean) {

@@ -2043,7 +2043,7 @@ public class Service extends BaseService {
 				.setSuccess(true)
 			);
 			try {
-				manager.syncRemoteCalendarNEW(calendarId, full);
+				manager.syncRemoteCalendar(calendarId, full);
 				this.completed();
 				getWts().notify(new RemoteSyncResult(false)
 					.setCalendarId(calendarId)

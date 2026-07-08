@@ -42,7 +42,7 @@ import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.EventObject;
 import com.sonicle.webtop.calendar.model.EventObjectWithBean;
-import com.sonicle.webtop.calendar.model.EventObjectWithICalendar;
+import com.sonicle.webtop.calendar.model.EventObjectWithICalendarRaw;
 import com.sonicle.webtop.calendar.swagger.v1.api.CaldavApi;
 import com.sonicle.webtop.calendar.swagger.v1.model.ApiError;
 import com.sonicle.webtop.calendar.swagger.v1.model.CalObject;
@@ -253,16 +253,16 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			if ((hrefs == null) || hrefs.isEmpty()) {
-				List<EventObject> eventObjects = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR);
+				List<EventObject> eventObjects = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR_RAW);
 				for (EventObject eventObject : eventObjects) {
-					items.add(createCalObject((EventObjectWithICalendar)eventObject));
+					items.add(createCalObject((EventObjectWithICalendarRaw)eventObject));
 				}
 				return respOk(items);
 				
 			} else {
-				List<EventObject> eventObjects = manager.getEventObjects(calendarId, hrefs, EventObjectOutputType.ICALENDAR);
+				List<EventObject> eventObjects = manager.getEventObjects(calendarId, hrefs, EventObjectOutputType.ICALENDAR_RAW);
 				for (EventObject eventObject : eventObjects) {
-					items.add(createCalObject((EventObjectWithICalendar)eventObject));
+					items.add(createCalObject((EventObjectWithICalendarRaw)eventObject));
 				}
 				return respOk(items);
 			}
@@ -318,7 +318,7 @@ public class CalDav extends CaldavApi {
 			if (cal == null) return respErrorBadRequest();
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
-			EventObject eventObject = manager.getEventObject(calendarId, href, EventObjectOutputType.ICALENDAR);
+			EventObject eventObject = manager.getEventObject(calendarId, href, EventObjectOutputType.ICALENDAR_RAW);
 			if (eventObject != null) {
 				return respOk(createCalObject(eventObject));
 			} else {
@@ -430,8 +430,8 @@ public class CalDav extends CaldavApi {
 			.lastModified(obj.getRevisionTimestamp().withZone(DateTimeZone.UTC).getMillis()/1000)
 			.etag(buildEtag(obj.getRevisionTimestamp()));
 		
-		if (obj instanceof EventObjectWithICalendar) {
-			EventObjectWithICalendar objic = (EventObjectWithICalendar)obj;
+		if (obj instanceof EventObjectWithICalendarRaw) {
+			EventObjectWithICalendarRaw objic = (EventObjectWithICalendarRaw)obj;
 			return ret.size(objic.getSize())
 				.icalendar(objic.getIcalendar());
 		} else if (obj instanceof EventObjectWithBean) {

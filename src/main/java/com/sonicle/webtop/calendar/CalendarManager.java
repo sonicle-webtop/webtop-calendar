@@ -88,6 +88,7 @@ import com.sonicle.webtop.core.CoreManager;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.sdk.BaseManager;
+import com.sonicle.webtop.core.sdk.SharedManager;
 import com.sonicle.webtop.core.dal.DAOException;
 import com.sonicle.webtop.core.sdk.AuthException;
 import com.sonicle.webtop.core.sdk.BaseReminder;
@@ -256,7 +257,7 @@ import org.apache.commons.collections4.MultiValuedMap;
  *
  * @author malbinola
  */
-public class CalendarManager extends BaseManager implements ICalendarManager {
+public class CalendarManager extends BaseManager implements SharedManager, ICalendarManager {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
 	private static final String GROUPNAME_CALENDAR = "CALENDAR";
 	public static final String TARGET_THIS = "this";
@@ -278,6 +279,18 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		if (!fastInit) {
 			shareCache.init();
 		}
+	}
+
+	@Override
+	public void onSharedStartup() {
+		logger.info("[{}] shared CalendarManager created", getTargetProfileId());
+	}
+
+	@Override
+	public void onSharedShutdown() {
+		logger.info("[{}] shared CalendarManager shutting down", getTargetProfileId());
+		shareCache.clear();
+		ownerCache.clear();
 	}
 	
 	private CoreManager getCoreManager() {
@@ -441,8 +454,9 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		CalendarUserSettings us = new CalendarUserSettings(SERVICE_ID, getTargetProfileId());
 		
 		Integer calendarId = null;
+		boolean locked = false;
 		try {
-			locks.tryLock("getDefaultCalendarId", 60, TimeUnit.SECONDS);
+			locked = locks.tryLock("getDefaultCalendarId", 60, TimeUnit.SECONDS);
 			calendarId = us.getDefaultCalendarFolder();
 			if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE)) {
 				try {
@@ -456,7 +470,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 		} catch (InterruptedException ex) {
 			// Do nothing...
 		} finally {
-			locks.unlock("getDefaultCalendarId");
+			if (locked) locks.unlock("getDefaultCalendarId");
 		}
 		return calendarId;
 	}
@@ -5711,6 +5725,7 @@ public class CalendarManager extends BaseManager implements ICalendarManager {
 	*/
 	
 	private void onAfterCalendarAction(int calendarId, UserProfileId owner) {
+		ownerCache.remove(calendarId);
 		if (!owner.equals(getTargetProfileId())) shareCache.init();
 	}
 	

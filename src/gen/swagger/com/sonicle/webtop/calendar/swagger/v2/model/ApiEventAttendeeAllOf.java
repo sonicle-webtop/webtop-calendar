@@ -17,7 +17,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 
 @JsonTypeName("EventAttendee_allOf")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-07-08T16:40:39.867+02:00[Europe/Berlin]")
 public class ApiEventAttendeeAllOf   {
   private @Valid String id;
   public enum ResponseStatusEnum {
@@ -71,6 +71,7 @@ public class ApiEventAttendeeAllOf   {
   private @Valid String responseTimestamp;
 
   /**
+   * The attendee ID.
    **/
   public ApiEventAttendeeAllOf id(String id) {
     this.id = id;
@@ -78,7 +79,7 @@ public class ApiEventAttendeeAllOf   {
   }
 
   
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(required = true, value = "The attendee ID.")
   @JsonProperty("id")
   public String getId() {
     return id;

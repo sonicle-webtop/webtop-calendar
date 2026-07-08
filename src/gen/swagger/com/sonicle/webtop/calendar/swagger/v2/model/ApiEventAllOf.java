@@ -17,9 +17,10 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 
 @JsonTypeName("Event_allOf")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-07-08T16:40:39.867+02:00[Europe/Berlin]")
 public class ApiEventAllOf   {
   private @Valid String id;
+  private @Valid String calendarId;
   private @Valid String etag;
   private @Valid String createdAt;
   private @Valid String updatedAt;
@@ -42,6 +43,26 @@ public class ApiEventAllOf   {
   @JsonProperty("id")
   public void setId(String id) {
     this.id = id;
+  }
+
+  /**
+   * The ID of the calendar this event belongs to.
+   **/
+  public ApiEventAllOf calendarId(String calendarId) {
+    this.calendarId = calendarId;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "The ID of the calendar this event belongs to.")
+  @JsonProperty("calendarId")
+  public String getCalendarId() {
+    return calendarId;
+  }
+
+  @JsonProperty("calendarId")
+  public void setCalendarId(String calendarId) {
+    this.calendarId = calendarId;
   }
 
   /**
@@ -115,6 +136,7 @@ public class ApiEventAllOf   {
     }
     ApiEventAllOf eventAllOf = (ApiEventAllOf) o;
     return Objects.equals(this.id, eventAllOf.id) &&
+        Objects.equals(this.calendarId, eventAllOf.calendarId) &&
         Objects.equals(this.etag, eventAllOf.etag) &&
         Objects.equals(this.createdAt, eventAllOf.createdAt) &&
         Objects.equals(this.updatedAt, eventAllOf.updatedAt);
@@ -122,7 +144,7 @@ public class ApiEventAllOf   {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag, createdAt, updatedAt);
+    return Objects.hash(id, calendarId, etag, createdAt, updatedAt);
   }
 
   @Override
@@ -131,6 +153,7 @@ public class ApiEventAllOf   {
     sb.append("class ApiEventAllOf {\n");
     
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    calendarId: ").append(toIndentedString(calendarId)).append("\n");
     sb.append("    etag: ").append(toIndentedString(etag)).append("\n");
     sb.append("    createdAt: ").append(toIndentedString(createdAt)).append("\n");
     sb.append("    updatedAt: ").append(toIndentedString(updatedAt)).append("\n");

@@ -25,9 +25,10 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Represent an Event, a scheduled occurrence on a calendar, such as a meeting, holiday, or time block.")
 @JsonTypeName("Event")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-07-08T16:40:39.867+02:00[Europe/Berlin]")
 public class ApiEvent extends ApiEventEx  {
   private @Valid String id;
+  private @Valid String calendarId;
   private @Valid String etag;
   private @Valid String createdAt;
   private @Valid String updatedAt;
@@ -50,6 +51,26 @@ public class ApiEvent extends ApiEventEx  {
   @JsonProperty("id")
   public void setId(String id) {
     this.id = id;
+  }
+
+  /**
+   * The ID of the calendar this event belongs to.
+   **/
+  public ApiEvent calendarId(String calendarId) {
+    this.calendarId = calendarId;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "The ID of the calendar this event belongs to.")
+  @JsonProperty("calendarId")
+  public String getCalendarId() {
+    return calendarId;
+  }
+
+  @JsonProperty("calendarId")
+  public void setCalendarId(String calendarId) {
+    this.calendarId = calendarId;
   }
 
   /**
@@ -123,6 +144,7 @@ public class ApiEvent extends ApiEventEx  {
     }
     ApiEvent event = (ApiEvent) o;
     return Objects.equals(this.id, event.id) &&
+        Objects.equals(this.calendarId, event.calendarId) &&
         Objects.equals(this.etag, event.etag) &&
         Objects.equals(this.createdAt, event.createdAt) &&
         Objects.equals(this.updatedAt, event.updatedAt) &&
@@ -131,7 +153,7 @@ public class ApiEvent extends ApiEventEx  {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag, createdAt, updatedAt, super.hashCode());
+    return Objects.hash(id, calendarId, etag, createdAt, updatedAt, super.hashCode());
   }
 
   @Override
@@ -140,6 +162,7 @@ public class ApiEvent extends ApiEventEx  {
     sb.append("class ApiEvent {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    calendarId: ").append(toIndentedString(calendarId)).append("\n");
     sb.append("    etag: ").append(toIndentedString(etag)).append("\n");
     sb.append("    createdAt: ").append(toIndentedString(createdAt)).append("\n");
     sb.append("    updatedAt: ").append(toIndentedString(updatedAt)).append("\n");

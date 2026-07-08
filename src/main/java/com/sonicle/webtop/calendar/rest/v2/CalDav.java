@@ -63,6 +63,7 @@ import com.sonicle.webtop.core.app.sdk.WTNotFoundException;
 import com.sonicle.webtop.core.app.model.FolderShare;
 import com.sonicle.webtop.core.model.ChangedItem;
 import com.sonicle.webtop.core.model.Delta;
+import com.sonicle.webtop.core.sdk.BaseRestApiUtils;
 import com.sonicle.webtop.core.sdk.UserProfile;
 import com.sonicle.webtop.core.sdk.UserProfileId;
 import com.sonicle.webtop.core.sdk.WTException;
@@ -243,7 +244,7 @@ public class CalDav extends CaldavApi {
 	}
 	
 	@Override
-	public Response getDavCalObjects(String calendarUid, List<String> hrefs) {
+	public Response getDavCalObjects(String calendarUid, List<String> hrefs, String rangeStart) {
 		CalendarManager manager = getManager();
 		List<ApiDavCalObject> items = new ArrayList<>();
 		
@@ -258,7 +259,8 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			if ((hrefs == null) || hrefs.isEmpty()) {
-				List<EventObject> eventObjects = manager.listEventObjects(calendarId, EventObjectOutputType.ICALENDAR_RAW);
+				DateTime since = BaseRestApiUtils.parseDateTimeISO(rangeStart);
+				List<EventObject> eventObjects = manager.listEventObjects(calendarId, since, EventObjectOutputType.ICALENDAR_RAW);
 				for (EventObject eventObject : eventObjects) {
 					items.add(createCalObject((EventObjectWithICalendarRaw)eventObject));
 				}

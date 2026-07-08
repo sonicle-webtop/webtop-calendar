@@ -20,7 +20,7 @@ import javax.validation.Valid;
 
 @Path("/caldav/calendars")
 @Api(description = "the caldav API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-07-08T16:40:39.867+02:00[Europe/Berlin]")
 public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -144,7 +144,7 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = ApiDavCalObject.class, responseContainer = "List")
     })
-    public Response getDavCalObjects(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("hrefs")   List<String> hrefs) {
+    public Response getDavCalObjects(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("hrefs")   List<String> hrefs,@QueryParam("rangeStart")  @ApiParam("The start date and time (inclusive) of the time range, represented in ISO 8601 format and UTC time.")  String rangeStart) {
         return Response.ok().entity("magic!").build();
     }
 

@@ -202,6 +202,14 @@
                 "type": "string"
               }
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "rangeStart",
+            "description": "The start date and time (inclusive) of the time range, represented in ISO 8601 format and UTC time."
           }
         ],
         "responses": {
@@ -2286,6 +2294,13 @@
                 "type": "string",
                 "description": "The event's unique ID.",
                 "readOnly": true
+              },
+              "calendarId": {
+                "type": "string",
+                "x-stoplight": {
+                  "id": "cpzwn38hq1dfn"
+                },
+                "description": "The ID of the calendar this event belongs to."
               },
               "etag": {
                 "type": "string",

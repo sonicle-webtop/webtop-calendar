@@ -25,7 +25,7 @@ import javax.validation.Valid;
 
 @Path("/me")
 @Api(description = "the me API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-05-18T14:26:01.620+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-07-08T16:40:39.867+02:00[Europe/Berlin]")
 public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -133,7 +133,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Event not found", response = Void.class)
     })
-    public Response deleteEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event.")  String notify) {
+    public Response deleteEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event. Possible values are: none, individual, resource, all. Defaults to &#x60;all&#x60;.")  String notify) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -313,7 +313,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
     @PUT
     @Path("/events/instances/{event_instance_id}")
     @Consumes({ "application/json" })
-    @ApiOperation(value = "Update an Event instance", notes = "Update a specific Event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines the scope of the update: - {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions. - {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.  When targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update: - modify_since=false (default) — updates only the specified instance - modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged  Note: modify_since is ignored for single events and master events. You can update the entire event object or a subset of its fields.  Param *_update* supports the following fields: publicUid, publicUid, status, organizer, timezone, allDay, start, endm title, location, descriptionType, description, visibility, transparency, href, reminder", response = Void.class, authorizations = {
+    @ApiOperation(value = "Update an Event instance", notes = "Update a specific Event instance identified by its instance ID.  The event_instance_id uses the format {eventId}.{date} and determines the scope of the update: - {eventId}.00000000 — targets a single event or the master event of a recurring series. For single events, the update applies to the event itself. For master events, the update applies to all instances in the series, preserving any existing exceptions. - {eventId}.{YYYYMMDD} — targets a single occurrence; the update applies only to that instance, which is promoted to an exception within the series.  When targeting a single occurrence, the optional modify_since boolean parameter extends the scope of the update: - modify_since=false (default) — updates only the specified instance - modify_since=true — splits the series at the specified date; all occurrences from that date onward inherit the update, while earlier occurrences remain unchanged  Note: modify_since is ignored for single events and master events. You can update the entire event object or a subset of its fields.  Param *_update* supports the following fields: publicUid, status, organizer, timezone, allDay, start, end, title, location, descriptionType, description, visibility, transparency, href, reminder", response = Void.class, authorizations = {
         
         @Authorization(value = "auth-bearer"),
         
@@ -328,7 +328,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Event not found", response = Void.class)
     })
-    public Response updateEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("update_options") @Min(0) @DefaultValue("1")  @ApiParam("Bitmask that specifies which parts of the event must be updated. Multiple options can be combined by summing their values.  Flags: 1&#x3D;Attendees")  Integer updateOptions,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event.")  String notify,@QueryParam("_update")  @ApiParam("List (comma-separated) of field names to update. Optional, if omitted all available field will be taken into account.")  String update,@Valid ApiEventEx body) {
+    public Response updateEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("update_options") @Min(0) @DefaultValue("1")  @ApiParam("Bitmask that specifies which parts of the event must be updated. Multiple options can be combined by summing their values.  Flags: 1&#x3D;Attendees")  Integer updateOptions,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event. Possible values are: none, individual, resource, all. Defaults to &#x60;all&#x60;.")  String notify,@QueryParam("_update")  @ApiParam("List (comma-separated) of field names to update. Optional, if omitted all available field will be taken into account.")  String update,@Valid ApiEventEx body) {
         return Response.ok().entity("magic!").build();
     }
 
@@ -350,7 +350,7 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
         @ApiResponse(code = 400, message = "Invalid parameter", response = Void.class),
         @ApiResponse(code = 404, message = "Event not found", response = Void.class)
     })
-    public Response updateEventInstanceQuick(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event.")  String notify,@Valid ApiEventQuick body) {
+    public Response updateEventInstanceQuick(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("modify_since") @DefaultValue("false")  @ApiParam("For recurring events specifies that the change affects instances from the current onward.")  Boolean modifySince,@QueryParam("notify") @DefaultValue("all")  @ApiParam("Attendees who should receive notifications about the creation/modification of the new event. Possible values are: none, individual, resource, all. Defaults to &#x60;all&#x60;.")  String notify,@Valid ApiEventQuick body) {
         return Response.ok().entity("magic!").build();
     }
 

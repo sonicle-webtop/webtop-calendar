@@ -34,7 +34,6 @@ package com.sonicle.webtop.calendar.rest.v2;
 
 import com.sonicle.commons.EnumUtils;
 import com.sonicle.commons.InternetAddressUtils;
-import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.beans.ItemsListResult;
 import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.JodaTimeUtils;
@@ -89,7 +88,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -369,6 +367,7 @@ public class ApiUtils {
 	public static ApiEvent fillApiEvent(final ApiEvent tgt, final Set<String> fields2set, final EventObjectWithBean src) {
 		fillApiEventBase(tgt, fields2set, src.getEvent());
 		tgt.id(String.valueOf(src.getEventId()));
+		tgt.calendarId(asCalendarId(src.getCalendarId()));
 		tgt.etag(BaseRestApiUtils.buildETag(src.getRevisionTimestamp()));
 		tgt.createdAt(JodaTimeUtils.printISO(src.getEvent().getCreationTimestamp()));
 		tgt.updatedAt(JodaTimeUtils.printISO(src.getRevisionTimestamp()));
@@ -378,6 +377,7 @@ public class ApiUtils {
 	public static ApiEvent fillApiEvent(final ApiEvent tgt, final Set<String> fields2set, final Event src) {
 		fillApiEventEx(tgt, fields2set, src);
 		tgt.id(src.getEventId());
+		tgt.calendarId(asCalendarId(src.getCalendarId()));
 		tgt.etag(BaseRestApiUtils.buildETag(src.getRevisionTimestamp()));
 		tgt.createdAt(JodaTimeUtils.printISO(src.getCreationTimestamp()));
 		tgt.updatedAt(JodaTimeUtils.printISO(src.getRevisionTimestamp()));

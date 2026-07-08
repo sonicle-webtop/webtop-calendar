@@ -34,6 +34,7 @@ package com.sonicle.webtop.calendar.dal;
 
 import com.sonicle.webtop.calendar.bol.OEventRecurrence;
 import com.sonicle.webtop.calendar.bol.OEventRecurrenceEx;
+import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_RECURRENCES_EX;
 import com.sonicle.webtop.core.dal.BaseDAO;
@@ -43,7 +44,9 @@ import java.util.Collection;
 import java.util.Set;
 import org.joda.time.LocalDate;
 import org.jooq.BatchBindStep;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 
 /**
  *
@@ -122,16 +125,53 @@ public class EventRecurrenceDAO extends BaseDAO {
 	}
 	
 	public Set<LocalDate> selectRecurrenceExByEvent(Connection con, String eventId) throws DAOException {
+		return selectRecurrenceExByEvent(con, eventId, false);
+	}
+	
+	public Set<LocalDate> selectRecurrenceExByEvent(Connection con, String eventId, boolean excludeOverrides) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		if (excludeOverrides) {
+			return dsl
+				.select(
+					EVENTS_RECURRENCES_EX.DATE
+				)
+				.from(EVENTS_RECURRENCES_EX)
+				.where(
+					EVENTS_RECURRENCES_EX.EVENT_ID.equal(eventId)
+				)
+				.except(
+					DSL.select(
+						EVENTS.SERIES_INSTANCE_ID.cast(LocalDate.class)
+					)
+					.from(EVENTS)
+					.where(
+						EVENTS.SERIES_EVENT_ID.equal(eventId)
+					)
+				)
+				.fetchSet(EVENTS_RECURRENCES_EX.DATE);
+				
+		} else {
+			return dsl
+				.select(
+					EVENTS_RECURRENCES_EX.DATE
+				)
+				.from(EVENTS_RECURRENCES_EX)
+				.where(
+					EVENTS_RECURRENCES_EX.EVENT_ID.equal(eventId)
+				)
+				.fetchSet(EVENTS_RECURRENCES_EX.DATE);
+		}
+			
+	}
+	
+	public int upsertRecurrenceEx(Connection con, String eventId, LocalDate date) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl
-			.select(
-				EVENTS_RECURRENCES_EX.DATE
-			)
-			.from(EVENTS_RECURRENCES_EX)
-			.where(
-				EVENTS_RECURRENCES_EX.EVENT_ID.equal(eventId)
-			)
-			.fetchSet(EVENTS_RECURRENCES_EX.DATE);
+			.insertInto(EVENTS_RECURRENCES_EX)
+			.set(EVENTS_RECURRENCES_EX.EVENT_ID, eventId)
+			.set(EVENTS_RECURRENCES_EX.DATE, date)
+			.onConflictDoNothing()
+			.execute();
 	}
 	
 	public int insertRecurrenceEx(Connection con, OEventRecurrenceEx item) throws DAOException {

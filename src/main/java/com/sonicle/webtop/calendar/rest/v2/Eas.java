@@ -467,7 +467,7 @@ public class Eas extends EasApi {
 	
 	private CalendarManager getManager(UserProfileId targetProfileId) {
 		CalendarManager manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
-		manager.setSoftwareName("rest-eas");
+		RunContext.setSoftwareName("rest-eas");
 		return manager;
 	}
 	

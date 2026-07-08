@@ -96,7 +96,7 @@ public class Me extends MeApi {
 	
 	private CalendarManager getManager(UserProfileId targetProfileId) {
 		CalendarManager manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
-		manager.setSoftwareName("rest");
+		RunContext.setSoftwareName("rest");
 		return manager;
 	}
 

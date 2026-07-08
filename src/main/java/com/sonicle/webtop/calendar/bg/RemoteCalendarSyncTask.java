@@ -37,6 +37,7 @@ import com.sonicle.webtop.calendar.CalendarManager;
 import com.sonicle.webtop.calendar.CalendarServiceSettings;
 import com.sonicle.webtop.calendar.ConcurrentSyncException;
 import com.sonicle.webtop.calendar.model.Calendar;
+import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.SessionManager;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.WebTopApp;
@@ -66,7 +67,7 @@ public class RemoteCalendarSyncTask extends BaseBackgroundServiceTask {
 	public void executeWork(JobExecutionContext jec, TaskContext context) throws Exception {
 		BackgroundService bs = ((BackgroundService)getBackgroundService(jec));
 		SessionManager sesMgr = WebTopApp.getInstance().getSessionManager();
-		CalendarManager calMgr = (CalendarManager)WT.getServiceManager(bs.SERVICE_ID);
+		CalendarManager calMgr = (CalendarManager)WT.getServiceManager(bs.SERVICE_ID, true, RunContext.getSysAdminProfileId());
 		
 		List<Calendar> cals = calMgr.listRemoteCalendarsToBeSynchronized();
 		for (Calendar cal : cals) {

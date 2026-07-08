@@ -492,7 +492,7 @@ public class CalDav extends CaldavApi {
 	
 	private CalendarManager getManager(UserProfileId targetProfileId) {
 		CalendarManager manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
-		manager.setSoftwareName("rest-caldav");
+		RunContext.setSoftwareName("rest-caldav");
 		return manager;
 	}
 	

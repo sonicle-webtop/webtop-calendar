@@ -217,9 +217,22 @@ public class ApiUtils {
 		fillEventBase(tgt, fields2set, src);
 		if (src.getRecurrence() != null) {
 			ApiEventRecurrence aer = src.getRecurrence();
-			tgt.setRecurrence(new EventRecurrence(aer.getRrule(), JodaTimeUtils.parseDateTimeISO(aer.getStart()), parseExcludedDates(aer.getExDates())));
+			tgt.setRecurrence(new EventRecurrence(aer.getRrule(), parseDateTimeISOField("recurrence.start", aer.getStart()), parseExcludedDates(aer.getExDates())));
 		}
 		return tgt;
+	}
+
+	/**
+	 * Same as JodaTimeUtils.parseDateTimeISO but reports which field failed and
+	 * what format is expected: joda's bare "too short" is too cryptic for API
+	 * callers sending zone-less ISO date-times.
+	 */
+	private static DateTime parseDateTimeISOField(String fieldName, String value) {
+		try {
+			return JodaTimeUtils.parseDateTimeISO(value);
+		} catch (IllegalArgumentException ex) {
+			throw new IllegalArgumentException("Invalid ISO 8601 date-time for '" + fieldName + "': '" + value + "'. Expected a zoned value like 2026-07-07T10:30:00Z or 2026-07-07T10:30:00+02:00", ex);
+		}
 	}
 	
 	public static EventEx mergeEventExAttendees(final EventEx tgt, final ApiEventEx src) {
@@ -267,8 +280,8 @@ public class ApiUtils {
 		}
 		if (shouldSet(fields2set, "timezone")) tgt.setTimezone(src.getTimezone());
 		if (shouldSet(fields2set, "allDay")) tgt.setAllDay(src.getAllDay());
-		if (shouldSet(fields2set, "start")) tgt.setStart(JodaTimeUtils.parseDateTimeISO(src.getStart()));
-		if (shouldSet(fields2set, "end")) tgt.setEnd(JodaTimeUtils.parseDateTimeISO(src.getEnd()));
+		if (shouldSet(fields2set, "start")) tgt.setStart(parseDateTimeISOField("start", src.getStart()));
+		if (shouldSet(fields2set, "end")) tgt.setEnd(parseDateTimeISOField("end", src.getEnd()));
 		if (shouldSet(fields2set, "title")) tgt.setTitle(src.getTitle());
 		if (shouldSet(fields2set, "location")) tgt.setLocation(src.getLocation());
 		if (shouldSet(fields2set, "descriptionType")) tgt.setDescriptionType(EnumUtils.forSerializedName(src.getDescriptionType(), EventBase.BodyType.class));

@@ -1694,7 +1694,7 @@ public class Service extends BaseService {
     public void processOpenContact(HttpServletRequest request, HttpServletResponse response, PrintWriter out) {
 			try {
 				String recipient=ServletUtils.getStringParameter(request, "recipient", true);
-				IContactsManager icm = (IContactsManager) WT.getServiceManager("com.sonicle.webtop.contacts");
+				IContactsManager icm = (IContactsManager) WT.getServiceManager("com.sonicle.webtop.contacts", getEnv().getProfileId());
 				if (icm==null) {
 					throw new WTException("Contacts service unavailable");
 				}

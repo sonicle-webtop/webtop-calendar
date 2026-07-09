@@ -935,27 +935,6 @@ public class EventDAO extends BaseDAO {
 			inHrefsCndt = EVENTS.HREF.in(hrefs);
 		}
 		
-		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
-		Condition overlapsCndt = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null)
-			.isTrue();
-		
-		/*
-		Condition overlapsCndt = DSL.trueCondition();
-		if (since != null) {
-			Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-				.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, DSL.value(since), null);
-			overlapsCndt = overlaps.isTrue();
-		}
-		*/
-		
-		/*
-		// New field: overlaps
-		Param<DateTime> rangeFromPar = (since != null) ? DSL.value(since) : null;
-		Field<Boolean> overlaps = com.sonicle.webtop.core.jooq.public_.Routines
-			.rruleEventOverlaps(EVENTS.START, null, EVENTS_RECURRENCES.RULE, rangeFromPar, null);
-		*/
-		
 		// New field: tags list
 		Field<String> tags = DSL
 			.select(DSL.groupConcat(EVENTS_TAGS.TAG_ID, "|"))
@@ -1038,8 +1017,6 @@ public class EventDAO extends BaseDAO {
 				)
 				.and(inHrefsCndt)
 				.and(toTimeWindowCondition(since, null))
-				//.and(overlapsCndt)
-				//.and(overlaps)
 			)
 			.orderBy(
 				EVENTS.EVENT_ID.asc()

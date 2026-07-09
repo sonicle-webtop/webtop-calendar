@@ -244,7 +244,7 @@ public class CalDav extends CaldavApi {
 	}
 	
 	@Override
-	public Response getDavCalObjects(String calendarUid, List<String> hrefs, String rangeStart) {
+	public Response getDavCalObjects(String calendarUid, List<String> hrefs, String since) {
 		CalendarManager manager = getManager();
 		List<ApiDavCalObject> items = new ArrayList<>();
 		
@@ -259,8 +259,8 @@ public class CalDav extends CaldavApi {
 			if (cal.isProviderRemote()) return respErrorBadRequest();
 			
 			if ((hrefs == null) || hrefs.isEmpty()) {
-				DateTime since = BaseRestApiUtils.parseDateTimeISO(rangeStart);
-				List<EventObject> eventObjects = manager.listEventObjects(calendarId, since, EventObjectOutputType.ICALENDAR_RAW);
+				DateTime dtSince = BaseRestApiUtils.parseDateTimeISO(since, true);
+				List<EventObject> eventObjects = manager.listEventObjects(calendarId, dtSince, EventObjectOutputType.ICALENDAR_RAW);
 				for (EventObject eventObject : eventObjects) {
 					items.add(createCalObject((EventObjectWithICalendarRaw)eventObject));
 				}

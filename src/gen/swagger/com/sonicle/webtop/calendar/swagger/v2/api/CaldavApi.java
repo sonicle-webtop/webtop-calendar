@@ -144,7 +144,7 @@ public abstract class CaldavApi extends com.sonicle.webtop.core.sdk.BaseRestApiR
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Success", response = ApiDavCalObject.class, responseContainer = "List")
     })
-    public Response getDavCalObjects(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("hrefs")   List<String> hrefs,@QueryParam("rangeStart")  @ApiParam("The start date and time (inclusive) of the time range, represented in ISO 8601 format and UTC time.")  String rangeStart) {
+    public Response getDavCalObjects(@PathParam("calendarUid") @ApiParam("Calendar UID") String calendarUid,@QueryParam("hrefs")   List<String> hrefs,@QueryParam("since")  @ApiParam("The date and time (inclusive) to filter results, represented in ISO 8601 format and UTC time.")  String rangeStart) {
         return Response.ok().entity("magic!").build();
     }
 

@@ -208,8 +208,8 @@
               "type": "string"
             },
             "in": "query",
-            "name": "rangeStart",
-            "description": "The start date and time (inclusive) of the time range, represented in ISO 8601 format and UTC time."
+            "name": "since",
+            "description": "The date and time (inclusive) to filter results, represented in ISO 8601 format and UTC time."
           }
         ],
         "responses": {

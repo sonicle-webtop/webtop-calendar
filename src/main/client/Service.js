@@ -568,9 +568,13 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					return function(e1, e2) {
 						var mine1 = e1.extendedProps.ownerId === myPofileId,
 							mine2 = e2.extendedProps.ownerId === myPofileId;
-						return mine1 > mine2 ? -1 : 1;
+						if (mine1 === mine2) {
+							return 0; // tie: let the next criteria (start, etc.) decide
+						} else {
+							return mine1 > mine2 ? -1 : 1;
+						}
 					};
-				}(WT.getVar('profileId')), // Call the function soon right here!
+				}(WT.getVar('profileId')), // Executed immediately, returns the comparator!
 				'start', '-duration', 'allDay', 'title'
 			],
 			eventsForceSolidDisplay: false,

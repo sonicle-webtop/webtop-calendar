@@ -335,7 +335,7 @@ public class ManagerUtils {
 			if (StringUtils.isBlank(tgt.getPublicUid())) {
 				tgt.setPublicUid(ManagerUtils.buildEventUid(tgt.getEventId(), WT.getPrimaryDomainName(targetProfile.getDomainId())));
 			}
-			if (tgt.getRevisionTimestamp()== null) tgt.setRevisionTimestamp(defaultTimestamp);
+			//if (tgt.getRevisionTimestamp()== null) tgt.setRevisionTimestamp(defaultTimestamp);
 			if (tgt.getRevisionSequence() == null) tgt.setRevisionSequence(0);
 			if (tgt.getCreationTimestamp() == null) tgt.setCreationTimestamp(defaultTimestamp);
 			if (tgt.getRowStatus() == null) tgt.setRowStatus(EnumUtils.toSerializedName(EventBase.RowStatus.DEFAULT));
@@ -343,6 +343,15 @@ public class ManagerUtils {
 			if (StringUtils.isBlank(tgt.getOrganizer())) {
 				tgt.setOrganizer(buildOrganizer(targetProfile));
 				tgt.setOrganizerId(targetProfile.getUserId());
+			} else if (StringUtils.isBlank(tgt.getOrganizerId())) {
+				InternetAddress ia = InternetAddressUtils.toInternetAddress(tgt.getOrganizer());
+				if (ia != null) {
+					if (WT.matchesProfilePersonalEmail(ia.getAddress(), targetProfile)) {
+						tgt.setOrganizerId(targetProfile.getUserId());
+					} else if (WT.matchesProfileEmail(ia.getAddress(), targetProfile)) {
+						tgt.setOrganizerId(targetProfile.getUserId());
+					}
+				}
 			}
 			if (tgt.getTimezone() == null) {
 				UserProfile.Data pdata = WT.getProfileData(targetProfile);

@@ -123,7 +123,7 @@ public class EventAttendeeDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateAttendeeResponseByIdsEvent(Connection con, String responseStatus, /*@Nullable*/ DateTime responseTimestamp, List<String> attendeeIds, String eventId) throws DAOException {
+	public int updateAttendeeResponseByIdsEvent(Connection con, String responseStatus, /*@Nullable*/ DateTime responseTimestamp, Collection<String> attendeeIds, String eventId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		UpdateSetMoreStep update = dsl
 			.update(EVENTS_ATTENDEES)

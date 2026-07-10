@@ -2159,7 +2159,8 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 	}
 	
-	public void updateEventInstanceAttendeeResponse(final EventInstanceId instanceId, final EventAttendee.ResponseStatus responseStatus, final String comment, final boolean notifyOrganizer) throws WTException {
+	@Override
+	public UpdateAttendeeResponseResult updateEventInstanceAttendeeResponse(final EventInstanceId instanceId, final EventAttendee.ResponseStatus responseStatus, final String comment, final boolean notifyOrganizer) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -2171,20 +2172,15 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			
 			checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.UPDATE);
 			
-			List<String> attendeeIds = doEventAttendeeUpdateResponseByProfile(con, info.originalEventId(), getTargetProfileId(), responseStatus, true);
+			Set<String> attendeeIds = doEventAttendeeUpdateResponseByProfile(con, info.originalEventId(), getTargetProfileId(), responseStatus, true);
 			if (attendeeIds.isEmpty()) throw new WTNotFoundException("Attendee not found [{}, {}]", instanceId, getTargetProfileId());
 			DbUtils.commitQuietly(con);
 			
+			int sentNotifications = 0;
 			if (notifyOrganizer) {
-				BitFlags<EventProcessOpt> processOpts = BitFlags.with(
-					EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES
-				);
-				Event event = doEventGet(con, info.originalEventId(), processOpts);
-				if (event == null) throw new WTException("Unable to notify organizer: event is null [{}]", info.originalEventId());
-				UserProfileId senderProfile = getCalendarOwner(calendarId);
-				if (senderProfile == null) senderProfile = getTargetProfileId();
-				notifyOrganizer(senderProfile, event, attendeeIds.get(0));
+				sentNotifications = doOrganizerNotify(con, calendarId, info.originalEventId(), attendeeIds);
 			}
+			return new UpdateAttendeeResponseResult(info.originalEventId(), Collections.unmodifiableSet(attendeeIds), sentNotifications);
 		
 		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
@@ -2194,7 +2190,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 	}
 	
-	public void updateEventInstanceAttendeeResponse(final EventInstanceId instanceId, final String attendeeId, final EventAttendee.ResponseStatus responseStatus, final boolean notifyOrganizer) throws WTException {
+	public UpdateAttendeeResponseResult updateEventInstanceAttendeeResponse(final EventInstanceId instanceId, final String attendeeId, final EventAttendee.ResponseStatus responseStatus, final String comment, final boolean notifyOrganizer) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		Connection con = null;
 		
@@ -2210,16 +2206,12 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			if (ret == 0) throw new WTNotFoundException("Attendee not found [{}, {}]", instanceId, attendeeId);
 			DbUtils.commitQuietly(con);
 			
+			Set<String> attendeeIds = LangUtils.asSet(attendeeId);
+			int sentNotifications = 0;
 			if (notifyOrganizer) {
-				BitFlags<EventProcessOpt> processOpts = BitFlags.with(
-					EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES
-				);
-				Event event = doEventGet(con, info.originalEventId(), processOpts);
-				if (event == null) throw new WTException("Unable to notify organizer: event is null [{}]", info.originalEventId());
-				UserProfileId senderProfile = getCalendarOwner(calendarId);
-				if (senderProfile == null) senderProfile = getTargetProfileId();
-				notifyOrganizer(senderProfile, event, attendeeId);
+				sentNotifications = doOrganizerNotify(con, calendarId, info.originalEventId(), attendeeIds);
 			}
+			return new UpdateAttendeeResponseResult(info.originalEventId(), Collections.unmodifiableSet(attendeeIds), sentNotifications);
 		
 		} catch (Exception ex) {
 			DbUtils.rollbackQuietly(con);
@@ -2580,12 +2572,63 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 	}
 	
+	/**
+	 * @deprecated Use handleITIPRequest instead
+	 */
 	@Override
-	public Event handleInvitationFromICal(final net.fortuna.ical4j.model.Calendar iCalendar, final Integer calendarId, final BitFlags<HandleICalInviationOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
-		Check.notNull(iCalendar, "iCalendar");
-		Check.notNull(options, "options");
+	@Deprecated public Event handleInvitationFromICal(final net.fortuna.ical4j.model.Calendar iCalendar, final Integer calendarId, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
+		return handleITIPRequest(calendarId, iCalendar, options);
+	}
+	
+	/**
+	 * Convenience overload of {@link #handleITIPRequest(Integer, net.fortuna.ical4j.model.Calendar, BitFlags)}
+	 * for methods (REPLY, CANCEL) that don't need an explicit target calendar, since the
+	 * affected event is resolved by lookup rather than inserted fresh.
+	 * @param iCalendar iCalendar parsed iCalendar object; must contain exactly one VEVENT with a valid UID and ORGANIZER
+	 * @param options Behavior flags (lookup scope, classification/transparency/alarms handling, availability constraint check)
+	 * @return
+	 * @throws WTParseException
+	 * @throws WTNotFoundException
+	 * @throws WTConstraintException
+	 * @throws WTException 
+	 */
+	@Override
+	public Event handleITIPRequest(final net.fortuna.ical4j.model.Calendar iCalendar, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
+		return handleITIPRequest(null, iCalendar, options);
+	}	
+	
+	/**
+	 * Processes an inbound iTIP message (RFC 5546) and applies its effect to the
+	 * current user's calendars. Dispatches on the iCalendar's METHOD:
+	 * <ul>
+	 *   <li>REQUEST (Organizer -&gt; Attendee): creates a new invitation, or updates an
+	 *       existing one - either the whole series or a single occurrence when the
+	 *       VEVENT carries a RECURRENCE-ID.</li>
+	 *   <li>REPLY (Attendee -&gt; Organizer): records the replying attendee's PARTSTAT
+	 *       on the organizer's copy of the event.</li>
+	 *   <li>CANCEL (Organizer -&gt; Attendee): deletes the event, or a single occurrence,
+	 *       from the attendee's calendar.</li>
+	 * </ul>
+	 * Any other METHOD is rejected with {@link WTUnsupportedOperationException}.
+	 * 
+	 * @param calendarId Target calendar for a brand-new invitation; only used by the 
+	 * REQUEST/new-invitation case, ignored otherwise (may be {@code null} for 
+	 * REPLY, CANCEL, or a REQUEST that turns out to update an existing event)
+	 * @param iCalendar iCalendar parsed iCalendar object; must contain exactly one VEVENT with a valid UID and ORGANIZER
+	 * @param options Behavior flags (lookup scope, classification/transparency/alarms handling, availability constraint check)
+	 * @return the newly created {@link Event} for a new invitation; {@code null} for instance/series updates, REPLY, and CANCEL
+	 * @throws WTParseException
+	 * @throws WTNotFoundException
+	 * @throws WTConstraintException
+	 * @throws WTException 
+	 */
+	@Override
+	public Event handleITIPRequest(final Integer calendarId, final net.fortuna.ical4j.model.Calendar iCalendar, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
 		final UserProfile.Data udata = WT.getProfileData(getTargetProfileId());
 		Connection con = null;
+		
+		Check.notNull(iCalendar, "iCalendar");
+		Check.notNull(options, "options");
 		
 		final net.fortuna.ical4j.model.component.VEvent ve = ICalendarUtils.getVEvent(iCalendar);
 		if (ve == null) throw new WTParseException("Calendar object does not contain any events");
@@ -2600,7 +2643,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			// By default the search scope is wide (personal + incoming) to 
 			// allow for eg. to reply to an invitation even if a user is 
 			// acting on behalf another: tipically mailbox and calendars are shared.
-			final GetEventScope scope = options.has(HandleICalInviationOption.EVENT_LOOKUP_SCOPE_STRICT) ? GetEventScope.PERSONAL : GetEventScope.PERSONAL_AND_INCOMING;
+			final GetEventScope scope = options.has(HandleITIPRequestOption.EVENT_LOOKUP_SCOPE_STRICT) ? GetEventScope.PERSONAL : GetEventScope.PERSONAL_AND_INCOMING;
 			
 			if (Method.REQUEST.equals(iCalendar.getMethod())) { // A request has been received
 				// Organizer -(invite)-> Attendee
@@ -2618,9 +2661,9 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				}
 				
 				ICalendarInput in = new ICalendarInput(udata.getTimeZone()/*, WT.getCoreManager().listTagNamesById(), WT.getCoreManager().listTagIdsByName()*/)
-					.withIgnoreClassification(options.has(HandleICalInviationOption.IGNORE_ICAL_CLASSIFICATION))
-					.withIgnoreTransparency(options.has(HandleICalInviationOption.IGNORE_ICAL_TRASPARENCY))
-					.withIgnoreAlarms(options.has(HandleICalInviationOption.IGNORE_ICAL_ALARMS))
+					.withIgnoreClassification(options.has(HandleITIPRequestOption.IGNORE_ICAL_CLASSIFICATION))
+					.withIgnoreTransparency(options.has(HandleITIPRequestOption.IGNORE_ICAL_TRASPARENCY))
+					.withIgnoreAlarms(options.has(HandleITIPRequestOption.IGNORE_ICAL_ALARMS))
 					.withIgnoreCategories(true) // Ignore tags (see listTagNamesById/listTagIdsByName in ICalendarInput constructor)
 					.withIgnoreAttachments(true)
 					.withIgnoreCustomValues(true)
@@ -2644,7 +2687,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					oldEvent = doEventInstanceGet(con, masterInstanceId, getOpts);
 				}
 				
-				if (options.has(HandleICalInviationOption.CONSTRAIN_AVAILABILITY)) {
+				if (options.has(HandleITIPRequestOption.CONSTRAIN_AVAILABILITY)) {
 					// For now, availability is checked only against built-in calendar
 					Integer builtinCalendarId = getBuiltInCalendarId();
 					if (builtinCalendarId == null) throw new WTNotFoundException("Built-in calendar not found [{}]", getTargetProfileId());
@@ -2699,6 +2742,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE);
 					
 					eventInput.event.setCalendarId(calendarId);
+					eventInput.mergeFieldsForInvitation(eventInput.event);
 					
 					BitFlags<EventReminderOption> reminderOpts = BitFlags.with(EventReminderOption.IGNORE);
 					EventInsertResult result = doEventInputInsert(con, eventInput, getOpts, reminderOpts, null, new HashMap<>());
@@ -2745,7 +2789,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				
 				// Extract response info...
 				PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
-				List<String> updatedAttIds = doEventAttendeeUpdateResponseByRecipient(con, evt.getEventId(), att.getCalAddress().getSchemeSpecificPart(), ICalendarInput.toAttendeeResponseStatus(partStat), true);
+				Set<String> updatedAttIds = doEventAttendeeUpdateResponseByRecipient(con, evt.getEventId(), att.getCalAddress().getSchemeSpecificPart(), ICalendarInput.toAttendeeResponseStatus(partStat), true);
 				
 				DbUtils.commitQuietly(con);
 				
@@ -2755,7 +2799,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				/*
 				if (!updatedAttIds.isEmpty()) {
 					evt = getEvent(evt.getEventId());
-					for(String attId : updatedAttIds) notifyOrganizer(getLocale(), evt, attId);
+					for(String attId : updatedAttIds) doOrganizerNotify(getLocale(), evt, attId);
 				}
 				*/
 				return null;
@@ -2766,9 +2810,9 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				// to all attendees telling to update their saved information.
 				
 				ICalendarInput in = new ICalendarInput(udata.getTimeZone()/*, WT.getCoreManager().listTagNamesById(), WT.getCoreManager().listTagIdsByName()*/)
-					.withIgnoreClassification(options.has(HandleICalInviationOption.IGNORE_ICAL_CLASSIFICATION))
-					.withIgnoreTransparency(options.has(HandleICalInviationOption.IGNORE_ICAL_TRASPARENCY))
-					.withIgnoreAlarms(options.has(HandleICalInviationOption.IGNORE_ICAL_ALARMS))
+					.withIgnoreClassification(options.has(HandleITIPRequestOption.IGNORE_ICAL_CLASSIFICATION))
+					.withIgnoreTransparency(options.has(HandleITIPRequestOption.IGNORE_ICAL_TRASPARENCY))
+					.withIgnoreAlarms(options.has(HandleITIPRequestOption.IGNORE_ICAL_ALARMS))
 					.withIncludeSourceComponentInOutput(true);
 				
 				EventInput eventInput = in.parseEventObject(ve);
@@ -4305,23 +4349,32 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		return evtDao.selectOnlineIdBySeriesInstance(con, instanceId.getEventId(), instanceId.getInstance());
 	}
 	
-	private List<String> doEventAttendeeUpdateResponseByProfile(final Connection con, final String eventId, final UserProfileId profileId, final EventAttendee.ResponseStatus responseStatus, final boolean setTimestamp) throws WTException {
-		InternetAddress ia = WT.getProfilePersonalAddress(profileId);
-		if (ia == null) throw new WTException("Profile personalAddress is empty [{}]", profileId);
-		return doEventAttendeeUpdateResponseByRecipient(con, eventId, ia.getAddress(), responseStatus, setTimestamp);
+	private Set<String> doEventAttendeeUpdateResponseByProfile(final Connection con, final String eventId, final UserProfileId responseProfileId, final EventAttendee.ResponseStatus responseStatus, final boolean setTimestamp) throws WTException {
+		InternetAddress iaPersonal = WT.getProfilePersonalAddress(responseProfileId);
+		if (iaPersonal == null) throw new WTException("Profile personalAddress is empty [{}]", responseProfileId);
+		InternetAddress iaProfile = WT.getProfileAddress(responseProfileId);
+		if (iaProfile == null) throw new WTException("Profile address is empty [{}]", responseProfileId);
+		
+		return doEventAttendeeUpdateResponseByRecipient(con, eventId, LangUtils.asSet(iaPersonal.getAddress(), iaProfile.getAddress()), responseStatus, setTimestamp);
 	}
 	
-	private List<String> doEventAttendeeUpdateResponseByRecipient(final Connection con, final String eventId, final String recipientAddress, final EventAttendee.ResponseStatus responseStatus, final boolean setTimestamp) throws WTException {
+	private Set<String> doEventAttendeeUpdateResponseByRecipient(final Connection con, final String eventId, final String recipientAddress, final EventAttendee.ResponseStatus responseStatus, final boolean setTimestamp) throws WTException {
+		return doEventAttendeeUpdateResponseByRecipient(con, eventId, LangUtils.asSet(recipientAddress), responseStatus, setTimestamp);
+	}
+	
+	private Set<String> doEventAttendeeUpdateResponseByRecipient(final Connection con, final String eventId, final Set<String> recipientAddresses, final EventAttendee.ResponseStatus responseStatus, final boolean setTimestamp) throws WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		EventAttendeeDAO attDao = EventAttendeeDAO.getInstance();
 		
 		// Find matching attendees...
-		ArrayList<String> matchingIds = new ArrayList<>();
+		Set<String> matchingIds = new LinkedHashSet<>();
 		List<OEventAttendee> atts = attDao.selectByEvent(con, eventId);
 		for (OEventAttendee att : atts) {
 			final InternetAddress ia = InternetAddressUtils.toInternetAddress(att.getRecipient());
 			if (ia == null) continue;
-			if (StringUtils.equalsIgnoreCase(ia.getAddress(), recipientAddress)) matchingIds.add(att.getAttendeeId());
+			for (String recipientAddress : recipientAddresses) {
+				if (StringUtils.equalsIgnoreCase(ia.getAddress(), recipientAddress)) matchingIds.add(att.getAttendeeId());
+			}
 		}
 		
 		// Update responses
@@ -4493,6 +4546,8 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		oevent.setEventId(newEventId);
 		oevent.setSeriesEventId(seriesEventId);
 		oevent.setSeriesInstanceId(seriesInstance);
+		//oevent.setRevisionSequence(?); // Use passed value if NOT null, defaults to 0 otherwise (see fillOEventWithDefaultsForInsert)
+		oevent.setRevisionTimestamp(revisionTimestamp);
 		ManagerUtils.fillOEventWithDefaultsForInsert(oevent, getTargetProfileId(), revisionTimestamp);
 		oevent.ensureCoherence();
 		
@@ -4504,7 +4559,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			}
 		}
 		
-		boolean ret = evtDao.insertEvent(con, oevent, revisionTimestamp) == 1;
+		boolean ret = evtDao.insertEvent(con, oevent) == 1;
 		if (!ret) return null;
 		
 		/*
@@ -4594,10 +4649,12 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		Check.notNull(event.getTimezone(), "event.getTimezone() must not be null!");
 		OEvent oevent = ManagerUtils.fillOEvent(new OEvent(), event);
 		oevent.setEventId(eventId);
+		oevent.setRevisionTimestamp(revisionTimestamp);
+		//oevent.setRevisionSequence(?); // Do NOT set here (see DAO's updateEvent for more info)
 		ManagerUtils.fillOEventWithDefaultsForUpdate(oevent, revisionTimestamp);
 		
 		boolean clearRemindedOn = (event.getStart() != null) ? event.getStart().isAfterNow() : false;
-		boolean ret = evtDao.updateEvent(con, oevent, revisionTimestamp, clearRemindedOn) == 1;
+		boolean ret = evtDao.updateEvent(con, oevent, clearRemindedOn) == 1;
 		if (!ret) return null;
 		
 		if (processOpts.has(EventProcessOpt.RAW_ICAL)) {
@@ -5551,7 +5608,23 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		WT.sendEmailMessage(sendingProfileId, email);
 	}
 	
-	private void notifyOrganizer(UserProfileId senderProfileId, Event event, String updatedAttendeeId) {
+	private int doOrganizerNotify(final Connection con, final int calendarId, final String eventId, final Set<String> updatedAttendeeIds) throws WTException {
+		BitFlags<EventProcessOpt> processOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
+		Event event = doEventGet(con, eventId, processOpts);
+		if (event == null) throw new WTException("Unable to notify organizer: event not found [{}]", eventId);
+		
+		UserProfileId senderProfile = getCalendarOwner(calendarId);
+		if (senderProfile == null) senderProfile = getTargetProfileId();
+		
+		int done = 0;
+		for (String attendeeId : updatedAttendeeIds) {
+			boolean ret = doOrganizerNotify(senderProfile, event, attendeeId);
+			if (ret) done++;
+		}
+		return done;
+	}
+	
+	private boolean doOrganizerNotify(final UserProfileId senderProfileId, final Event event, final String updatedAttendeeId) {
 		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, senderProfileId.getDomainId());
 		
 		try {
@@ -5559,7 +5632,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			
 			// Find the attendee (in event) that has updated its response
 			EventAttendee targetAttendee = null;
-			for(EventAttendee attendee : event.getAttendees()) {
+			for (EventAttendee attendee : event.getAttendees()) {
 				if (attendee.getAttendeeId().equals(updatedAttendeeId)) {
 					targetAttendee = attendee;
 					break;
@@ -5591,9 +5664,11 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			}
 			String html = builder.build(pI18n.getLocale(), source).write();
 			WT.sendEmailMessage(senderProfileId, from, Recipients.to(to).asList(), subject, html);
+			return true;
 			
-		} catch(Exception ex) {
+		} catch (Exception ex) {
 			logger.warn("Unable to notify organizer", ex);
+			return false;
 		}	
 	}
 	

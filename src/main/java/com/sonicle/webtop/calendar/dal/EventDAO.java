@@ -436,13 +436,10 @@ public class EventDAO extends BaseDAO {
 			.fetchMap(HISTORY_EVENTS.CALENDAR_ID, DSL.max(HISTORY_EVENTS.CHANGE_TIMESTAMP));
 	}
 	
-	public int insertEvent(Connection con, OEvent item, DateTime revisionTimestamp) throws DAOException {
+	public int insertEvent(Connection con, OEvent item) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		item.ensureCoherence();
 		item.setRevisionStatus(EnumUtils.toSerializedName(Event.RevisionStatus.NEW));
-		item.setRevisionTimestamp(revisionTimestamp);
-		item.setRevisionSequence(0);
-		item.setCreationTimestamp(revisionTimestamp);
 		EventsRecord record = dsl.newRecord(EVENTS, item);
 		return dsl
 			.insertInto(EVENTS)
@@ -450,14 +447,25 @@ public class EventDAO extends BaseDAO {
 			.execute();
 	}
 	
-	public int updateEvent(Connection con, OEvent item, DateTime revisionTimestamp, boolean clearRemindedOn) throws DAOException {
+	public int updateEvent(Connection con, OEvent item, boolean clearRemindedOn) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		item.ensureCoherence();
 		item.setRevisionStatus(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED));
-		item.setRevisionTimestamp(revisionTimestamp);
 		
+		Field<Integer> explicitSequence = DSL.val(item.getRevisionSequence(), EVENTS.REVISION_SEQUENCE);
 		UpdateSetMoreStep update = dsl
 			.update(EVENTS)
+			//.set(EVENTS.REVISION_SEQUENCE, EVENTS.REVISION_SEQUENCE.plus(1))
+			.set(EVENTS.REVISION_SEQUENCE,
+				DSL.case_()
+				// We are the organizer of this row: our own atomic counter
+				.when(EVENTS.ORGANIZER_ID.isNotNull(), EVENTS.REVISION_SEQUENCE.plus(1))
+				// We are just an attendee, and the caller explicitly supplied a value
+				// (i.e. this is invitation-processing, not a generic local edit) — mirror it verbatim
+				.when(explicitSequence.isNotNull(), explicitSequence)
+				// else: attendee row, no explicit value supplied (a plain local edit) — don't touch REVISION_SEQUENCE at all
+				.else_(EVENTS.REVISION_SEQUENCE)
+			)
 			.set(EVENTS.CALENDAR_ID, item.getCalendarId())
 			.set(EVENTS.REVISION_STATUS, item.getRevisionStatus())
 			.set(EVENTS.REVISION_TIMESTAMP, item.getRevisionTimestamp())

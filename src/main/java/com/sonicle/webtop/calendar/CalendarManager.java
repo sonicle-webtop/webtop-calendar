@@ -2576,7 +2576,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 	 * @deprecated Use handleITIPRequest instead
 	 */
 	@Override
-	@Deprecated public Event handleInvitationFromICal(final net.fortuna.ical4j.model.Calendar iCalendar, final Integer calendarId, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
+	@Deprecated public HandleITIPRequestResult handleInvitationFromICal(final net.fortuna.ical4j.model.Calendar iCalendar, final Integer calendarId, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
 		return handleITIPRequest(calendarId, iCalendar, options);
 	}
 	
@@ -2593,7 +2593,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 	 * @throws WTException 
 	 */
 	@Override
-	public Event handleITIPRequest(final net.fortuna.ical4j.model.Calendar iCalendar, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
+	public HandleITIPRequestResult handleITIPRequest(final net.fortuna.ical4j.model.Calendar iCalendar, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
 		return handleITIPRequest(null, iCalendar, options);
 	}	
 	
@@ -2616,14 +2616,14 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 	 * REPLY, CANCEL, or a REQUEST that turns out to update an existing event)
 	 * @param iCalendar iCalendar parsed iCalendar object; must contain exactly one VEVENT with a valid UID and ORGANIZER
 	 * @param options Behavior flags (lookup scope, classification/transparency/alarms handling, availability constraint check)
-	 * @return the newly created {@link Event} for a new invitation; {@code null} for instance/series updates, REPLY, and CANCEL
+	 * @return 
 	 * @throws WTParseException
 	 * @throws WTNotFoundException
 	 * @throws WTConstraintException
 	 * @throws WTException 
 	 */
 	@Override
-	public Event handleITIPRequest(final Integer calendarId, final net.fortuna.ical4j.model.Calendar iCalendar, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
+	public HandleITIPRequestResult handleITIPRequest(final Integer calendarId, final net.fortuna.ical4j.model.Calendar iCalendar, final BitFlags<HandleITIPRequestOption> options) throws WTParseException, WTNotFoundException, WTConstraintException, WTException {
 		final UserProfile.Data udata = WT.getProfileData(getTargetProfileId());
 		Connection con = null;
 		
@@ -2731,7 +2731,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications(); // We are simply the receiver of an invitation and we don't want to generate bounce invitation messages!
 					doEventInstanceUpdateAndCommit(con, UpdateEventTarget.THIS_INSTANCE, instanceInfo, eventInput.event, updateOpts, notifyOpts, null);
 					
-					return null;
+					return new HandleITIPRequestResult(null);
 					
 				} else if (oldEvent == null) { // New invitation
 					Check.notNull(calendarId, "calendarId");
@@ -2753,7 +2753,8 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 						auditLogWrite(AuditContext.EVENT, AuditAction.CREATE, newEventId, null);
 					}
 					
-					return doEventGet(con, newEventId, getOpts);
+					Event newEvent = doEventGet(con, newEventId, getOpts);
+					return new HandleITIPRequestResult(newEvent);
 					
 				} else { // Invitation update (whole series)
 					checkRightsOnCalendar(oldEvent.getCalendarId(), FolderShare.ItemsRight.UPDATE);
@@ -2765,7 +2766,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications(); // We are simply the receiver of an invitation update and we don't want to generate bounce invitation messages!
 					doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, oldEvent, updateOpts, notifyOpts, null);
 					
-					return null;
+					return new HandleITIPRequestResult(null);
 				}
 				
 			} else if (Method.REPLY.equals(iCalendar.getMethod())) { // An invitation reply has been received
@@ -2802,7 +2803,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					for(String attId : updatedAttIds) doOrganizerNotify(getLocale(), evt, attId);
 				}
 				*/
-				return null;
+				return new HandleITIPRequestResult(null);
 				
 			} else if (Method.CANCEL.equals(iCalendar.getMethod())) { // Cancellation has been received
 				// Organizer -(cancelled invite)-> Attendee
@@ -2839,7 +2840,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 						doEventInstanceDeleteAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, EventNotifyOption.withoutAnyAttendeesNotifications(), false);
 					}
 				}		
-				return null;
+				return new HandleITIPRequestResult(null);
 				
 			} else {
 				throw new WTUnsupportedOperationException("Unsupported Calendar's method [{}]", iCalendar.getMethod() != null ? iCalendar.getMethod().toString() : null);

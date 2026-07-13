@@ -54,6 +54,7 @@ import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_RECURRENCES;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_RECURRENCES_EX;
 import static com.sonicle.webtop.calendar.jooq.Tables.EVENTS_TAGS;
 import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_EVENTS;
+import com.sonicle.webtop.calendar.jooq.tables.Events;
 import com.sonicle.webtop.calendar.jooq.tables.records.EventsRecord;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventBase;
@@ -192,6 +193,7 @@ public class EventDAO extends BaseDAO {
 			.fetchOneInto(OEventBoundarySeries.class);
 	}
 	
+	/*
 	public OEventInstanceInfo selectInstanceInfo(Connection con, EventInstanceId instanceId) throws DAOException {
 		DSLContext dsl = getDSL(con);
 		return dsl.select(
@@ -249,8 +251,46 @@ public class EventDAO extends BaseDAO {
 					.where(
 						EVENTS.EVENT_ID.equal(instanceId.getEventId())
 					)
-				).as("visibility")
+				).as("visibility"),
+				field(
+					select(
+						EVENTS.CALENDAR_ID
+					)
+					.from(EVENTS)
+					.where(
+						EVENTS.EVENT_ID.equal(instanceId.getEventId())
+					)
+				).as("calendar_id")
 			).fetchOneInto(OEventInstanceInfo.class);
+	}
+	*/
+	
+	public OEventInstanceInfo selectInstanceInfo(Connection con, EventInstanceId instanceId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		Events master = EVENTS.as("master");
+		Events broken = EVENTS.as("broken");
+		return dsl.select(
+			field(exists(
+				selectOne()
+				.from(EVENTS_RECURRENCES)
+				.where(EVENTS_RECURRENCES.EVENT_ID.equal(instanceId.getEventId()))
+			)).as("has_recurrence"),
+			broken.EVENT_ID.as("event_id_by_instance"),
+			coalesce(broken.TIMEZONE, master.TIMEZONE).as("timezone"),
+			master.VISIBILITY.as("visibility"),
+			master.CALENDAR_ID.as("calendar_id")
+			)
+			.from(master)
+			.leftOuterJoin(broken).on(
+			broken.SERIES_EVENT_ID.equal(instanceId.getEventId())
+				.and(broken.SERIES_INSTANCE_ID.equal(instanceId.getInstance()))
+				.and(
+					broken.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(broken.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+			)
+			.where(master.EVENT_ID.equal(instanceId.getEventId()))
+			.fetchOneInto(OEventInstanceInfo.class);
 	}
 	
 	public String selectOnlineIdBySeriesInstance(Connection con, String seriesEventId, String seriesInstance) throws DAOException {
@@ -417,6 +457,20 @@ public class EventDAO extends BaseDAO {
 				EVENTS.EVENT_ID.asc()
 			)
 			.fetchGroups(EVENTS.HREF, EVENTS.EVENT_ID);
+	}
+	
+	public Set<String> selectOnlineSeriesInstanceIdsBySeries(Connection con, String seriesEventId) throws DAOException {
+		DSLContext dsl = getDSL(con);
+		return dsl.select(EVENTS.SERIES_INSTANCE_ID)
+			.from(EVENTS)
+			.where(
+				EVENTS.SERIES_EVENT_ID.equal(seriesEventId)
+				.and(
+					EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.NEW))
+					.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(Event.RevisionStatus.MODIFIED)))
+				)
+			)
+			.fetchSet(EVENTS.SERIES_INSTANCE_ID);
 	}
 	
 	public Map<Integer, DateTime> selectMaxRevTimestampByCalendars(Connection con, Collection<Integer> calendarIds) throws DAOException {

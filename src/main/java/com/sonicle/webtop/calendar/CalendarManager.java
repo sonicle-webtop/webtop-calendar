@@ -2535,7 +2535,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 						boolean keepPrivate = needsTreatAsPrivate(RunContext.getRunProfileId(), sourceEvent.isVisibilityPrivate(), sourceEvent.getCalendarId());
 						if (keepPrivate) sourceEvent.censorize();
 						
-						if (EventInstanceId.isSeriesItem(entry.getKey(), eventId)) {
+						if (EventInstanceId.isSeriesVirtual(entry.getKey(), eventId)) {
 							info = new InstanceInfo(EventInstanceId.asSeriesMasterInstanceId(entry.getKey()), eventId, sourceEvent);
 						}
 						EventInsertResult result = doEventInstanceCopy(con, info, sourceEvent, targetCalendarId, processOpts, availTags);
@@ -2660,7 +2660,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					}
 				}
 				
-				ICalendarInput in = new ICalendarInput(udata.getTimeZone()/*, WT.getCoreManager().listTagNamesById(), WT.getCoreManager().listTagIdsByName()*/)
+				ICalendarInput input = new ICalendarInput(udata.getTimeZone()/*, WT.getCoreManager().listTagNamesById(), WT.getCoreManager().listTagIdsByName()*/)
 					.withIgnoreClassification(options.has(HandleITIPRequestOption.IGNORE_ICAL_CLASSIFICATION))
 					.withIgnoreTransparency(options.has(HandleITIPRequestOption.IGNORE_ICAL_TRASPARENCY))
 					.withIgnoreAlarms(options.has(HandleITIPRequestOption.IGNORE_ICAL_ALARMS))
@@ -2668,23 +2668,22 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					.withIgnoreAttachments(true)
 					.withIgnoreCustomValues(true)
 					.withDefaultVisibility(defVisibility)
-					.withDefaultTransparency(defTransparency);
-				
-				EventInput eventInput = in.parseEventObject(ve);
+					.withDefaultTransparency(defTransparency)
+					.withDefaultAttendeeNotify(false);
+				EventInput eventInput = input.parseEventObject(ve);
 				
 				// A REQUEST may target a single occurrence of an existing recurring
 				// series instead of the master: in that case the VEVENT carries a
 				// RECURRENCE-ID (parsed into recurringInstanceInfo) and no master data.
-				final boolean isInstanceRequest = eventInput.recurringInstanceInfo != null;
-				final String lookupUid = isInstanceRequest ? eventInput.recurringInstanceInfo.masterUid : eventInput.event.getPublicUid();
-				String lookupEventId = doEventLookupId(con, scope, lookupUid);
+				final boolean reqTargetsSeriesInstance = eventInput.recurringInstanceInfo != null;
+				final String lookupUid = reqTargetsSeriesInstance ? eventInput.recurringInstanceInfo.masterUid : eventInput.event.getPublicUid();
+				final String lookupEventId = doEventLookupId(con, scope, lookupUid);
 				
 				// Get saved appointment event, if any...
 				BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
-				EventInstance oldEvent = null;
+				EventInstance oldMasterEvent = null;
 				if (lookupEventId != null) {
-					EventInstanceId masterInstanceId = EventInstanceId.buildMaster(lookupEventId);
-					oldEvent = doEventInstanceGet(con, masterInstanceId, getOpts);
+					oldMasterEvent = doEventInstanceGet(con, EventInstanceId.buildMaster(lookupEventId), getOpts);
 				}
 				
 				if (options.has(HandleITIPRequestOption.CONSTRAIN_AVAILABILITY)) {
@@ -2702,12 +2701,12 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					
 					// Add actual bound (if applicable) to exclusion list
 					Set<DateTimeRange2> exclusions = null;
-					if (oldEvent != null) {
+					if (oldMasterEvent != null) {
 						exclusions = new LinkedHashSet<>();
-						if (oldEvent.hasRecurrence()) {
-							exclusions.addAll(calculateRecurringInstances(new EI2CER_RRContext(oldEvent), null, null, 365));
+						if (oldMasterEvent.hasRecurrence()) {
+							exclusions.addAll(calculateRecurringInstances(new EI2CER_RRContext(oldMasterEvent), null, null, 365));
 						} else {
-							exclusions.add(new ComparableEventRange(EventInstanceId.buildDummy(), oldEvent.getStart(), oldEvent.getEnd()));
+							exclusions.add(new ComparableEventRange(EventInstanceId.buildDummy(), oldMasterEvent.getStart(), oldMasterEvent.getEnd()));
 						}
 					}
 					
@@ -2716,24 +2715,9 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					if (areMyBoundsOverlappingWith(inputBounds, otherBounds, exclusions)) throw new WTConstraintException("Availability constraint cannot be satisfied");
 				}
 				
-				if (isInstanceRequest) { // Single occurrence request: creates/updates just this instance of an existing series
-					if (oldEvent == null) throw new WTNotFoundException("Series master not found for instance update [{}]", lookupUid);
+				if (oldMasterEvent == null) { // New invitation
+					if (reqTargetsSeriesInstance) throw new WTNotFoundException("Series master not found for instance update [{}]", lookupUid);
 					
-					checkRightsOnCalendar(oldEvent.getCalendarId(), FolderShare.ItemsRight.UPDATE);
-					
-					EventInstanceId iid = EventInstanceId.buildInstance(lookupEventId, eventInput.recurringInstanceInfo.instanceDate);
-					InstanceInfo instanceInfo = doEventGetInstanceInfo(con, iid);
-					if (instanceInfo == null) throw new WTNotFoundException("Series instance not found [{}]", iid);
-					
-					eventInput.event.setCalendarId(oldEvent.getCalendarId());
-					
-					BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.ATTENDEES);
-					BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications(); // We are simply the receiver of an invitation and we don't want to generate bounce invitation messages!
-					doEventInstanceUpdateAndCommit(con, UpdateEventTarget.THIS_INSTANCE, instanceInfo, eventInput.event, updateOpts, notifyOpts, null);
-					
-					return new HandleITIPRequestResult(null);
-					
-				} else if (oldEvent == null) { // New invitation
 					Check.notNull(calendarId, "calendarId");
 					if (!doListCalendarIdsIn(con, getTargetProfileId(), null).contains(calendarId)) {
 						throw new WTException("Invitations must be inserted into personal calendar");
@@ -2741,8 +2725,13 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					
 					checkRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE);
 					
+					if (options.has(HandleITIPRequestOption.DRY_RUN)) {
+						return new HandleITIPRequestResult(HandleITIPRequestResult.Status.CREATED, EventInstanceId.buildDummy());
+					}
+					
 					eventInput.event.setCalendarId(calendarId);
 					eventInput.mergeFieldsForInvitation(eventInput.event);
+					eventInput.mergeRecurrence(eventInput.event);
 					
 					BitFlags<EventReminderOption> reminderOpts = BitFlags.with(EventReminderOption.IGNORE);
 					EventInsertResult result = doEventInputInsert(con, eventInput, getOpts, reminderOpts, null, new HashMap<>());
@@ -2754,23 +2743,68 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					}
 					
 					Event newEvent = doEventGet(con, newEventId, getOpts);
-					return new HandleITIPRequestResult(newEvent);
+					return new HandleITIPRequestResult(HandleITIPRequestResult.Status.CREATED, EventInstanceId.buildMaster(newEventId), newEvent);
 					
-				} else { // Invitation update (whole series)
-					checkRightsOnCalendar(oldEvent.getCalendarId(), FolderShare.ItemsRight.UPDATE);
+				} else if (reqTargetsSeriesInstance) { // Update: single occurrence of an existing series
+					checkRightsOnCalendar(oldMasterEvent.getCalendarId(), FolderShare.ItemsRight.UPDATE);
+					
+					/*
+					EventInstanceId iid = EventInstanceId.buildInstance(lookupEventId, eventInput.recurringInstanceInfo.instanceDate);
+					InstanceInfo instanceInfo = doEventGetInstanceInfo(con, iid);
+					if (instanceInfo == null) throw new WTNotFoundException("Series instance not found [{}]", iid);
+					
+					if (!options.has(HandleITIPRequestOption.DRY_RUN)) {
+						eventInput.event.setCalendarId(oldMasterEvent.getCalendarId());
+
+						BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.ATTENDEES);
+						BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications(); // We are simply the receiver of an invitation and we don't want to generate bounce invitation messages!
+						doEventInstanceUpdateAndCommit(con, UpdateEventTarget.THIS_INSTANCE, instanceInfo, eventInput.event, updateOpts, notifyOpts, null);
+					}
+					*/
+					
+					EventInstanceId iid = EventInstanceId.buildInstance(lookupEventId, eventInput.recurringInstanceInfo.instanceDate);
+					EventInstance oldEvent = doEventInstanceGet(con, iid, getOpts);
+					if (oldEvent == null) throw new WTNotFoundException("Series instance not found [{}]", iid);
 					
 					InstanceInfo instanceInfo = new InstanceInfo(oldEvent);
 					eventInput.mergeFieldsForInvitation(oldEvent);
+					eventInput.mergeRecurrence(oldEvent);
+					eventInput.mergeAttendees(oldEvent);
 					
-					BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.ATTENDEES);
-					BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications(); // We are simply the receiver of an invitation update and we don't want to generate bounce invitation messages!
-					doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, oldEvent, updateOpts, notifyOpts, null);
+					if (!options.has(HandleITIPRequestOption.DRY_RUN)) {
+						BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.ATTENDEES);
+						BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications(); // We are simply the receiver of an invitation update and we don't want to generate bounce invitation messages!
+						doEventInstanceUpdateAndCommit(con, UpdateEventTarget.THIS_INSTANCE, instanceInfo, oldEvent, updateOpts, notifyOpts, null);
+					}
 					
-					return new HandleITIPRequestResult(null);
+					return new HandleITIPRequestResult(HandleITIPRequestResult.Status.UPDATED, iid);
+					
+				} else { // Update: whole series (or single non-recurring event)
+					if (options.has(HandleITIPRequestOption.CONSTRAIN_SEQUENCE)) {
+						if (eventInput.sourceSequence != null && oldMasterEvent.getRevisionSequence() != null && eventInput.sourceSequence < oldMasterEvent.getRevisionSequence()) {
+							if (logger.isInfoEnabled()) logger.info("Discarding stale invitation update [{}]: incoming SEQUENCE {} < stored {}", lookupUid, eventInput.sourceSequence, oldMasterEvent.getRevisionSequence());
+							return new HandleITIPRequestResult(HandleITIPRequestResult.Status.IGNORED, oldMasterEvent.getId());
+						}
+					}
+					
+					checkRightsOnCalendar(oldMasterEvent.getCalendarId(), FolderShare.ItemsRight.UPDATE);
+					
+					InstanceInfo instanceInfo = new InstanceInfo(oldMasterEvent);
+					eventInput.mergeFieldsForInvitation(oldMasterEvent);
+					eventInput.mergeRecurrence(oldMasterEvent);
+					eventInput.mergeAttendees(oldMasterEvent);
+					
+					if (!options.has(HandleITIPRequestOption.DRY_RUN)) {
+						BitFlags<EventProcessOpt> updateOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
+						BitFlags<EventNotifyOption> notifyOpts = EventNotifyOption.withoutAnyAttendeesNotifications(); // We are simply the receiver of an invitation update and we don't want to generate bounce invitation messages!
+						doEventInstanceUpdateAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, oldMasterEvent, updateOpts, notifyOpts, null);
+					}
+					
+					return new HandleITIPRequestResult(HandleITIPRequestResult.Status.UPDATED, EventInstanceId.buildMaster(instanceInfo.eventId));
 				}
 				
 			} else if (Method.REPLY.equals(iCalendar.getMethod())) { // An invitation reply has been received
-				// Attendee -(reply)-> Organizer
+				// Attendee..(reply)-> Organizer
 				// The attendee replied to an invitation, the organizer received 
 				// a message with an attached iCalendar object, properly filled.
 				// When preparing the reply, the iCalendar should be kept untouched 
@@ -2778,69 +2812,54 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				// references of the attendee that have actually replied to the invitation.
 				
 				// We expect to find only one attendee in the Event object
-				Attendee att = ICalendarUtils.getAttendee(ve);
+				final Attendee att = ICalendarUtils.getAttendee(ve);
 				if (att == null) throw new WTParseException("Event object does not provide any attendees");
 				
-				// Look for the event in personal and incoming calendars.
-				// (i can be the organizer of a meeting created for my boss that 
-				// share his calendar of me; all received replies must be bringed
-				// back to the event in the shared calendar)
-				Event evt = doEventLookup(con, scope, uid);
-				if (evt == null) throw new WTNotFoundException("Event not found [{}]", uid);
+				final ICalendarUtils.RRInstanceInfo replyInstanceInfo = ICalendarUtils.extractRRInstanceInfo(ve);
+				final boolean reqTargetsSeriesInstance = replyInstanceInfo != null;
+				final String lookupUid = reqTargetsSeriesInstance ? replyInstanceInfo.masterUid : uid;
+				final String lookupEventId = doEventLookupId(con, scope, lookupUid);
+				if (lookupEventId == null) throw new WTNotFoundException("Event not found [{}]", lookupUid);
 				
-				// Extract response info...
-				PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
-				Set<String> updatedAttIds = doEventAttendeeUpdateResponseByRecipient(con, evt.getEventId(), att.getCalAddress().getSchemeSpecificPart(), ICalendarInput.toAttendeeResponseStatus(partStat), true);
+				final EventInstanceId iidTarget = reqTargetsSeriesInstance ? EventInstanceId.buildInstance(lookupEventId, replyInstanceInfo.instanceDate) : EventInstanceId.buildMaster(lookupEventId);
+				final InstanceInfo instanceInfo = doEventGetInstanceInfo(con, iidTarget);
+				if (instanceInfo == null) throw new WTNotFoundException("Event instance-info not found [{}]", iidTarget);
 				
-				DbUtils.commitQuietly(con);
+				checkRightsOnCalendar(instanceInfo.calendarId(), FolderShare.ItemsRight.UPDATE);
 				
-				// Commented to not send notification email in this case: 
-				// the organizer already knows this info, he updated 'manually' the 
-				// event by clicking the "Update event" button on the preview!
-				/*
-				if (!updatedAttIds.isEmpty()) {
-					evt = getEvent(evt.getEventId());
-					for(String attId : updatedAttIds) doOrganizerNotify(getLocale(), evt, attId);
+				if (!options.has(HandleITIPRequestOption.DRY_RUN)) {
+					// Extract response info...
+					PartStat partStat = (PartStat)att.getParameter(Parameter.PARTSTAT);
+					Set<String> updatedAttIds = doEventAttendeeUpdateResponseByRecipient(con, instanceInfo.originalEventId(), att.getCalAddress().getSchemeSpecificPart(), ICalendarInput.toAttendeeResponseStatus(partStat), true);
+
+					DbUtils.commitQuietly(con);
 				}
-				*/
-				return new HandleITIPRequestResult(null);
+				
+				return new HandleITIPRequestResult(HandleITIPRequestResult.Status.RSVP_RECORDED, iidTarget);
 				
 			} else if (Method.CANCEL.equals(iCalendar.getMethod())) { // Cancellation has been received
-				// Organizer -(cancelled invite)-> Attendee
+				// Organizer..(cancel invite)-> Attendee
 				// The organizer after cancelling the event send a mail message
 				// to all attendees telling to update their saved information.
 				
-				ICalendarInput in = new ICalendarInput(udata.getTimeZone()/*, WT.getCoreManager().listTagNamesById(), WT.getCoreManager().listTagIdsByName()*/)
-					.withIgnoreClassification(options.has(HandleITIPRequestOption.IGNORE_ICAL_CLASSIFICATION))
-					.withIgnoreTransparency(options.has(HandleITIPRequestOption.IGNORE_ICAL_TRASPARENCY))
-					.withIgnoreAlarms(options.has(HandleITIPRequestOption.IGNORE_ICAL_ALARMS))
-					.withIncludeSourceComponentInOutput(true);
+				final ICalendarUtils.RRInstanceInfo cancelInstanceInfo = ICalendarUtils.extractRRInstanceInfo(ve);
+				final boolean reqTargetsSeriesInstance = cancelInstanceInfo != null;
+				final String lookupUid = reqTargetsSeriesInstance ? cancelInstanceInfo.masterUid : uid;
+				final String lookupEventId = doEventLookupId(con, scope, lookupUid);
+				if (lookupEventId == null) throw new WTNotFoundException("Event not found [{}]", lookupUid);
 				
-				EventInput eventInput = in.parseEventObject(ve);
-				if (eventInput.isSourceEventCancelled()) {
-					// A CANCEL may target a single occurrence of an existing recurring
-					// series instead of the master: in that case the VEVENT carries a
-					// RECURRENCE-ID (parsed into recurringInstanceInfo) and no master data.
-					final boolean isSeriesItemCancel = eventInput.recurringInstanceInfo != null;
-					final String lookupUid = isSeriesItemCancel ? eventInput.recurringInstanceInfo.masterUid : eventInput.event.getPublicUid();
-					String lookupEventId = doEventLookupId(con, scope, lookupUid);
-					if (lookupEventId == null) throw new WTNotFoundException("Event not found [{}]", lookupUid);
-					
-					if (isSeriesItemCancel) {
-						EventInstanceId iid = EventInstanceId.buildInstance(lookupEventId, eventInput.recurringInstanceInfo.instanceDate);
-						InstanceInfo instanceInfo = doEventGetInstanceInfo(con, iid);
-						if (instanceInfo == null) throw new WTNotFoundException("Series instance not found [{}]", iid);
-						
-						doEventInstanceDeleteAndCommit(con, UpdateEventTarget.THIS_INSTANCE, instanceInfo, EventNotifyOption.withoutAnyAttendeesNotifications(), false);
-						
-					} else {
-						EventInstanceId masterInstanceId = EventInstanceId.buildMaster(lookupEventId);
-						InstanceInfo instanceInfo = doEventGetInstanceInfo(con, masterInstanceId);
-						
-						doEventInstanceDeleteAndCommit(con, UpdateEventTarget.WHOLE_SERIES, instanceInfo, EventNotifyOption.withoutAnyAttendeesNotifications(), false);
-					}
-				}		
-				return new HandleITIPRequestResult(null);
+				final EventInstanceId iidTarget = reqTargetsSeriesInstance ? EventInstanceId.buildInstance(lookupEventId, cancelInstanceInfo.instanceDate) : EventInstanceId.buildMaster(lookupEventId);
+				final InstanceInfo instanceInfo = doEventGetInstanceInfo(con, iidTarget);
+				if (instanceInfo == null) throw new WTNotFoundException("Event instance-info not found [{}]", iidTarget);
+				
+				checkRightsOnCalendar(instanceInfo.calendarId(), FolderShare.ItemsRight.DELETE);
+				
+				if (!options.has(HandleITIPRequestOption.DRY_RUN)) {
+					final UpdateEventTarget updateTarget = reqTargetsSeriesInstance ? UpdateEventTarget.THIS_INSTANCE : UpdateEventTarget.WHOLE_SERIES;
+					doEventInstanceDeleteAndCommit(con, updateTarget, instanceInfo, EventNotifyOption.withoutAnyAttendeesNotifications(), false);
+				}
+				
+				return new HandleITIPRequestResult(HandleITIPRequestResult.Status.REMOVED, iidTarget);
 				
 			} else {
 				throw new WTUnsupportedOperationException("Unsupported Calendar's method [{}]", iCalendar.getMethod() != null ? iCalendar.getMethod().toString() : null);
@@ -4525,7 +4544,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 		if (event == null) return null;
 		
-		if (EventInstanceId.isSeriesItem(instanceId, event.getEventId())) {
+		if (EventInstanceId.isSeriesVirtual(instanceId, event.getEventId())) {
 			event.recalculateStartEndForInstance(instanceId.getInstanceAsDate());
 		}
 		return new EventInstance(instanceId, event);
@@ -4668,7 +4687,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			OEventRecurrence orec = recDao.selectRecurrenceByEvent(con, eventId);
 			if ((orec != null) && event.hasRecurrence()) { // New event has recurrence and the old too
 				Recur recur = event.getRecurrence().getRecurRule();
-				boolean recurChanged = !ICal4jUtils.equals(recur, orec.getRecurrenceObject());
+				final boolean recurChanged = !ICal4jUtils.equals(recur, orec.getRecurrenceObject());
 				
 				orec.set(recur, event.getRecurrence().getStart(), event.getStart(), event.getTimezoneObject());
 				recDao.updateRecurrence(con, orec);
@@ -4682,6 +4701,17 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					ChangeSet<LocalDate> changeSet = LangUtils.computeChangeSet(oldDates, newDates);
 					recDao.batchInsertRecurrenceEx(con, eventId, changeSet.getAdded());
 					recDao.deleteRecurrenceExByEventDates(con, eventId, changeSet.getRemoved());
+					
+					if (recurChanged) {
+						// The wipe above only accounts for the caller's own excluded dates, which by
+						// iCalendar convention won't include override/broken instance dates (see
+						// doEventInputUpsertRRExceptions). Re-assert exclusions for every still-existing
+						// child row so the rule change doesn't re-expose them as virtual occurrences.
+						for (String seriesInstance : evtDao.selectOnlineSeriesInstanceIdsBySeries(con, eventId)) {
+							LocalDate instanceDate = EventInstanceId.parseInstancePart(seriesInstance);
+							if (instanceDate != null) recDao.upsertRecurrenceEx(con, eventId, instanceDate);
+						}
+					}
 				}
 				
 			} else if ((orec == null) &&  event.hasRecurrence()) { // New event has recurrence but the old doesn't
@@ -5102,13 +5132,18 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				if (orec == null) throw new WTException("Unable to get master recurrence [{}]", info.masterEventId);
 				
 				final DateTime origRecurStart = orec.getStart(); // Dump orig start!
+				final Recur origRecur = orec.getRecurrenceObject(); // Dump orig recur!
 				EventBounds itemBoundary = event.getEventBounds();
 				
 				final DateTime newRecStart = itemBoundary.getStart();
+				final boolean recurChanged = processOpts.has(EventProcessOpt.RECUR) && event.hasRecurrence() && !ICal4jUtils.equals(event.getRecurrence().getRecurRule(), origRecur);
 				final int startDaysShift = JodaTimeUtils.calendarDaysDelta(origRecurStart, newRecStart);
 				EventRecurrence newRecurrence = null;
-				if (startDaysShift != 0) { // If start is shifted...
-					final Recur origRecur = orec.getRecurrenceObject(); // Dump orig recur!
+				if (recurChanged) {
+					newRecurrence = event.getRecurrence();
+					newRecurrence.setStart(newRecStart);
+					
+				} else if (startDaysShift != 0) { // If start is shifted...
 					final Set<LocalDate> origExDates = recDao.selectRecurrenceExByEvent(con, info.masterEventId); // Dump orig ex dates!
 					
 					Set<LocalDate> newExDates = EventRecurrence.shiftExDates(origExDates, startDaysShift);
@@ -6659,22 +6694,43 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		// eventIdByInstance (selectIdBySeriesInstance): 89fa4e3a899f11eb86b139828f248cb5
 		
 		/**
-		 * Reports if the instance is attributable to a series, whether it is 
-		 * a master instance (series generator) or other instances (series templates or broken).
+		 * Reports the calendar ID where this instance is saved.
+		 */
+		public final Integer calendarId;
+		
+		/**
+		 * Reports the real event ID of this instance: valued for master, broken and single
+		 * instances. This will be null for virtual instances and for unexistent instances.
+		 */
+		public final String eventId;
+		
+		/**
+		 * Reports the eventId of the master series, only if this instance clearly
+		 * belongs to a series (for brokens too). This will be null for single instances.
+		 */
+		public final String masterEventId;
+		
+		/**
+		 * Reports the instance ID as string: not null for instances different from 00000000
+		 */
+		public final String seriesInstance;
+		
+		/**
+		 * Reports the instance ID as date: not null for instances different from 00000000
+		 */
+		public final LocalDate seriesInstanceDate;
+		
+		/**
+		 * Reports if this instance is attributable to a series, whether it is a
+		 * master instance (the series generator) or other instances (virtual/broken).
 		 */
 		public final boolean belongsToSeries;
 		
 		/**
-		 * Reports if the instance is a broken element of the series.
+		 * Reports if this instance is a broken element of the series.
 		 * After being edited, a series instance template become a broken instance.
 		 */
-		public final boolean isSeriesException;
-		
-		/**
-		 * Reports the real event ID of the instance: valued for master, broken and single
-		 * instances, null for series templates. This will be null too for unexistent instances.
-		 */
-		public final String eventId;
+		public final boolean isSeriesException; // better rename to isSeriesOverride
 		
 		/**
 		 * Reports the timezone of the instance: taken from the master element in 
@@ -6688,24 +6744,9 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		 */
 		public final boolean eventIsPrivate;
 		
-		/**
-		 * Reports the eventId of the master series, only if this instance clearly
-		 * belongs to a series (for brokens too). This will be null for single instances.
-		 */
-		public final String masterEventId;
-		
-		/**
-		 * Reports the instance key: not null for instances different from 00000000
-		 */
-		public final String seriesInstance;
-		
-		/**
-		 * Reports the instance key as date: not null for instances different from 00000000
-		 */
-		public final LocalDate seriesInstanceDate;
-		
 		public InstanceInfo(EventInstanceId instanceId, OEventInstanceInfo oeii) {
 			if (instanceId.hasNoInstance()) {
+				this.calendarId = oeii.getCalendarId();
 				this.belongsToSeries = oeii.getHasRecurrence();
 				this.masterEventId = belongsToSeries ? instanceId.getEventId() : null;
 				this.eventId = instanceId.getEventId();
@@ -6716,6 +6757,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				this.seriesInstanceDate = null;
 				
 			} else {
+				this.calendarId = oeii.getCalendarId();
 				this.belongsToSeries = oeii.getHasRecurrence();
 				this.masterEventId = belongsToSeries ? instanceId.getEventId() : null;
 				this.eventId = oeii.getEventIdByInstance();
@@ -6733,6 +6775,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		
 		public InstanceInfo(EventInstanceId instanceId, String originalEventId, EventEx event) {
 			if (EventInstanceId.isSeriesMaster(instanceId, originalEventId)) {
+				this.calendarId = event.getCalendarId();
 				this.belongsToSeries = event.hasRecurrence();
 				this.masterEventId = belongsToSeries ? instanceId.getEventId() : null;
 				this.eventId = instanceId.getEventId();
@@ -6743,15 +6786,20 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				this.seriesInstanceDate = null;
 				
 			} else {
+				this.calendarId = event.getCalendarId();
 				this.belongsToSeries = event.hasRecurrence();
 				this.masterEventId = belongsToSeries ? instanceId.getEventId() : null;
 				this.eventId = originalEventId;
 				this.eventTimezone = event.getTimezone();
 				this.eventIsPrivate = event.isVisibilityPrivate();
-				this.isSeriesException = EventInstanceId.isSeriesException(instanceId, originalEventId);
+				this.isSeriesException = EventInstanceId.isSeriesOverride(instanceId, originalEventId);
 				this.seriesInstance = instanceId.getInstance();
 				this.seriesInstanceDate = instanceId.getInstanceAsDate();
 			}
+		}
+		
+		public Integer calendarId() {
+			return this.calendarId;
 		}
 		
 		public String originalEventId() {

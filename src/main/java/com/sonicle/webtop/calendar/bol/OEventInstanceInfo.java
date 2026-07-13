@@ -44,6 +44,7 @@ public class OEventInstanceInfo  {
 	protected String eventIdByInstance;
 	protected String timezone;
 	protected String visibility;
+	protected Integer calendarId;
 	
 	public Boolean getHasRecurrence() {
 		return hasRecurrence;
@@ -75,6 +76,14 @@ public class OEventInstanceInfo  {
 
 	public void setVisibility(String visibility) {
 		this.visibility = visibility;
+	}
+
+	public Integer getCalendarId() {
+		return calendarId;
+	}
+
+	public void setCalendarId(Integer calendarId) {
+		this.calendarId = calendarId;
 	}
 	
 	public DateTimeZone getTimezoneObject() {

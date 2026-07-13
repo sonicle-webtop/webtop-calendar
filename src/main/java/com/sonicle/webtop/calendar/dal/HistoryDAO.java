@@ -55,19 +55,19 @@ public class HistoryDAO extends BaseDAO {
 	public static final String PARAM_SKIP_EVENTS_HISTORY = "calendar.skip_events_history";
 	
 	public boolean stopIgnoringCalendarHistory(final Connection con) {
-		return PostgresUtils.resetGUCParameter(con, "webtop", PARAM_SKIP_CALENDARS_HISTORY);
+		return PostgresUtils.resetGUCParameter(con, BaseDAO.GUC_PREFIX, PARAM_SKIP_CALENDARS_HISTORY);
 	}
 	
 	public boolean stopIgnoringEventsHistory(final Connection con) {
-		return PostgresUtils.resetGUCParameter(con, "webtop", PARAM_SKIP_EVENTS_HISTORY);
+		return PostgresUtils.resetGUCParameter(con, BaseDAO.GUC_PREFIX, PARAM_SKIP_EVENTS_HISTORY);
 	}
 	
 	public boolean ignoreCalendarHistoryForCurrentTransaction(final Connection con) {
-		return PostgresUtils.setGUCParameter(con, true, "webtop", PARAM_SKIP_CALENDARS_HISTORY, "on");
+		return PostgresUtils.setGUCParameter(con, true, BaseDAO.GUC_PREFIX, PARAM_SKIP_CALENDARS_HISTORY, "on");
 	}
 	
 	public boolean ignoreEventsHistoryForCurrentTransaction(final Connection con) {
-		return PostgresUtils.setGUCParameter(con, true, "webtop", PARAM_SKIP_EVENTS_HISTORY, "on");
+		return PostgresUtils.setGUCParameter(con, true, BaseDAO.GUC_PREFIX, PARAM_SKIP_EVENTS_HISTORY, "on");
 	}
 	
 	public int deleteCalendarsHistoryByAge(Connection con, int retentionYears) throws DAOException {

@@ -101,7 +101,7 @@ public class RBEventDetail {
 		
 		if (event.hasRecurrence()) {
 			this.recurrenceType = rrStringify.toHumanReadableFrequencyQuietly(event.getRecurrence().getRule());
-			this.recurrenceDescription = rrStringify.toHumanReadableTextQuietly(event.getRecurrence().getRule());
+			this.recurrenceDescription = rrStringify.toHumanReadableTextQuietly(event.getRecurrence().getRule(), event.getTimezoneObject());
 		}
 		
 		this.isPrivate = EventInstance.Visibility.PRIVATE.equals(event.getVisibility());

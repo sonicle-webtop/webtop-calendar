@@ -83,7 +83,7 @@ public class TplHelper {
 		
 		if (event.hasRecurrence()) {
 			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(profileI18n.getLocale());
-			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			RRuleStringify rrs = new RRuleStringify(profileI18n.getLocale(), strings);
 			sb.append(" (");
 			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrence().getRule()));
 			sb.append(")");
@@ -107,7 +107,7 @@ public class TplHelper {
 		
 		if (event.hasRecurrence()) {
 			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(locale);
-			RRuleStringify rrs = new RRuleStringify(strings, etz);
+			RRuleStringify rrs = new RRuleStringify(locale, strings);
 			sb.append(" (");
 			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrence().getRule()));
 			sb.append(")");
@@ -321,8 +321,8 @@ public class TplHelper {
 		item.put("occurs", null);
 		if (!StringUtils.isBlank(eventRecurrenceRule)) {
 			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(profileI18n.getLocale());
-			RRuleStringify rrs = new RRuleStringify(strings, etz);
-			item.put("occurs", rrs.toHumanReadableTextQuietly(eventRecurrenceRule));
+			RRuleStringify rrs = new RRuleStringify(profileI18n.getLocale(), strings);
+			item.put("occurs", rrs.toHumanReadableTextQuietly(eventRecurrenceRule, etz));
 		}
 	}
 	

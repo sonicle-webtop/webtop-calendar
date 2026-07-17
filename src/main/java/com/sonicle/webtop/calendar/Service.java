@@ -1657,7 +1657,7 @@ public class Service extends BaseService {
 			StringArray ids = ServletUtils.getObjectParameter(request, "keys", StringArray.class, true);
 			
 			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(up.getLocale());
-			RRuleStringify rrs = new RRuleStringify(strings, up.getTimeZone());
+			RRuleStringify rrs = new RRuleStringify(up.getLocale(), strings);
 			
 			EventInstance event = null;
 			Calendar calendar = null;

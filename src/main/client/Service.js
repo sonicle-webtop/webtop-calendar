@@ -656,8 +656,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				//},
 				eventdblclick: function(s, rec) {
 					//console.log('eventdblclick [id:'+rec.getId()+']');
-					var edit = rec.getItemsRights().UPDATE;
-					if (edit) me.openEventUI(edit, rec.getId());
+					me.openEventUI(rec.getItemsRights().UPDATE, rec.getId());
 				},
 				eventcontextmenu: function(s, rec, e) {
 					//console.log('eventcontextmenu [id:'+rec.getId()+']');

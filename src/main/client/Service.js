@@ -2652,6 +2652,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 		}
 	},
 	
+	buildPushMessageEventName: function(msg) {
+		var name = this.callParent(arguments);
+		// Override default naming function to create a combined name for import
+		if (Sonicle.String.isIn(msg.action, ['eventsImportLog']) && msg.payload && msg.payload.oid) {
+			name += '-' + msg.payload.oid;
+		}
+		return name;
+	},
+	
 	statics: {
 		NOTAG_REMOTESYNC: 'remsync-',
 

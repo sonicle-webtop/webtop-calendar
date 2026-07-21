@@ -103,7 +103,7 @@ import com.sonicle.webtop.calendar.model.EventObjectWithBean;
 import com.sonicle.webtop.calendar.model.EventQueryUI;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.model.UpdateTagsOperation;
-import com.sonicle.webtop.calendar.msg.EventImportLogSM;
+import com.sonicle.webtop.calendar.msg.EventsImportLogSM;
 import com.sonicle.webtop.calendar.msg.RemoteSyncResult;
 import com.sonicle.webtop.calendar.rpt.AbstractAgenda;
 import com.sonicle.webtop.calendar.rpt.RptAgendaSummary;
@@ -1499,7 +1499,7 @@ public class Service extends BaseService {
 					.withLogHandler(new LogHandler() {
 						@Override
 						public void handle(Collection<LogEntry> entries) {
-							if (entries != null) wts.notify(toEventImportLogSMs(oid, true, entries));
+							if (entries != null) wts.notify(toEventsImportLogSMs(oid, true, entries));
 						}
 					});
 				
@@ -1509,7 +1509,7 @@ public class Service extends BaseService {
 					manager.importEvents(calendarId, in, fis, mode, new LogHandler() {
 						@Override
 						public void handle(Collection<LogEntry> entries) {
-							if (entries != null) wts.notify(toEventImportLogSMs(oid, false, entries));
+							if (entries != null) wts.notify(toEventsImportLogSMs(oid, false, entries));
 						}
 					});
 				} finally {
@@ -1542,7 +1542,7 @@ public class Service extends BaseService {
 					.withLogHandler(new LogHandler() {
 						@Override
 						public void handle(Collection<LogEntry> entries) {
-							if (entries != null) wts.notify(toEventImportLogSMs(oid, true, entries));
+							if (entries != null) wts.notify(toEventsImportLogSMs(oid, true, entries));
 						}
 					});
 				
@@ -1552,7 +1552,7 @@ public class Service extends BaseService {
 					manager.importEvents(calendarId, in, is, mode, new LogHandler() {
 						@Override
 						public void handle(Collection<LogEntry> entries) {
-							if (entries != null) wts.notify(toEventImportLogSMs(oid, false, entries));
+							if (entries != null) wts.notify(toEventsImportLogSMs(oid, false, entries));
 						}
 					});
 				} finally {
@@ -1568,13 +1568,13 @@ public class Service extends BaseService {
 		}
 	}
 	
-	private ServiceMessage toEventImportLogSMs(String operationId, boolean pushDown, Collection<LogEntry> entries) {
+	private ServiceMessage toEventsImportLogSMs(String operationId, boolean pushDown, Collection<LogEntry> entries) {
 		StringJoiner sj = new StringJoiner("\n");
 		for (LogEntry entry : entries) {
 			if (pushDown) entry.pushDown();
 			sj.add(entry.toString());
 		}
-		return new EventImportLogSM(SERVICE_ID, operationId, sj.toString());
+		return new EventsImportLogSM(SERVICE_ID, operationId, sj.toString());
 	}
 	
 	public void processPrintScheduler(HttpServletRequest request, HttpServletResponse response) {

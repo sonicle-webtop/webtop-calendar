@@ -33,9 +33,6 @@
  */
 Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 	extend: 'WTA.sdk.ImportWizardView',
-	uses: [
-		Sonicle.String
-	],
 	
 	dockableConfig: {
 		title: '{importEvents.tit}',

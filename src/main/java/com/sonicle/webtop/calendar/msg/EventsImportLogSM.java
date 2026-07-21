@@ -38,10 +38,10 @@ import com.sonicle.webtop.core.sdk.ServiceMessage;
  *
  * @author malbinola
  */
-public class EventImportLogSM extends ServiceMessage {
+public class EventsImportLogSM extends ServiceMessage {
 	
-	public EventImportLogSM(String serviceId, String operationId, String log) {
-		super(serviceId, "eventImportLog");
+	public EventsImportLogSM(String serviceId, String operationId, String log) {
+		super(serviceId, "eventsImportLog");
 		this.setMappedPayload("oid", operationId);
 		this.setMappedPayload("log", log);
 	}

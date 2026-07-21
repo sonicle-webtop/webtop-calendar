@@ -33,6 +33,9 @@
  */
 Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 	extend: 'WTA.sdk.ImportWizardView',
+	uses: [
+		Sonicle.String
+	],
 	
 	dockableConfig: {
 		title: '{importEvents.tit}',
@@ -53,6 +56,12 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 		
 		if(!Ext.isEmpty(ic.calendarId)) me.getVM().set('calendarId', ic.calendarId);
 		me.callParent(arguments);
+	},
+	
+	onDestroy: function() {
+		var me = this;
+		me.mys.unPushMessage('eventsImportLog-' + me.getUId(), me.onEventsImportLogMessage, me);
+		me.callParent();
 	},
 	
 	initPages: function() {
@@ -154,12 +163,14 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 		if(path === 'ics') {
 			if(pp === 'upload') {
 				ret = ppcmp.down('wtform').isValid();
+				if (ret) me.mys.onPushMessage('eventsImportLog-' + me.getUId(), me.onEventsImportLogMessage, me);
 			}
 			if(!ret) return false;
 		}
 		else if(path === 'url') {
 			if(pp === 'url') {
 				ret = ppcmp.down('wtform').isValid();
+				if (ret) me.mys.onPushMessage('eventsImportLog-' + me.getUId(), me.onEventsImportLogMessage, me);
 			}
 			if(!ret) return false;
 		}
@@ -185,5 +196,10 @@ Ext.define('Sonicle.webtop.calendar.view.ImportEvents', {
 				calendarId: vm.get('calendarId')
 			};
 		}
+	},
+	
+	onEventsImportLogMessage: function(msg) {
+		var cmp = this.getPageCmp('end').lookupReference('log');
+		cmp.setValue(Sonicle.String.join('\n', cmp.getValue(), msg.payload.log));
 	}
 });

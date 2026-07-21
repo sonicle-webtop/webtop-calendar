@@ -656,8 +656,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				//},
 				eventdblclick: function(s, rec) {
 					//console.log('eventdblclick [id:'+rec.getId()+']');
-					var edit = rec.getItemsRights().UPDATE;
-					if (edit) me.openEventUI(edit, rec.getId());
+					me.openEventUI(rec.getItemsRights().UPDATE, rec.getId());
 				},
 				eventcontextmenu: function(s, rec, e) {
 					//console.log('eventcontextmenu [id:'+rec.getId()+']');
@@ -2651,6 +2650,15 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 					break;
 			}
 		}
+	},
+	
+	buildPushMessageEventName: function(msg) {
+		var name = this.callParent(arguments);
+		// Override default naming function to create a combined name for import
+		if (Sonicle.String.isIn(msg.action, ['eventsImportLog']) && msg.payload && msg.payload.oid) {
+			name += '-' + msg.payload.oid;
+		}
+		return name;
 	},
 	
 	statics: {

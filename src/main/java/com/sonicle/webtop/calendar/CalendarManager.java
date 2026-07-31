@@ -257,7 +257,7 @@ import org.apache.commons.collections4.MultiValuedMap;
  *
  * @author malbinola
  */
-public class CalendarManager extends BaseManager implements SharedManager, ICalendarManager {
+public class CalendarManager extends BaseManager implements /*SharedManager,*/ ICalendarManager {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
 	private static final String GROUPNAME_CALENDAR = "CALENDAR";
 	public static final String TARGET_THIS = "this";
@@ -281,7 +281,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 	}
 
-	@Override
+/*	@Override
 	public void onSharedStartup() {
 		logger.info("[{}] shared CalendarManager created", getTargetProfileId());
 	}
@@ -291,7 +291,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		logger.info("[{}] shared CalendarManager shutting down", getTargetProfileId());
 		shareCache.clear();
 		ownerCache.clear();
-	}
+	}*/
 	
 	private CoreManager getCoreManager() {
 		return WT.getCoreManager(getTargetProfileId());

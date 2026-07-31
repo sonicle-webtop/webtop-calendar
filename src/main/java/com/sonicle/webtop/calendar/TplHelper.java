@@ -63,6 +63,9 @@ import org.slf4j.helpers.MessageFormatter;
  */
 public class TplHelper {
 	private static final String SERVICE_ID = "com.sonicle.webtop.calendar";
+	public static final String AD_SKELETON = "yMMMd";
+	public static final String TIMED_SKELETON = "yMMMdHm";
+	public static final String TIME_SKELETON = "Hm";
 	
 	public static String findMatchingMeetingUrl(Map<String, String> meetingProviders, String url) {
 		for (Map.Entry<String, String> entry : meetingProviders.entrySet()) {
@@ -75,7 +78,6 @@ public class TplHelper {
 	
 	private static String buildEventTitle(ProfileI18n profileI18n, EventEx event) {
 		DateTimeZone etz = DateTimeZone.forID(event.getTimezone());
-		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(profileI18n.getDateFormat() + " " + profileI18n.getTimeFormat(), etz);
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append(StringUtils.abbreviate(event.getTitle(), 30));
@@ -84,17 +86,17 @@ public class TplHelper {
 		if (event.hasRecurrence()) {
 			RRuleStringify.Strings strings = WT.getRRuleStringifyStrings(profileI18n.getLocale());
 			RRuleStringify rrs = new RRuleStringify(profileI18n.getLocale(), strings);
-			sb.append(" (");
-			sb.append(rrs.toHumanReadableFrequencyQuietly(event.getRecurrence().getRule()));
-			sb.append(")");
+			if (!event.getAllDay()) {
+				rrs.withBeforeEndText(JodaTimeUtils.formatDateTimeInterval(TIME_SKELETON, profileI18n.getLocale(), event.getStart().withZone(etz), event.getEnd().withZone(etz)));
+			}
+			sb.append(" ");
+			sb.append(rrs.toHumanReadableTextQuietly(event.getRecurrence().getRecurRule(), etz));
+			
+		} else {
+			final String skeleton = event.getAllDay() ? AD_SKELETON : TIMED_SKELETON;
+			sb.append(" ");
+			sb.append(JodaTimeUtils.formatDateTimeInterval(skeleton, profileI18n.getLocale(), event.getStart().withZone(etz), event.getEnd().withZone(etz)));
 		}
-		
-		//TODO: solo l'orario se date coincidono!!!
-		sb.append(" ");
-		sb.append(fmt.print(event.getStart()));
-		sb.append(" - ");
-		sb.append(fmt.print(event.getEnd()));
-		
 		return sb.toString();
 	}
 	
@@ -113,8 +115,8 @@ public class TplHelper {
 			sb.append(")");
 		}
 		
-		String SUJECT_KEY = MessageFormatter.format(CalendarLocale.EMAIL_EVENTMODIFICATION_SUBJECT_X, crud).getMessage();
-		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUJECT_KEY), sb.toString());
+		String SUBJECT_KEY = MessageFormatter.format(CalendarLocale.EMAIL_EVENTMODIFICATION_SUBJECT_X, crud).getMessage();
+		return MessageFormat.format(WT.lookupResource(SERVICE_ID, locale, SUBJECT_KEY), sb.toString());
 	}
 	
 	public static String buildEventInvitationTitle(ProfileI18n profileI18n, EventEx event, String crud) {

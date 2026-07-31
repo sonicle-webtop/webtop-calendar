@@ -1290,7 +1290,8 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				EventNotifyOption.enableAllAttendeesNotifications(notifyOpts);
 				newEvent.getAttendees().stream().forEach(att -> att.setNotify(true));
 			}
-			onAfterEventOperation(Crud.CREATE, newEvent, notifyOpts);
+			onAfterEventOperation(Crud.CREATE, newEvent);
+			processITIPNotifications(Crud.CREATE, newEvent, null, notifyOpts);
 		}
 	}
 	
@@ -1803,7 +1804,8 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 		
 		if (newEvent != null) {
-			onAfterEventOperation(Crud.CREATE, newEvent, notifyOptions);
+			onAfterEventOperation(Crud.CREATE, newEvent);
+			processITIPNotifications(Crud.CREATE, newEvent, null, notifyOptions);
 		} else {
 			logger.warn("Unable to get newEvent [{}]", newEventId);
 		}
@@ -1872,7 +1874,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 		
 		if (newEvent != null) {
-			onAfterEventOperation(Crud.CREATE, newEvent, EventNotifyOption.withoutAnyAttendeesNotifications());
+			onAfterEventOperation(Crud.CREATE, newEvent);
 		} else {
 			logger.warn("Unable to get newEvent [{}]", newEventId);
 		}
@@ -2037,7 +2039,8 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		}
 		
 		if (newEvent != null) {
-			onAfterEventOperation(Crud.CREATE, newEvent, notifyOptions);
+			onAfterEventOperation(Crud.CREATE, newEvent);
+			processITIPNotifications(Crud.CREATE, newEvent, null, notifyOptions);
 		} else {
 			logger.warn("Unable to notify: event null [{}]", newEventId);
 		}
@@ -2975,39 +2978,31 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		
 		for (Map.Entry<String, String> entry : operations.entrySet()) {
 			String eventId = entry.getKey();
-			String cudAction = entry.getValue();
+			String actionCUD = entry.getValue();
 			
 			int calendarId = eventCalendarMap.get(eventId);
 			EventEx eventDump = (eventCache != null) ? eventCache.get(eventId) : null;
 			if (eventDump == null) eventDump = getEventInstance(EventInstanceId.buildMaster(eventId));
 			
 			// Notify last modification
-			List<RecipientTuple> nmRcpts = getModificationRecipients(calendarId, cudAction);
+			List<RecipientTuple> nmRcpts = getModificationRecipients(calendarId, actionCUD);
 			if (!nmRcpts.isEmpty()) {
-				notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump, cudAction);
+				notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, eventDump, actionCUD);
 			}
 			
 			// Notify attendees
-			List<RecipientTuple> attRcpts = getNotifiableRecipients(cudAction, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), notifyOptions);
+			List<RecipientTuple> attRcpts = getNotifiableRecipients(actionCUD, getTargetProfileId(), eventDump.getOrganizerAddress(), eventDump.getAttendees(), notifyOptions);
 			if (!attRcpts.isEmpty()) {
-				notifyForInvitation(getTargetProfileId(), attRcpts, eventDump, cudAction);
+				itipSendNotification(actionCUD, getTargetProfileId(), attRcpts, eventDump, null);
 			}
 		}
 	}
 	
-	private void onAfterEventOperation(final String cudAction, final EventEx event, final BitFlags<EventNotifyOption> notifyOptions) throws WTException {
+	private void onAfterEventOperation(final String cudAction, final EventEx event) throws WTException {
 		// Notify last modification
 		List<RecipientTuple> nmRcpts = getModificationRecipients(event.getCalendarId(), cudAction);
 		if (!nmRcpts.isEmpty()) {
 			notifyForEventModification(RunContext.getRunProfileId(), nmRcpts, event, cudAction);
-		}
-		
-		// Notify attendees
-		if (notifyOptions.hasAny(EventNotifyOption.NOTIFY_INDIVIDUAL_ATTENDEE, EventNotifyOption.NOTIFY_RESOURCE_ATTENDEE)) {
-			List<RecipientTuple> attRcpts = getNotifiableRecipients(cudAction, getTargetProfileId(), event.getOrganizerAddress(), event.getAttendees(), notifyOptions);
-			if (!attRcpts.isEmpty()) {
-				notifyForInvitation(getTargetProfileId(), attRcpts, event, cudAction);
-			}
 		}
 	}
 	
@@ -4978,33 +4973,77 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		return firstInstanceDate != null ? info.seriesInstanceDate.equals(firstInstanceDate) : false;
 	}
 	
+	private static class ITIPNotification {
+		private final String actionCUD;
+		private final EventEx event;
+		private final LocalDate instanceDate;
+		
+		public ITIPNotification(String actionCUD, EventEx event, LocalDate instanceDate) {
+			this.actionCUD = Check.notEmpty(actionCUD, "actionCUD");
+			this.event = Check.notNull(event, "event");
+			this.instanceDate = instanceDate;
+		}
+
+		public String getActionCUD() {
+			return actionCUD;
+		}
+
+		public EventEx getEvent() {
+			return event;
+		}
+
+		public LocalDate getInstanceDate() {
+			return instanceDate;
+		}
+	}
+	
+	private void processITIPNotifications(final List<ITIPNotification> notifyQueue, final BitFlags<EventNotifyOption> notifyOptions) throws WTException {
+		for (ITIPNotification entry : notifyQueue) {
+			processITIPNotifications(entry.getActionCUD(), entry.getEvent(), entry.getInstanceDate(), notifyOptions);
+		}
+	}
+	
+	private void processITIPNotifications(final String actionCUD, final EventEx event, final LocalDate instanceDate, final BitFlags<EventNotifyOption> notifyOptions) throws WTException {
+		if (EventNotifyOption.shouldNotify(notifyOptions)) {
+			final ICalendarUtils.RRInstanceInfo rrInstanceInfo = (instanceDate != null) ? new ICalendarUtils.RRInstanceInfo(event.getPublicUid(), instanceDate) : null;
+			List<RecipientTuple> attRcpts = getNotifiableRecipients(actionCUD, getTargetProfileId(), event.getOrganizerAddress(), event.getAttendees(), notifyOptions);
+			if (!attRcpts.isEmpty()) {
+				itipSendNotification(actionCUD, getTargetProfileId(), attRcpts, event, rrInstanceInfo);
+			}
+		}
+	}
+	
 	private EventInsertResult doEventInstanceUpdateAndCommit(final Connection con, UpdateEventTarget target, final InstanceInfo info, final EventEx event, final BitFlags<EventProcessOpt> processOpts, final BitFlags<EventNotifyOption> notifyOptions, final Set<String> validTags) throws IOException, WTException {
 		EventDAO evtDao = EventDAO.getInstance();
 		EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
-		EventInsertResult eventInsert = null;
 		boolean isApplyTags = processOpts.hasOnly(EventProcessOpt.TAGS);
 		int ret;
 		
-		EventInstance eventDump = null;
+		EventInstance dumpEvent = null;
+		LocalDate dumpEventInstanceDate = null;
+		
+		EventUpdateResult updateResult = null;
+		EventInsertResult insertResult = null;
+		ArrayList<ITIPNotification> itipQueue = new ArrayList<>(1);
 		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
-		EventUpdateResult eventUpdate = null;
 		event.setTimezone(info.eventTimezone);
 		if (info.belongsToSeries && info.isSeriesException) { // -> BROKEN INSTANCE
 			BitFlags<EventProcessOpt> updateOpts = processOpts.copy()
 				.unset(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.RAW_ICAL);
 			
 			// 1 - Updates the broken item with new data
-			eventUpdate = doEventUpdate(con, info.eventId, event, null, updateOpts, validTags);
+			updateResult = doEventUpdate(con, info.eventId, event, null, updateOpts, validTags);
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
 				if (!isApplyTags) auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, info.eventId, null);
 			}
 			
-			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
-			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
-			
-			eventDump = doEventInstanceGet(con, info, getOpts);
+			dumpEvent = doEventInstanceGet(con, info, getOpts);
+			dumpEventInstanceDate = info.seriesInstanceDate;
+			if (EventNotifyOption.shouldNotify(notifyOptions)) {
+				itipQueue.add(new ITIPNotification(Crud.UPDATE, dumpEvent, info.seriesInstanceDate));
+			}
 			
 		} else if (info.belongsToSeries && (info.seriesInstanceDate != null)) { // -> SERIES TEMPLATE INSTANCE
 			// If target is SINCE and the referenced instance is clearly 
@@ -5018,7 +5057,8 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			if (UpdateEventTarget.THIS_INSTANCE.equals(target)) { // Changes are valid for this specific instance
 				// 1 - Inserts new broken item (RR is not supported here)
 				BitFlags<EventProcessOpt> insertOpts = processOpts.copy()
-					.unset(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
+					.set(EventProcessOpt.ATTENDEES)
+					.unset(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
 				event.setPublicUid(evtDao.selectPublicUidById(con, info.masterEventId)); // Broken events MUST have master's public UID
 				EventInsertResult insert = doEventInsert(con, event, info.masterEventId, info.seriesInstance, null, insertOpts, BitFlags.noneOf(EventReminderOption.class), validTags);
 				
@@ -5033,12 +5073,13 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, info.masterEventId, null);
 					auditLogWrite(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
 				}
-				eventInsert = insert;
 				
-				//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, insert.event.getTitle());
-				//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, insert.event.getLocation());
-				
-				eventDump = doEventInstanceGet(con, info, getOpts);
+				insertResult = insert;
+				dumpEvent = doEventInstanceGet(con, EventInstanceId.buildInstance(info.masterEventId, info.seriesInstanceDate), getOpts);
+				dumpEventInstanceDate = info.seriesInstanceDate;
+				if (EventNotifyOption.shouldNotify(notifyOptions)) {
+					itipQueue.add(new ITIPNotification(Crud.UPDATE, dumpEvent, info.seriesInstanceDate));
+				}
 
 			} else if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) { // Changes are valid from this instance onward
 				EventBounds masterBoundary = evtDao.selectBounds(con, info.masterEventId);
@@ -5108,9 +5149,18 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				}
 				event.setRecurrence(new EventRecurrence(newRecur, newRecStart, newExDates));
 				
+				// This split-off series is a standalone calendar object, not an
+				// override of the original master: it must NOT keep the old
+				// series' public UID, otherwise attendees would receive two
+				// differing definitions (the shrunk old series and this one)
+				// under the same UID with no RECURRENCE-ID to tell them apart.
+				// Leaving it blank makes doEventInsert assign a fresh one, same
+				// as for any other brand-new standalone event.
+				event.setPublicUid(null);
+				
 				BitFlags<EventProcessOpt> insertOpts = processOpts.copy()
-					.set(EventProcessOpt.RECUR)
-					.unset(EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES, EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
+					.set(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES)
+					.unset(EventProcessOpt.ATTACHMENTS, EventProcessOpt.RAW_ICAL);
 				EventInsertResult insert = doEventInsert(con, event, null, null, null, insertOpts, BitFlags.noneOf(EventReminderOption.class), validTags);
 
 				DbUtils.commitQuietly(con);
@@ -5119,9 +5169,13 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					auditLogWrite(AuditContext.EVENT, AuditAction.CREATE, insert.oevent.getEventId(), null);
 				}
 				
-				// TODO: eventually add support to clone attendees in the newly inserted event and so sending invitation emails
+				insertResult = insert;
+				dumpEvent = doEventInstanceGet(con, info, getOpts);
+				if (EventNotifyOption.shouldNotify(notifyOptions)) {
+					itipQueue.add(new ITIPNotification(Crud.UPDATE, dumpEvent, null));
+					itipQueue.add(new ITIPNotification(Crud.CREATE, doEventGet(con, insert.oevent.getEventId(), getOpts), null));
+				}
 				
-				eventDump = doEventInstanceGet(con, info, getOpts);
 				
 			} else if (UpdateEventTarget.WHOLE_SERIES.equals(target)) { // Changes are valid for all the instances
 				EventBounds masterBoundary = evtDao.selectBounds(con, info.masterEventId);
@@ -5167,14 +5221,17 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					event.setRecurrence(newRecurrence);
 					updateOpts.set(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX);
 				}
-				eventUpdate = doEventUpdate(con, info.masterEventId, event, null, updateOpts, validTags);
+				updateResult = doEventUpdate(con, info.masterEventId, event, null, updateOpts, validTags);
 				
 				DbUtils.commitQuietly(con);
 				if (isAuditEnabled()) {
 					if (!isApplyTags) auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, info.masterEventId, null);
 				}
 				
-				eventDump = doEventInstanceGet(con, info, getOpts);
+				dumpEvent = doEventInstanceGet(con, info, getOpts);
+				if (EventNotifyOption.shouldNotify(notifyOptions)) {
+					itipQueue.add(new ITIPNotification(Crud.UPDATE, dumpEvent, null));
+				}
 			}
 			
 		} else { // -> SINGLE INSTANCE or MASTER INSTANCE
@@ -5182,7 +5239,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				.unset(EventProcessOpt.RECUR_EX, EventProcessOpt.RAW_ICAL);
 			
 			// 1 - Updates this item with new data
-			eventUpdate = doEventUpdate(con, info.eventId, event, null, updateOpts, validTags);
+			updateResult = doEventUpdate(con, info.eventId, event, null, updateOpts, validTags);
 			
 			DbUtils.commitQuietly(con);
 			if (isAuditEnabled()) {
@@ -5192,30 +5249,37 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_TITLE, event.getTitle());
 			//core.addServiceSuggestionEntry(SERVICE_ID, SUGGESTION_EVENT_LOCATION, event.getLocation());
 			
-			eventDump = doEventInstanceGet(con, info, getOpts);
+			dumpEvent = doEventInstanceGet(con, info, getOpts);
+			if (EventNotifyOption.shouldNotify(notifyOptions)) {
+				itipQueue.add(new ITIPNotification(Crud.UPDATE, dumpEvent, null));
+			}
 		}
 		
-		if (eventDump == null) throw new WTException("Missing eventDump");
-		if (eventDump.hasRecurrence()) {
+		if (dumpEvent == null) throw new WTException("Missing eventDump");
+		if (dumpEvent.hasRecurrence()) {
 			// Gets the first valid instance in case of recurring event
-			eventDump = calculateFirstRecurringInstance(new EI2EI_RRContext(eventDump));
+			dumpEvent = calculateFirstRecurringInstance(new EI2EI_RRContext(dumpEvent));
 		}
 		
 		// Notify resource attendee
-		if (eventUpdate != null && eventUpdate.attendeeChanges != null) {
+		if (updateResult != null && updateResult.attendeeChanges != null) {
 			// Notify any replaced resource, this will force the cancellation of the previous booking
 			List<RecipientTuple> resRcpts = getNotifiableRecipients(Crud.DELETE, getTargetProfileId(), event.getOrganizerAddress(), 
-					eventUpdate.attendeeChanges.getRemoved().stream()
+					updateResult.attendeeChanges.getRemoved().stream()
 						.filter((att) -> {
 							return EventAttendee.RecipientType.RESOURCE.equals(att.getRecipientType());
 						})
 						.collect(Collectors.toList())
 				, false, true);
-			if (!resRcpts.isEmpty()) notifyForInvitation(getTargetProfileId(), resRcpts, eventDump, Crud.DELETE);
+			
+			final ICalendarUtils.RRInstanceInfo rrInstanceInfo;
+			rrInstanceInfo = (dumpEventInstanceDate != null) ? new ICalendarUtils.RRInstanceInfo(dumpEvent.getPublicUid(), dumpEventInstanceDate) : null;
+			if (!resRcpts.isEmpty()) itipSendNotification(Crud.DELETE, getTargetProfileId(), resRcpts, dumpEvent, rrInstanceInfo);
 		}
-		onAfterEventOperation(Crud.UPDATE, eventDump, notifyOptions);
+		onAfterEventOperation(Crud.UPDATE, dumpEvent);
+		processITIPNotifications(itipQueue, notifyOptions);
 		
-		return eventInsert;
+		return insertResult;
 	}
 	
 	private void doEventInstanceDeleteAndCommit(final Connection con, UpdateEventTarget target, final InstanceInfo info, final BitFlags<EventNotifyOption> notifyOptions, boolean notifyResourceOrganizer) throws WTException {
@@ -5223,10 +5287,11 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
 		int ret;
 		
+		EventInstance dumpEvent = null;
+		ArrayList<ITIPNotification> itipQueue = new ArrayList<>(1);
 		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
-		EventInstance eventDump = null;
 		if (info.belongsToSeries && info.isSeriesException) { // -> BROKEN INSTANCE
-			eventDump = doEventInstanceGet(con, info, getOpts); // Save for later use!
+			dumpEvent = doEventInstanceGet(con, info, getOpts); // Save for later use!
 			
 			// 1 - Logically delete this event (the broken)
 			ret = doEventDelete(con, info.eventId, true);
@@ -5240,6 +5305,10 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			if (isAuditEnabled()) {
 				auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, info.eventId, null);
 				auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, info.masterEventId, null);
+			}
+			
+			if (EventNotifyOption.shouldNotify(notifyOptions)) {
+				itipQueue.add(new ITIPNotification(Crud.DELETE, dumpEvent, info.seriesInstanceDate));
 			}
 			
 		} else if (info.belongsToSeries && (info.seriesInstanceDate != null)) { // -> SERIES TEMPLATE INSTANCE
@@ -5265,7 +5334,10 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, info.masterEventId, null);
 				}
 
-				eventDump = doEventInstanceGet(con, info, getOpts);
+				dumpEvent = doEventInstanceGet(con, info, getOpts);
+				if (EventNotifyOption.shouldNotify(notifyOptions)) {
+					itipQueue.add(new ITIPNotification(Crud.DELETE, dumpEvent, info.seriesInstanceDate));
+				}
 
 			} else if (UpdateEventTarget.SINCE_INSTANCE.equals(target)) { // Changes are valid from this instance onward
 				EventBounds masterBoundary = evtDao.selectBounds(con, info.masterEventId);
@@ -5289,10 +5361,14 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 					auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, info.masterEventId, null);
 				}
 				
-				eventDump = doEventInstanceGet(con, info, getOpts);
+				dumpEvent = doEventInstanceGet(con, info, getOpts);
+				if (EventNotifyOption.shouldNotify(notifyOptions)) {
+					itipQueue.add(new ITIPNotification(Crud.UPDATE, dumpEvent, null));
+				}
+				//Google sends a CANCEL for all ex dates
 				
 			} else if (UpdateEventTarget.WHOLE_SERIES.equals(target)) { // Changes are valid for all the instances (whole recurrence)
-				eventDump = doEventInstanceGet(con, info, getOpts); // Save for later use!
+				dumpEvent = doEventInstanceGet(con, info, getOpts); // Save for later use!
 				
 				// 1 - logically delete master event
 				ret = doEventDelete(con, info.masterEventId, true);
@@ -5302,10 +5378,14 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				if (isAuditEnabled()) {
 					auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, info.masterEventId, null);
 				}
+				
+				if (EventNotifyOption.shouldNotify(notifyOptions)) {
+					itipQueue.add(new ITIPNotification(Crud.DELETE, dumpEvent, null));
+				}
 			}
 			
 		} else { // -> SINGLE INSTANCE or MASTER INSTANCE
-			eventDump = doEventInstanceGet(con, info, getOpts); // Save for later use!
+			dumpEvent = doEventInstanceGet(con, info, getOpts); // Save for later use!
 			
 			// 1 - Deletes (logically) this event
 			ret = doEventDelete(con, info.eventId, true);
@@ -5319,31 +5399,37 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			if (isAuditEnabled()) {
 				auditLogWrite(AuditContext.EVENT, AuditAction.DELETE, info.eventId, null);
 			}
+			
+			if (EventNotifyOption.shouldNotify(notifyOptions)) {
+				itipQueue.add(new ITIPNotification(Crud.DELETE, dumpEvent, null));
+			}
 		}
 		
-		if (eventDump == null) throw new WTException("Missing eventDump");
-		if (eventDump.hasRecurrence()) {
+		if (dumpEvent == null) throw new WTException("Missing eventDump");
+		if (dumpEvent.hasRecurrence()) {
 			// Gets the first valid instance in case of recurring event
-			eventDump = calculateFirstRecurringInstance(new EI2EI_RRContext(eventDump));
+			dumpEvent = calculateFirstRecurringInstance(new EI2EI_RRContext(dumpEvent));
 		}
 		
-		onAfterEventOperation(Crud.DELETE, eventDump, notifyOptions);
+		onAfterEventOperation(Crud.DELETE, dumpEvent);
+		processITIPNotifications(itipQueue, notifyOptions);
+		
 		// For resources, notify the organizer (with a DECLINE) that the reservation is no longer available
 		if (notifyResourceOrganizer) {
-			CalendarFSOrigin origin = shareCache.getOriginByFolderId(eventDump.getCalendarId());
-			if (origin != null && origin.isResource() && eventDump.getAttendees().size() == 1) {
-				final String resourceAttendeeId = eventDump.getAttendees().get(0).getAttendeeId();
+			CalendarFSOrigin origin = shareCache.getOriginByFolderId(dumpEvent.getCalendarId());
+			if (origin != null && origin.isResource() && dumpEvent.getAttendees().size() == 1) {
+				final String resourceAttendeeId = dumpEvent.getAttendees().get(0).getAttendeeId();
 				try {
-					replyToOrganizer(origin.getProfileId(), eventDump, resourceAttendeeId, net.fortuna.ical4j.model.parameter.PartStat.DECLINED);
+					replyToOrganizer(origin.getProfileId(), dumpEvent, resourceAttendeeId, net.fortuna.ical4j.model.parameter.PartStat.DECLINED);
 				} catch (WTException ex) {
 					logger.error("Error generating organizer reply", ex);
 				}
-				UserProfileId organizerProfile = WT.guessProfileIdByPersonalAddress(eventDump.getOrganizerAddress());
+				UserProfileId organizerProfile = WT.guessProfileIdByPersonalAddress(dumpEvent.getOrganizerAddress());
 				if (organizerProfile != null) {
 					try {
 						CoreManager coreMgr = WT.getCoreManager(origin.getProfileId());
 						Resource resource = coreMgr.getResource(origin.getProfileId().getUserId(), BitFlags.noneOf(ResourceGetOption.class));
-						WT.notify(organizerProfile, new ResourceReservationReplySM("com.sonicle.webtop.calendar", resource, eventDump.getPublicUid(), eventDump.getTitle(), net.fortuna.ical4j.model.parameter.PartStat.DECLINED));
+						WT.notify(organizerProfile, new ResourceReservationReplySM("com.sonicle.webtop.calendar", resource, dumpEvent.getPublicUid(), dumpEvent.getTitle(), net.fortuna.ical4j.model.parameter.PartStat.DECLINED));
 					} catch (WTException ex) {
 						logger.error("Error generating organizer notification", ex);
 					}
@@ -5391,10 +5477,11 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		EventRecurrenceDAO recDao = EventRecurrenceDAO.getInstance();
 		int ret;
 		
+		EventInstance dumpEvent = null;
+		ArrayList<ITIPNotification> itipQueue = new ArrayList<>(1);
 		BitFlags<EventProcessOpt> getOpts = BitFlags.with(EventProcessOpt.RECUR, EventProcessOpt.RECUR_EX, EventProcessOpt.ATTENDEES);
-		EventInstance eventDump = null;
 		if (info.belongsToSeries && info.isSeriesException) { // -> BROKEN INSTANCE
-			eventDump = doEventInstanceGet(con, info, getOpts); // Save for later use!
+			dumpEvent = doEventInstanceGet(con, info, getOpts); // Save for later use!
 			
 			// 1 - Removes the broken exception
 			ret = recDao.deleteRecurrenceExByEventDates(con, info.masterEventId, Arrays.asList(info.seriesInstanceDate));
@@ -5418,19 +5505,23 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				auditLogWrite(AuditContext.EVENT, AuditAction.UPDATE, info.masterEventId, null);
 			}
 			
-			// TODO: eventually add support to notify attendees of the linked event of date restoration
+			dumpEvent = doEventInstanceGet(con, EventInstanceId.buildInstance(info.masterEventId, info.seriesInstanceDate), getOpts);
+			if (EventNotifyOption.shouldNotify(notifyOptions)) {
+				itipQueue.add(new ITIPNotification(Crud.UPDATE, dumpEvent, info.seriesInstanceDate));
+			}
 			
 		} else {
 			throw new WTException("Unable to restone an instance that is NOT broken [{}]");
 		}
 		
-		if (eventDump == null) throw new WTException("Missing eventDump");
-		if (eventDump.hasRecurrence()) {
+		if (dumpEvent == null) throw new WTException("Missing eventDump");
+		if (dumpEvent.hasRecurrence()) {
 			// Gets the first valid instance in case of recurring event
-			eventDump = calculateFirstRecurringInstance(new EI2EI_RRContext(eventDump));
+			dumpEvent = calculateFirstRecurringInstance(new EI2EI_RRContext(dumpEvent));
 		}
 		
-		onAfterEventOperation(Crud.DELETE, eventDump, notifyOptions);
+		onAfterEventOperation(Crud.DELETE, dumpEvent);
+		processITIPNotifications(itipQueue, notifyOptions);
 	}
 	
 	private List<RecipientTuple> getModificationRecipients(int calendarId, String crud) throws WTException {
@@ -5519,11 +5610,11 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		return items;
 	}
 	
-	private void notifyForInvitation(UserProfileId senderProfileId, List<RecipientTuple> recipients, EventEx event, String crud) {
+	private void itipSendNotification(final String actionCUD, final UserProfileId senderProfileId, final List<RecipientTuple> recipients, final EventEx event, final ICalendarUtils.RRInstanceInfo rrInstanceInfo) {
 		CoreServiceSettings css = new CoreServiceSettings(CoreManifest.ID, senderProfileId.getDomainId());
 		ICalendarOutput output = new ICalendarOutput(ICalendarUtils.buildProdId(ManagerUtils.getProductName()));
-		net.fortuna.ical4j.model.property.Method icalMethod = crud.equals(Crud.DELETE) ? net.fortuna.ical4j.model.property.Method.CANCEL : net.fortuna.ical4j.model.property.Method.REQUEST;
-		CalendarMethod calMethod = crud.equals(Crud.DELETE) ? CalendarMethod.CANCEL : CalendarMethod.REQUEST;
+		net.fortuna.ical4j.model.property.Method icalMethod = actionCUD.equals(Crud.DELETE) ? net.fortuna.ical4j.model.property.Method.CANCEL : net.fortuna.ical4j.model.property.Method.REQUEST;
+		CalendarMethod calMethod = actionCUD.equals(Crud.DELETE) ? CalendarMethod.CANCEL : CalendarMethod.REQUEST;
 		
 		try {
 			String sentFolder = lookupMailSentFolderName(senderProfileId);
@@ -5531,19 +5622,9 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 			String servicePublicUrl = WT.getServicePublicUrl(senderProfileId.getDomainId(), SERVICE_ID);
 			
 			// Creates ical content
-			net.fortuna.ical4j.model.Calendar ical = output.createCalendar(icalMethod, event, null, null);
-			//net.fortuna.ical4j.model.Calendar ical = ICalHelper.toCalendar(icalMethod, prodId, event);
-			
-			// Creates base message parts
-			//String icalText = ICalendarUtils.calendarToString(ical);
-			//MimeBodyPart calPart = ICalendarUtils.createInvitationCalendarPart(icalMethod, icalText);
-			//String filename = ICalendarUtils.buildICalendarAttachmentFilename(WT.getPlatformName());
-			//MimeBodyPart attPart = ICalendarUtils.createInvitationAttachmentPart(icalText, filename);
+			net.fortuna.ical4j.model.Calendar ical = output.createCalendar(icalMethod, event, rrInstanceInfo, null);
 			
 			Map<String, String> meetingProviders = css.getMeetingProviders();
-			//IMailManager mailMgr = (IMailManager)WT.getServiceManager("com.sonicle.webtop.mail");
-			//FIXME: if mailMgr is not present, send of base SMTP
-			//Session session = getMailSession();
 			for (RecipientTuple rcpt : recipients) {
 				if (!InternetAddressUtils.isAddressValid(rcpt.recipient)) {
 					logger.warn("Recipient for event invitation is invalid [{}]", rcpt.recipient);
@@ -5552,13 +5633,13 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				
 				try {
 					final ProfileI18n pI18n = coalesceI18nInfo(rcpt.refProfileId);
-					String title = TplHelper.buildEventInvitationTitle(pI18n, event, crud);
-					String customBodyHtml = TplHelper.buildTplEventInvitationBody(pI18n, crud, event, rcpt.recipient.getAddress(), meetingProviders, servicePublicUrl);
+					String title = TplHelper.buildEventInvitationTitle(pI18n, event, actionCUD);
+					String customBodyHtml = TplHelper.buildTplEventInvitationBody(pI18n, actionCUD, event, rcpt.recipient.getAddress(), meetingProviders, servicePublicUrl);
 					String source = EmailNotification.buildSource(pI18n.getLocale(), SERVICE_ID);
 					String because = lookupResource(pI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_FOOTER_BECAUSE);
 
 					String subject = EmailNotification.buildSubject(pI18n.getLocale(), SERVICE_ID, title);
-					String html = TplHelper.buildEventInvitationHtml(pI18n, event.getTitle(), customBodyHtml, source, because, rcpt.recipient.getAddress(), crud);
+					String html = TplHelper.buildEventInvitationHtml(pI18n, event.getTitle(), customBodyHtml, source, because, rcpt.recipient.getAddress(), actionCUD);
 					
 					//MimeMultipart mmp = ICalendarUtils.createInvitationPart(html, calPart, attPart);
 					//sendMail(session, mailMgr, from, rcpt.recipient, subject, mmp);

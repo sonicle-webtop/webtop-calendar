@@ -1362,6 +1362,28 @@
         },
         "description": "Update the invitation response for the specified Event instance."
       }
+    },
+    "/me/user-settings": {
+      "get": {
+        "summary": "Your GET endpoint",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettings"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getUserSettings",
+        "description": "Returns the configuration of exposed user settings."
+      }
     }
   },
   "components": {
@@ -2909,6 +2931,56 @@
           }
         },
         "x-class-extra-annotation": "@JsonInclude(JsonInclude.Include.NON_NULL)"
+      },
+      "UserSettings": {
+        "title": "UserSettings",
+        "x-stoplight": {
+          "id": "t61r41wppc8ed"
+        },
+        "type": "object",
+        "properties": {
+          "schedulerTimeResolution": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "txbv8mdajxjab"
+            },
+            "description": "The time resolution in minutes for time slots."
+          },
+          "workdayStart": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "pam7c6laucj97"
+            },
+            "description": "The workday start time (in HH:mm format)."
+          },
+          "workdayEnd": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "3fd0cx6rtpwla"
+            },
+            "description": "The workday end time (in HH:mm format)."
+          },
+          "inactiveCalendarFolders": {
+            "type": "array",
+            "x-stoplight": {
+              "id": "djmr6nc15slp1"
+            },
+            "description": "List of inactive calendar IDs.",
+            "items": {
+              "x-stoplight": {
+                "id": "la1znguiweeoz"
+              },
+              "type": "string"
+            }
+          },
+          "defaultCalendarFolder": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "zxz48x0gj6ejo"
+            },
+            "description": "The calendar ID marked as default folder."
+          }
+        }
       }
     },
     "securitySchemes": {

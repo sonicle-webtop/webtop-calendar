@@ -38,6 +38,7 @@ import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.DateTimeWindow;
 import com.sonicle.commons.time.JodaTimeUtils;
 import com.sonicle.webtop.calendar.CalendarManager;
+import com.sonicle.webtop.calendar.CalendarUserSettings;
 import com.sonicle.webtop.calendar.EventObjectOutputType;
 import com.sonicle.webtop.calendar.ICalendarManager.EventGetOption;
 import com.sonicle.webtop.calendar.ICalendarManager.EventNotifyOption;
@@ -64,6 +65,7 @@ import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventQuick;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventResponse;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventsResult;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventsResultDelta;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiUserSettings;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.model.Delta;
@@ -80,6 +82,7 @@ import javax.ws.rs.core.Response;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +101,10 @@ public class Me extends MeApi {
 		CalendarManager manager = (CalendarManager)WT.getServiceManager(SERVICE_ID, targetProfileId);
 		RunContext.setSoftwareName("rest");
 		return manager;
+	}
+	
+	private CalendarUserSettings getCalendarUserSettings() {
+		return new CalendarUserSettings(SERVICE_ID, RunContext.getRunProfileId());
 	}
 
 	@Override
@@ -450,6 +457,31 @@ public class Me extends MeApi {
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] updateEventInstanceResponse({})", RunContext.getRunProfileId(), eventInstanceId, t);
+			return respError(t);
+		}
+	}
+
+	@Override
+	public Response getUserSettings() {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("[{}] getUserSettings({})", RunContext.getRunProfileId());
+		}
+		
+		try {
+			CalendarUserSettings cus = getCalendarUserSettings();
+			DateTimeFormatter timeFmt = JodaTimeUtils.createFormatterHM();
+			
+			ApiUserSettings item = new ApiUserSettings()
+				.schedulerTimeResolution(cus.getSchedulerTimeResolution())
+				.workdayStart(JodaTimeUtils.print(timeFmt, cus.getWorkdayStart()))
+				.workdayEnd(JodaTimeUtils.print(timeFmt, cus.getWorkdayEnd()))
+				.inactiveCalendarFolders(cus.getInactiveCalendarFolders().stream().map((t) -> ApiUtils.asCalendarId(t)).collect(Collectors.toList()))
+				.defaultCalendarFolder(ApiUtils.asCalendarId(cus.getDefaultCalendarFolder()));
+			
+			return respOk(item);
+			
+		} catch (Throwable t) {
+			LOGGER.error("[{}] getUserSettings({})", RunContext.getRunProfileId(), t);
 			return respError(t);
 		}
 	}

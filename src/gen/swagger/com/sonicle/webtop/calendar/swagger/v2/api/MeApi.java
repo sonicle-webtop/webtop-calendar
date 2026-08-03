@@ -11,6 +11,7 @@ import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventQuick;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventResponse;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventsResult;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventsResultDelta;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiUserSettings;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -25,7 +26,7 @@ import javax.validation.Valid;
 
 @Path("/me")
 @Api(description = "the me API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-07-08T16:40:39.867+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-08-03T14:05:12.119+02:00[Europe/Berlin]")
 public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST
@@ -179,6 +180,26 @@ public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResou
         @ApiResponse(code = 404, message = "Event not found", response = Void.class)
     })
     public Response getEventInstance(@PathParam("event_instance_id") String eventInstanceId,@QueryParam("get_options") @Min(0) @DefaultValue("1")  @ApiParam("Bitmask that specifies which parts of the event must be updated. Multiple options can be combined by summing their values.  Flags: 1&#x3D;Attendees")  Integer getOptions,@QueryParam("_select")  @ApiParam("List (comma-separated) of field names to include in resulting items. Optional, if omitted all available field will be taken into account.")  String select) {
+        return Response.ok().entity("magic!").build();
+    }
+
+    @GET
+    @Path("/user-settings")
+    @Produces({ "application/json" })
+    @ApiOperation(value = "Your GET endpoint", notes = "Returns the configuration of exposed user settings.", response = ApiUserSettings.class, authorizations = {
+        
+        @Authorization(value = "auth-bearer"),
+        
+        @Authorization(value = "auth-apikey-username"),
+        
+        @Authorization(value = "auth-apikey-bearer"),
+        
+        @Authorization(value = "auth-basic")
+         }, tags={ "me" })
+    @ApiResponses(value = { 
+        @ApiResponse(code = 200, message = "Success", response = ApiUserSettings.class)
+    })
+    public Response getUserSettings() {
         return Response.ok().entity("magic!").build();
     }
 

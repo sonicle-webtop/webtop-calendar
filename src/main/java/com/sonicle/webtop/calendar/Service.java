@@ -205,9 +205,11 @@ import com.sonicle.webtop.calendar.model.EventBounds;
 public class Service extends BaseService {
 	public static final Logger logger = WT.getLogger(Service.class);
 	
-	private CalendarManager manager;
-	private CalendarServiceSettings ss;
-	private CalendarUserSettings us;
+	//volatile: async threads (sync actions, cache loaders) read these while
+	//cleanup() nulls them — they need visibility and must null-guard
+	private volatile CalendarManager manager;
+	private volatile CalendarServiceSettings ss;
+	private volatile CalendarUserSettings us;
 	
 	public static final String META_CONTEXT_SEARCH = "mainsearch";
 	public static final String ERP_EXPORT_FILENAME = "events_{0}-{1}-{2}.{3}";
@@ -2026,34 +2028,40 @@ public class Service extends BaseService {
 		private final int calendarId;
 		private final String calendarName;
 		private final boolean full;
-		
+		//captured at creation (request thread, session alive): the outer fields
+		//are nulled by cleanup() while this action may still be running
+		private final CalendarManager mgr;
+		private final WebTopSession wts;
+
 		public SyncRemoteCalendarAA(int calendarId, String calendarName, boolean full) {
 			super();
 			setName(this.getClass().getSimpleName());
 			this.calendarId = calendarId;
 			this.calendarName = calendarName;
 			this.full = full;
+			this.mgr = manager;
+			this.wts = getWts();
 		}
 
 		@Override
 		public void executeAction() {
-			getWts().notify(new RemoteSyncResult(true)
+			wts.notify(new RemoteSyncResult(true)
 				.setCalendarId(calendarId)
 				.setCalendarName(calendarName)
 				.setSuccess(true)
 			);
 			try {
-				manager.syncRemoteCalendar(calendarId, full);
+				mgr.syncRemoteCalendar(calendarId, full);
 				this.completed();
-				getWts().notify(new RemoteSyncResult(false)
+				wts.notify(new RemoteSyncResult(false)
 					.setCalendarId(calendarId)
 					.setCalendarName(calendarName)
 					.setSuccess(true)
 				);
-				
+
 			} catch(WTException ex) {
 				logger.error("Remote sync failed", ex);
-				getWts().notify(new RemoteSyncResult(false)
+				wts.notify(new RemoteSyncResult(false)
 					.setCalendarId(calendarId)
 					.setCalendarName(calendarName)
 					.setThrowable(ex, true)
@@ -2084,10 +2092,13 @@ public class Service extends BaseService {
 		public Optional<CalendarPropSet> load(Integer k) throws Exception {
 			try {
 				logger.trace("[FoldersPropsCache] Loading... [{}]", k);
+				//local copy: cleanup() nulls the field while a load may be in flight
+				final CalendarManager mgr = manager;
+				if (mgr == null) return null; // Session tearing down: do not cache
 				final CalendarFSOrigin origin = foldersTreeCache.getOriginByFolder(k);
 				if (origin == null) return Optional.empty(); // Disable lookup for unknown folder IDs
 				if (origin instanceof MyCalendarFSOrigin) return Optional.empty(); // Disable lookup for personal folder IDs
-				return Optional.ofNullable(manager.getCalendarCustomProps(k));
+				return Optional.ofNullable(mgr.getCalendarCustomProps(k));
 				
 			} catch (Exception ex) {
 				logger.error("[FoldersPropsCache] Unable to load [{}]", k);

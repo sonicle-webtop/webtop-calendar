@@ -257,7 +257,11 @@ import org.apache.commons.collections4.MultiValuedMap;
  *
  * @author malbinola
  */
-public class CalendarManager extends BaseManager implements /*SharedManager,*/ ICalendarManager {
+//Hybrid scope: web sessions keep PRIVATE per-session CalendarManagers
+//(re-login = fresh); only sessionless consumers (REST, CalDAV/EAS) share the
+//registry instance. Remove the annotation for everyone-shares-one.
+@com.sonicle.webtop.core.sdk.SharedManagerScope(com.sonicle.webtop.core.sdk.SharedManagerScope.Scope.SESSIONLESS_ONLY)
+public class CalendarManager extends BaseManager implements SharedManager, ICalendarManager {
 	public static final Logger logger = WT.getLogger(CalendarManager.class);
 	private static final String GROUPNAME_CALENDAR = "CALENDAR";
 	public static final String TARGET_THIS = "this";
@@ -276,14 +280,19 @@ public class CalendarManager extends BaseManager implements /*SharedManager,*/ I
 	
 	public CalendarManager(boolean fastInit, UserProfileId targetProfileId) {
 		super(fastInit, targetProfileId);
-		if (!fastInit) {
-			shareCache.init();
-		}
+		//no eager shareCache.init() here: in shared mode the constructor runs
+		//under the registry bin lock and must stay cheap (no DB access); the
+		//cache lazily builds on first getter access in any mode
 	}
 
-/*	@Override
+	@Override
 	public void onSharedStartup() {
 		logger.info("[{}] shared CalendarManager created", getTargetProfileId());
+		//warm the share cache: latch-gated on the first caller's thread, AFTER
+		//the registry bin lock is released. Safe here because it resolves
+		//CoreManager (a different registry key) — it never re-enters this
+		//manager's own (serviceId, profile) key
+		shareCache.init();
 	}
 
 	@Override
@@ -291,7 +300,9 @@ public class CalendarManager extends BaseManager implements /*SharedManager,*/ I
 		logger.info("[{}] shared CalendarManager shutting down", getTargetProfileId());
 		shareCache.clear();
 		ownerCache.clear();
-	}*/
+		cacheCustomFieldsNameToID.clear();
+		cacheCustomFieldsIDToType.clear();
+	}
 	
 	private CoreManager getCoreManager() {
 		return WT.getCoreManager(getTargetProfileId());
@@ -457,18 +468,25 @@ public class CalendarManager extends BaseManager implements /*SharedManager,*/ I
 		boolean locked = false;
 		try {
 			locked = locks.tryLock("getDefaultCalendarId", 60, TimeUnit.SECONDS);
-			calendarId = us.getDefaultCalendarFolder();
-			if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE)) {
-				try {
-					calendarId = getBuiltInCalendarId();
-					if (calendarId == null) throw new WTException("Built-in calendar is null");
-					us.setDefaultCalendarFolder(calendarId);
-				} catch (Exception ex) {
-					logger.error("Unable to get built-in calendar", ex);
+			if (locked) {
+				calendarId = us.getDefaultCalendarFolder();
+				if (calendarId == null || !quietlyCheckRightsOnCalendar(calendarId, FolderShare.ItemsRight.CREATE)) {
+					try {
+						calendarId = getBuiltInCalendarId();
+						if (calendarId == null) throw new WTException("Built-in calendar is null");
+						us.setDefaultCalendarFolder(calendarId);
+					} catch (Exception ex) {
+						logger.error("Unable to get built-in calendar", ex);
+					}
 				}
+			} else {
+				//on lock timeout the check-and-repair must NOT run unsynchronized:
+				//serve the stored value as-is
+				logger.warn("[{}] getDefaultCalendarId lock timeout, returning stored value", getTargetProfileId());
+				calendarId = us.getDefaultCalendarFolder();
 			}
 		} catch (InterruptedException ex) {
-			// Do nothing...
+			Thread.currentThread().interrupt();
 		} finally {
 			if (locked) locks.unlock("getDefaultCalendarId");
 		}
@@ -5918,7 +5936,11 @@ public class CalendarManager extends BaseManager implements /*SharedManager,*/ I
 	
 	private void onAfterCalendarAction(int calendarId, UserProfileId owner) {
 		ownerCache.remove(calendarId);
-		if (!owner.equals(getTargetProfileId())) shareCache.init();
+		//invalidate only, no eager init(): callers run this while their own JDBC
+		//connection is still open, and rebuilding here nests more pooled
+		//connections inside it (pool-exhaustion risk under concurrent load).
+		//The cleared cache lazily rebuilds on next access.
+		if (!owner.equals(getTargetProfileId())) shareCache.clear();
 	}
 	
 	private void checkRightsOnCalendarOrigin(UserProfileId originPid, String action) throws WTException {
@@ -6578,7 +6600,9 @@ public class CalendarManager extends BaseManager implements /*SharedManager,*/ I
 				if (owner == null) throw new WTException("Owner not found [{0}]", key);
 				mapObject.put(key, owner);
 			} catch(WTException ex) {
-				logger.trace("OwnerCache miss", ex);
+				//never at trace: a DB failure here silently yields a null owner,
+				//degrading rights checks into "Owner not found" with no evidence
+				logger.error("OwnerCache: unable to resolve calendar owner [{}]", key, ex);
 			}
 		}
 	}
@@ -6646,7 +6670,10 @@ public class CalendarManager extends BaseManager implements /*SharedManager,*/ I
 		@Override
 		protected Map<String, String> internalGetMap() {
 			try {
-				CoreManager coreMgr = WT.getCoreManager();
+				//target-scoped: a rebuild can be triggered from ANY thread (Quartz,
+				//DAV, REST) and the map is served to all of the user's threads —
+				//never bake the calling thread's context into it
+				CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
 				return coreMgr.getCustomFieldNamesMap(SERVICE_ID, BitFlags.noneOf(CoreManager.CustomFieldListOption.class));
 				
 			} catch(Throwable t) {
@@ -6665,7 +6692,8 @@ public class CalendarManager extends BaseManager implements /*SharedManager,*/ I
 		@Override
 		protected Map<String, CustomField.Type> internalGetMap() {
 			try {
-				CoreManager coreMgr = WT.getCoreManager();
+				//target-scoped: see CustomFieldsNameToIDCache
+				CoreManager coreMgr = WT.getCoreManager(getTargetProfileId());
 				return coreMgr.listCustomFieldTypesById(SERVICE_ID, BitFlags.noneOf(CoreManager.CustomFieldListOption.class));
 				
 			} catch(Throwable t) {

@@ -114,7 +114,9 @@ public class PublicService extends BasePublicService {
 							String eventId = adminCalMgr.findEventId(eventUrlPath.getPublicUid());
 							if (eventId != null) {
 								EventInstanceId instanceId = EventInstanceId.buildMaster(eventId);
-								adminCalMgr.updateEventInstanceAttendeeResponse(instanceId, aid, responseStatus, null, true);
+								adminCalMgr.updateEventInstanceAttendeeResponse(instanceId, aid, responseStatus, true);
+								BitFlags<EventGetOption> getOpts = BitFlags.with(EventGetOption.ATTENDEES);
+								event = adminCalMgr.getEventInstance(instanceId, getOpts);
 							}
 							
 						} else {

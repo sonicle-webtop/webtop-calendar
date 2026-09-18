@@ -121,16 +121,15 @@ public class Me extends MeApi {
 			final Set<String> fields2set = BaseRestApiUtils.parseStringSet(_select);
 			final boolean returnFullCount = _returnCount == null ? false : _returnCount;
 			ItemsListResult<Calendar> result = manager.listCalendars(_filter, BaseRestApiUtils.parseSortInfo(_orderBy), _pageNo, BaseRestApiUtils.pageSizeOrDefault(_pageNo, _pageSize), returnFullCount);
-			Map<Integer, DateTime> itemsLastRevisionMap = manager.getCalendarsItemsLastRevision(
-				result.items.stream()
-					.map((calendar) -> {
-						return calendar.getCalendarId();
-					})
-					.collect(Collectors.toList())
-			);
+			final Set<Integer> resultingCalendarIds = result.items.stream()
+				.map((calendar) -> {
+					return calendar.getCalendarId();
+				})
+				.collect(Collectors.toSet());
+			final Map<Integer, DateTime> itemsLastRevisionMap = manager.getCalendarsItemsLastRevision(resultingCalendarIds);
 			Map<Integer, FolderShare.Permissions> permissionsMap = null;
-			if (BaseRestApiUtils.shouldSet(fields2set, "acls")) permissionsMap = manager.getCalendarFoldersPermissions(itemsLastRevisionMap.keySet());
-			Integer defaultCalendarId = manager.getDefaultCalendarId();
+			if (BaseRestApiUtils.shouldSet(fields2set, "permissions")) permissionsMap = manager.getCalendarFoldersPermissions(resultingCalendarIds);
+			final Integer defaultCalendarId = manager.getDefaultCalendarId();
 			return respOk(ApiUtils.fillApiCalendarsResult(new ApiCalendarsResult(), BaseRestApiUtils.parseStringSet(_select), result, defaultCalendarId, itemsLastRevisionMap, permissionsMap));
 			
 		} catch (Throwable t) {

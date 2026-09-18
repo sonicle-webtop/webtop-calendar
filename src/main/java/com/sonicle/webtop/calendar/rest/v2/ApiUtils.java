@@ -192,7 +192,7 @@ public class ApiUtils {
 		tgt.updatedAt(JodaTimeUtils.printISO(src.getRevisionTimestamp()));
 		tgt.owner(fillApiOwnerInfo(new ApiOwnerInfo(), src.getProfileId()));
 		tgt.isDefault(StringUtils.equals(tgt.getId(), asCalendarId(defaultCalendarId)));
-		if (shouldSet(fields2set, "permissions")) tgt.permissions(fillApiCalendarFolderPerms(new ApiCalendarFolderPerms(), permissions));
+		if (shouldSet(fields2set, "permissions") && (permissions != null)) tgt.permissions(fillApiCalendarFolderPerms(new ApiCalendarFolderPerms(), permissions));
 		return tgt;
 	}
 	

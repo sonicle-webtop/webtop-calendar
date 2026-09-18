@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Represent an Event object with extended data.")
 @JsonTypeName("EventEx")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-08-03T14:05:12.119+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-09-18T14:19:18.243+02:00[Europe/Berlin]")
 public class ApiEventEx extends ApiEventBase  {
   private @Valid ApiEventRecurrence recurrence;
   private @Valid List<ApiEventAttendee> attendees;

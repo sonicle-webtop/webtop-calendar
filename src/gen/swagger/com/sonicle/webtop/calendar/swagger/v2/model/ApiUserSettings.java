@@ -19,11 +19,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 
 @JsonTypeName("UserSettings")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-08-03T14:05:12.119+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-09-18T14:19:18.243+02:00[Europe/Berlin]")
 public class ApiUserSettings   {
   private @Valid Integer schedulerTimeResolution;
   private @Valid String workdayStart;
   private @Valid String workdayEnd;
+  private @Valid List<String> inactiveCalendarOrigins;
   private @Valid List<String> inactiveCalendarFolders;
   private @Valid String defaultCalendarFolder;
 
@@ -87,6 +88,41 @@ public class ApiUserSettings   {
     this.workdayEnd = workdayEnd;
   }
 
+  /**
+   **/
+  public ApiUserSettings inactiveCalendarOrigins(List<String> inactiveCalendarOrigins) {
+    this.inactiveCalendarOrigins = inactiveCalendarOrigins;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "")
+  @JsonProperty("inactiveCalendarOrigins")
+  public List<String> getInactiveCalendarOrigins() {
+    return inactiveCalendarOrigins;
+  }
+
+  @JsonProperty("inactiveCalendarOrigins")
+  public void setInactiveCalendarOrigins(List<String> inactiveCalendarOrigins) {
+    this.inactiveCalendarOrigins = inactiveCalendarOrigins;
+  }
+
+  public ApiUserSettings addInactiveCalendarOriginsItem(String inactiveCalendarOriginsItem) {
+    if (this.inactiveCalendarOrigins == null) {
+      this.inactiveCalendarOrigins = new ArrayList<>();
+    }
+
+    this.inactiveCalendarOrigins.add(inactiveCalendarOriginsItem);
+    return this;
+  }
+
+  public ApiUserSettings removeInactiveCalendarOriginsItem(String inactiveCalendarOriginsItem) {
+    if (inactiveCalendarOriginsItem != null && this.inactiveCalendarOrigins != null) {
+      this.inactiveCalendarOrigins.remove(inactiveCalendarOriginsItem);
+    }
+
+    return this;
+  }
   /**
    * List of inactive calendar IDs.
    **/
@@ -156,13 +192,14 @@ public class ApiUserSettings   {
     return Objects.equals(this.schedulerTimeResolution, userSettings.schedulerTimeResolution) &&
         Objects.equals(this.workdayStart, userSettings.workdayStart) &&
         Objects.equals(this.workdayEnd, userSettings.workdayEnd) &&
+        Objects.equals(this.inactiveCalendarOrigins, userSettings.inactiveCalendarOrigins) &&
         Objects.equals(this.inactiveCalendarFolders, userSettings.inactiveCalendarFolders) &&
         Objects.equals(this.defaultCalendarFolder, userSettings.defaultCalendarFolder);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schedulerTimeResolution, workdayStart, workdayEnd, inactiveCalendarFolders, defaultCalendarFolder);
+    return Objects.hash(schedulerTimeResolution, workdayStart, workdayEnd, inactiveCalendarOrigins, inactiveCalendarFolders, defaultCalendarFolder);
   }
 
   @Override
@@ -173,6 +210,7 @@ public class ApiUserSettings   {
     sb.append("    schedulerTimeResolution: ").append(toIndentedString(schedulerTimeResolution)).append("\n");
     sb.append("    workdayStart: ").append(toIndentedString(workdayStart)).append("\n");
     sb.append("    workdayEnd: ").append(toIndentedString(workdayEnd)).append("\n");
+    sb.append("    inactiveCalendarOrigins: ").append(toIndentedString(inactiveCalendarOrigins)).append("\n");
     sb.append("    inactiveCalendarFolders: ").append(toIndentedString(inactiveCalendarFolders)).append("\n");
     sb.append("    defaultCalendarFolder: ").append(toIndentedString(defaultCalendarFolder)).append("\n");
     sb.append("}");

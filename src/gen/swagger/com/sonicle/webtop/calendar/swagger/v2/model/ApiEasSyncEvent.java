@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
  **/
 @ApiModel(description = "Bean for carry event's fields")
 @JsonTypeName("EasSyncEvent")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-08-03T14:05:12.119+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-09-18T14:19:18.243+02:00[Europe/Berlin]")
 public class ApiEasSyncEvent   {
   private @Valid String id;
   private @Valid String etag;

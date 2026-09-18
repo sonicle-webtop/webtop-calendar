@@ -26,7 +26,7 @@ import javax.validation.Valid;
 
 @Path("/me")
 @Api(description = "the me API")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-08-03T14:05:12.119+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-09-18T14:19:18.243+02:00[Europe/Berlin]")
 public abstract class MeApi extends com.sonicle.webtop.core.sdk.BaseRestApiResource {
 
     @POST

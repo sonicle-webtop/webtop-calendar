@@ -57,6 +57,7 @@ import com.sonicle.webtop.calendar.model.EventRecurrence;
 import com.sonicle.webtop.calendar.model.UpdateEventTarget;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendar;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarBase;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarFolderPerms;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarsResult;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEvent;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventAttendee;
@@ -74,6 +75,7 @@ import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventsResultDelta;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiOwnerInfo;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiRecipient;
 import com.sonicle.webtop.core.app.WT;
+import com.sonicle.webtop.core.app.model.FolderShare;
 import com.sonicle.webtop.core.app.sdk.WTParseException;
 import com.sonicle.webtop.core.model.ChangedItem;
 import com.sonicle.webtop.core.model.Delta;
@@ -169,18 +171,19 @@ public class ApiUtils {
 		return tgt;
 	}
 	
-	public static ApiCalendarsResult fillApiCalendarsResult(final ApiCalendarsResult tgt, final Set<String> fields2set, final ItemsListResult<Calendar> result, final Integer defaultCalendarId, final Map<Integer, DateTime> itemsLastRevisionMap) {
+	public static ApiCalendarsResult fillApiCalendarsResult(final ApiCalendarsResult tgt, final Set<String> fields2set, final ItemsListResult<Calendar> result, final Integer defaultCalendarId, final Map<Integer, DateTime> itemsLastRevisionMap, final Map<Integer, FolderShare.Permissions> permissionsMap) {
 		tgt.setTotalCount(result.getFullCount());
 		ArrayList<ApiCalendar> items = new ArrayList<>(result.getItems().size());
 		for (Calendar item : result.getItems()) {
 			DateTime itemsLastRevision = (itemsLastRevisionMap != null) ? itemsLastRevisionMap.get(item.getCalendarId()) : null;
-			items.add(fillApiCalendar(new ApiCalendar(), fields2set, item, defaultCalendarId, itemsLastRevision));
+			FolderShare.Permissions permissions = (permissionsMap != null) ? permissionsMap.get(item.getCalendarId()) : null;
+			items.add(fillApiCalendar(new ApiCalendar(), fields2set, item, defaultCalendarId, itemsLastRevision, permissions));
 		}
 		tgt.items(items);
 		return tgt;
 	}
 	
-	public static ApiCalendar fillApiCalendar(final ApiCalendar tgt, final Set<String> fields2set, final Calendar src, final Integer defaultCalendarId, final DateTime itemsRevisionTimestamp) {
+	public static ApiCalendar fillApiCalendar(final ApiCalendar tgt, final Set<String> fields2set, final Calendar src, final Integer defaultCalendarId, final DateTime itemsRevisionTimestamp, final FolderShare.Permissions permissions) {
 		fillApiCalendarBase(tgt, fields2set, src);
 		tgt.id(asCalendarId(src.getCalendarId()));
 		tgt.etag(BaseRestApiUtils.buildETag(src.getRevisionTimestamp()));
@@ -189,6 +192,7 @@ public class ApiUtils {
 		tgt.updatedAt(JodaTimeUtils.printISO(src.getRevisionTimestamp()));
 		tgt.owner(fillApiOwnerInfo(new ApiOwnerInfo(), src.getProfileId()));
 		tgt.isDefault(StringUtils.equals(tgt.getId(), asCalendarId(defaultCalendarId)));
+		if (shouldSet(fields2set, "permissions")) tgt.permissions(fillApiCalendarFolderPerms(new ApiCalendarFolderPerms(), permissions));
 		return tgt;
 	}
 	
@@ -505,6 +509,12 @@ public class ApiUtils {
 		UserProfile.Data ud = WT.getProfileData(profileId);
 		tgt.emailAddress(ud.getPersonalEmailAddress());
 		tgt.displayName(ud.getDisplayName());
+		return tgt;
+	}
+	
+	public static ApiCalendarFolderPerms fillApiCalendarFolderPerms(final ApiCalendarFolderPerms tgt, final FolderShare.Permissions permissions) {
+		tgt.folder(permissions.getFolderPermissions().toString());
+		tgt.items(permissions.getItemsPermissions().toString());
 		return tgt;
 	}
 }

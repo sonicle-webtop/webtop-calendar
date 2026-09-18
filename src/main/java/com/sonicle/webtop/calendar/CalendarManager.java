@@ -407,6 +407,51 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 		return folders;
 	}
 	
+	public FolderShare.Permissions getCalendarFolderPermissions(final int calendarId) throws WTException {
+		return getCalendarFoldersPermissions(LangUtils.asSet(calendarId)).get(calendarId);
+	}
+	
+	public Map<Integer, FolderShare.Permissions> getCalendarFoldersPermissions(final Set<Integer> calendarIds) throws WTException {
+		Check.notNull(calendarIds, "calendarIds");
+		CoreManager coreMgr = getCoreManager();
+		LinkedHashMap<Integer, FolderShare.Permissions> permissions = new LinkedHashMap<>();
+		for (Integer calendarId : calendarIds) {
+			if (calendarId == null) continue;
+			CalendarFSOrigin origin = shareCache.getOriginByFolderId(calendarId);
+			permissions.put(calendarId, lookupCalendarFolderPermissions(coreMgr, origin, calendarId));
+		}
+		return permissions;
+	}
+	
+	private FolderShare.Permissions lookupCalendarFolderPermissions(final CoreManager coreMgr, final CalendarFSOrigin origin, final int folderId) throws WTException {
+		if (origin == null) {
+			if (getTargetProfileId().equals(ownerCache.get(folderId))) {
+				return FolderShare.Permissions.full();
+				
+			} else {
+				throw new WTException("Unable to lookup permissions for '{}'", folderId);
+			}
+			
+		} else {
+			if (origin.isResource()) {
+				return origin.getWildcardPermissions();
+
+			} else {
+				FolderShare.Permissions permissions = coreMgr.evaluateFolderSharePermissions(SERVICE_ID, GROUPNAME_CALENDAR, origin.getProfileId(), FolderSharing.Scope.folder(String.valueOf(folderId)), false);
+				if (permissions == null) {
+					// If permissions are not defined at requested folder scope,
+					// generates an empty permission object that will be filled below
+					// with wildcard rights
+					permissions = FolderShare.Permissions.none();
+				}
+				permissions.getFolderPermissions().set(origin.getWildcardPermissions().getFolderPermissions());
+				permissions.getItemsPermissions().set(origin.getWildcardPermissions().getItemsPermissions());
+
+				return permissions;
+			}
+		}
+	}
+	
 	@Override
 	public Set<Integer> listMyCalendarIds() throws WTException {
 		return listCalendarIds(getTargetProfileId());

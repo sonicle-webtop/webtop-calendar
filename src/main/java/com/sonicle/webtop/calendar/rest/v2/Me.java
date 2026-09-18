@@ -33,6 +33,7 @@
 package com.sonicle.webtop.calendar.rest.v2;
 
 import com.sonicle.commons.EnumUtils;
+import com.sonicle.commons.LangUtils;
 import com.sonicle.commons.beans.ItemsListResult;
 import com.sonicle.commons.flags.BitFlags;
 import com.sonicle.commons.time.DateTimeWindow;
@@ -68,6 +69,7 @@ import com.sonicle.webtop.calendar.swagger.v2.model.ApiEventsResultDelta;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiUserSettings;
 import com.sonicle.webtop.core.app.RunContext;
 import com.sonicle.webtop.core.app.WT;
+import com.sonicle.webtop.core.app.model.FolderShare;
 import com.sonicle.webtop.core.model.Delta;
 import com.sonicle.webtop.core.sdk.BaseRestApiUtils;
 import com.sonicle.webtop.core.sdk.UserProfileId;
@@ -116,7 +118,8 @@ public class Me extends MeApi {
 		}
 		
 		try {
-			boolean returnFullCount = _returnCount == null ? false : _returnCount;
+			final Set<String> fields2set = BaseRestApiUtils.parseStringSet(_select);
+			final boolean returnFullCount = _returnCount == null ? false : _returnCount;
 			ItemsListResult<Calendar> result = manager.listCalendars(_filter, BaseRestApiUtils.parseSortInfo(_orderBy), _pageNo, BaseRestApiUtils.pageSizeOrDefault(_pageNo, _pageSize), returnFullCount);
 			Map<Integer, DateTime> itemsLastRevisionMap = manager.getCalendarsItemsLastRevision(
 				result.items.stream()
@@ -125,8 +128,10 @@ public class Me extends MeApi {
 					})
 					.collect(Collectors.toList())
 			);
+			Map<Integer, FolderShare.Permissions> permissionsMap = null;
+			if (BaseRestApiUtils.shouldSet(fields2set, "acls")) permissionsMap = manager.getCalendarFoldersPermissions(itemsLastRevisionMap.keySet());
 			Integer defaultCalendarId = manager.getDefaultCalendarId();
-			return respOk(ApiUtils.fillApiCalendarsResult(new ApiCalendarsResult(), BaseRestApiUtils.parseStringSet(_select), result, defaultCalendarId, itemsLastRevisionMap));
+			return respOk(ApiUtils.fillApiCalendarsResult(new ApiCalendarsResult(), BaseRestApiUtils.parseStringSet(_select), result, defaultCalendarId, itemsLastRevisionMap, permissionsMap));
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] listCalendars()", RunContext.getRunProfileId(), t);
@@ -146,8 +151,9 @@ public class Me extends MeApi {
 			Calendar calendar = manager.getCalendar(ApiUtils.parseCalendar(calendarId));
 			if (calendar == null) return respErrorNotFound();
 			Map<Integer, DateTime> itemsLastRevisionMap = manager.getCalendarsItemsLastRevision(Arrays.asList(calendar.getCalendarId()));
-			Integer defaultCalendarId = manager.getDefaultCalendarId();
-			return respOk(ApiUtils.fillApiCalendar(new ApiCalendar(), null, calendar, defaultCalendarId, itemsLastRevisionMap.get(calendar.getCalendarId())));
+			final FolderShare.Permissions permissions = manager.getCalendarFolderPermissions(calendar.getCalendarId());
+			final Integer defaultCalendarId = manager.getDefaultCalendarId();
+			return respOk(ApiUtils.fillApiCalendar(new ApiCalendar(), null, calendar, defaultCalendarId, itemsLastRevisionMap.get(calendar.getCalendarId()), permissions));
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] getCalendar({})", RunContext.getRunProfileId(), calendarId, t);
@@ -167,8 +173,9 @@ public class Me extends MeApi {
 			CalendarBase calendar = ApiUtils.fillCalendarBase(new CalendarBase(), null, body);
 			calendar.setUserId(userIdOrDefault(userId));
 			Calendar newCalendar = manager.addCalendar(calendar);
-			Integer defaultCalendarId = manager.getDefaultCalendarId();
-			return respOkCreated(ApiUtils.fillApiCalendar(new ApiCalendar(), null, newCalendar, defaultCalendarId, null));
+			final FolderShare.Permissions permissions = manager.getCalendarFolderPermissions(newCalendar.getCalendarId());
+			final Integer defaultCalendarId = manager.getDefaultCalendarId();
+			return respOkCreated(ApiUtils.fillApiCalendar(new ApiCalendar(), null, newCalendar, defaultCalendarId, null, permissions));
 			
 		} catch (Throwable t) {
 			LOGGER.error("[{}] addCalendar({})", RunContext.getRunProfileId(), userId, t);
@@ -475,6 +482,7 @@ public class Me extends MeApi {
 				.schedulerTimeResolution(cus.getSchedulerTimeResolution())
 				.workdayStart(JodaTimeUtils.print(timeFmt, cus.getWorkdayStart()))
 				.workdayEnd(JodaTimeUtils.print(timeFmt, cus.getWorkdayEnd()))
+				.inactiveCalendarOrigins(cus.getInactiveCalendarOrigins().stream().collect(Collectors.toList()))
 				.inactiveCalendarFolders(cus.getInactiveCalendarFolders().stream().map((t) -> ApiUtils.asCalendarId(t)).collect(Collectors.toList()))
 				.defaultCalendarFolder(ApiUtils.asCalendarId(cus.getDefaultCalendarFolder()));
 			

@@ -1,6 +1,7 @@
 package com.sonicle.webtop.calendar.swagger.v2.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.sonicle.webtop.calendar.swagger.v2.model.ApiCalendarFolderPerms;
 import com.sonicle.webtop.calendar.swagger.v2.model.ApiOwnerInfo;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -18,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 
 @JsonTypeName("Calendar_allOf")
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-08-03T14:05:12.119+02:00[Europe/Berlin]")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2026-09-18T14:19:18.243+02:00[Europe/Berlin]")
 public class ApiCalendarAllOf   {
   private @Valid String id;
   private @Valid String etag;
@@ -27,6 +28,7 @@ public class ApiCalendarAllOf   {
   private @Valid String updatedAt;
   private @Valid ApiOwnerInfo owner;
   private @Valid Boolean isDefault;
+  private @Valid ApiCalendarFolderPerms permissions;
 
   /**
    * The calendar ID.
@@ -167,6 +169,25 @@ public class ApiCalendarAllOf   {
     this.isDefault = isDefault;
   }
 
+  /**
+   **/
+  public ApiCalendarAllOf permissions(ApiCalendarFolderPerms permissions) {
+    this.permissions = permissions;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "")
+  @JsonProperty("permissions")
+  public ApiCalendarFolderPerms getPermissions() {
+    return permissions;
+  }
+
+  @JsonProperty("permissions")
+  public void setPermissions(ApiCalendarFolderPerms permissions) {
+    this.permissions = permissions;
+  }
+
 
   @Override
   public boolean equals(Object o) {
@@ -183,12 +204,13 @@ public class ApiCalendarAllOf   {
         Objects.equals(this.createdAt, calendarAllOf.createdAt) &&
         Objects.equals(this.updatedAt, calendarAllOf.updatedAt) &&
         Objects.equals(this.owner, calendarAllOf.owner) &&
-        Objects.equals(this.isDefault, calendarAllOf.isDefault);
+        Objects.equals(this.isDefault, calendarAllOf.isDefault) &&
+        Objects.equals(this.permissions, calendarAllOf.permissions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, etag, itemsETag, createdAt, updatedAt, owner, isDefault);
+    return Objects.hash(id, etag, itemsETag, createdAt, updatedAt, owner, isDefault, permissions);
   }
 
   @Override
@@ -203,6 +225,7 @@ public class ApiCalendarAllOf   {
     sb.append("    updatedAt: ").append(toIndentedString(updatedAt)).append("\n");
     sb.append("    owner: ").append(toIndentedString(owner)).append("\n");
     sb.append("    isDefault: ").append(toIndentedString(isDefault)).append("\n");
+    sb.append("    permissions: ").append(toIndentedString(permissions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

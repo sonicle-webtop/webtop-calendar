@@ -2092,6 +2092,9 @@
                 },
                 "description": "Specifies if the calendar is markes as `default` one.",
                 "readOnly": true
+              },
+              "permissions": {
+                "$ref": "#/components/schemas/CalendarFolderPerms"
               }
             }
           },
@@ -2960,6 +2963,18 @@
             },
             "description": "The workday end time (in HH:mm format)."
           },
+          "inactiveCalendarOrigins": {
+            "type": "array",
+            "x-stoplight": {
+              "id": "wmcav0vgobsrf"
+            },
+            "items": {
+              "x-stoplight": {
+                "id": "vp3vmd3uw53xc"
+              },
+              "type": "string"
+            }
+          },
           "inactiveCalendarFolders": {
             "type": "array",
             "x-stoplight": {
@@ -2979,6 +2994,30 @@
               "id": "zxz48x0gj6ejo"
             },
             "description": "The calendar ID marked as default folder."
+          }
+        }
+      },
+      "CalendarFolderPerms": {
+        "title": "CalendarFolderPerms",
+        "x-stoplight": {
+          "id": "2bx7shd7xx2w6"
+        },
+        "type": "object",
+        "description": "Represent a set of permissions for a Calendar folder.",
+        "properties": {
+          "folder": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "n1d8qcdfdxo4c"
+            },
+            "description": "Effective permissions granted to the current user on the folder itself. Possible permissions are: READ (r), UPDATE (u), DELETE (d), and MANAGE (m)."
+          },
+          "items": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "5jai9z4l3iyxt"
+            },
+            "description": "Effective permissions granted to the current user on the items contained in the folder. Possible permissions are: CREATE (c), UPDATE (u), and DELETE (d)."
           }
         }
       }

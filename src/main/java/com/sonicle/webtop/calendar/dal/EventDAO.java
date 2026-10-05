@@ -94,9 +94,14 @@ public class EventDAO extends BaseDAO {
 		return INSTANCE;
 	}
 	
-	public static Condition createEventsChangedNewOrModifiedCondition() {
+	public static Condition createEventsChangedFullSyncCondition() {
+		// Change-type alone is not enough: rows are filtered before DISTINCT ON, so a deleted (or moved-away)
+		// event would still surface through its older C/U row. Only events currently alive in that calendar count.
 		return HISTORY_EVENTS.CHANGE_TYPE.equal(BaseDAO.CHANGE_TYPE_CREATION)
-			.or(HISTORY_EVENTS.CHANGE_TYPE.equal(BaseDAO.CHANGE_TYPE_UPDATE));
+			.or(HISTORY_EVENTS.CHANGE_TYPE.equal(BaseDAO.CHANGE_TYPE_UPDATE))
+			.and(EVENTS.CALENDAR_ID.equal(HISTORY_EVENTS.CALENDAR_ID))
+			.and(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(EventBase.RevisionStatus.NEW))
+				.or(EVENTS.REVISION_STATUS.equal(EnumUtils.toSerializedName(EventBase.RevisionStatus.MODIFIED))));
 	}
 	
 	public static Condition createEventsChangedSinceUntilCondition(DateTime since, DateTime until) {

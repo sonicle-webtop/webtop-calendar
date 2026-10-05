@@ -1191,7 +1191,7 @@ public class CalendarManager extends BaseManager implements SharedManager, ICale
 				evtDao.lazy_viewChangedEventObjects(
 					con,
 					Arrays.asList(calendarId),
-					EventDAO.createEventsChangedNewOrModifiedCondition(),
+					EventDAO.createEventsChangedFullSyncCondition(),
 					EventObjectOutputType.STAT.equals(outputType),
 					myLimit,
 					ManagerUtils.toOffset(myPage, myLimit),

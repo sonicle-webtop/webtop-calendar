@@ -35,11 +35,14 @@ package com.sonicle.webtop.calendar.dal;
 import com.sonicle.commons.db.PostgresUtils;
 import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_CALENDARS;
 import static com.sonicle.webtop.calendar.jooq.Tables.HISTORY_EVENTS;
+import com.sonicle.webtop.calendar.jooq.tables.HistoryEvents;
 import com.sonicle.webtop.core.dal.BaseDAO;
+import static com.sonicle.webtop.core.dal.BaseDAO.CHANGE_TYPE_DELETION;
 import com.sonicle.webtop.core.dal.DAOException;
 import java.sql.Connection;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 
 /**
  *
@@ -94,11 +97,32 @@ public class HistoryDAO extends BaseDAO {
 	public int deleteEventsHistoryByAge(Connection con, int retentionYears) throws DAOException {
 		DateTime cutoff = BaseDAO.createRevisionTimestamp().minusYears(retentionYears);
 		DSLContext dsl = getDSL(con);
+		// The history is not just a changelog: a full sync (see EventDAO.lazy_viewChangedEventObjects)
+		// is driven by it, so a contact with no history rows in its calendar is invisible to DAV clients.
+		// Expired rows can go only if they are superseded by a newer row for the same event in the same
+		// calendar, or if they record a deletion; the latest C/U row of a live contact is always kept.
+		HistoryEvents NEWER = HISTORY_EVENTS.as("newer");
 		return dsl
 			.delete(HISTORY_EVENTS)
 			.where(
 				HISTORY_EVENTS.CHANGE_TIMESTAMP.lessThan(cutoff)
+				.and(
+					HISTORY_EVENTS.CHANGE_TYPE.equal(CHANGE_TYPE_DELETION)
+					.or(DSL.exists(
+						DSL.selectOne()
+						.from(NEWER)
+						.where(
+							NEWER.EVENT_ID.equal(HISTORY_EVENTS.EVENT_ID)
+							.and(NEWER.CALENDAR_ID.equal(HISTORY_EVENTS.CALENDAR_ID))
+							.and(NEWER.ID.greaterThan(HISTORY_EVENTS.ID))
+						)
+					))
+				)
 			)
 			.execute();
+	}
+	
+	public static DateTime createAgeCutoff(final int retentionYears) {
+		return BaseDAO.createRevisionTimestamp().minusYears(retentionYears);
 	}
 }

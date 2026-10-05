@@ -42,6 +42,8 @@ import com.sonicle.webtop.calendar.EventObjectOutputType;
 import com.sonicle.webtop.calendar.ICalendarManager;
 import com.sonicle.webtop.calendar.ICalendarManager.EventNotifyOption;
 import com.sonicle.webtop.calendar.ManagerUtils;
+import com.sonicle.webtop.calendar.bg.HistoryCleanupTask;
+import com.sonicle.webtop.calendar.dal.HistoryDAO;
 import com.sonicle.webtop.calendar.model.CalendarFSFolder;
 import com.sonicle.webtop.calendar.model.CalendarFSOrigin;
 import com.sonicle.webtop.calendar.model.EventObject;
@@ -300,6 +302,16 @@ public class CalDav extends CaldavApi {
 			if (!StringUtils.isBlank(syncToken)) {
 				since = ETAG_FORMATTER.parseDateTime(syncToken);
 				if (since == null) return respErrorBadRequest();
+				
+				// History rows older than the retention window may have been cleaned up (deletions included),
+				// so changes since such a token cannot be reported reliably: reject it and let the client
+				// start over with a full sync (CardDAV: Sabre turns it into a DAV:valid-sync-token error).
+				if (since.isBefore(HistoryDAO.createAgeCutoff(HistoryCleanupTask.RETENTION_YEARS))) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("[{}] getDavCalObjectsChanges({}): syncToken '{}' is older than history retention", RunContext.getRunProfileId(), syncToken);
+					}
+					return respErrorBadRequest("syncToken is older than history retention ({} years): a full sync is required", HistoryCleanupTask.RETENTION_YEARS);
+				}
 			}
 			
 			Delta<EventObject> delta = manager.listEventObjectsDelta(calendarId, since, /*limit,*/ EventObjectOutputType.STAT);

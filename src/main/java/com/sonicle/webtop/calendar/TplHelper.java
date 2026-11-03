@@ -39,6 +39,7 @@ import com.sonicle.commons.web.json.MapItemList;
 import com.sonicle.webtop.calendar.model.EventAttendee;
 import com.sonicle.webtop.calendar.model.Event;
 import com.sonicle.webtop.calendar.model.EventBase;
+import com.sonicle.webtop.calendar.model.EventBounds;
 import com.sonicle.webtop.calendar.model.EventEx;
 import com.sonicle.webtop.core.app.WT;
 import com.sonicle.webtop.core.app.util.EmailNotification;
@@ -94,8 +95,9 @@ public class TplHelper {
 			
 		} else {
 			final String skeleton = event.getAllDay() ? AD_SKELETON : TIMED_SKELETON;
+			final EventBounds eb = CalendarUtils.toEventBoundsForDisplay(event);
 			sb.append(" ");
-			sb.append(JodaTimeUtils.formatDateTimeInterval(skeleton, profileI18n.getLocale(), event.getStart().withZone(etz), event.getEnd().withZone(etz)));
+			sb.append(JodaTimeUtils.formatDateTimeInterval(skeleton, profileI18n.getLocale(), eb.getStart(), eb.getEnd()));
 		}
 		return sb.toString();
 	}
@@ -153,7 +155,7 @@ public class TplHelper {
 		i18n.put("howToJoin", WT.lookupResource(SERVICE_ID, profileI18n.getLocale(), CalendarLocale.TPL_EMAIL_INVITATION_HOWTOJIN_MEETING));
 		
 		MapItem evt = new MapItem();
-		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventDates(profileI18n, evt, event);
 		fillEventOccurs(profileI18n, evt, event.getTimezone(), event.hasRecurrence() ? event.getRecurrence().getRule() : null);
 		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders); 
 		
@@ -183,7 +185,7 @@ public class TplHelper {
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
 		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
-		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventDates(profileI18n, evt, event);
 		fillEventOccurs(profileI18n, evt, event.getTimezone(), event.hasRecurrence() ? event.getRecurrence().getRule() : null);
 		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders);
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
@@ -234,7 +236,7 @@ public class TplHelper {
 		
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
-		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventDates(profileI18n, evt, event);
 		fillEventOccurs(profileI18n, evt, event.getTimezone(), event.hasRecurrence() ? event.getRecurrence().getRule() : null);
 		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders);
 		
@@ -281,7 +283,7 @@ public class TplHelper {
 		MapItem evt = new MapItem();
 		evt.put("title", StringUtils.defaultIfBlank(event.getTitle(), ""));
 		evt.put("description", StringUtils.defaultIfBlank(event.getDescription(), null));
-		fillEventDates(profileI18n, evt, event.getTimezone(), event.getStart(), event.getEnd());
+		fillEventDates(profileI18n, evt, event);
 		fillEventLocation(profileI18n, evt, event.getLocation(), meetingProviders);
 		evt.put("organizer", StringUtils.defaultIfBlank(event.getOrganizerCN(), event.getOrganizerAddress()));
 		
@@ -310,12 +312,13 @@ public class TplHelper {
 		return WT.buildTemplate(SERVICE_ID, "tpl/email/eventInvitation-body.html", vars);
 	}
 	
-	private static void fillEventDates(ProfileI18n profileI18n, MapItem item, String eventTimezone, DateTime eventStart, DateTime eventEnd) {
-		DateTimeZone etz = DateTimeZone.forID(eventTimezone);
-		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(profileI18n.getDateFormat() + " " + profileI18n.getTimeFormat(), etz);
-		item.put("timezone", eventTimezone);
-		item.put("startDate", fmt.print(eventStart));
-		item.put("endDate", fmt.print(eventEnd));
+	private static void fillEventDates(ProfileI18n profileI18n, MapItem item, EventBase event) {
+		final EventBounds eb = CalendarUtils.toEventBoundsForDisplay(event);
+		final String pattern = event.getAllDay() ? profileI18n.getDateFormat() : profileI18n.getDateFormat() + " " + profileI18n.getTimeFormat();
+		DateTimeFormatter fmt = JodaTimeUtils.createFormatter(pattern, event.getTimezoneObject());
+		item.put("timezone", event.getTimezone());
+		item.put("startDate", fmt.print(eb.getStart()));
+		item.put("endDate", fmt.print(eb.getEnd()));
 	}
 	
 	private static void fillEventOccurs(ProfileI18n profileI18n, MapItem item, String eventTimezone, String eventRecurrenceRule) {

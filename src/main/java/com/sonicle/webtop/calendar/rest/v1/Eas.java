@@ -342,7 +342,7 @@ public class Eas extends EasApi {
 		}
 		
 		ArrayList<SyncEventDataAttendee> saas = new ArrayList<>();
-		for (EventAttendee attendee : event.getAttendees()) {
+		for (EventAttendee attendee : event.getAttendeesOrEmpty()) {
 			saas.add(createSyncEventDataAttendee(attendee));
 		}
 		
@@ -400,9 +400,12 @@ public class Eas extends EasApi {
 			tgt.setRecurrence(new EventRecurrence(src.getRecRule(), startDate, exDates));
 		}
 		
-		if (isNew || tgt.getAttendees().isEmpty()) {
-			for (SyncEventDataAttendee satt : src.getAttendees()) {
-				tgt.getAttendees().add(mergeEventAttendee(new EventAttendee(), satt));
+		// The phone may send no attendees at all
+		List<SyncEventDataAttendee> srcAtts = (src.getAttendees() != null) ? src.getAttendees() : new ArrayList<>(0);
+		
+		if (isNew || tgt.getAttendeesOrEmpty().isEmpty()) {
+			for (SyncEventDataAttendee satt : srcAtts) {
+				tgt.addAttendee(mergeEventAttendee(new EventAttendee(), satt));
 			}
 		} else {
 			// We do not have ids here, so we have to compare elements using recipient address!
@@ -411,13 +414,13 @@ public class Eas extends EasApi {
 			tgt.getAttendees().forEach(att -> oldAtts.put(att.getRecipientAddress(), att));
 			
 			// Then, evaluate added and updated elements by adding them to the collection
-			for (SyncEventDataAttendee satt : src.getAttendees()) {
+			for (SyncEventDataAttendee satt : srcAtts) {
 				InternetAddress ia = InternetAddressUtils.toInternetAddress(satt.getAddress());
 				if (ia == null || ia.getAddress() == null) continue;
 				
 				EventAttendee oldAtt = oldAtts.remove(ia.getAddress());
 				if (oldAtt == null) {
-					tgt.getAttendees().add(mergeEventAttendee(new EventAttendee(), satt));
+					tgt.addAttendee(mergeEventAttendee(new EventAttendee(), satt));
 				} else {
 					int index = tgt.getAttendees().indexOf(oldAtt);
 					tgt.getAttendees().set(index, mergeEventAttendee(oldAtt, satt));

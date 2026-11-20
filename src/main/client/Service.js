@@ -1112,6 +1112,17 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				if (rec) me.moveSchedEventUI(false, rec);
 			}
 		});
+		// NethVoice chat: the attendees in a chat (colleagues as members, people outside get the link by email)
+		me.addAct('nvChatAttendees', {
+			text: WT.res('act-nvChatAttendees.lbl'),
+			tooltip: null,
+			iconCls: 'wt-icon-nvchat',
+			hidden: WT.getVar('nvChatEnabled') !== true,
+			handler: function(s, e) {
+				var rec = e.menuData ? (e.menuData.event || e.menuData.record) : null;
+				if (rec) me.chatWithAttendeesUI(rec.getId(), rec.get('title'));
+			}
+		});
 		me.addAct('printEvent', {
 			text: WT.res('act-print.lbl'),
 			tooltip: null,
@@ -1293,6 +1304,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('copyEvent'),
 				me.getAct('eventTags'),
 				'-',
+				me.getAct('nvChatAttendees'),
 				me.getAct('printEvent'),
 				me.hasAuditUI() ? me.getAct('eventAuditLog') : null,
 				'-',
@@ -1328,6 +1340,7 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 				me.getAct('copyEvent'),
 				me.getAct('eventTags'),
 				'-',
+				me.getAct('nvChatAttendees'),
 				me.getAct('printEvent'),	
 				me.hasAuditUI() ? me.getAct('eventAuditLog') : null,
 				//'-',
@@ -2581,6 +2594,37 @@ Ext.define('Sonicle.webtop.calendar.Service', {
 			if (view === 'biweek') return 'dw';
 			if (view === 'month') return 'm';
 			return 'w5';
+		},
+		
+		/**
+		 * NethVoice chat with the event attendees (resources left out): read the event, then hand the people to the chat.
+		 */
+		chatWithAttendeesUI: function(eventId, title) {
+			WT.ajaxReq(this.ID, 'ManageEvents', {
+				params: {crud: 'read', id: eventId},
+				callback: function(success, json) {
+					var d = success && json ? json.data : null, people = [], emails = [];
+					if (!d) {
+						WT.error(json ? json.message : '');
+						return;
+					}
+					Ext.each(d.attendees || [], function(a) {
+						var v = Ext.String.trim(String(a.recipient || '')), m = v.match(/^(.*)<([^>]+)>\s*$/),
+							email = m ? Ext.String.trim(m[2]) : v;
+						if (a.recipientType === 'RES' || Ext.isEmpty(email)) return;
+						people.push({email: email, name: m ? (Ext.String.trim(m[1]).replace(/^"|"$/g, '') || email) : email});
+						emails.push(email);
+					});
+					WT.handleNewChat(people, {
+						title: String(title || d.title || '').substring(0, 64),
+						onLink: function(link, info) {
+							var ext = Ext.Array.pluck(info.external || [], 'email');
+							// handleNewMailMessage decodes its arguments (it serves mailto: links)
+							WT.handleNewMailMessage(Ext.Array.map(ext, encodeURIComponent), encodeURIComponent(title || d.title || ''), encodeURIComponent(Ext.String.format(WT.res('nvchat.invite.text'), link)));
+						}
+					});
+				}
+			});
 		},
 		
 		refreshEventsActDisabled: function(action, items) {
